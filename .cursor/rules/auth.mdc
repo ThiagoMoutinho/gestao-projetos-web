@@ -1,0 +1,14 @@
+---
+description: Sessão Better Auth e permissões de interface
+globs: src/lib/auth/**/*.ts,src/modules/auth/**/*.ts
+alwaysApply: false
+---
+
+# Autenticação
+
+- Um só cliente: `authClient` em `src/lib/auth/client.ts`, apontando para a API.
+- Login: `loginWithEmail`. Sessão no navegador: `getBrowserSession`. Sessão no servidor: `getServerSession`, com o cookie encaminhado.
+- Logout: `logout`. Não habilite cadastro público nem Google OAuth.
+- Perfis globais: `ADMIN`, `PMO`, `COORDENADOR`, `GESTOR`, `FORNECEDOR`, `COLABORADOR`.
+- `ADMIN` e `PMO` cadastram projeto. `COORDENADOR` consulta e gerencia, sem cadastrar.
+- Os demais só veem projeto em que são donos ou participantes. A interface esconde a ação; a API continua sendo a autorização.

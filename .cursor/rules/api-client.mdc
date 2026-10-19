@@ -1,0 +1,13 @@
+---
+description: Cliente tipado da API de negócio
+globs: src/lib/api/**/*.ts,src/modules/**/*.ts
+alwaysApply: false
+---
+
+# API
+
+- Rotas de negócio saem do Orval em `src/lib/api/generated`. Não edite esses arquivos; rode `pnpm api:generate`.
+- Chamadas passam por `apiFetcher`, com `credentials: "include"`.
+- No servidor, o fetcher encaminha o cookie da requisição. No navegador, o cookie HttpOnly vai sozinho.
+- Não invente endpoint. Autenticação Better Auth não usa o cliente Orval.
+- `204` não tem corpo. Erros da API lançam `ApiError` com `status`, `code` e `message`.

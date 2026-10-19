@@ -1,0 +1,22 @@
+---
+description: Segredos, erros e dados exibidos
+alwaysApply: true
+---
+
+# Segurança
+
+- Segredos não entram em `NEXT_PUBLIC_*`. A URL da API pode ser pública.
+- Não trate dado fictício como registro institucional.
+- Mostre a `message` de `ApiError` ao usuário. Não engula erro de autenticação nem de permissão.
+- Cookie de sessão é HttpOnly. O front não lê o token para montar cabeçalho `Authorization`.
+
+```ts
+// ❌ BAD
+catch { return []; }
+
+// ✅ GOOD
+catch (error) {
+  if (error instanceof ApiError && error.status === 401) throw error;
+  throw error;
+}
+```

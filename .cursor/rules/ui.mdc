@@ -1,0 +1,21 @@
+---
+description: Componentes shadcn e tokens do tema
+globs: src/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Interface
+
+- Reutilize `src/components/ui`. Não copie markup de botão, campo ou diálogo.
+- Cores só pelos tokens semânticos (`bg-background`, `text-foreground`, `bg-primary`, `border-border`).
+- Tema claro é o padrão. O escuro existe em `.dark` e só entra com um seletor futuro.
+- Não invente logotipo oficial do IGEPPS nem espalhe hex nos componentes.
+
+```tsx
+// ❌ BAD
+<button className="bg-[#0b3d91] text-white">Salvar</button>
+
+// ✅ GOOD
+import { Button } from "@/components/ui/button";
+<Button type="submit">Salvar</Button>
+```

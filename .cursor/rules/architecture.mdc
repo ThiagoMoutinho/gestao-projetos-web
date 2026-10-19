@@ -1,0 +1,19 @@
+---
+description: Arquitetura Next.js do front-end IGEPPS
+alwaysApply: true
+---
+
+# Arquitetura
+
+- App Router, TypeScript strict e pnpm. O dev server fica na porta 3001.
+- Pastas: `src/app` (rotas), `src/components/ui` (shadcn), `src/components/layout`, `src/modules/auth|projects|eap`, `src/lib/api`, `src/lib/auth`.
+- Tela em `src/app`. Dados, schemas e regras de apresentação ficam no módulo.
+- O backend em `gestao-projetos-api` só muda com autorização explícita. PostgreSQL e Drizzle não entram neste projeto.
+
+```tsx
+// ❌ BAD — consulta de projeto dentro da página, com dados inventados
+const projects = [{ id: "1", name: "Projeto real da CTIN" }];
+
+// ✅ GOOD
+import { listProjects } from "@/lib/api";
+```
