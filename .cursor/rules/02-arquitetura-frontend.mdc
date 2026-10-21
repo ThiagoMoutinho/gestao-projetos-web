@@ -1,0 +1,22 @@
+---
+description: Organização, separação de responsabilidades e refatoração segura do frontend IGEPPS.
+globs:
+  - "gestao-projetos-web/**/*.{ts,tsx}"
+  - "**/app/**/*.{ts,tsx}"
+  - "**/components/**/*.{ts,tsx}"
+alwaysApply: true
+---
+# Arquitetura frontend e manutenção
+
+- Antes de modificar arquivos, leia os arquivos relacionados, contratos da API, testes e regras de negócio. Preserve a arquitetura Next.js/React/TypeScript existente.
+- Componentes de UI devem cuidar de apresentação e interação. Extraia lógica de acesso à API, transformação de dados, validação, cálculo e autorização para módulos adequados, respeitando o padrão existente.
+- Evite componentes monolíticos. Quando um arquivo crescer além de ~300 linhas, avalie separação por responsabilidade; acima de ~500 linhas, documente a justificativa ou proponha refatoração. Esses números são sinais de revisão, não limites rígidos.
+- Para `eap-panel.tsx`, inspecione primeiro as 1.175 linhas reais e proponha um mapa de extração antes de alterar. Possíveis responsabilidades: contêiner EAP, árvore de fases, linha de tarefa, linha de marco, Sheet de detalhes, formulários de fase/tarefa/marco, edição rápida, evidências, datas, navegação, hooks e serviços. Extraia somente o que existir no código.
+- Não reescreva a EAP inteira nem faça refatoração e alteração funcional na mesma etapa sem autorização. Faça mudanças pequenas, verificáveis e reversíveis.
+- Preserve contratos públicos, rotas, autenticação, RBAC, cache/invalidação, permissões, estados de loading/erro e tratamento de alterações não salvas.
+- Tipos TypeScript explícitos; evite `any`, assertions desnecessárias e duplicação de tipos gerados da API. Reutilize cliente HTTP/Orval e padrões existentes.
+- Não replique dados do servidor em estados locais sem necessidade; evite estados divergentes entre EAP, Sheet e edição rápida.
+- Use funções puras para transformações e regras de cálculo; regras de negócio críticas devem ser aplicadas e validadas no backend, não apenas na UI.
+- Extraia componentes quando houver responsabilidade clara, reuso ou testes melhores; não crie dezenas de arquivos de um único uso sem benefício.
+- Mantenha nomes descritivos, imports organizados, acessibilidade, testes e estrutura consistente com o repositório.
+- Entregue resumo de arquivos modificados, motivo de cada extração e evidência de testes.

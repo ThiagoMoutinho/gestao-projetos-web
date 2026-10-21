@@ -54,13 +54,6 @@ export function LoginBrandPanel() {
           strokeOpacity="0.18"
           strokeWidth="2"
         />
-        <polygon
-          points={STAR_POINTS}
-          fill="none"
-          stroke="currentColor"
-          strokeOpacity="0.28"
-          strokeWidth="2.4"
-        />
         <path
           d="M-40 690 C 90 620, 180 760, 320 690 S 560 560, 840 650"
           fill="none"
@@ -81,6 +74,20 @@ export function LoginBrandPanel() {
           stroke="currentColor"
           strokeOpacity="0.14"
           strokeWidth="1.2"
+        />
+      </svg>
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute top-20 right-6 h-[min(26rem,calc(100svh-14rem))] w-auto text-brand-foreground"
+        viewBox="390 40 410 390"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <polygon
+          points={STAR_POINTS}
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.28"
+          strokeWidth="2.4"
         />
       </svg>
 

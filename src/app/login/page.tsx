@@ -26,41 +26,46 @@ export default async function LoginPage() {
   const year = new Date().getFullYear();
 
   return (
-    <div className="grid min-h-svh flex-1 lg:grid-cols-[minmax(0,60fr)_minmax(0,45fr)]">
+    <div className="grid min-h-svh flex-1 lg:grid-cols-[minmax(0,62fr)_minmax(0,45fr)]">
       <LoginBrandPanel />
 
-      <section className="relative flex flex-col bg-[color-mix(in_oklch,var(--background),var(--primary)_5%)]">
+      <section
+        className="relative flex flex-col bg-[color-mix(in_oklch,var(--background),var(--primary)_4%)]"
+      >
         <div className="absolute top-5 right-5 z-10 sm:top-6 sm:right-6">
           <AccessibilityMenu />
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-6 py-20 sm:px-10">
-          <div className="w-full max-w-md space-y-7">
-            <div className="space-y-3">
-              <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Lock className="size-6" aria-hidden="true" />
+        <div className="flex flex-1 flex-col justify-center px-6 py-16 sm:px-10">
+          <div className="mx-auto w-full max-w-[26rem]">
+            <div className="space-y-4">
+              <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Lock className="size-5" aria-hidden="true" />
               </span>
-              <div className="space-y-1.5">
-                <h2 className="text-3xl font-semibold tracking-tight">Bem-vindo de volta!</h2>
-                <p className="text-sm leading-relaxed text-muted-foreground">
+              <div className="space-y-2">
+                <h2 className="text-[1.625rem] leading-8 font-semibold tracking-tight">
+                  Bem-vindo de volta!
+                </h2>
+                <p className="text-sm leading-5 text-muted-foreground">
                   Informe suas credenciais para acessar o Sistema de Gestão de Projetos da CTIN.
                 </p>
               </div>
             </div>
 
-            <LoginForm />
-
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              ou
-              <span className="h-px flex-1 bg-border" />
+            <div className="mt-8">
+              <LoginForm />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="mt-6 flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-xl bg-background"
+                className="h-12 rounded-lg bg-background text-sm font-medium"
                 disabled
                 aria-describedby="manual-unavailable"
                 title="Ainda não disponível"
@@ -75,7 +80,10 @@ export default async function LoginPage() {
                 href={PORTAL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn(buttonVariants({ variant: "outline" }), "h-11 rounded-xl bg-background")}
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "h-12 rounded-lg bg-background text-sm font-medium",
+                )}
               >
                 <ExternalLink />
                 Acessar portal IGEPPS
@@ -84,7 +92,7 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        <footer className="px-6 pb-6 text-center text-xs leading-relaxed text-muted-foreground">
+        <footer className="px-6 pb-6 text-center text-[13px] leading-5 text-muted-foreground">
           <p className="inline-flex items-center justify-center gap-1.5">
             <Shield className="size-3.5" aria-hidden="true" />
             © {year} IGEPPS - Instituto de Gestão Previdenciária e Proteção Social do Estado do

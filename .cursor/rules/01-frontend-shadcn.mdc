@@ -1,0 +1,23 @@
+---
+description: Padrão obrigatório de componentes shadcn/ui, Tailwind e interface institucional IGEPPS.
+globs:
+  - "gestao-projetos-web/**/*.{ts,tsx,css}"
+  - "**/app/**/*.{ts,tsx,css}"
+  - "**/components/**/*.{ts,tsx,css}"
+alwaysApply: true
+---
+# Frontend IGEPPS — shadcn/ui como padrão
+
+- Antes de editar, inspecione `components.json`, `package.json`, `components/ui` e padrões existentes. Não presuma bibliotecas instaladas.
+- Para interfaces, use prioritariamente componentes oficiais shadcn/ui já presentes no repositório: Button, Input, Textarea, Label, Select, Checkbox, RadioGroup, Form/Field, Sheet, Dialog, Tabs, Accordion, Collapsible, Badge, Table, Skeleton, Alert, Tooltip etc., conforme disponibilidade e necessidade.
+- Não construa novos controles visuais com `<input>`, `<select>`, `<button>` ou `<dialog>` diretamente em componentes de negócio quando existir equivalente shadcn/ui apropriado. HTML semântico interno aos componentes e exceções justificadas são permitidos.
+- Se faltar componente, proponha ou adicione pelo CLI oficial do shadcn/ui compatível com a versão instalada, sem sobrescrever customizações sem inspeção. Não invente imports ou componentes inexistentes.
+- shadcn/ui fornece código-fonte de componentes ao projeto: respeite e reutilize suas variantes e tokens. Evite copiar e colar implementações paralelas.
+- Utilize Tailwind e tokens semânticos do tema (`bg-background`, `text-foreground`, `border-border`, etc.). Evite cores arbitrárias, estilos inline e valores mágicos; preserve a identidade institucional azul do IGEPPS.
+- Use `cn()` para compor classes condicionais e variantes existentes; não duplique classes ou estilos entre componentes.
+- Formulários: rótulos associados, mensagens de erro, indicação de obrigatoriedade, estados disabled/loading e validação coerente com a API. Use a infraestrutura de formulário/validação já adotada pelo projeto; não instale React Hook Form ou outra dependência sem necessidade.
+- EAP: use Sheet para detalhes no desktop, conforme padrão atual, e avalie Drawer no mobile apenas se for realmente melhor. Conteúdo rolável, cabeçalho e ações acessíveis; preservar edição rápida recolhível.
+- Para controles interativos, garanta foco visível, navegação por teclado, ARIA apropriado, contraste, responsividade e `prefers-reduced-motion`.
+- Transições suaves e discretas são obrigatórias: navegação, Sheet, Accordion, Collapsible, Tabs, hover e feedback. Priorize CSS/recursos existentes, sem atrasos artificiais ou animações que prejudiquem desempenho.
+- Nunca invente dados, percentuais, prazos, status ou indicadores para preencher a interface. Mostre estado vazio, loading ou indisponibilidade.
+- Antes de concluir, informe quais componentes shadcn/ui foram reutilizados e justifique exceções.

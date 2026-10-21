@@ -1,0 +1,19 @@
+---
+description: Segurança, governança PMO, RN-001/RN-003, testes e controle de escopo do sistema IGEPPS.
+alwaysApply: true
+---
+# Qualidade, governança e fluxo de trabalho IGEPPS
+
+- O usuário define as regras de negócio. Nunca invente, simplifique ou altere regras aprovadas sem apresentar a decisão pendente e solicitar autorização.
+- Respeite a RN-001: verificação diária às 09:00 America/Belem, antecedência de cinco dias úteis, cobrança diária após vencimento, responsáveis/PMO/gestor; suspensão interrompe cobranças preservando histórico; tarefa cancelada não recebe cobrança; impedida continua monitorada; marco só conclui após aceite. Não implemente RN-001 sem solicitação específica.
+- Respeite a RN-003 v1.1: andamento ponderado por pesos configuráveis, fases agregam tarefas/marcos e projeto agrega fases, marco 0% até aceite e 100% após, fase vazia sem percentual, projeto com andamento parcial + cobertura e alerta de planejamento incompleto, tarefa cancelada excluída do cálculo com histórico preservado, mudança de pesos durante execução exige justificativa e auditoria. Não implemente RN-003 sem solicitação específica.
+- Preserve datas planejadas, linha de base e trilhas de auditoria; reprogramações seguem fluxo próprio, não edição direta silenciosa.
+- Valide permissões no backend. Nunca confie apenas em controles desabilitados/ocultos no frontend.
+- Não modifique migrations, banco, seeds, autenticação, RBAC, integrações, e-mails ou notificações sem solicitação explícita.
+- Dados de demonstração devem ficar isolados de produção; não rode seed/cleanup sem autorização e verificação do ambiente.
+- Evite dependências novas se as existentes resolvem o problema. Não instale pacotes nem reconfigure tooling sem explicar a necessidade.
+- Para toda implementação, execute os testes relevantes, checagem de tipos, lint e build quando viáveis; relate exatamente o que foi executado, resultados e limitações. Nunca afirme sucesso sem executar.
+- Teste cenários de erro, loading, vazio, acesso negado, concorrência, dados ausentes e mudanças não salvas quando aplicável.
+- Preserve sidebar, cabeçalho, identidade visual e transições suaves. Respeite `prefers-reduced-motion`.
+- Ao receber pedido de análise ou especificação, NÃO programe. Entregue diagnóstico, plano incremental, riscos, critérios de aceite e aguarde aprovação.
+- Ao receber pedido de implementação, mantenha estritamente o escopo e informe arquivos alterados, endpoints usados, componentes shadcn/ui reutilizados e testes realizados.
