@@ -30,7 +30,7 @@ import type {
   UpdateProjectBody
 } from '../model';
 
-import { apiFetcher } from '../../fetcher';
+import { apiFetcher } from '../../fetcher.ts';
 
 export type createProjectResponse201 = {
   data: CreateProject201

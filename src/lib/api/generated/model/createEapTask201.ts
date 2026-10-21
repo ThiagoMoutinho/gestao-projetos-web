@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { CreateEapTask201Status } from './createEapTask201Status';
+import type { CreateEapTask201Status } from './createEapTask201Status.ts';
 
 export type CreateEapTask201 = {
   id: string;
@@ -13,6 +13,11 @@ export type CreateEapTask201 = {
   title: string;
   /** @nullable */
   description: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  sortOrder: number;
   /** @nullable */
   assigneeId: string | null;
   status: CreateEapTask201Status;

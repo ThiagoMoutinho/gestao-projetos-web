@@ -5,8 +5,8 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListProjects200DataItemRolesItem } from './listProjects200DataItemRolesItem';
-import type { ListProjects200DataItemStatus } from './listProjects200DataItemStatus';
+import type { ListProjects200DataItemRolesItem } from './listProjects200DataItemRolesItem.ts';
+import type { ListProjects200DataItemStatus } from './listProjects200DataItemStatus.ts';
 
 export type ListProjects200DataItem = {
   id: string;

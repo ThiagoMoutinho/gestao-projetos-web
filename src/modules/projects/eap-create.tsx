@@ -76,7 +76,7 @@ export function EapCreateSheet({
           </header>
           {access.canCreateItems ? (
             request.kind === "phase" ? (
-              <PhaseForm projectId={projectId} projectName={projectName} phases={phases} onClose={onClose} onPhase={onPhase} />
+              <PhaseForm projectId={projectId} projectName={projectName} phases={phases} people={people} names={names} onClose={onClose} onPhase={onPhase} />
             ) : request.kind === "task" ? (
               <TaskForm projectId={projectId} phases={phases} people={people} names={names} phaseId={request.phaseId} onClose={onClose} onTask={onTask} />
             ) : (
@@ -94,21 +94,26 @@ export function EapCreateSheet({
 function PhaseForm({
   projectId,
   projectName,
+  people,
+  names,
   onClose,
   onPhase,
 }: {
   projectId: string;
   projectName: string;
   phases: ProjectPhaseView[];
+  people: EapPerson[] | null;
+  names: Map<string, string> | null;
   onClose: () => void;
   onPhase: (phase: ProjectPhaseView) => void;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CreateEapPhaseBodyStatus>("NAO_INICIADA");
-  const startDate = usePlannedDate();
-  const endDate = usePlannedDate();
-  const [justification, setJustification] = useState("");
+  const [responsibleId, setResponsibleId] = useState("");
+  const [criteria, setCriteria] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function save() {
@@ -116,12 +121,8 @@ function PhaseForm({
       setError("Informe o nome da fase.");
       return;
     }
-    if (startDate.value && endDate.value && endDate.value < startDate.value) {
+    if (startDate && endDate && endDate < startDate) {
       setError("A data de término planejada não pode ser anterior à data de início.");
-      return;
-    }
-    if ((startDate.changed || endDate.changed) && justification.trim().length < 10) {
-      setError("Alterar o prazo exige justificativa com ao menos 10 caracteres.");
       return;
     }
     setSaving(true);
@@ -131,13 +132,15 @@ function PhaseForm({
         name: name.trim(),
         status,
         ...(description.trim() ? { description: description.trim() } : {}),
-        ...(startDate.value ? { plannedStartAt: civilToIso(startDate.value) } : {}),
-        ...(endDate.value ? { plannedEndAt: civilToIso(endDate.value) } : {}),
+        ...(responsibleId ? { responsibleId } : {}),
+        ...(criteria.trim() ? { completionCriteria: criteria.trim() } : {}),
+        ...(startDate ? { plannedStartAt: civilToIso(startDate) } : {}),
+        ...(endDate ? { plannedEndAt: civilToIso(endDate) } : {}),
       });
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível criar a fase.");
       }
-      onPhase(presentPhase(response.data, { tasks: [], milestones: [] }));
+      onPhase(presentPhase(response.data, { tasks: [], milestones: [] }, names));
       onClose();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Não foi possível criar a fase.");
@@ -159,8 +162,17 @@ function PhaseForm({
             ))}
           </SelectControl>
           <LockedControl label="Item superior" value={projectName} />
-          <LockedControl label="Responsável" hint="não gravado" value="A fase não possui responsável" />
-          <CivilDateField label="Prazo vigente" value={endDate.value} onChange={endDate.change} />
+          {people ? (
+            <SelectControl label="Responsável" value={responsibleId} onChange={setResponsibleId}>
+              <option value="">Selecione...</option>
+              {people.map((person) => (
+                <option key={person.userId} value={person.userId}>{person.name}</option>
+              ))}
+            </SelectControl>
+          ) : (
+            <LockedControl label="Responsável" value="Não foi possível consultar os participantes." />
+          )}
+          <CivilDateField label="Prazo vigente" value={endDate} onChange={setEndDate} />
         </div>
       </PanelSection>
       <PanelSection
@@ -179,17 +191,14 @@ function PhaseForm({
           </div>
           <p className="mt-[9px] text-[8.5px] leading-normal text-[#8a94a6]">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</p>
         </div>
-        <AreaControl label="Critério de conclusão" hint="não gravado" value="" placeholder="A conclusão segue a situação da fase e os itens subordinados." onChange={() => undefined} disabled rows={2} full />
+        <AreaControl label="Critério de conclusão" value={criteria} placeholder="Descreva o que precisa estar pronto para concluir a fase." onChange={setCriteria} rows={2} full />
       </PanelSection>
       <EvidenceSection />
       <PlanningSection
-        start={startDate.value}
-        end={endDate.value}
-        onStart={startDate.change}
-        onEnd={endDate.change}
-        justification={justification}
-        onJustification={setJustification}
-        scheduleChanged={startDate.changed || endDate.changed}
+        start={startDate}
+        end={endDate}
+        onStart={setStartDate}
+        onEnd={setEndDate}
       />
       <HistorySection />
     </FormBody>
@@ -218,9 +227,8 @@ function TaskForm({
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CreateEapTaskBodyStatus>("NAO_INICIADA");
   const [assigneeId, setAssigneeId] = useState("");
-  const startDate = usePlannedDate();
-  const endDate = usePlannedDate();
-  const [justification, setJustification] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [progress, setProgress] = useState(0);
   const [blocked, setBlocked] = useState(false);
   const [blocker, setBlocker] = useState("");
@@ -236,12 +244,8 @@ function TaskForm({
       setError("Escolha a fase da tarefa.");
       return;
     }
-    if (startDate.value && endDate.value && endDate.value < startDate.value) {
+    if (startDate && endDate && endDate < startDate) {
       setError("A data de término planejada não pode ser anterior à data de início.");
-      return;
-    }
-    if ((startDate.changed || endDate.changed) && justification.trim().length < 10) {
-      setError("Alterar o prazo exige justificativa com ao menos 10 caracteres.");
       return;
     }
     const nextStatus = blocked ? "IMPEDIDA" : status;
@@ -257,8 +261,8 @@ function TaskForm({
         status: nextStatus,
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(assigneeId ? { assigneeId } : {}),
-        ...(startDate.value ? { plannedStartAt: civilToIso(startDate.value) } : {}),
-        ...(endDate.value ? { plannedEndAt: civilToIso(endDate.value) } : {}),
+        ...(startDate ? { plannedStartAt: civilToIso(startDate) } : {}),
+        ...(endDate ? { plannedEndAt: civilToIso(endDate) } : {}),
       });
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível criar a tarefa.");
@@ -316,7 +320,7 @@ function TaskForm({
           ) : (
             <LockedControl label="Responsável" value="Não foi possível consultar os participantes." />
           )}
-          <CivilDateField label="Prazo vigente" value={endDate.value} onChange={endDate.change} />
+          <CivilDateField label="Prazo vigente" value={endDate} onChange={setEndDate} />
         </div>
       </PanelSection>
       <PanelSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" aside={<strong className="text-[12px] text-[#175cd3]">{progress}%</strong>} tone="accent">
@@ -364,13 +368,10 @@ function TaskForm({
       </PanelSection>
       <EvidenceSection warning={progress === 100 ? "A tarefa ficará concluída em percentual, e a evidência é vinculada depois da criação." : undefined} />
       <PlanningSection
-        start={startDate.value}
-        end={endDate.value}
-        onStart={startDate.change}
-        onEnd={endDate.change}
-        justification={justification}
-        onJustification={setJustification}
-        scheduleChanged={startDate.changed || endDate.changed}
+        start={startDate}
+        end={endDate}
+        onStart={setStartDate}
+        onEnd={setEndDate}
       />
       <HistorySection />
     </FormBody>
@@ -396,8 +397,7 @@ function MilestoneForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"ENTREGA" | "APROVACAO">("ENTREGA");
-  const dueDate = usePlannedDate();
-  const [justification, setJustification] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -410,10 +410,6 @@ function MilestoneForm({
       setError("Escolha a fase do marco.");
       return;
     }
-    if (dueDate.changed && justification.trim().length < 10) {
-      setError("Alterar o prazo exige justificativa com ao menos 10 caracteres.");
-      return;
-    }
     setSaving(true);
     setError(null);
     try {
@@ -421,7 +417,7 @@ function MilestoneForm({
         title: title.trim(),
         type,
         ...(description.trim() ? { description: description.trim() } : {}),
-        ...(dueDate.value ? { plannedAt: civilToIso(dueDate.value) } : {}),
+        ...(dueDate ? { plannedAt: civilToIso(dueDate) } : {}),
       });
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível criar o marco.");
@@ -448,7 +444,7 @@ function MilestoneForm({
             ))}
           </SelectControl>
           <LockedControl label="Responsável" hint="não gravado" value="O marco não possui responsável próprio" />
-          <CivilDateField label="Prazo vigente" value={dueDate.value} onChange={dueDate.change} />
+          <CivilDateField label="Prazo vigente" value={dueDate} onChange={setDueDate} />
           <SelectControl label="Tipo do marco" value={type} onChange={setType}>
             <option value="ENTREGA">Entrega</option>
             <option value="APROVACAO">Aprovação</option>
@@ -482,13 +478,10 @@ function MilestoneForm({
       <EvidenceSection />
       <PlanningSection
         start=""
-        end={dueDate.value}
+        end={dueDate}
         onStart={() => undefined}
-        onEnd={dueDate.change}
+        onEnd={setDueDate}
         startLocked
-        justification={justification}
-        onJustification={setJustification}
-        scheduleChanged={dueDate.changed}
       />
       <HistorySection />
     </FormBody>
@@ -516,10 +509,7 @@ function FormBody({
         <Button type="button" variant="outline" className="h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054]" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="button" variant="outline" className="h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054]" disabled title="O rascunho ainda não está disponível.">
-          Salvar rascunho
-        </Button>
-        <Button type="button" className="col-span-2 h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-[13px] text-[11px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8] sm:col-span-1" disabled={saving} onClick={onSubmit}>
+        <Button type="button" className="h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-[13px] text-[11px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]" disabled={saving} onClick={onSubmit}>
           <Check className="size-[15px]" aria-hidden="true" />
           {saving ? "Salvando…" : "Criar item"}
         </Button>
@@ -582,7 +572,7 @@ function EvidenceSection({ warning }: { warning?: string }) {
       title="Evidências vinculadas"
       subtitle="Documentos e registros associados ao item"
       aside={
-        <Button type="button" variant="outline" className="h-[30px] gap-[5px] rounded-[7px] px-[9px] text-[8.5px]" disabled title="A evidência é vinculada a uma tarefa ou marco já cadastrado.">
+        <Button type="button" variant="outline" className="h-[30px] gap-[5px] rounded-[7px] px-[9px] text-[8.5px]" disabled title="Disponível depois que o item for criado.">
           <Plus className="size-3.5" aria-hidden="true" />
           Adicionar
         </Button>
@@ -594,6 +584,9 @@ function EvidenceSection({ warning }: { warning?: string }) {
           <span>{warning}</span>
         </div>
       ) : null}
+      <p className="mb-2.5 text-[8.5px] leading-normal text-[#667085]">
+        As evidências são vinculadas depois que o item é criado. Ao clicar em Criar item, a edição abre em seguida para você adicionar os documentos.
+      </p>
       <div className="flex min-h-[39px] items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[8.5px] text-[#98a2b3]">
         Nenhuma evidência vinculada.
       </div>
@@ -604,22 +597,19 @@ function EvidenceSection({ warning }: { warning?: string }) {
 function FoldBlock({
   title,
   icon: Icon,
-  forceOpen = false,
   children,
 }: {
   title: string;
   icon: typeof CalendarIcon;
-  forceOpen?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(forceOpen);
-  const shown = open || forceOpen;
+  const [shown, setShown] = useState(false);
   return (
     <section className="mt-3 shrink-0 rounded-[9px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <button
         type="button"
         className="flex min-h-12 w-full items-center justify-between px-[15px] text-[9.5px] font-semibold text-[#344054]"
-        onClick={() => { if (!forceOpen) setOpen((current) => !current); }}
+        onClick={() => setShown((current) => !current)}
       >
         <span className="flex items-center gap-2">
           <Icon className="size-4" aria-hidden="true" />
@@ -637,22 +627,16 @@ function PlanningSection({
   end,
   onStart,
   onEnd,
-  justification,
-  onJustification,
-  scheduleChanged,
   startLocked = false,
 }: {
   start: string;
   end: string;
   onStart: (value: string) => void;
   onEnd: (value: string) => void;
-  justification: string;
-  onJustification: (value: string) => void;
-  scheduleChanged: boolean;
   startLocked?: boolean;
 }) {
   return (
-    <FoldBlock title="Planejamento e datas" icon={CalendarIcon} forceOpen={scheduleChanged}>
+    <FoldBlock title="Planejamento e datas" icon={CalendarIcon}>
       <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
         {startLocked ? (
           <LockedControl label="Início planejado" value="O marco usa o prazo vigente" />
@@ -660,19 +644,7 @@ function PlanningSection({
           <CivilDateField label="Início planejado" value={start} onChange={onStart} />
         )}
         <CivilDateField label="Prazo planejado" value={end} onChange={onEnd} />
-        <AreaControl
-          label="Justificativa de replanejamento"
-          hint={scheduleChanged ? "obrigatória" : undefined}
-          value={justification}
-          placeholder="Obrigatória quando o prazo for alterado."
-          onChange={onJustification}
-          rows={2}
-          full
-        />
       </div>
-      {scheduleChanged && justification.trim().length < 10 ? (
-        <p className="mt-2 text-[8.5px] text-[#8a6116]">A alteração do prazo exige justificativa com ao menos 10 caracteres.</p>
-      ) : null}
     </FoldBlock>
   );
 }
@@ -680,7 +652,7 @@ function PlanningSection({
 function HistorySection() {
   return (
     <FoldBlock title="Histórico de alterações" icon={Clock}>
-      <p className="text-[10px] leading-relaxed text-[#667085]">O histórico passa a ser registrado depois que o item é criado. A consulta do histórico ainda não está disponível.</p>
+      <p className="text-[10px] leading-relaxed text-[#667085]">O histórico começa quando o item é criado. Depois disso, cada alteração fica registrada com autor e data.</p>
     </FoldBlock>
   );
 }
@@ -826,18 +798,6 @@ function CivilDateField({ label, value, onChange }: { label: string; value: stri
       </Popover>
     </div>
   );
-}
-
-function usePlannedDate() {
-  const [value, setValue] = useState("");
-  const [baseline, setBaseline] = useState("");
-
-  function change(next: string) {
-    setValue(next);
-    setBaseline((current) => (current === "" && next !== "" ? next : current));
-  }
-
-  return { value, change, changed: baseline !== "" && value !== baseline };
 }
 
 function civilToDate(value: string) {

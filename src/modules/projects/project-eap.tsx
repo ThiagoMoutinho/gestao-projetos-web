@@ -57,6 +57,7 @@ export function ProjectEap({
   const [draggingPhaseId, setDraggingPhaseId] = useState<string | null>(null);
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [createdNotice, setCreatedNotice] = useState<string | null>(null);
   const dirtyRef = useRef(false);
   const movingPhaseRef = useRef(false);
 
@@ -85,6 +86,16 @@ export function ProjectEap({
     setPanelEditing(editing);
     setSelection(next);
     setPending(null);
+    setCreatedNotice(null);
+  }
+
+  function openCreated(next: EapSelection, createdLabel: string) {
+    dirtyRef.current = false;
+    setStartEditing(true);
+    setPanelEditing(true);
+    setSelection(next);
+    setPending(null);
+    setCreatedNotice(`${createdLabel}. Agora você pode vincular evidências e acompanhar o histórico de alterações.`);
   }
 
   function requestClose() {
@@ -96,10 +107,12 @@ export function ProjectEap({
     setSelection(null);
     setPanelEditing(false);
     setPending(null);
+    setCreatedNotice(null);
   }
 
   function discard() {
     dirtyRef.current = false;
+    setCreatedNotice(null);
     const next = pending && pending !== "close" ? pending : null;
     setSelection(next);
     if (!next) {
@@ -405,6 +418,7 @@ export function ProjectEap({
               code={eapCode(items, selection)}
               projectName={projectName}
               initialEditing={startEditing}
+              notice={createdNotice}
               onEditingChange={setPanelEditing}
               pending={pending !== null}
               dirtyRef={dirtyRef}
@@ -429,9 +443,18 @@ export function ProjectEap({
           names={names}
           access={access}
           onClose={() => setCreate(null)}
-          onPhase={(phase) => setItems((currentPhases) => appendPhase(currentPhases, phase))}
-          onTask={(task) => setItems((currentPhases) => appendTask(currentPhases, task))}
-          onMilestone={(milestone) => setItems((currentPhases) => appendMilestone(currentPhases, milestone))}
+          onPhase={(phase) => {
+            setItems((currentPhases) => appendPhase(currentPhases, phase));
+            openCreated({ kind: "phase", phaseId: phase.id }, "Fase criada");
+          }}
+          onTask={(task) => {
+            setItems((currentPhases) => appendTask(currentPhases, task));
+            openCreated({ kind: "task", phaseId: task.phaseId, taskId: task.id }, "Tarefa criada");
+          }}
+          onMilestone={(milestone) => {
+            setItems((currentPhases) => appendMilestone(currentPhases, milestone));
+            openCreated({ kind: "milestone", phaseId: milestone.phaseId, milestoneId: milestone.id }, "Marco criado");
+          }}
         />
       ) : null}
     </div>

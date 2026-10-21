@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListEapMilestones200DataItem } from './listEapMilestones200DataItem';
+import type { ListEapMilestones200DataItem } from './listEapMilestones200DataItem.ts';
 
 export type ListEapMilestones200 = {
   data: ListEapMilestones200DataItem[];

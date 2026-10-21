@@ -76,6 +76,9 @@ export type ProjectPhaseView = {
   name: string;
   description: string | null;
   createdBy: string;
+  responsibleId: string | null;
+  responsibleName: string | null;
+  completionCriteria: string | null;
   status: ListEapPhases200DataItemStatus;
   statusLabel: string;
   statusTone: RecordTone;
@@ -116,12 +119,21 @@ export function presentPhase<T extends DatedSpan & {
   description: string | null;
   status: ListEapPhases200DataItemStatus;
   createdBy: string;
-}>(phase: T, children: Pick<ProjectPhaseView, "tasks" | "milestones">): ProjectPhaseView {
+  responsibleId: string | null;
+  completionCriteria: string | null;
+}>(
+  phase: T,
+  children: Pick<ProjectPhaseView, "tasks" | "milestones">,
+  names: Map<string, string> | null,
+): ProjectPhaseView {
   return {
     id: phase.id,
     name: phase.name,
     description: phase.description,
     createdBy: phase.createdBy,
+    responsibleId: phase.responsibleId,
+    responsibleName: phase.responsibleId ? personName(phase.responsibleId, names) : null,
+    completionCriteria: phase.completionCriteria,
     status: phase.status,
     statusLabel: phaseStatusLabel(phase.status),
     statusTone: phaseStatusTone(phase.status),

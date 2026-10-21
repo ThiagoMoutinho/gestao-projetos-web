@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateEapPhaseBodyStatus } from './updateEapPhaseBodyStatus';
+import type { UpdateEapPhaseBodyStatus } from './updateEapPhaseBodyStatus.ts';
 
 export type UpdateEapPhaseBody = {
   /**
@@ -19,4 +19,14 @@ export type UpdateEapPhaseBody = {
      */
   description?: string | null;
   status?: UpdateEapPhaseBodyStatus;
+  /**
+     * @minLength 1
+     * @nullable
+     */
+  responsibleId?: string | null;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  completionCriteria?: string | null;
 };

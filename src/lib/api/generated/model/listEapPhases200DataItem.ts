@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListEapPhases200DataItemStatus } from './listEapPhases200DataItemStatus';
+import type { ListEapPhases200DataItemStatus } from './listEapPhases200DataItemStatus.ts';
 
 export type ListEapPhases200DataItem = {
   id: string;
@@ -19,6 +19,10 @@ export type ListEapPhases200DataItem = {
      */
   sortOrder: number;
   status: ListEapPhases200DataItemStatus;
+  /** @nullable */
+  responsibleId: string | null;
+  /** @nullable */
+  completionCriteria: string | null;
   /** @nullable */
   baselineStartAt: string | null;
   /** @nullable */

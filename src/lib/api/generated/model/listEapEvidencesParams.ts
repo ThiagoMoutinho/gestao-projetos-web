@@ -10,6 +10,10 @@ export type ListEapEvidencesParams = {
 /**
  * @minLength 1
  */
+phaseId?: string;
+/**
+ * @minLength 1
+ */
 taskId?: string;
 /**
  * @minLength 1

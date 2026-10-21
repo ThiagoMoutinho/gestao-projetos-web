@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListEapTasks200DataItem } from './listEapTasks200DataItem';
+import type { ListEapTasks200DataItem } from './listEapTasks200DataItem.ts';
 
 export type ListEapTasks200 = {
   data: ListEapTasks200DataItem[];

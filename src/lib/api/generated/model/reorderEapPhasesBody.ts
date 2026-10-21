@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ReorderEapPhasesBodyItemsItem } from './reorderEapPhasesBodyItemsItem';
+import type { ReorderEapPhasesBodyItemsItem } from './reorderEapPhasesBodyItemsItem.ts';
 
 export type ReorderEapPhasesBody = {
   /** @minItems 1 */

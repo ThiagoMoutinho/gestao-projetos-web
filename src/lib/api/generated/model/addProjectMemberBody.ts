@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { AddProjectMemberBodyRole } from './addProjectMemberBodyRole';
+import type { AddProjectMemberBodyRole } from './addProjectMemberBodyRole.ts';
 
 export type AddProjectMemberBody = {
   /** @minLength 1 */

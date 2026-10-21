@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { CreateEapTaskBodyStatus } from './createEapTaskBodyStatus';
+import type { CreateEapTaskBodyStatus } from './createEapTaskBodyStatus.ts';
 
 export type CreateEapTaskBody = {
   /**

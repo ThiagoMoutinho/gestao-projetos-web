@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ReorderEapPhases200DataItem } from './reorderEapPhases200DataItem';
+import type { ReorderEapPhases200DataItem } from './reorderEapPhases200DataItem.ts';
 
 export type ReorderEapPhases200 = {
   data: ReorderEapPhases200DataItem[];

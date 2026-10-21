@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateProjectBodyStatus } from './updateProjectBodyStatus';
+import type { UpdateProjectBodyStatus } from './updateProjectBodyStatus.ts';
 
 export type UpdateProjectBody = {
   /**

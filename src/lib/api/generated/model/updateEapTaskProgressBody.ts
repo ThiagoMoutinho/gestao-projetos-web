@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateEapTaskProgressBodyStatus } from './updateEapTaskProgressBodyStatus';
+import type { UpdateEapTaskProgressBodyStatus } from './updateEapTaskProgressBodyStatus.ts';
 
 export type UpdateEapTaskProgressBody = {
   /**

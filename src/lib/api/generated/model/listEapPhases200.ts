@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListEapPhases200DataItem } from './listEapPhases200DataItem';
+import type { ListEapPhases200DataItem } from './listEapPhases200DataItem.ts';
 
 export type ListEapPhases200 = {
   data: ListEapPhases200DataItem[];

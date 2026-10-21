@@ -123,7 +123,7 @@ async function readPhase(
     readMilestones(projectId, phase.id, names),
   ]);
 
-  return presentPhase(phase, { tasks, milestones });
+  return presentPhase(phase, { tasks, milestones }, names);
 }
 
 async function readTasks(

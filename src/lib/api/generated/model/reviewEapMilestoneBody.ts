@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ReviewEapMilestoneBodyDecision } from './reviewEapMilestoneBodyDecision';
+import type { ReviewEapMilestoneBodyDecision } from './reviewEapMilestoneBodyDecision.ts';
 
 export type ReviewEapMilestoneBody = {
   decision: ReviewEapMilestoneBodyDecision;

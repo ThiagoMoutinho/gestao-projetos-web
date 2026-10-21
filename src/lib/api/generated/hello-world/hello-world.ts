@@ -9,7 +9,7 @@ import type {
   GetHelloWorld200
 } from '../model';
 
-import { apiFetcher } from '../../fetcher';
+import { apiFetcher } from '../../fetcher.ts';
 
 export type getHelloWorldResponse200 = {
   data: GetHelloWorld200

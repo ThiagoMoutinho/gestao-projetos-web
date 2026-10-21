@@ -10,7 +10,7 @@ import type {
   ListMyProjects401
 } from '../model';
 
-import { apiFetcher } from '../../fetcher';
+import { apiFetcher } from '../../fetcher.ts';
 
 export type listMyProjectsResponse200 = {
   data: ListMyProjects200

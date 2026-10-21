@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { CreateEapMilestoneBodyType } from './createEapMilestoneBodyType';
+import type { CreateEapMilestoneBodyType } from './createEapMilestoneBodyType.ts';
 
 export type CreateEapMilestoneBody = {
   /**

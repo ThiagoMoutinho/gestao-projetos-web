@@ -5,8 +5,8 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateProjectMember200Role } from './updateProjectMember200Role';
-import type { UpdateProjectMember200User } from './updateProjectMember200User';
+import type { UpdateProjectMember200Role } from './updateProjectMember200Role.ts';
+import type { UpdateProjectMember200User } from './updateProjectMember200User.ts';
 
 export type UpdateProjectMember200 = {
   id: string;

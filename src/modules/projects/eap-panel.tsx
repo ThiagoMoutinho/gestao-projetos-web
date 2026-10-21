@@ -21,7 +21,6 @@ import { ApiError } from "@/lib/api/fetcher";
 import {
   createEapEvidence,
   deliverEapMilestone,
-  listEapEvidences,
   reviewEapMilestone,
   updateEapMilestone,
   updateEapPhase,
@@ -37,6 +36,8 @@ import {
   canUpdateTaskProgress,
   type EapAccess,
 } from "./eap-access";
+import { evidenceRequest, forgetEvidences, type EvidenceParent, type EvidenceState } from "./eap-evidence-cache";
+import { EapHistory } from "./eap-history";
 import { basisToPercent, formatBasis, phaseProgress, progressLabel } from "./eap-progress";
 import {
   civilDateInput,
@@ -53,7 +54,6 @@ import {
   PHASE_STATUSES,
   TASK_STATUSES,
   phaseStatusLabel,
-  recordedDate,
   taskStatusLabel,
 } from "./project-records";
 
@@ -61,10 +61,6 @@ export type EapPerson = {
   userId: string;
   name: string;
 };
-
-type EvidenceState =
-  | { status: "ready"; items: { id: string; title: string; url: string; createdAt: string }[] }
-  | { status: "error"; message: string };
 
 export type EapSaveController = {
   save: () => void;
@@ -123,6 +119,8 @@ export function EapPanel({
           access={access}
           code={code}
           projectName={projectName}
+          people={people}
+          names={names}
           dirtyRef={dirtyRef}
           onController={onController}
           onPhase={onPhase}
@@ -165,6 +163,8 @@ function PhaseEditor({
   access,
   code,
   projectName,
+  people,
+  names,
   dirtyRef,
   onController,
   onPhase,
@@ -174,6 +174,8 @@ function PhaseEditor({
   access: EapAccess;
   code: string;
   projectName: string;
+  people: EapPerson[] | null;
+  names: Map<string, string> | null;
   dirtyRef: RefObject<boolean>;
   onController?: (controller: EapSaveController) => void;
   onPhase: (phase: ProjectPhaseView) => void;
@@ -182,6 +184,11 @@ function PhaseEditor({
   const [name, setName] = useState(phase.name);
   const [description, setDescription] = useState(phase.description ?? "");
   const [status, setStatus] = useState(phase.status);
+  const [responsibleId, setResponsibleId] = useState(phase.responsibleId ?? "");
+  const [criteria, setCriteria] = useState(phase.completionCriteria ?? "");
+  const [evidenceTitle, setEvidenceTitle] = useState("");
+  const [evidenceUrl, setEvidenceUrl] = useState("");
+  const [evidenceRevision, setEvidenceRevision] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -189,14 +196,32 @@ function PhaseEditor({
     canEdit &&
     (name.trim() !== phase.name ||
       emptyToNull(description) !== phase.description ||
-      status !== phase.status);
+      status !== phase.status ||
+      emptyToNull(responsibleId) !== phase.responsibleId ||
+      emptyToNull(criteria) !== phase.completionCriteria);
 
-  function publish(next: { name: string; description: string; status: ProjectPhaseView["status"] }) {
+  function publish(next: {
+    name: string;
+    description: string;
+    status: ProjectPhaseView["status"];
+    responsibleId: string;
+    criteria: string;
+    evidenceTitle: string;
+    evidenceUrl: string;
+  }) {
     dirtyRef.current =
-      canEdit &&
-      (next.name.trim() !== phase.name ||
-        emptyToNull(next.description) !== phase.description ||
-        next.status !== phase.status);
+      (canEdit &&
+        (next.name.trim() !== phase.name ||
+          emptyToNull(next.description) !== phase.description ||
+          next.status !== phase.status ||
+          emptyToNull(next.responsibleId) !== phase.responsibleId ||
+          emptyToNull(next.criteria) !== phase.completionCriteria)) ||
+      next.evidenceTitle.trim() !== "" ||
+      next.evidenceUrl.trim() !== "";
+  }
+
+  function draft() {
+    return { name, description, status, responsibleId, criteria, evidenceTitle, evidenceUrl };
   }
 
   async function save() {
@@ -220,11 +245,13 @@ function PhaseEditor({
         ...(name.trim() !== phase.name ? { name: name.trim() } : {}),
         ...(emptyToNull(description) !== phase.description ? { description: emptyToNull(description) } : {}),
         ...(status !== phase.status ? { status } : {}),
+        ...(emptyToNull(responsibleId) !== phase.responsibleId ? { responsibleId: emptyToNull(responsibleId) } : {}),
+        ...(emptyToNull(criteria) !== phase.completionCriteria ? { completionCriteria: emptyToNull(criteria) } : {}),
       });
       if (response.status !== 200) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar a fase.");
       }
-      onPhase(presentPhase(response.data, { tasks: phase.tasks, milestones: phase.milestones }));
+      onPhase(presentPhase(response.data, { tasks: phase.tasks, milestones: phase.milestones }, names));
       dirtyRef.current = false;
       setFeedback("Fase atualizada.");
     } catch (caught) {
@@ -244,19 +271,25 @@ function PhaseEditor({
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         {canEdit ? (
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-            <EditText label="Nome do item" value={name} onChange={(value) => { setName(value); publish({ name: value, description, status }); }} full />
-            <EditArea label="Descrição" value={description} onChange={(value) => { setDescription(value); publish({ name, description: value, status }); }} full />
-            <EditSelect label="Situação" value={status} onChange={(value) => { setStatus(value); publish({ name, description, status: value }); }}>
+            <EditText label="Nome do item" value={name} onChange={(value) => { setName(value); publish({ ...draft(), name: value }); }} full />
+            <EditArea label="Descrição" value={description} onChange={(value) => { setDescription(value); publish({ ...draft(), description: value }); }} full />
+            <EditSelect label="Situação" value={status} onChange={(value) => { setStatus(value); publish({ ...draft(), status: value }); }}>
               {PHASE_STATUSES.map((item) => (
                 <option key={item} value={item}>{phaseStatusLabel(item)}</option>
               ))}
             </EditSelect>
             <EditLocked label="Item superior" value={projectName} />
-            <EditLocked label="Responsável" hint="não gravado" value="A fase não possui responsável" />
+            <AssigneeField people={people} value={responsibleId} onChange={(value) => { setResponsibleId(value); publish({ ...draft(), responsibleId: value }); }} />
             <EditLocked label="Prazo vigente" value={due} />
           </div>
         ) : (
-          <EditNotice text="A situação e a descrição da fase podem ser alteradas por quem estrutura a EAP." />
+          <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
+            <EditLocked label="Responsável" value={phase.responsibleName ?? "Não informado"} />
+            <EditLocked label="Prazo vigente" value={due} />
+            <div className="sm:col-span-2">
+              <EditNotice text="Os dados da fase podem ser alterados por quem estrutura a EAP ou por quem cadastrou a fase." />
+            </div>
+          </div>
         )}
       </EditSection>
       <EditSection title="Configuração da fase" subtitle="O andamento é calculado pelos itens subordinados" tone="accent" aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-[#edf4ff] px-2 py-[5px] text-[8.5px] font-semibold text-[#2864bb]"><List className="size-3" aria-hidden="true" />Calculado</span>}>
@@ -271,10 +304,36 @@ function PhaseEditor({
             <p className="text-[8.5px] text-[#98a2b3]">{progress.kind === "incomplete" ? "Esta fase ainda não tem itens subordinados." : "O percentual desta fase não está disponível."}</p>
           )}
         </div>
-        <EditArea label="Critério de conclusão" hint="não gravado" value="" onChange={() => undefined} disabled full />
+        {canEdit ? (
+          <EditArea
+            label="Critério de conclusão"
+            value={criteria}
+            placeholder="Descreva o que precisa estar pronto para concluir a fase."
+            onChange={(value) => { setCriteria(value); publish({ ...draft(), criteria: value }); }}
+            full
+          />
+        ) : (
+          <EditArea label="Critério de conclusão" value={phase.completionCriteria ?? "Nenhum critério registrado."} onChange={() => undefined} disabled full />
+        )}
       </EditSection>
+      <EvidenceSection
+        projectId={projectId}
+        parent={{ phaseId: phase.id }}
+        canRegister={canRegisterEvidenceOn(access, { assigneeId: phase.responsibleId, createdBy: phase.createdBy })}
+        revision={evidenceRevision}
+        title={evidenceTitle}
+        url={evidenceUrl}
+        onTitle={(value) => { setEvidenceTitle(value); publish({ ...draft(), evidenceTitle: value }); }}
+        onUrl={(value) => { setEvidenceUrl(value); publish({ ...draft(), evidenceUrl: value }); }}
+        onCreated={() => {
+          setEvidenceTitle("");
+          setEvidenceUrl("");
+          publish({ ...draft(), evidenceTitle: "", evidenceUrl: "" });
+          setEvidenceRevision((value) => value + 1);
+        }}
+      />
       <PlanningDates dates={phase.dates} startLabel="Início planejado (vigente)" dueLabel="Fim planejado (vigente)" />
-      <HistoryNote />
+      <HistoryNote projectId={projectId} entityType="PHASE" entityId={phase.id} refreshKey={historyKey(phase, evidenceRevision)} />
       <EditStatus error={error} feedback={feedback} />
     </div>
   );
@@ -575,7 +634,7 @@ function TaskEditor({
           ) : null
         }
       />
-      <HistoryNote />
+      <HistoryNote projectId={projectId} entityType="TASK" entityId={task.id} refreshKey={historyKey(task, evidenceRevision)} />
       <EditStatus error={error} feedback={feedback} />
     </div>
   );
@@ -836,7 +895,7 @@ function MilestoneEditor({
         }}
       />
       <PlanningDates dates={milestone.dates} dueLabel="Planejada (vigente)" />
-      <HistoryNote />
+      <HistoryNote projectId={projectId} entityType="MILESTONE" entityId={milestone.id} refreshKey={historyKey(milestone, evidenceRevision)} />
       <EditStatus error={error} feedback={feedback} />
     </div>
   );
@@ -855,7 +914,7 @@ function EvidenceSection({
   emptyWarning = null,
 }: {
   projectId: string;
-  parent: { taskId: string } | { milestoneId: string };
+  parent: EvidenceParent;
   canRegister: boolean;
   revision: number;
   title: string;
@@ -888,6 +947,7 @@ function EvidenceSection({
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível registrar a evidência.");
       }
+      forgetEvidences(projectId, parent);
       onTitle("");
       onUrl("");
       setAdding(false);
@@ -1021,10 +1081,20 @@ function FoldBlock({
   );
 }
 
-function HistoryNote() {
+function HistoryNote({
+  projectId,
+  entityType,
+  entityId,
+  refreshKey,
+}: {
+  projectId: string;
+  entityType: "PHASE" | "TASK" | "MILESTONE";
+  entityId: string;
+  refreshKey: string;
+}) {
   return (
     <FoldBlock title="Histórico de alterações" icon={Clock}>
-      <p className="text-[10px] leading-relaxed text-[#667085]">A consulta do histórico deste item ainda não está disponível.</p>
+      <EapHistory projectId={projectId} entityType={entityType} entityId={entityId} refreshKey={refreshKey} />
     </FoldBlock>
   );
 }
@@ -1180,6 +1250,10 @@ function EditNotice({ text }: { text: string }) {
   return <p className="text-[8.5px] leading-[1.5] text-[#98a2b3]">{text}</p>;
 }
 
+function historyKey(item: object, evidenceRevision: number) {
+  return `${evidenceRevision}:${JSON.stringify({ ...item, tasks: undefined, milestones: undefined })}`;
+}
+
 function emptyToNull(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
@@ -1196,48 +1270,6 @@ function isHttpUrl(value: string) {
 
 function errorMessage(error: unknown) {
   return error instanceof ApiError ? error.message : "Não foi possível concluir a atualização.";
-}
-
-const evidenceRequests = new Map<string, Promise<EvidenceState>>();
-
-function evidenceRequest(
-  projectId: string,
-  parent: { taskId: string } | { milestoneId: string },
-  revision: number,
-) {
-  const key = `${projectId}:${"taskId" in parent ? parent.taskId : parent.milestoneId}:${revision}`;
-  const existing = evidenceRequests.get(key);
-  if (existing) {
-    return existing;
-  }
-
-  const request = loadEvidences(projectId, parent);
-  evidenceRequests.set(key, request);
-  return request;
-}
-
-async function loadEvidences(
-  projectId: string,
-  parent: { taskId: string } | { milestoneId: string },
-): Promise<EvidenceState> {
-  try {
-    const response = await listEapEvidences(projectId, parent);
-    if (response.status !== 200) {
-      return { status: "error", message: "Não foi possível consultar as evidências." };
-    }
-
-    return {
-      status: "ready",
-      items: response.data.data.map((item) => ({
-        id: item.id,
-        title: item.title,
-        url: item.url,
-        createdAt: recordedDate(item.createdAt),
-      })),
-    };
-  } catch (error) {
-    return { status: "error", message: errorMessage(error) };
-  }
 }
 
 function useSaveController(

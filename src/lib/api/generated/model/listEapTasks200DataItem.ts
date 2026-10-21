@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListEapTasks200DataItemStatus } from './listEapTasks200DataItemStatus';
+import type { ListEapTasks200DataItemStatus } from './listEapTasks200DataItemStatus.ts';
 
 export type ListEapTasks200DataItem = {
   id: string;
@@ -13,6 +13,11 @@ export type ListEapTasks200DataItem = {
   title: string;
   /** @nullable */
   description: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  sortOrder: number;
   /** @nullable */
   assigneeId: string | null;
   status: ListEapTasks200DataItemStatus;

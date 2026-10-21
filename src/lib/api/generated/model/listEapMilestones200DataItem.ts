@@ -5,8 +5,8 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListEapMilestones200DataItemStatus } from './listEapMilestones200DataItemStatus';
-import type { ListEapMilestones200DataItemType } from './listEapMilestones200DataItemType';
+import type { ListEapMilestones200DataItemStatus } from './listEapMilestones200DataItemStatus.ts';
+import type { ListEapMilestones200DataItemType } from './listEapMilestones200DataItemType.ts';
 
 export type ListEapMilestones200DataItem = {
   id: string;
@@ -14,6 +14,11 @@ export type ListEapMilestones200DataItem = {
   title: string;
   /** @nullable */
   description: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  sortOrder: number;
   type: ListEapMilestones200DataItemType;
   status: ListEapMilestones200DataItemStatus;
   /** @nullable */

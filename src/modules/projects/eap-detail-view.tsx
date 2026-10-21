@@ -7,23 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/fetcher";
-import { deliverEapMilestone, listEapEvidences, reviewEapMilestone, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
+import { deliverEapMilestone, reviewEapMilestone, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
 import { cn } from "@/lib/utils";
 
 import { canEditItem, canReviewMilestone, canUpdateTaskProgress, type EapAccess } from "./eap-access";
+import { evidenceRequest, type EvidenceParent } from "./eap-evidence-cache";
+import { EapHistory } from "./eap-history";
 import { EapPanel, type EapPerson, type EapSaveController } from "./eap-panel";
 import { presentMilestone, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
 import { basisToPercent, formatBasis, milestoneIsOverdue, phaseProgress, progressLabel, taskIsOverdue, vigenteText } from "./eap-progress";
-import { recordedDate } from "./project-records";
 import type { EapSelection } from "./eap-selection";
 
 const PERCENT_OPTIONS = [25, 50, 75, 90, 100];
-
-type EvidenceState =
-  | { status: "ready"; items: { id: string; title: string; url: string; createdAt: string }[] }
-  | { status: "error"; message: string };
-
-const evidenceRequests = new Map<string, Promise<EvidenceState>>();
 
 export function EapDetail({
   projectId,
@@ -35,6 +30,7 @@ export function EapDetail({
   code,
   projectName,
   initialEditing,
+  notice = null,
   pending,
   dirtyRef,
   onClose,
@@ -55,6 +51,7 @@ export function EapDetail({
   code: string;
   projectName: string;
   initialEditing: boolean;
+  notice?: string | null;
   pending: boolean;
   dirtyRef: RefObject<boolean>;
   onClose: () => void;
@@ -156,6 +153,12 @@ export function EapDetail({
             </div>
           </div>
         ) : null}
+        {editing && notice ? (
+          <p role="status" className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#bad1f0] bg-[#f5f9ff] p-2.5 text-[8.5px] leading-[1.45] text-[#285da8]">
+            <Check className="mt-px size-[15px] shrink-0" aria-hidden="true" />
+            <span>{notice}</span>
+          </p>
+        ) : null}
         {editing ? (
           <EapPanel
             projectId={projectId}
@@ -173,7 +176,7 @@ export function EapDetail({
             onMilestone={onMilestone}
           />
         ) : phase && selection.kind === "phase" ? (
-          <PhaseDetail phase={phase} code={code} onSelect={onSelect} />
+          <PhaseDetail projectId={projectId} phase={phase} code={code} onSelect={onSelect} />
         ) : phase && task ? (
           <TaskDetail projectId={projectId} phase={phase} task={task} code={code} access={access} names={names} onTask={onTask} />
         ) : phase && milestone ? (
@@ -224,10 +227,12 @@ export function EapDetail({
 }
 
 function PhaseDetail({
+  projectId,
   phase,
   code,
   onSelect,
 }: {
+  projectId: string;
   phase: ProjectPhaseView;
   code: string;
   onSelect: (selection: EapSelection) => void;
@@ -299,12 +304,28 @@ function PhaseDetail({
           </ul>
         )}
       </Section>
+      <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
+        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={phase.responsibleName ?? "Não informado"} />
+        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Prazo vigente" value={vigenteText(phase.dates) ?? "Não informado"} />
+      </div>
+      <Section label="Critério de conclusão">
+        <p className={paragraph}>{phase.completionCriteria?.trim() || "Nenhum critério registrado."}</p>
+      </Section>
+      <Section label="Evidências vinculadas">
+        <Suspense fallback={<p className={emptyInline}>Consultando evidências…</p>}>
+          <EvidenceList projectId={projectId} parent={{ phaseId: phase.id }} />
+        </Suspense>
+      </Section>
       <PlanningDates dates={phase.dates} />
       <Section label="Histórico de alterações">
-        <p className={paragraph}>A consulta do histórico deste item ainda não está disponível.</p>
+        <EapHistory projectId={projectId} entityType="PHASE" entityId={phase.id} refreshKey={detailKey(phase)} />
       </Section>
     </div>
   );
+}
+
+function detailKey(item: object) {
+  return JSON.stringify({ ...item, tasks: undefined, milestones: undefined });
 }
 
 function TaskDetail({
@@ -433,7 +454,7 @@ function TaskDetail({
         </Suspense>
       </Section>
       <Section label="Histórico de alterações">
-        <p className={paragraph}>A consulta do histórico deste item ainda não está disponível.</p>
+        <EapHistory projectId={projectId} entityType="TASK" entityId={task.id} refreshKey={detailKey(task)} />
       </Section>
     </div>
   );
@@ -576,40 +597,9 @@ function MilestoneDetail({
       ) : null}
       {error ? <p className="mt-2 text-[8.5px] text-destructive">{error}</p> : null}
       <Section label="Histórico de entrega e aceite">
-        <DecisionHistory milestone={milestone} />
+        <EapHistory projectId={projectId} entityType="MILESTONE" entityId={milestone.id} refreshKey={detailKey(milestone)} />
       </Section>
     </div>
-  );
-}
-
-function DecisionHistory({ milestone }: { milestone: ProjectMilestoneView }) {
-  const entries = [
-    milestone.validatedBy
-      ? {
-          title: milestone.status === "APROVADO" ? "Entrega aceita formalmente" : "Entrega devolvida",
-          detail: [milestone.validatedBy, milestone.validationNote].filter(Boolean).join(" · "),
-          tone: milestone.status === "APROVADO" ? "success" : "muted",
-        }
-      : null,
-    milestone.deliveredBy ? { title: "Entrega registrada", detail: milestone.deliveredBy, tone: "muted" } : null,
-  ].filter((entry): entry is { title: string; detail: string; tone: string } => entry !== null);
-
-  if (entries.length === 0) {
-    return <p className={paragraph}>A consulta do histórico deste item ainda não está disponível.</p>;
-  }
-
-  return (
-    <ul className="flex flex-col gap-3.5">
-      {entries.map((entry) => (
-        <li key={entry.title} className="grid grid-cols-[10px_minmax(0,1fr)] gap-[9px]">
-          <span className={cn("mt-1 size-[7px] rounded-full", entry.tone === "success" ? "bg-[#1c8b65] shadow-[0_0_0_4px_#e3f5ed]" : "bg-[#2873cf] shadow-[0_0_0_4px_#eaf2ff]")} />
-          <span>
-            <strong className="mb-1 block text-[10px] text-[#344054]">{entry.title}</strong>
-            <p className="text-[9.5px] text-[#8a94a6]">{entry.detail}</p>
-          </span>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -649,7 +639,7 @@ function EvidenceList({
   emptyWarning = null,
 }: {
   projectId: string;
-  parent: { taskId: string } | { milestoneId: string };
+  parent: EvidenceParent;
   emptyWarning?: string | null;
 }) {
   const state = use(evidenceRequest(projectId, parent));
@@ -693,38 +683,6 @@ function EvidenceList({
       ))}
     </ul>
   );
-}
-
-function evidenceRequest(projectId: string, parent: { taskId: string } | { milestoneId: string }) {
-  const id = "taskId" in parent ? parent.taskId : parent.milestoneId;
-  const key = `${projectId}:${id}`;
-  const existing = evidenceRequests.get(key);
-  if (existing) {
-    return existing;
-  }
-  const request = loadEvidences(projectId, parent);
-  evidenceRequests.set(key, request);
-  return request;
-}
-
-async function loadEvidences(projectId: string, parent: { taskId: string } | { milestoneId: string }): Promise<EvidenceState> {
-  try {
-    const response = await listEapEvidences(projectId, parent);
-    if (response.status !== 200) {
-      return { status: "error", message: "Não foi possível consultar as evidências." };
-    }
-    return {
-      status: "ready",
-      items: response.data.data.map((item) => ({
-        id: item.id,
-        title: item.title,
-        url: item.url,
-        createdAt: recordedDate(item.createdAt),
-      })),
-    };
-  } catch (error) {
-    return { status: "error", message: error instanceof ApiError ? error.message : "Não foi possível consultar as evidências." };
-  }
 }
 
 const paragraph = "text-[11px] leading-[1.65] text-[#475467]";

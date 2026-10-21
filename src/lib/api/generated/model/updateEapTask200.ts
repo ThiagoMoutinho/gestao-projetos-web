@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateEapTask200Status } from './updateEapTask200Status';
+import type { UpdateEapTask200Status } from './updateEapTask200Status.ts';
 
 export type UpdateEapTask200 = {
   id: string;
@@ -13,6 +13,11 @@ export type UpdateEapTask200 = {
   title: string;
   /** @nullable */
   description: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  sortOrder: number;
   /** @nullable */
   assigneeId: string | null;
   status: UpdateEapTask200Status;

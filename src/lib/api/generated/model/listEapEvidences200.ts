@@ -5,7 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListEapEvidences200DataItem } from './listEapEvidences200DataItem';
+import type { ListEapEvidences200DataItem } from './listEapEvidences200DataItem.ts';
 
 export type ListEapEvidences200 = {
   data: ListEapEvidences200DataItem[];

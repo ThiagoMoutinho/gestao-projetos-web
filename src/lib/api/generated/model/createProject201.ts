@@ -5,9 +5,9 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { CreateProject201Owner } from './createProject201Owner';
-import type { CreateProject201RolesItem } from './createProject201RolesItem';
-import type { CreateProject201Status } from './createProject201Status';
+import type { CreateProject201Owner } from './createProject201Owner.ts';
+import type { CreateProject201RolesItem } from './createProject201RolesItem.ts';
+import type { CreateProject201Status } from './createProject201Status.ts';
 
 export type CreateProject201 = {
   id: string;

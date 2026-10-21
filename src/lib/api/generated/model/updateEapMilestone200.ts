@@ -5,8 +5,8 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateEapMilestone200Status } from './updateEapMilestone200Status';
-import type { UpdateEapMilestone200Type } from './updateEapMilestone200Type';
+import type { UpdateEapMilestone200Status } from './updateEapMilestone200Status.ts';
+import type { UpdateEapMilestone200Type } from './updateEapMilestone200Type.ts';
 
 export type UpdateEapMilestone200 = {
   id: string;
@@ -14,6 +14,11 @@ export type UpdateEapMilestone200 = {
   title: string;
   /** @nullable */
   description: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  sortOrder: number;
   type: UpdateEapMilestone200Type;
   status: UpdateEapMilestone200Status;
   /** @nullable */

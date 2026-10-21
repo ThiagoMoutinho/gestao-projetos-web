@@ -65,6 +65,12 @@ import type {
   GetEapTask403,
   GetEapTask404,
   GetEapTask409,
+  ListEapAudit200,
+  ListEapAudit400,
+  ListEapAudit401,
+  ListEapAudit403,
+  ListEapAudit404,
+  ListEapAuditParams,
   ListEapEvidences200,
   ListEapEvidences400,
   ListEapEvidences401,
@@ -90,6 +96,13 @@ import type {
   ListEapTasks403,
   ListEapTasks404,
   ListEapTasks409,
+  ReorderEapMilestones200,
+  ReorderEapMilestones400,
+  ReorderEapMilestones401,
+  ReorderEapMilestones403,
+  ReorderEapMilestones404,
+  ReorderEapMilestones409,
+  ReorderEapMilestonesBody,
   ReorderEapPhases200,
   ReorderEapPhases400,
   ReorderEapPhases401,
@@ -97,6 +110,13 @@ import type {
   ReorderEapPhases404,
   ReorderEapPhases409,
   ReorderEapPhasesBody,
+  ReorderEapTasks200,
+  ReorderEapTasks400,
+  ReorderEapTasks401,
+  ReorderEapTasks403,
+  ReorderEapTasks404,
+  ReorderEapTasks409,
+  ReorderEapTasksBody,
   ReviewEapMilestone200,
   ReviewEapMilestone400,
   ReviewEapMilestone401,
@@ -141,7 +161,7 @@ import type {
   UpdateEapTaskProgressBody
 } from '../model';
 
-import { apiFetcher } from '../../fetcher';
+import { apiFetcher } from '../../fetcher.ts';
 
 export type listEapPhasesResponse200 = {
   data: ListEapPhases200
@@ -645,6 +665,85 @@ return apiFetcher<createEapTaskResponse>(getCreateEapTaskUrl(id,phaseId),
 );}
 
 
+export type reorderEapTasksResponse200 = {
+  data: ReorderEapTasks200
+  status: 200
+}
+
+export type reorderEapTasksResponse400 = {
+  data: ReorderEapTasks400
+  status: 400
+}
+
+export type reorderEapTasksResponse401 = {
+  data: ReorderEapTasks401
+  status: 401
+}
+
+export type reorderEapTasksResponse403 = {
+  data: ReorderEapTasks403
+  status: 403
+}
+
+export type reorderEapTasksResponse404 = {
+  data: ReorderEapTasks404
+  status: 404
+}
+
+export type reorderEapTasksResponse409 = {
+  data: ReorderEapTasks409
+  status: 409
+}
+
+export type reorderEapTasksResponseSuccess = (reorderEapTasksResponse200) & {
+  headers: Headers;
+};
+export type reorderEapTasksResponseError = (reorderEapTasksResponse400 | reorderEapTasksResponse401 | reorderEapTasksResponse403 | reorderEapTasksResponse404 | reorderEapTasksResponse409) & {
+  headers: Headers;
+};
+
+export type reorderEapTasksResponse = (reorderEapTasksResponseSuccess | reorderEapTasksResponseError)
+
+export const getReorderEapTasksUrl = (id: string,
+    phaseId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/order`
+}
+
+/**
+ * @summary Reordenar tarefas da fase
+ */
+export const reorderEapTasks = async (id: string,
+    phaseId: string,
+    reorderEapTasksBody: ReorderEapTasksBody, options?: Parameters<typeof apiFetcher>[1]): Promise<reorderEapTasksResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<reorderEapTasksResponse>(getReorderEapTasksUrl(id,phaseId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reorderEapTasksBody)
+  }
+);}
+
+
 export type getEapTaskResponse200 = {
   data: GetEapTask200
   status: 200
@@ -1012,6 +1111,85 @@ return apiFetcher<createEapMilestoneResponse>(getCreateEapMilestoneUrl(id,phaseI
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(createEapMilestoneBody)
+  }
+);}
+
+
+export type reorderEapMilestonesResponse200 = {
+  data: ReorderEapMilestones200
+  status: 200
+}
+
+export type reorderEapMilestonesResponse400 = {
+  data: ReorderEapMilestones400
+  status: 400
+}
+
+export type reorderEapMilestonesResponse401 = {
+  data: ReorderEapMilestones401
+  status: 401
+}
+
+export type reorderEapMilestonesResponse403 = {
+  data: ReorderEapMilestones403
+  status: 403
+}
+
+export type reorderEapMilestonesResponse404 = {
+  data: ReorderEapMilestones404
+  status: 404
+}
+
+export type reorderEapMilestonesResponse409 = {
+  data: ReorderEapMilestones409
+  status: 409
+}
+
+export type reorderEapMilestonesResponseSuccess = (reorderEapMilestonesResponse200) & {
+  headers: Headers;
+};
+export type reorderEapMilestonesResponseError = (reorderEapMilestonesResponse400 | reorderEapMilestonesResponse401 | reorderEapMilestonesResponse403 | reorderEapMilestonesResponse404 | reorderEapMilestonesResponse409) & {
+  headers: Headers;
+};
+
+export type reorderEapMilestonesResponse = (reorderEapMilestonesResponseSuccess | reorderEapMilestonesResponseError)
+
+export const getReorderEapMilestonesUrl = (id: string,
+    phaseId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/milestones/order`
+}
+
+/**
+ * @summary Reordenar marcos da fase
+ */
+export const reorderEapMilestones = async (id: string,
+    phaseId: string,
+    reorderEapMilestonesBody: ReorderEapMilestonesBody, options?: Parameters<typeof apiFetcher>[1]): Promise<reorderEapMilestonesResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<reorderEapMilestonesResponse>(getReorderEapMilestonesUrl(id,phaseId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reorderEapMilestonesBody)
   }
 );}
 
@@ -1612,6 +1790,72 @@ return apiFetcher<updateEapEvidenceResponse>(getUpdateEapEvidenceUrl(id,evidence
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(updateEapEvidenceBody)
+  }
+);}
+
+
+export type listEapAuditResponse200 = {
+  data: ListEapAudit200
+  status: 200
+}
+
+export type listEapAuditResponse400 = {
+  data: ListEapAudit400
+  status: 400
+}
+
+export type listEapAuditResponse401 = {
+  data: ListEapAudit401
+  status: 401
+}
+
+export type listEapAuditResponse403 = {
+  data: ListEapAudit403
+  status: 403
+}
+
+export type listEapAuditResponse404 = {
+  data: ListEapAudit404
+  status: 404
+}
+
+export type listEapAuditResponseSuccess = (listEapAuditResponse200) & {
+  headers: Headers;
+};
+export type listEapAuditResponseError = (listEapAuditResponse400 | listEapAuditResponse401 | listEapAuditResponse403 | listEapAuditResponse404) & {
+  headers: Headers;
+};
+
+export type listEapAuditResponse = (listEapAuditResponseSuccess | listEapAuditResponseError)
+
+export const getListEapAuditUrl = (id: string,
+    params: ListEapAuditParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/projects/${id}/audit?${stringifiedParams}` : `/projects/${id}/audit`
+}
+
+/**
+ * @summary Listar histórico de alterações de um item da EAP
+ */
+export const listEapAudit = async (id: string,
+    params: ListEapAuditParams, options?: Parameters<typeof apiFetcher>[1]): Promise<listEapAuditResponse> => {
+
+  return apiFetcher<listEapAuditResponse>(getListEapAuditUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

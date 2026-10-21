@@ -9,6 +9,8 @@
 export type CreateEapEvidence201 = {
   id: string;
   /** @nullable */
+  phaseId: string | null;
+  /** @nullable */
   taskId: string | null;
   /** @nullable */
   milestoneId: string | null;
