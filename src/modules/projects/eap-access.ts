@@ -11,12 +11,22 @@ const EVIDENCE_ROLES = new Set<GetProject200RolesItem>([
   "RESPONSAVEL_TECNICO",
   "FORNECEDOR",
 ]);
+const CREATOR_ROLES = new Set<GetProject200RolesItem>([
+  "DONO_PROJETO",
+  "GESTOR",
+  "PO",
+  "RESPONSAVEL_TECNICO",
+  "DESENVOLVEDOR",
+  "FORNECEDOR",
+]);
 
 export type EapAccess = {
   userId: string;
   globalRole: string;
   memberRoles: readonly GetProject200RolesItem[];
+  linked: boolean;
   canManageStructure: boolean;
+  canCreateItems: boolean;
   canRegisterEvidence: boolean;
   canDeliverMilestone: boolean;
 };
@@ -37,7 +47,12 @@ export function buildEapAccess(input: {
     userId: input.userId,
     globalRole: input.globalRole,
     memberRoles: input.memberRoles,
+    linked,
     canManageStructure,
+    canCreateItems:
+      STRUCTURE_GLOBALS.has(input.globalRole) ||
+      input.userId === input.ownerId ||
+      input.memberRoles.some((role) => CREATOR_ROLES.has(role)),
     canRegisterEvidence:
       linked &&
       (STRUCTURE_GLOBALS.has(input.globalRole) ||
@@ -50,20 +65,23 @@ export function buildEapAccess(input: {
   };
 }
 
-export function canUpdateTaskProgress(access: EapAccess, assigneeId: string | null) {
-  if (access.canManageStructure) {
+export function canEditItem(access: EapAccess, createdBy: string) {
+  return access.canManageStructure || (access.canCreateItems && createdBy === access.userId);
+}
+
+export function canUpdateTaskProgress(access: EapAccess, task: { assigneeId: string | null; createdBy: string }) {
+  if (canEditItem(access, task.createdBy)) {
     return true;
   }
 
-  if (!assigneeId || assigneeId !== access.userId) {
-    return false;
-  }
+  return access.linked && task.assigneeId != null && task.assigneeId === access.userId;
+}
 
-  return (
-    access.globalRole === "FORNECEDOR" ||
-    access.memberRoles.includes("FORNECEDOR") ||
-    access.memberRoles.includes("DESENVOLVEDOR")
-  );
+export function canRegisterEvidenceOn(
+  access: EapAccess,
+  parent: { assigneeId: string | null; createdBy: string },
+) {
+  return access.canRegisterEvidence || canUpdateTaskProgress(access, parent);
 }
 
 export function canReviewMilestone(access: EapAccess, deliveredById: string | null) {

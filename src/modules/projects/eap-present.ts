@@ -45,6 +45,7 @@ export type ProjectTaskView = {
   hasImpediment: boolean;
   assigneeId: string | null;
   assigneeName: string;
+  createdBy: string;
   actualStartAt: string | null;
   actualEndAt: string | null;
   dates: ProjectDateField[];
@@ -67,12 +68,14 @@ export type ProjectMilestoneView = {
   validatedById: string | null;
   validatedBy: string | null;
   validationNote: string | null;
+  createdBy: string;
 };
 
 export type ProjectPhaseView = {
   id: string;
   name: string;
   description: string | null;
+  createdBy: string;
   status: ListEapPhases200DataItemStatus;
   statusLabel: string;
   statusTone: RecordTone;
@@ -112,11 +115,13 @@ export function presentPhase<T extends DatedSpan & {
   name: string;
   description: string | null;
   status: ListEapPhases200DataItemStatus;
+  createdBy: string;
 }>(phase: T, children: Pick<ProjectPhaseView, "tasks" | "milestones">): ProjectPhaseView {
   return {
     id: phase.id,
     name: phase.name,
     description: phase.description,
+    createdBy: phase.createdBy,
     status: phase.status,
     statusLabel: phaseStatusLabel(phase.status),
     statusTone: phaseStatusTone(phase.status),
@@ -136,6 +141,7 @@ export function presentTask<T extends DatedSpan & {
   progressPercent: number;
   weight: number;
   hasImpediment: boolean;
+  createdBy: string;
 }>(task: T, names: Map<string, string> | null): ProjectTaskView {
   return {
     id: task.id,
@@ -151,6 +157,7 @@ export function presentTask<T extends DatedSpan & {
     hasImpediment: task.hasImpediment,
     assigneeId: task.assigneeId,
     assigneeName: personName(task.assigneeId, names),
+    createdBy: task.createdBy,
     actualStartAt: task.actualStartAt,
     actualEndAt: task.actualEndAt,
     dates: spanDates(task),
@@ -170,6 +177,7 @@ export function presentMilestone<T extends {
   deliveredBy: string | null;
   validatedBy: string | null;
   validationNote: string | null;
+  createdBy: string;
 }>(milestone: T, names: Map<string, string> | null): ProjectMilestoneView {
   return {
     id: milestone.id,
@@ -192,6 +200,7 @@ export function presentMilestone<T extends {
     validatedById: milestone.validatedBy,
     validatedBy: milestone.validatedBy ? personName(milestone.validatedBy, names) : null,
     validationNote: milestone.validationNote,
+    createdBy: milestone.createdBy,
   };
 }
 

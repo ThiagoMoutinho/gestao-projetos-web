@@ -10,7 +10,7 @@ import { ApiError } from "@/lib/api/fetcher";
 import { deliverEapMilestone, listEapEvidences, reviewEapMilestone, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
 import { cn } from "@/lib/utils";
 
-import { canReviewMilestone, canUpdateTaskProgress, type EapAccess } from "./eap-access";
+import { canEditItem, canReviewMilestone, canUpdateTaskProgress, type EapAccess } from "./eap-access";
 import { EapPanel, type EapPerson, type EapSaveController } from "./eap-panel";
 import { presentMilestone, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
 import { basisToPercent, formatBasis, milestoneIsOverdue, phaseProgress, progressLabel, taskIsOverdue, vigenteText } from "./eap-progress";
@@ -198,12 +198,12 @@ export function EapDetail({
             Fechar
           </Button>
         )}
-        {!editing && phase && selection.kind === "phase" && access.canManageStructure ? (
+        {!editing && phase && selection.kind === "phase" && canEditItem(access, phase.createdBy) ? (
           <Button type="button" className={primaryButton} onClick={() => setEditing(true)}>
             Editar fase
           </Button>
         ) : null}
-        {!editing && task && canUpdateTaskProgress(access, task.assigneeId) ? (
+        {!editing && task && canUpdateTaskProgress(access, task) ? (
           <Button type="button" className={primaryButton} onClick={() => setEditing(true)}>
             Atualizar andamento
           </Button>
@@ -213,7 +213,7 @@ export function EapDetail({
             Registrar decisão
           </Button>
         ) : null}
-        {!editing && milestone && access.canManageStructure && !(milestone.status === "ENTREGUE" && canReviewMilestone(access, milestone.deliveredById)) ? (
+        {!editing && milestone && canEditItem(access, milestone.createdBy) && !(milestone.status === "ENTREGUE" && canReviewMilestone(access, milestone.deliveredById)) ? (
           <Button type="button" className={primaryButton} onClick={() => setEditing(true)}>
             Editar marco
           </Button>
@@ -324,7 +324,7 @@ function TaskDetail({
   names: Map<string, string> | null;
   onTask: (task: ProjectTaskView) => void;
 }) {
-  const canUpdate = canUpdateTaskProgress(access, task.assigneeId);
+  const canUpdate = canUpdateTaskProgress(access, task);
   const [draft, setDraft] = useState(task.progressPercent);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

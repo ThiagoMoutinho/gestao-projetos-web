@@ -27,7 +27,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { reorderEapPhases } from "@/lib/api/generated/eap/eap";
 import { ApiError, apiFetcher } from "@/lib/api/fetcher";
 
-import { canUpdateTaskProgress, type EapAccess } from "./eap-access";
+import { canEditItem, canUpdateTaskProgress, type EapAccess } from "./eap-access";
 import type { EapPerson } from "./eap-panel";
 import type { ProjectMilestoneView, ProjectPhaseView, ProjectTaskView } from "./eap-present";
 import { orderPhaseChildren, selectionKey, type EapSelection, type PhaseChild } from "./eap-selection";
@@ -112,9 +112,10 @@ export function ProjectEap({
   const canReorderPhases = access.canManageStructure && !filtering;
 
   function phaseActions(phaseId: string, index: number): RowActions {
+    const phase = items?.find((item) => item.id === phaseId);
     return {
-      onEdit: access.canManageStructure ? () => requestSelect({ kind: "phase", phaseId }, true) : undefined,
-      canAddChild: access.canManageStructure,
+      onEdit: phase && canEditItem(access, phase.createdBy) ? () => requestSelect({ kind: "phase", phaseId }, true) : undefined,
+      canAddChild: access.canCreateItems,
       onAddTask: () => setCreate({ kind: "task", phaseId }),
       onAddMilestone: () => setCreate({ kind: "milestone", phaseId }),
       onMoveUp: access.canManageStructure ? () => void movePhase(phaseId, -1) : undefined,
@@ -272,7 +273,7 @@ export function ProjectEap({
           task={task}
           selected={selection?.kind === "task" && selection.taskId === task.id}
           onOpen={() => requestSelect(taskSelection)}
-          actions={itemActions(taskSelection, canUpdateTaskProgress(access, task.assigneeId) || access.canManageStructure)}
+          actions={itemActions(taskSelection, canUpdateTaskProgress(access, task))}
           reorderable={canReorderPhases}
           dragging={draggingPhaseId === `task:${task.id}`}
           dragOver={dragOverPhaseId === `task:${task.id}` && draggingPhaseId !== `task:${task.id}`}
@@ -300,7 +301,7 @@ export function ProjectEap({
         milestone={milestone}
         selected={selection?.kind === "milestone" && selection.milestoneId === milestone.id}
         onOpen={() => requestSelect({ kind: "milestone", phaseId, milestoneId: milestone.id })}
-        actions={itemActions({ kind: "milestone", phaseId, milestoneId: milestone.id }, access.canManageStructure)}
+        actions={itemActions({ kind: "milestone", phaseId, milestoneId: milestone.id }, canEditItem(access, milestone.createdBy))}
         reorderable={canReorderPhases}
         dragging={draggingPhaseId === `milestone:${milestone.id}`}
         dragOver={dragOverPhaseId === `milestone:${milestone.id}` && draggingPhaseId !== `milestone:${milestone.id}`}
@@ -336,7 +337,7 @@ export function ProjectEap({
         filter={filter}
         onFilterChange={setFilter}
         empty={visible.length === 0}
-        headingAction={<CreateMenu phases={items} enabled={access.canManageStructure} onCreate={setCreate} />}
+        headingAction={<CreateMenu phases={items} enabled={access.canCreateItems} onCreate={setCreate} />}
       >
         {visible.map(({ phase, tasks, milestones }) => {
             const phaseIndex = items.findIndex((item) => item.id === phase.id);

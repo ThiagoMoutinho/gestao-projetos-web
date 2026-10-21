@@ -30,7 +30,13 @@ import {
 } from "@/lib/api/generated/eap/eap";
 import type { ReviewEapMilestoneBodyDecision } from "@/lib/api/generated/model/reviewEapMilestoneBodyDecision";
 
-import { canReviewMilestone, canUpdateTaskProgress, type EapAccess } from "./eap-access";
+import {
+  canEditItem,
+  canRegisterEvidenceOn,
+  canReviewMilestone,
+  canUpdateTaskProgress,
+  type EapAccess,
+} from "./eap-access";
 import { basisToPercent, formatBasis, phaseProgress, progressLabel } from "./eap-progress";
 import {
   civilDateInput,
@@ -172,6 +178,7 @@ function PhaseEditor({
   onController?: (controller: EapSaveController) => void;
   onPhase: (phase: ProjectPhaseView) => void;
 }) {
+  const canEdit = canEditItem(access, phase.createdBy);
   const [name, setName] = useState(phase.name);
   const [description, setDescription] = useState(phase.description ?? "");
   const [status, setStatus] = useState(phase.status);
@@ -179,14 +186,14 @@ function PhaseEditor({
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const dirty =
-    access.canManageStructure &&
+    canEdit &&
     (name.trim() !== phase.name ||
       emptyToNull(description) !== phase.description ||
       status !== phase.status);
 
   function publish(next: { name: string; description: string; status: ProjectPhaseView["status"] }) {
     dirtyRef.current =
-      access.canManageStructure &&
+      canEdit &&
       (next.name.trim() !== phase.name ||
         emptyToNull(next.description) !== phase.description ||
         next.status !== phase.status);
@@ -235,7 +242,7 @@ function PhaseEditor({
     <div className="flex flex-col pb-4">
       <EditContext kind="phase" code={code} status={phaseStatusLabel(status)} />
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
-        {access.canManageStructure ? (
+        {canEdit ? (
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
             <EditText label="Nome do item" value={name} onChange={(value) => { setName(value); publish({ name: value, description, status }); }} full />
             <EditArea label="Descrição" value={description} onChange={(value) => { setDescription(value); publish({ name, description: value, status }); }} full />
@@ -296,7 +303,8 @@ function TaskEditor({
   onController?: (controller: EapSaveController) => void;
   onTask: (task: ProjectTaskView) => void;
 }) {
-  const canProgress = canUpdateTaskProgress(access, task.assigneeId);
+  const canEdit = canEditItem(access, task.createdBy);
+  const canProgress = canUpdateTaskProgress(access, task);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? "");
@@ -314,7 +322,7 @@ function TaskEditor({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [evidenceRevision, setEvidenceRevision] = useState(0);
   const structureDirty =
-    access.canManageStructure &&
+    canEdit &&
     (title.trim() !== task.title ||
       emptyToNull(description) !== task.description ||
       emptyToNull(assigneeId) !== task.assigneeId ||
@@ -341,7 +349,7 @@ function TaskEditor({
     evidenceUrl: string;
   }) {
     const nextStructure =
-      access.canManageStructure &&
+      canEdit &&
       (next.title.trim() !== task.title ||
         emptyToNull(next.description) !== task.description ||
         emptyToNull(next.assigneeId) !== task.assigneeId ||
@@ -380,12 +388,12 @@ function TaskEditor({
       return;
     }
 
-    if (access.canManageStructure && !title.trim()) {
+    if (canEdit && !title.trim()) {
       setError("Informe o título da tarefa.");
       return;
     }
 
-    if (access.canManageStructure && (!Number.isInteger(parsedWeight) || parsedWeight < 1)) {
+    if (canEdit && (!Number.isInteger(parsedWeight) || parsedWeight < 1)) {
       setError("O peso precisa ser um número inteiro maior que zero.");
       return;
     }
@@ -468,12 +476,12 @@ function TaskEditor({
       <EditContext kind="task" code={code} status={taskStatusLabel(status)} />
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          {access.canManageStructure ? (
+          {canEdit ? (
             <EditText label="Nome do item" value={title} onChange={(value) => { setTitle(value); publish({ ...draft(), title: value }); }} full />
           ) : (
             <EditLocked label="Nome do item" value={task.title} />
           )}
-          {access.canManageStructure ? (
+          {canEdit ? (
             <EditArea label="Descrição" value={description} onChange={(value) => { setDescription(value); publish({ ...draft(), description: value }); }} full />
           ) : (
             <EditLocked label="Descrição" value={task.description?.trim() || "Nenhuma descrição registrada."} />
@@ -488,7 +496,7 @@ function TaskEditor({
             <EditLocked label="Situação" value={task.statusLabel} />
           )}
           <EditLocked label="Item superior" value={phase.name} />
-          {access.canManageStructure ? (
+          {canEdit ? (
             <AssigneeField people={people} value={assigneeId} onChange={(value) => { setAssigneeId(value); publish({ ...draft(), assigneeId: value }); }} />
           ) : (
             <EditLocked label="Responsável" value={task.assigneeName || "Não informado"} />
@@ -511,7 +519,7 @@ function TaskEditor({
               <EditText label="Percentual exato de andamento" value={percent} onChange={(value) => { setPercent(value); publish({ ...draft(), percent: value }); }} />
               <span className="flex h-9 items-center text-[8px] text-[#98a2b3]">% concluído</span>
             </div>
-            {access.canManageStructure ? (
+            {canEdit ? (
               <EditText label="Peso" value={weight} onChange={(value) => { setWeight(value); publish({ ...draft(), weight: value }); }} />
             ) : null}
             <div className="mt-3 grid grid-cols-1 gap-[13px] sm:grid-cols-2">
@@ -540,7 +548,7 @@ function TaskEditor({
       <EvidenceSection
         projectId={projectId}
         parent={{ taskId: task.id }}
-        access={access}
+        canRegister={canRegisterEvidenceOn(access, task)}
         revision={evidenceRevision}
         title={evidenceTitle}
         url={evidenceUrl}
@@ -594,6 +602,7 @@ function MilestoneEditor({
   onController?: (controller: EapSaveController) => void;
   onMilestone: (milestone: ProjectMilestoneView) => void;
 }) {
+  const canEdit = canEditItem(access, milestone.createdBy);
   const [title, setTitle] = useState(milestone.title);
   const [description, setDescription] = useState(milestone.description ?? "");
   const [decision, setDecision] = useState<ReviewEapMilestoneBodyDecision>("APROVADO");
@@ -615,7 +624,7 @@ function MilestoneEditor({
       (milestone.type === "APROVACAO" &&
         (milestone.status === "PENDENTE" || milestone.status === "REJEITADO")));
   const structureDirty =
-    access.canManageStructure &&
+    canEdit &&
     (title.trim() !== milestone.title || emptyToNull(description) !== milestone.description);
 
   function publish(next: {
@@ -626,7 +635,7 @@ function MilestoneEditor({
     evidenceUrl: string;
   }) {
     const nextStructure =
-      access.canManageStructure &&
+      canEdit &&
       (next.title.trim() !== milestone.title || emptyToNull(next.description) !== milestone.description);
     dirtyRef.current =
       nextStructure || next.note.trim() !== "" || next.evidenceTitle.trim() !== "" || next.evidenceUrl.trim() !== "";
@@ -726,12 +735,12 @@ function MilestoneEditor({
       <EditContext kind="milestone" code={code} status={milestone.statusLabel} />
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          {access.canManageStructure ? (
+          {canEdit ? (
             <EditText label="Nome do item" value={title} onChange={(value) => { setTitle(value); publish({ ...draft(), title: value }); }} full />
           ) : (
             <EditLocked label="Nome do item" value={milestone.title} />
           )}
-          {access.canManageStructure ? (
+          {canEdit ? (
             <EditArea label="Descrição" value={description} onChange={(value) => { setDescription(value); publish({ ...draft(), description: value }); }} full />
           ) : (
             <EditLocked label="Descrição" value={milestone.description?.trim() || "Nenhuma descrição registrada."} />
@@ -813,7 +822,7 @@ function MilestoneEditor({
       <EvidenceSection
         projectId={projectId}
         parent={{ milestoneId: milestone.id }}
-        access={access}
+        canRegister={canRegisterEvidenceOn(access, { assigneeId: null, createdBy: milestone.createdBy })}
         revision={evidenceRevision}
         title={evidenceTitle}
         url={evidenceUrl}
@@ -836,7 +845,7 @@ function MilestoneEditor({
 function EvidenceSection({
   projectId,
   parent,
-  access,
+  canRegister,
   revision,
   title,
   url,
@@ -847,7 +856,7 @@ function EvidenceSection({
 }: {
   projectId: string;
   parent: { taskId: string } | { milestoneId: string };
-  access: EapAccess;
+  canRegister: boolean;
   revision: number;
   title: string;
   url: string;
@@ -902,7 +911,7 @@ function EvidenceSection({
       title="Evidências vinculadas"
       subtitle="Documentos e registros associados ao item"
       aside={
-        access.canRegisterEvidence ? (
+        canRegister ? (
           <Button type="button" variant="outline" className={compactButtonClass} disabled={formOpen} onClick={() => setAdding(true)}>
             <Plus className="size-3.5" aria-hidden="true" />
             Adicionar
@@ -913,7 +922,7 @@ function EvidenceSection({
       <Suspense fallback={<Skeleton className="h-[39px] w-full rounded-[7px]" />}>
         <EvidenceList request={request} emptyWarning={emptyWarning} />
       </Suspense>
-      {access.canRegisterEvidence && formOpen ? (
+      {canRegister && formOpen ? (
         <div className="mt-3 rounded-[7px] border border-[#e4e7ec] bg-[#fafbfc] p-3">
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
             <EditText label="Título da evidência" value={title} onChange={onTitle} />
@@ -931,7 +940,7 @@ function EvidenceSection({
           </div>
         </div>
       ) : null}
-      {!access.canRegisterEvidence ? (
+      {!canRegister ? (
         <p className="mt-2.5 text-[8.5px] text-[#98a2b3]">O registro de evidências não está disponível para este acesso.</p>
       ) : null}
     </EditSection>

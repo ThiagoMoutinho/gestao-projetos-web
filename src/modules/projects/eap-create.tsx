@@ -74,7 +74,7 @@ export function EapCreateSheet({
               <X />
             </Button>
           </header>
-          {access.canManageStructure ? (
+          {access.canCreateItems ? (
             request.kind === "phase" ? (
               <PhaseForm projectId={projectId} projectName={projectName} phases={phases} onClose={onClose} onPhase={onPhase} />
             ) : request.kind === "task" ? (
