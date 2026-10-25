@@ -6,7 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ListEapPhases200DataItem } from './listEapPhases200DataItem.ts';
+import type { ListEapPhases200Summary } from './listEapPhases200Summary.ts';
 
 export type ListEapPhases200 = {
   data: ListEapPhases200DataItem[];
+  summary: ListEapPhases200Summary;
 };

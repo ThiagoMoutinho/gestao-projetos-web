@@ -17,4 +17,9 @@ export type UpdateEapMilestoneBody = {
      * @nullable
      */
   description?: string | null;
+  /**
+     * @minLength 1
+     * @nullable
+     */
+  reviewerId?: string | null;
 };

@@ -12,4 +12,5 @@ export type ReorderEapMilestones200DataItemType = typeof ReorderEapMilestones200
 export const ReorderEapMilestones200DataItemType = {
   ENTREGA: 'ENTREGA',
   APROVACAO: 'APROVACAO',
+  HOMOLOGACAO: 'HOMOLOGACAO',
 } as const;

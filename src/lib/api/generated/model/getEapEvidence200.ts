@@ -18,6 +18,8 @@ export type GetEapEvidence200 = {
   scheduleRequestId: string | null;
   title: string;
   url: string;
+  /** @nullable */
+  deliveryId: string | null;
   createdBy: string;
   createdAt: string;
 };

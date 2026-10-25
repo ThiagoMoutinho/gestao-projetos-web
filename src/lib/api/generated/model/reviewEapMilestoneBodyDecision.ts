@@ -11,5 +11,6 @@ export type ReviewEapMilestoneBodyDecision = typeof ReviewEapMilestoneBodyDecisi
 
 export const ReviewEapMilestoneBodyDecision = {
   APROVADO: 'APROVADO',
+  AJUSTES_SOLICITADOS: 'AJUSTES_SOLICITADOS',
   REJEITADO: 'REJEITADO',
 } as const;

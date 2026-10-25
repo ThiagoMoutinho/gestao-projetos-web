@@ -1,14 +1,11 @@
 "use client";
 
-import { AlertTriangle, CalendarIcon, Check, ChevronRight, Clock, FileText, Flag, Folder, List, Plus, Upload } from "lucide-react";
-import { ptBR } from "react-day-picker/locale";
+import { AlertTriangle, Ban, CalendarIcon, Check, ChevronRight, Clock, FileText, Flag, Folder, List, Lock, Plus, RotateCcw } from "lucide-react";
 import { Suspense, use, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
-import { controlFocusClassName, controlTransitionClassName } from "@/components/ui/control-motion";
+import { controlTransitionClassName } from "@/components/ui/control-motion";
 import { Progress } from "@/components/ui/progress";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -18,27 +15,36 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ApiError } from "@/lib/api/fetcher";
+import { notifySuccess, reportFailure } from "@/lib/feedback";
 import {
+  cancelEapTask,
   createEapEvidence,
-  deliverEapMilestone,
-  reviewEapMilestone,
+  reactivateEapTask,
+  registerEapTaskImpediment,
+  resolveEapTaskImpediment,
   updateEapMilestone,
   updateEapPhase,
   updateEapTask,
+  updateEapTaskImpediment,
   updateEapTaskProgress,
 } from "@/lib/api/generated/eap/eap";
-import type { ReviewEapMilestoneBodyDecision } from "@/lib/api/generated/model/reviewEapMilestoneBodyDecision";
 
 import {
   canEditItem,
   canRegisterEvidenceOn,
-  canReviewMilestone,
   canUpdateTaskProgress,
   type EapAccess,
 } from "./eap-access";
+import { DateField, dateControlClass as editControlClass } from "./eap-date-field";
+import { MilestoneDecisionFeedback } from "./eap-decision-feedback";
 import { evidenceRequest, forgetEvidences, type EvidenceParent, type EvidenceState } from "./eap-evidence-cache";
 import { EapHistory } from "./eap-history";
+import { MilestoneHomologation } from "./eap-milestone-homologation";
+import { forgetImpediment, impedimentRequest, type ImpedimentState } from "./eap-impediment-cache";
+import { cancelTone, impedimentTone } from "./eap-tones";
 import { basisToPercent, formatBasis, phaseProgress, progressLabel } from "./eap-progress";
+import { Reveal } from "./eap-reveal";
+import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind, type EapStatusKind } from "./eap-status-badge";
 import {
   civilDateInput,
   civilDateToIso,
@@ -50,21 +56,20 @@ import {
   type ProjectTaskView,
 } from "./eap-present";
 import type { EapSelection } from "./eap-selection";
-import {
-  PHASE_STATUSES,
-  TASK_STATUSES,
-  phaseStatusLabel,
-  taskStatusLabel,
-} from "./project-records";
+import { deriveTaskStatus } from "./eap-status";
+import { taskStatusLabel } from "./project-records";
 
 export type EapPerson = {
   userId: string;
   name: string;
+  /** Participa do projeto sem a função de fornecedor; a API confere também o perfil global. */
+  homologator: boolean;
 };
 
 export type EapSaveController = {
   save: () => void;
   saving: boolean;
+  locked: boolean;
 };
 
 export function EapPanel({
@@ -146,6 +151,7 @@ export function EapPanel({
           phase={phase}
           milestone={milestone}
           access={access}
+          people={people}
           names={names}
           code={code}
           dirtyRef={dirtyRef}
@@ -183,8 +189,8 @@ function PhaseEditor({
   const canEdit = canEditItem(access, phase.createdBy);
   const [name, setName] = useState(phase.name);
   const [description, setDescription] = useState(phase.description ?? "");
-  const [status, setStatus] = useState(phase.status);
   const [responsibleId, setResponsibleId] = useState(phase.responsibleId ?? "");
+  const [suspending, setSuspending] = useState(false);
   const [criteria, setCriteria] = useState(phase.completionCriteria ?? "");
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
@@ -196,14 +202,12 @@ function PhaseEditor({
     canEdit &&
     (name.trim() !== phase.name ||
       emptyToNull(description) !== phase.description ||
-      status !== phase.status ||
       emptyToNull(responsibleId) !== phase.responsibleId ||
       emptyToNull(criteria) !== phase.completionCriteria);
 
   function publish(next: {
     name: string;
     description: string;
-    status: ProjectPhaseView["status"];
     responsibleId: string;
     criteria: string;
     evidenceTitle: string;
@@ -213,7 +217,6 @@ function PhaseEditor({
       (canEdit &&
         (next.name.trim() !== phase.name ||
           emptyToNull(next.description) !== phase.description ||
-          next.status !== phase.status ||
           emptyToNull(next.responsibleId) !== phase.responsibleId ||
           emptyToNull(next.criteria) !== phase.completionCriteria)) ||
       next.evidenceTitle.trim() !== "" ||
@@ -221,7 +224,7 @@ function PhaseEditor({
   }
 
   function draft() {
-    return { name, description, status, responsibleId, criteria, evidenceTitle, evidenceUrl };
+    return { name, description, responsibleId, criteria, evidenceTitle, evidenceUrl };
   }
 
   async function save() {
@@ -244,7 +247,6 @@ function PhaseEditor({
       const response = await updateEapPhase(projectId, phase.id, {
         ...(name.trim() !== phase.name ? { name: name.trim() } : {}),
         ...(emptyToNull(description) !== phase.description ? { description: emptyToNull(description) } : {}),
-        ...(status !== phase.status ? { status } : {}),
         ...(emptyToNull(responsibleId) !== phase.responsibleId ? { responsibleId: emptyToNull(responsibleId) } : {}),
         ...(emptyToNull(criteria) !== phase.completionCriteria ? { completionCriteria: emptyToNull(criteria) } : {}),
       });
@@ -253,11 +255,30 @@ function PhaseEditor({
       }
       onPhase(presentPhase(response.data, { tasks: phase.tasks, milestones: phase.milestones }, names));
       dirtyRef.current = false;
-      setFeedback("Fase atualizada.");
+      notifySuccess("Fase atualizada.");
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function toggleSuspension() {
+    const suspended = phase.status !== "SUSPENSA";
+    setSuspending(true);
+    setError(null);
+    setFeedback(null);
+    try {
+      const response = await updateEapPhase(projectId, phase.id, { suspended });
+      if (response.status !== 200) {
+        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível alterar a suspensão da fase.");
+      }
+      onPhase(presentPhase(response.data, { tasks: phase.tasks, milestones: phase.milestones }, names));
+      notifySuccess(suspended ? "Fase suspensa." : "Fase retomada.");
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setSuspending(false);
     }
   }
 
@@ -267,17 +288,13 @@ function PhaseEditor({
 
   return (
     <div className="flex flex-col pb-4">
-      <EditContext kind="phase" code={code} status={phaseStatusLabel(status)} />
+      <EditContext kind="phase" code={code} status={phase.statusLabel} statusKind={phaseStatusKind(phase.calculatedStatus)} />
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         {canEdit ? (
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
             <EditText label="Nome do item" value={name} onChange={(value) => { setName(value); publish({ ...draft(), name: value }); }} full />
             <EditArea label="Descrição" value={description} onChange={(value) => { setDescription(value); publish({ ...draft(), description: value }); }} full />
-            <EditSelect label="Situação" value={status} onChange={(value) => { setStatus(value); publish({ ...draft(), status: value }); }}>
-              {PHASE_STATUSES.map((item) => (
-                <option key={item} value={item}>{phaseStatusLabel(item)}</option>
-              ))}
-            </EditSelect>
+            <EditLocked label="Situação" hint="automática" value={phase.statusLabel} />
             <EditLocked label="Item superior" value={projectName} />
             <AssigneeField people={people} value={responsibleId} onChange={(value) => { setResponsibleId(value); publish({ ...draft(), responsibleId: value }); }} />
             <EditLocked label="Prazo vigente" value={due} />
@@ -301,9 +318,24 @@ function PhaseEditor({
           {progress.kind === "value" ? (
             <Progress value={basisToPercent(progress.basisPoints)} aria-label="Andamento consolidado da fase" className="[&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]" />
           ) : (
-            <p className="text-[8.5px] text-[#98a2b3]">{progress.kind === "incomplete" ? "Esta fase ainda não tem itens subordinados." : "O percentual desta fase não está disponível."}</p>
+            <p className="text-[8.5px] text-[#98a2b3]">{progress.kind === "empty" ? "Esta fase ainda não tem itens subordinados." : "O percentual desta fase não está disponível."}</p>
           )}
+          <p className="mt-[9px] text-[8.5px] leading-normal text-[#8a94a6]">
+            A situação muda sozinha conforme as tarefas e os marcos. A fase só fica concluída quando todas as tarefas ativas estão em 100% e todos os marcos foram aceitos.
+          </p>
         </div>
+        {access.canManageStructure ? (
+          <div className="mb-3.5 flex items-center justify-between gap-3 rounded-[7px] border border-[#e4e7ec] px-[11px] py-2.5">
+            <span className="text-[8.5px] leading-normal text-[#667085]">
+              {phase.status === "SUSPENSA"
+                ? "Fase suspensa pela gestão. Ao retomar, a situação volta a ser calculada pelos itens."
+                : "Suspender interrompe a atualização automática da situação até a fase ser retomada."}
+            </span>
+            <Button type="button" variant="outline" className="h-[30px] shrink-0 rounded-[7px] px-[9px] text-[8.5px]" disabled={suspending} onClick={() => void toggleSuspension()}>
+              {suspending ? "Salvando…" : phase.status === "SUSPENSA" ? "Retomar fase" : "Suspender fase"}
+            </Button>
+          </div>
+        ) : null}
         {canEdit ? (
           <EditArea
             label="Critério de conclusão"
@@ -368,10 +400,7 @@ function TaskEditor({
   const [description, setDescription] = useState(task.description ?? "");
   const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? "");
   const [weight, setWeight] = useState(String(task.weight));
-  const [status, setStatus] = useState(task.status);
   const [percent, setPercent] = useState(String(task.progressPercent));
-  const [impediment, setImpediment] = useState(task.hasImpediment);
-  const [blocker, setBlocker] = useState("");
   const [actualStart, setActualStart] = useState(civilDateInput(task.actualStartAt));
   const [actualEnd, setActualEnd] = useState(civilDateInput(task.actualEndAt));
   const [evidenceTitle, setEvidenceTitle] = useState("");
@@ -380,17 +409,19 @@ function TaskEditor({
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [evidenceRevision, setEvidenceRevision] = useState(0);
+  const [impedimentRevision, setImpedimentRevision] = useState(0);
+  const cancelled = task.calculatedStatus === "CANCELADA";
+  const editable = canEdit && !cancelled;
   const structureDirty =
-    canEdit &&
+    editable &&
     (title.trim() !== task.title ||
       emptyToNull(description) !== task.description ||
       emptyToNull(assigneeId) !== task.assigneeId ||
       weight !== String(task.weight));
   const progressDirty =
     canProgress &&
-    (status !== task.status ||
-      percent !== String(task.progressPercent) ||
-      impediment !== task.hasImpediment ||
+    !cancelled &&
+    (percent !== String(task.progressPercent) ||
       actualStart !== civilDateInput(task.actualStartAt) ||
       actualEnd !== civilDateInput(task.actualEndAt));
 
@@ -399,25 +430,22 @@ function TaskEditor({
     description: string;
     assigneeId: string;
     weight: string;
-    status: ProjectTaskView["status"];
     percent: string;
-    impediment: boolean;
     actualStart: string;
     actualEnd: string;
     evidenceTitle: string;
     evidenceUrl: string;
   }) {
     const nextStructure =
-      canEdit &&
+      editable &&
       (next.title.trim() !== task.title ||
         emptyToNull(next.description) !== task.description ||
         emptyToNull(next.assigneeId) !== task.assigneeId ||
         next.weight !== String(task.weight));
     const nextProgress =
       canProgress &&
-      (next.status !== task.status ||
-        next.percent !== String(task.progressPercent) ||
-        next.impediment !== task.hasImpediment ||
+      !cancelled &&
+      (next.percent !== String(task.progressPercent) ||
         next.actualStart !== civilDateInput(task.actualStartAt) ||
         next.actualEnd !== civilDateInput(task.actualEndAt));
     dirtyRef.current =
@@ -425,16 +453,12 @@ function TaskEditor({
   }
 
   function draft() {
-    return { title, description, assigneeId, weight, status, percent, impediment, actualStart, actualEnd, evidenceTitle, evidenceUrl };
+    return { title, description, assigneeId, weight, percent, actualStart, actualEnd, evidenceTitle, evidenceUrl };
   }
 
-  function chooseStatus(next: ProjectTaskView["status"]) {
-    const nextPercent = next === "CONCLUIDA" ? "100" : percent;
-    setStatus(next);
-    if (next === "CONCLUIDA") {
-      setPercent("100");
-    }
-    publish({ ...draft(), status: next, percent: nextPercent });
+  function choosePercent(value: string) {
+    setPercent(value);
+    publish({ ...draft(), percent: value });
   }
 
   async function save() {
@@ -447,12 +471,12 @@ function TaskEditor({
       return;
     }
 
-    if (canEdit && !title.trim()) {
+    if (editable && !title.trim()) {
       setError("Informe o título da tarefa.");
       return;
     }
 
-    if (canEdit && (!Number.isInteger(parsedWeight) || parsedWeight < 1)) {
+    if (editable && (!Number.isInteger(parsedWeight) || parsedWeight < 1)) {
       setError("O peso precisa ser um número inteiro maior que zero.");
       return;
     }
@@ -462,8 +486,8 @@ function TaskEditor({
       return;
     }
 
-    if (canProgress && status === "CONCLUIDA" && progress !== 100) {
-      setError("Tarefa concluída deve ter percentual 100.");
+    if (canProgress && [actualStart, actualEnd].some((value) => value && value > belemToday())) {
+      setError("Datas realizadas não podem estar no futuro.");
       return;
     }
 
@@ -499,9 +523,7 @@ function TaskEditor({
 
       if (progressDirty) {
         const response = await updateEapTaskProgress(projectId, phase.id, task.id, {
-          ...(status !== current.status ? { status } : {}),
           ...(progress !== current.progressPercent ? { progressPercent: progress } : {}),
-          ...(impediment !== current.hasImpediment ? { hasImpediment: impediment } : {}),
           ...(actualStart !== civilDateInput(current.actualStartAt)
             ? { actualStartAt: civilDateToIso(actualStart) }
             : {}),
@@ -517,7 +539,7 @@ function TaskEditor({
 
       onTask(current);
       dirtyRef.current = evidenceTitle.trim() !== "" || evidenceUrl.trim() !== "";
-      setFeedback("Tarefa atualizada.");
+      notifySuccess("Tarefa atualizada.");
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -525,37 +547,34 @@ function TaskEditor({
     }
   }
 
-  useSaveController(onController, () => void save(), saving);
+  useSaveController(onController, () => void save(), saving, cancelled);
   const due = task.dates.find((date) => date.label.startsWith("Fim planejado"))?.value || "Não informada";
   const progressValue = Number(percent);
   const progressShown = Number.isFinite(progressValue) ? Math.min(100, Math.max(0, progressValue)) : 0;
+  const statusPreview = cancelled ? task.calculatedStatus : deriveTaskStatus(progressShown);
+  const statusShown = taskStatusLabel(statusPreview);
+  const decision = access.canManageStructure ? (
+    <TaskStatusDecision projectId={projectId} phaseId={phase.id} task={task} names={names} onTask={onTask} />
+  ) : null;
 
   return (
     <div className="flex flex-col pb-4">
-      <EditContext kind="task" code={code} status={taskStatusLabel(status)} />
+      <EditContext kind="task" code={code} status={statusShown} statusKind={taskStatusKind(statusPreview)} />
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          {canEdit ? (
+          {editable ? (
             <EditText label="Nome do item" value={title} onChange={(value) => { setTitle(value); publish({ ...draft(), title: value }); }} full />
           ) : (
             <EditLocked label="Nome do item" value={task.title} />
           )}
-          {canEdit ? (
+          {editable ? (
             <EditArea label="Descrição" value={description} onChange={(value) => { setDescription(value); publish({ ...draft(), description: value }); }} full />
           ) : (
             <EditLocked label="Descrição" value={task.description?.trim() || "Nenhuma descrição registrada."} />
           )}
-          {canProgress ? (
-            <EditSelect label="Situação" value={status} onChange={chooseStatus}>
-              {TASK_STATUSES.map((item) => (
-                <option key={item} value={item}>{taskStatusLabel(item)}</option>
-              ))}
-            </EditSelect>
-          ) : (
-            <EditLocked label="Situação" value={task.statusLabel} />
-          )}
+          <EditLocked label="Situação" hint={cancelled ? "decisão da gestão" : "pelo andamento"} value={statusShown} />
           <EditLocked label="Item superior" value={phase.name} />
-          {canEdit ? (
+          {editable ? (
             <AssigneeField people={people} value={assigneeId} onChange={(value) => { setAssigneeId(value); publish({ ...draft(), assigneeId: value }); }} />
           ) : (
             <EditLocked label="Responsável" value={task.assigneeName || "Não informado"} />
@@ -564,20 +583,27 @@ function TaskEditor({
         </div>
       </EditSection>
       <EditSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" tone="accent" aside={<strong className="text-[12px] text-[#175cd3]">{progressShown}%</strong>}>
-        {canProgress ? (
+        {canProgress && !cancelled ? (
           <>
             <Progress value={progressShown} aria-label="Andamento da tarefa" className="mb-3 [&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]" />
             <div className="mt-[11px] mb-3.5 grid grid-cols-6 gap-1.5">
               {[0, 25, 50, 75, 90, 100].map((value) => (
-                <button key={value} type="button" className={`h-[29px] min-w-0 rounded-[6px] border text-[8.5px] font-semibold ${progressShown === value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`} onClick={() => { setPercent(String(value)); publish({ ...draft(), percent: String(value) }); }}>
+                <button key={value} type="button" className={`h-[29px] min-w-0 rounded-[6px] border text-[8.5px] font-semibold ${progressShown === value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`} onClick={() => choosePercent(String(value))}>
                   {value}%
                 </button>
               ))}
             </div>
-            <div className="mb-3.5 grid grid-cols-[140px_auto] items-end gap-2">
-              <EditText label="Percentual exato de andamento" value={percent} onChange={(value) => { setPercent(value); publish({ ...draft(), percent: value }); }} />
+            <div className="mb-3.5 grid grid-cols-[140px_auto_1fr] items-end gap-2">
+              <EditText label="Percentual exato de andamento" value={percent} onChange={choosePercent} />
               <span className="flex h-9 items-center text-[8px] text-[#98a2b3]">% concluído</span>
+              <Button type="button" variant="outline" className="h-9 justify-self-end gap-1.5 rounded-[7px] px-[11px] text-[9px]" disabled={progressShown === 100} onClick={() => choosePercent("100")}>
+                <Check className="size-3.5" aria-hidden="true" />
+                Concluir
+              </Button>
             </div>
+            <p className="mb-3.5 text-[8px] leading-normal text-[#98a2b3]">
+              A situação acompanha o percentual: 0% não iniciada, de 1% a 99% em andamento e 100% concluída. As datas realizadas são preenchidas ao iniciar e ao concluir, e você pode corrigi-las abaixo.
+            </p>
             {canEdit ? (
               <EditText label="Peso" value={weight} onChange={(value) => { setWeight(value); publish({ ...draft(), weight: value }); }} />
             ) : null}
@@ -585,20 +611,26 @@ function TaskEditor({
               <EditLocked label="Prioridade" hint="não gravado" value="Indisponível neste cadastro" />
               <EditLocked label="Dependência" hint="não gravado" value="Indisponível neste cadastro" />
             </div>
-            <button type="button" className={`mt-3.5 grid w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-[9px] rounded-[7px] border px-2.5 py-2.5 text-left ${impediment ? "border-[#efc3bf] bg-[#fff9f8]" : "border-[#e4e7ec] bg-white"}`} onClick={() => { const next = !impediment; setImpediment(next); publish({ ...draft(), impediment: next }); }}>
-              <span className={`grid size-8 place-items-center rounded-[6px] ${impediment ? "bg-[#fdeceb] text-[#b42318]" : "bg-[#f2f4f7] text-[#8a94a6]"}`}>
-                <AlertTriangle className="size-4" aria-hidden="true" />
-              </span>
-              <span>
-                <strong className="block text-[9.5px] text-[#344054]">Esta tarefa está impedida</strong>
-                <small className="mt-[3px] block text-[8px] text-[#98a2b3]">Destaque o item na EAP e informe o motivo.</small>
-              </span>
-            </button>
-            {impediment ? (
-              <div className="mt-3">
-                <EditArea label="Descrição do impedimento" hint="não gravado" value={blocker} placeholder="Descreva o impedimento e a ação necessária..." onChange={setBlocker} full />
-              </div>
-            ) : null}
+            <Suspense fallback={<Skeleton className="mt-3.5 h-[54px] w-full rounded-[7px]" />}>
+              <TaskImpediment
+                projectId={projectId}
+                phaseId={phase.id}
+                task={task}
+                names={names}
+                request={impedimentRequest(projectId, phase.id, task)}
+                onChanged={(next) => {
+                  forgetImpediment(projectId, task.id);
+                  setImpedimentRevision((value) => value + 1);
+                  onTask(next);
+                }}
+              />
+            </Suspense>
+            {decision}
+          </>
+        ) : cancelled ? (
+          <>
+            <EditNotice text="Esta tarefa está cancelada e não entra no andamento da fase. Somente a gestão do projeto pode reativá-la." />
+            {decision}
           </>
         ) : (
           <EditNotice text="O andamento desta tarefa pode ser atualizado por quem estrutura a EAP ou pelo responsável, quando ele é fornecedor ou desenvolvedor do projeto." />
@@ -607,7 +639,8 @@ function TaskEditor({
       <EvidenceSection
         projectId={projectId}
         parent={{ taskId: task.id }}
-        canRegister={canRegisterEvidenceOn(access, task)}
+        canRegister={!cancelled && canRegisterEvidenceOn(access, task)}
+        unavailableText={cancelled ? "Tarefas canceladas não recebem novas evidências." : undefined}
         revision={evidenceRevision}
         title={evidenceTitle}
         url={evidenceUrl}
@@ -626,7 +659,7 @@ function TaskEditor({
         startLabel="Início planejado (vigente)"
         dueLabel="Fim planejado (vigente)"
         extra={
-          canProgress ? (
+          canProgress && !cancelled ? (
             <>
               <DateField label="Início realizado" value={actualStart} onChange={(value) => { setActualStart(value); publish({ ...draft(), actualStart: value }); }} />
               <DateField label="Fim realizado" value={actualEnd} onChange={(value) => { setActualEnd(value); publish({ ...draft(), actualEnd: value }); }} />
@@ -634,10 +667,308 @@ function TaskEditor({
           ) : null
         }
       />
-      <HistoryNote projectId={projectId} entityType="TASK" entityId={task.id} refreshKey={historyKey(task, evidenceRevision)} />
+      <HistoryNote projectId={projectId} entityType="TASK" entityId={task.id} refreshKey={historyKey(task, `${evidenceRevision}:${impedimentRevision}`)} />
       <EditStatus error={error} feedback={feedback} />
     </div>
   );
+}
+
+function TaskStatusDecision({
+  projectId,
+  phaseId,
+  task,
+  names,
+  onTask,
+}: {
+  projectId: string;
+  phaseId: string;
+  task: ProjectTaskView;
+  names: Map<string, string> | null;
+  onTask: (task: ProjectTaskView) => void;
+}) {
+  const cancelled = task.calculatedStatus === "CANCELADA";
+  const concluded = task.calculatedStatus === "CONCLUIDA";
+  const [opened, setOpened] = useState(false);
+  const [justification, setJustification] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle() {
+    if (!opened) {
+      setJustification("");
+    }
+    setOpened(!opened);
+    setError(null);
+  }
+
+  async function decide() {
+    if (justification.trim().length < 10) {
+      setError("Informe a justificativa com ao menos 10 caracteres.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const body = { justification: justification.trim() };
+      const response = cancelled
+        ? await reactivateEapTask(projectId, phaseId, task.id, body)
+        : await cancelEapTask(projectId, phaseId, task.id, body);
+      if (response.status !== 200) {
+        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível alterar a situação da tarefa.");
+      }
+      setJustification("");
+      setOpened(false);
+      onTask(presentTask(response.data, names));
+      notifySuccess(cancelled ? "Tarefa reativada." : "Tarefa cancelada.");
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (concluded) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3.5">
+      <DecisionCard
+        icon={cancelled ? <RotateCcw className="size-4" aria-hidden="true" /> : <Ban className="size-4" aria-hidden="true" />}
+        title={cancelled ? "Reativar esta tarefa" : "Cancelar esta tarefa"}
+        note={cancelled ? "A situação volta a acompanhar o percentual registrado." : "Decisão da gestão, registrada no histórico."}
+        active={opened}
+        tone={cancelTone}
+        onClick={toggle}
+      />
+      <Reveal open={opened}>
+        <div className="pt-3">
+          <EditArea
+            label="Justificativa"
+            value={justification}
+            placeholder={cancelled ? "Explique por que a tarefa volta ao escopo." : "Explique por que a tarefa não será executada."}
+            onChange={setJustification}
+            full
+          />
+          <div className="mt-3 flex items-center justify-end gap-[7px]">
+            {error ? <p role="alert" className="mr-auto text-[8.5px] text-destructive">{error}</p> : null}
+            <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={toggle}>
+              Voltar
+            </Button>
+            <Button
+              type="button"
+              variant={cancelled ? "default" : "destructive"}
+              className="h-[30px] rounded-[7px] px-[11px] text-[8.5px]"
+              disabled={saving}
+              onClick={() => void decide()}
+            >
+              {saving ? "Salvando…" : cancelled ? "Reativar tarefa" : "Cancelar tarefa"}
+            </Button>
+          </div>
+        </div>
+      </Reveal>
+    </div>
+  );
+}
+
+/** Cartão no formato do cadastro: ao clicar, revela o campo e as ações logo abaixo. */
+function DecisionCard({
+  icon,
+  title,
+  note,
+  active,
+  tone,
+  onClick,
+}: {
+  icon: ReactNode;
+  title: string;
+  note: string;
+  active: boolean;
+  tone: { surface: string; icon: string };
+  onClick?: () => void;
+}) {
+  const className = `grid w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-[9px] rounded-[7px] border px-2.5 py-2.5 text-left ${controlTransitionClassName} ${active ? tone.surface : "border-[#e4e7ec] bg-white"}`;
+  const content = (
+    <>
+      <span className={`grid size-8 place-items-center rounded-[6px] transition-colors duration-200 ease-out motion-reduce:transition-none ${active ? tone.icon : "bg-[#f2f4f7] text-[#8a94a6]"}`}>{icon}</span>
+      <span className="min-w-0">
+        <strong className="block text-[9.5px] text-[#344054]">{title}</strong>
+        <small className="mt-[3px] block text-[8px] text-[#98a2b3]">{note}</small>
+      </span>
+    </>
+  );
+  return onClick ? (
+    <button type="button" aria-expanded={active} className={className} onClick={onClick}>
+      {content}
+    </button>
+  ) : (
+    <div className={className}>{content}</div>
+  );
+}
+
+type ImpedimentAction = "register" | "update" | "resolve";
+
+const IMPEDIMENT_ACTIONS: Record<ImpedimentAction, { label: string; field: string; placeholder: string; done: string }> = {
+  register: {
+    label: "Registrar impedimento",
+    field: "Motivo do impedimento",
+    placeholder: "Descreva o impedimento e a ação necessária...",
+    done: "Impedimento registrado.",
+  },
+  update: {
+    label: "Atualizar motivo",
+    field: "Motivo do impedimento",
+    placeholder: "Descreva o impedimento e a ação necessária...",
+    done: "Motivo do impedimento atualizado.",
+  },
+  resolve: {
+    label: "Resolver impedimento",
+    field: "Como foi resolvido",
+    placeholder: "Explique o que foi feito para retirar o impedimento.",
+    done: "Impedimento resolvido.",
+  },
+};
+
+function TaskImpediment({
+  projectId,
+  phaseId,
+  task,
+  names,
+  request,
+  onChanged,
+}: {
+  projectId: string;
+  phaseId: string;
+  task: ProjectTaskView;
+  names: Map<string, string> | null;
+  request: Promise<ImpedimentState>;
+  onChanged: (task: ProjectTaskView) => void;
+}) {
+  const state = use(request);
+  const [action, setAction] = useState<ImpedimentAction | null>(null);
+  const [form, setForm] = useState<ImpedimentAction>("register");
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (state.status === "error") {
+    return <p className={`mt-3.5 ${emptyInlineClass}`}>{state.message}</p>;
+  }
+
+  const open = state.open;
+  const active = open !== null || task.hasImpediment;
+  const concluded = task.calculatedStatus === "CONCLUIDA";
+  const note = open
+    ? `Registrado por ${open.author} em ${open.openedAt}.`
+    : active
+      ? "Sinalizado antes do registro de motivos; o motivo não foi gravado."
+      : concluded
+        ? "Tarefas concluídas não recebem novos impedimentos."
+        : "Destaque o item na EAP e informe o motivo.";
+
+  function start(next: ImpedimentAction) {
+    setAction(next);
+    setForm(next);
+    setText(next === "update" && open ? open.description : "");
+    setError(null);
+  }
+
+  function cancel() {
+    setAction(null);
+    setError(null);
+  }
+
+  async function submit(current: ImpedimentAction) {
+    const value = text.trim();
+    if (value.length < 10) {
+      setError(current === "resolve" ? "Descreva a resolução com ao menos 10 caracteres." : "Informe o motivo com ao menos 10 caracteres.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const response =
+        current === "resolve"
+          ? await resolveEapTaskImpediment(projectId, phaseId, task.id, { resolutionNote: value })
+          : current === "update" && open
+            ? await updateEapTaskImpediment(projectId, phaseId, task.id, open.id, { description: value })
+            : await registerEapTaskImpediment(projectId, phaseId, task.id, { description: value });
+      if (response.status !== 200 && response.status !== 201) {
+        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar o impedimento.");
+      }
+      setAction(null);
+      setText("");
+      notifySuccess(IMPEDIMENT_ACTIONS[current].done);
+      onChanged(presentTask(response.data.task, names));
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3.5">
+      <DecisionCard
+        icon={<AlertTriangle className="size-4" aria-hidden="true" />}
+        title={active && !open ? "Impedimento ativo sem motivo registrado" : "Esta tarefa está impedida"}
+        note={note}
+        active={active || action === "register"}
+        tone={impedimentTone}
+        onClick={active || concluded ? undefined : () => (action === "register" ? cancel() : start("register"))}
+      />
+      {open ? (
+        <Reveal open={action !== "update"}>
+          <div className="pt-3">
+            <EditLabel label="Motivo registrado" />
+            <p className="mt-1.5 rounded-[7px] border border-[#e4e7ec] bg-[#f8fafc] px-2.5 py-2 text-[9px] leading-[1.5] whitespace-pre-wrap text-[#475467]">{open.description}</p>
+          </div>
+        </Reveal>
+      ) : null}
+      <Reveal open={action !== null}>
+        <div className="pt-3">
+          <EditArea label={IMPEDIMENT_ACTIONS[form].field} value={text} placeholder={IMPEDIMENT_ACTIONS[form].placeholder} onChange={setText} full />
+          <div className="mt-3 flex items-center justify-end gap-[7px]">
+            {error ? <p role="alert" className="mr-auto text-[8.5px] text-destructive">{error}</p> : null}
+            <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={cancel}>
+              Voltar
+            </Button>
+            <Button
+              type="button"
+              className="h-[30px] rounded-[7px] px-[11px] text-[8.5px]"
+              disabled={saving}
+              onClick={() => void submit(form)}
+            >
+              {saving ? "Salvando…" : IMPEDIMENT_ACTIONS[form].label}
+            </Button>
+          </div>
+        </div>
+      </Reveal>
+      {active ? (
+        <Reveal open={action === null}>
+          <div className="flex justify-end gap-[7px] pt-2.5">
+            {open ? (
+              <Button type="button" variant="outline" className={compactButtonClass} onClick={() => start("update")}>
+                {IMPEDIMENT_ACTIONS.update.label}
+              </Button>
+            ) : null}
+            <Button type="button" variant="outline" className={compactButtonClass} onClick={() => start("resolve")}>
+              {IMPEDIMENT_ACTIONS.resolve.label}
+            </Button>
+          </div>
+        </Reveal>
+      ) : null}
+    </div>
+  );
+}
+
+function belemToday() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Belem",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 function MilestoneEditor({
@@ -645,6 +976,7 @@ function MilestoneEditor({
   phase,
   milestone,
   access,
+  people,
   names,
   code,
   dirtyRef,
@@ -655,6 +987,7 @@ function MilestoneEditor({
   phase: ProjectPhaseView;
   milestone: ProjectMilestoneView;
   access: EapAccess;
+  people: EapPerson[] | null;
   names: Map<string, string> | null;
   code: string;
   dirtyRef: RefObject<boolean>;
@@ -662,46 +995,36 @@ function MilestoneEditor({
   onMilestone: (milestone: ProjectMilestoneView) => void;
 }) {
   const canEdit = canEditItem(access, milestone.createdBy);
+  const canDesignate = access.canManageStructure;
   const [title, setTitle] = useState(milestone.title);
   const [description, setDescription] = useState(milestone.description ?? "");
-  const [decision, setDecision] = useState<ReviewEapMilestoneBodyDecision>("APROVADO");
-  const [note, setNote] = useState("");
+  const [reviewerId, setReviewerId] = useState(milestone.reviewerId ?? "");
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [evidenceRevision, setEvidenceRevision] = useState(0);
-  const canReview = canReviewMilestone(access, milestone.deliveredById);
-  const canDeliver =
-    access.canDeliverMilestone &&
-    milestone.type === "ENTREGA" &&
-    (milestone.status === "PENDENTE" || milestone.status === "REJEITADO");
-  const reviewReady =
-    canReview &&
-    ((milestone.type === "ENTREGA" && milestone.status === "ENTREGUE" && milestone.deliveredById) ||
-      (milestone.type === "APROVACAO" &&
-        (milestone.status === "PENDENTE" || milestone.status === "REJEITADO")));
+  const reviewerChanged = canDesignate && (reviewerId || null) !== milestone.reviewerId;
   const structureDirty =
-    canEdit &&
-    (title.trim() !== milestone.title || emptyToNull(description) !== milestone.description);
+    reviewerChanged ||
+    (canEdit && (title.trim() !== milestone.title || emptyToNull(description) !== milestone.description));
 
   function publish(next: {
     title: string;
     description: string;
-    note: string;
+    reviewerId: string;
     evidenceTitle: string;
     evidenceUrl: string;
   }) {
     const nextStructure =
-      canEdit &&
-      (next.title.trim() !== milestone.title || emptyToNull(next.description) !== milestone.description);
-    dirtyRef.current =
-      nextStructure || next.note.trim() !== "" || next.evidenceTitle.trim() !== "" || next.evidenceUrl.trim() !== "";
+      (canDesignate && (next.reviewerId || null) !== milestone.reviewerId) ||
+      (canEdit && (next.title.trim() !== milestone.title || emptyToNull(next.description) !== milestone.description));
+    dirtyRef.current = nextStructure || next.evidenceTitle.trim() !== "" || next.evidenceUrl.trim() !== "";
   }
 
   function draft() {
-    return { title, description, note, evidenceTitle, evidenceUrl };
+    return { title, description, reviewerId, evidenceTitle, evidenceUrl };
   }
 
   async function saveDetails() {
@@ -711,7 +1034,7 @@ function MilestoneEditor({
       return;
     }
 
-    if (!title.trim()) {
+    if (canEdit && !title.trim()) {
       setError("Informe o título do marco.");
       return;
     }
@@ -722,63 +1045,18 @@ function MilestoneEditor({
 
     try {
       const response = await updateEapMilestone(projectId, phase.id, milestone.id, {
-        ...(title.trim() !== milestone.title ? { title: title.trim() } : {}),
-        ...(emptyToNull(description) !== milestone.description
+        ...(canEdit && title.trim() !== milestone.title ? { title: title.trim() } : {}),
+        ...(canEdit && emptyToNull(description) !== milestone.description
           ? { description: emptyToNull(description) }
           : {}),
+        ...(reviewerChanged ? { reviewerId: reviewerId || null } : {}),
       });
       if (response.status !== 200) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar o marco.");
       }
       onMilestone(presentMilestone(response.data, names));
-      dirtyRef.current = note.trim() !== "" || evidenceTitle.trim() !== "" || evidenceUrl.trim() !== "";
-      setFeedback("Marco atualizado.");
-    } catch (caught) {
-      setError(errorMessage(caught));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function deliver() {
-    setSaving(true);
-    setError(null);
-    setFeedback(null);
-    try {
-      const response = await deliverEapMilestone(projectId, phase.id, milestone.id, {});
-      if (response.status !== 200) {
-        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível registrar a entrega.");
-      }
-      onMilestone(presentMilestone(response.data, names));
-      setFeedback("Entrega registrada. O marco continua pendente de aceite.");
-    } catch (caught) {
-      setError(errorMessage(caught));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function review() {
-    if (decision === "REJEITADO" && note.trim().length < 10) {
-      setError("A rejeição exige justificativa com ao menos 10 caracteres.");
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    setFeedback(null);
-    try {
-      const response = await reviewEapMilestone(projectId, phase.id, milestone.id, {
-        decision,
-        note: note.trim() ? note.trim() : null,
-      });
-      if (response.status !== 200) {
-        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível registrar o aceite.");
-      }
-      onMilestone(presentMilestone(response.data, names));
-      setNote("");
-      publish({ ...draft(), note: "" });
-      setFeedback(decision === "APROVADO" ? "Marco aprovado." : "Marco rejeitado.");
+      dirtyRef.current = evidenceTitle.trim() !== "" || evidenceUrl.trim() !== "";
+      notifySuccess("Marco atualizado.");
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -787,11 +1065,12 @@ function MilestoneEditor({
   }
 
   useSaveController(onController, () => void saveDetails(), saving);
-  const due = milestone.dates.find((date) => date.label.startsWith("Planejada"))?.value || "Não informada";
+  const due = milestone.dates.find((date) => date.label === "Data prevista")?.value || "Não informada";
 
   return (
     <div className="flex flex-col pb-4">
-      <EditContext kind="milestone" code={code} status={milestone.statusLabel} />
+      <EditContext kind="milestone" code={code} status={milestone.statusLabel} statusKind={milestoneStatusKind(milestone.status)} />
+      <MilestoneDecisionFeedback milestone={milestone} className="mt-3 mb-0" />
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           {canEdit ? (
@@ -810,73 +1089,30 @@ function MilestoneEditor({
           <EditLocked label="Tipo do marco" value={milestone.typeLabel} />
         </div>
       </EditSection>
-      <EditSection title="Registro da entrega" subtitle="A entrega e a aprovação formal são etapas independentes" tone="accent">
-        <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          <EditLocked label="Situação da entrega" value={milestone.statusLabel} />
+      <EditSection title="Entrega e homologação" subtitle="A entrega e o aceite formal são etapas independentes" tone="accent">
+        <div className="mb-[13px] grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           <EditLocked label="Entrega registrada por" value={milestone.deliveredBy ?? "Ainda não registrada"} />
-          <EditArea label="Observações da entrega" hint="não gravado" value="" placeholder="A entrega é registrada sem observações." onChange={() => undefined} disabled full />
+          {canDesignate ? (
+            <AssigneeField
+              people={people?.filter((person) => person.homologator) ?? null}
+              value={reviewerId}
+              label="Homologador designado"
+              emptyLabel="Gestão do projeto (padrão)"
+              onChange={(value) => { setReviewerId(value); publish({ ...draft(), reviewerId: value }); }}
+            />
+          ) : (
+            <EditLocked label="Homologador designado" value={milestone.reviewerName ?? "Gestão do projeto (padrão)"} />
+          )}
         </div>
-        <div className="mt-[15px] border-t border-[#edf0f3] pt-[15px]">
-          <span className="mb-2.5 block text-[8.5px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Aprovação formal</span>
-          <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-            <EditLocked label="Responsável pelo aceite" value={milestone.validatedBy ?? "Definido na validação do marco"} />
-            <EditLocked label="Critérios de aceite" hint="não gravado" value="Evidências validadas e sem pendências críticas" />
-            {milestone.validationNote ? (
-              <EditArea label="Justificativa registrada" value={milestone.validationNote} onChange={() => undefined} disabled full />
-            ) : null}
-          </div>
-          {reviewReady ? (
-            <div className="mt-[13px]">
-              <EditLabel label="Decisão de aceite" />
-              <div className="mt-1.5 mb-[13px] grid grid-cols-2 gap-1.5">
-                {([
-                  { value: "APROVADO", label: "Aprovar" },
-                  { value: "REJEITADO", label: "Rejeitar" },
-                ] as const).map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    aria-pressed={decision === option.value}
-                    className={`h-[29px] min-w-0 rounded-[6px] border text-[8.5px] font-semibold ${decision === option.value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`}
-                    onClick={() => setDecision(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-              <EditArea
-                label="Justificativa"
-                hint={decision === "REJEITADO" ? "obrigatória" : undefined}
-                value={note}
-                placeholder="Registre o motivo da decisão."
-                onChange={(value) => { setNote(value); publish({ ...draft(), note: value }); }}
-                full
-              />
-              <div className="mt-3 flex justify-end">
-                <Button type="button" className={`${compactButtonClass} border-transparent bg-[#175cd3] text-white hover:bg-[#144ca8]`} disabled={saving} onClick={() => void review()}>
-                  <Check className="size-3.5" aria-hidden="true" />
-                  Registrar decisão
-                </Button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <div className="mt-[13px] flex items-start gap-2 rounded-[7px] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.5] text-[#8a6116]">
-          <AlertTriangle className="mt-0.5 size-[15px] shrink-0" aria-hidden="true" />
-          <span>
-            {access.canManageStructure && milestone.deliveredById === access.userId
-              ? "Quem registrou a entrega não valida o próprio marco. O aceite deve ser realizado por outro responsável autorizado."
-              : "O responsável pela entrega pode registrar evidências e enviar para validação, mas o aceite deve ser realizado por outro responsável autorizado."}
-          </span>
-        </div>
-        {canDeliver ? (
-          <div className="mt-3 flex items-center justify-end gap-[9px]">
-            <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={() => void deliver()}>
-              <Upload className="size-3.5" aria-hidden="true" />
-              {saving ? "Enviando…" : "Enviar para validação"}
-            </Button>
-          </div>
-        ) : null}
+        <MilestoneHomologation
+          projectId={projectId}
+          milestone={milestone}
+          access={access}
+          names={names}
+          showEvidence={false}
+          onMilestone={onMilestone}
+          onChanged={() => setEvidenceRevision((value) => value + 1)}
+        />
       </EditSection>
       <EvidenceSection
         projectId={projectId}
@@ -894,7 +1130,7 @@ function MilestoneEditor({
           setEvidenceRevision((value) => value + 1);
         }}
       />
-      <PlanningDates dates={milestone.dates} dueLabel="Planejada (vigente)" />
+      <PlanningDates dates={milestone.dates} dueLabel="Data prevista" />
       <HistoryNote projectId={projectId} entityType="MILESTONE" entityId={milestone.id} refreshKey={historyKey(milestone, evidenceRevision)} />
       <EditStatus error={error} feedback={feedback} />
     </div>
@@ -912,6 +1148,7 @@ function EvidenceSection({
   onUrl,
   onCreated,
   emptyWarning = null,
+  unavailableText = "O registro de evidências não está disponível para este acesso.",
 }: {
   projectId: string;
   parent: EvidenceParent;
@@ -923,6 +1160,7 @@ function EvidenceSection({
   onUrl: (value: string) => void;
   onCreated: () => void;
   emptyWarning?: string | null;
+  unavailableText?: string;
 }) {
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -948,6 +1186,7 @@ function EvidenceSection({
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível registrar a evidência.");
       }
       forgetEvidences(projectId, parent);
+      notifySuccess("Evidência registrada.");
       onTitle("");
       onUrl("");
       setAdding(false);
@@ -982,7 +1221,8 @@ function EvidenceSection({
       <Suspense fallback={<Skeleton className="h-[39px] w-full rounded-[7px]" />}>
         <EvidenceList request={request} emptyWarning={emptyWarning} />
       </Suspense>
-      {canRegister && formOpen ? (
+      {canRegister ? (
+        <Reveal open={formOpen}>
         <div className="mt-3 rounded-[7px] border border-[#e4e7ec] bg-[#fafbfc] p-3">
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
             <EditText label="Título da evidência" value={title} onChange={onTitle} />
@@ -999,9 +1239,10 @@ function EvidenceSection({
             </Button>
           </div>
         </div>
+        </Reveal>
       ) : null}
       {!canRegister ? (
-        <p className="mt-2.5 text-[8.5px] text-[#98a2b3]">O registro de evidências não está disponível para este acesso.</p>
+        <p className="mt-2.5 text-[8.5px] text-[#98a2b3]">{unavailableText}</p>
       ) : null}
     </EditSection>
   );
@@ -1037,7 +1278,11 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
           </span>
           <span className="min-w-0">
             <strong className="mb-[3px] block truncate text-[9px] font-semibold text-[#344054]">{item.title}</strong>
-            <span className="block text-[7.5px] text-[#98a2b3]">Registrada em {item.createdAt}</span>
+            <span className="flex items-center gap-1 text-[7.5px] text-[#98a2b3]">
+              {item.deliveryId ? <Lock className="size-2.5" aria-hidden="true" /> : null}
+              Registrada em {item.createdAt}
+              {item.deliveryId ? " · enviada para homologação" : ""}
+            </span>
           </span>
           <a
             href={item.url}
@@ -1067,16 +1312,27 @@ function FoldBlock({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [seen, setSeen] = useState(false);
   return (
     <section className="mt-3 shrink-0 rounded-[9px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-      <button type="button" className="flex min-h-12 w-full items-center justify-between px-[15px] text-[9.5px] font-semibold text-[#344054]" onClick={() => setOpen((current) => !current)}>
+      <button
+        type="button"
+        aria-expanded={open}
+        className="flex min-h-12 w-full items-center justify-between px-[15px] text-[9.5px] font-semibold text-[#344054]"
+        onClick={() => {
+          setSeen(true);
+          setOpen(!open);
+        }}
+      >
         <span className="flex items-center gap-2">
           <Icon className="size-4" aria-hidden="true" />
           {title}
         </span>
-        <ChevronRight className="size-[15px] rotate-90 text-[#98a2b3]" aria-hidden="true" />
+        <ChevronRight className={`size-[15px] text-[#98a2b3] transition-transform duration-300 ease-out motion-reduce:transition-none ${open ? "-rotate-90" : "rotate-90"}`} aria-hidden="true" />
       </button>
-      {open ? <div className="border-t border-[#edf0f3] px-[15px] pt-[15px] pb-[15px]">{children}</div> : null}
+      <Reveal open={open} bleed={false}>
+        {seen ? <div className="border-t border-[#edf0f3] px-[15px] pt-[15px] pb-[15px]">{children}</div> : null}
+      </Reveal>
     </section>
   );
 }
@@ -1115,106 +1371,39 @@ function PlanningDates({
     <FoldBlock title="Planejamento e datas" icon={CalendarIcon}>
       <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
         {startLabel ? <EditLocked label="Início planejado" value={pick(startLabel)} /> : null}
-        <EditLocked label="Prazo planejado" value={pick(dueLabel)} />
-        <EditArea
-          label="Justificativa de replanejamento"
-          hint="não gravado"
-          value=""
-          onChange={() => undefined}
-          placeholder="Obrigatória quando o prazo for alterado."
-          disabled
-          full
-        />
+        <EditLocked label={startLabel ? "Prazo vigente" : "Data prevista"} value={pick(dueLabel)} />
+        <p className="flex items-start gap-1.5 text-[8.5px] leading-[1.45] text-[#667085] sm:col-span-2">
+          <Lock className="mt-px size-3 shrink-0" aria-hidden="true" />
+          O planejamento muda só por reprogramação, com justificativa, em “Reprogramar prazo” nos detalhes do item.
+        </p>
         {extra}
       </div>
     </FoldBlock>
   );
 }
 
-function DateField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <EditLabel label={label} />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              type="button"
-              variant="outline"
-              className={`${editControlClass} justify-start px-2.5 font-normal shadow-none hover:bg-white ${value ? "text-[#344054]" : "text-[#98a2b3]"}`}
-            />
-          }
-        >
-          <CalendarIcon />
-          {value ? formatCivilDate(value) : "Não informada"}
-        </PopoverTrigger>
-        <PopoverContent align="start" className="z-[80] w-auto p-0">
-          <Calendar
-            mode="single"
-            locale={ptBR}
-            selected={civilToDate(value)}
-            onSelect={(date) => {
-              onChange(date ? formatCivilValue(date) : "");
-              setOpen(false);
-            }}
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
-
-function civilToDate(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) {
-    return undefined;
-  }
-
-  return new Date(year, month - 1, day);
-}
-
-function formatCivilValue(date: Date) {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-function formatCivilDate(value: string) {
-  const [year, month, day] = value.split("-");
-  if (!year || !month || !day) {
-    return "Não informada";
-  }
-
-  return `${day}/${month}/${year}`;
-}
-
 function AssigneeField({
   people,
   value,
   onChange,
+  label = "Responsável",
+  emptyLabel = "Não informado",
 }: {
   people: EapPerson[] | null;
   value: string;
   onChange: (value: string) => void;
+  label?: string;
+  emptyLabel?: string;
 }) {
   if (!people) {
     return <EditNotice text="A lista de participantes não pôde ser consultada." />;
   }
 
-  const current = people.find((person) => person.userId === value)?.name ?? "Não informado";
+  const current = people.find((person) => person.userId === value)?.name ?? emptyLabel;
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <EditLabel label="Responsável" />
+      <EditLabel label={label} />
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button type="button" variant="outline" className={`${editControlClass} justify-between px-2.5 font-normal shadow-none hover:bg-white`} />}>
           <span className="truncate">{current}</span>
@@ -1222,7 +1411,7 @@ function AssigneeField({
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64">
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => onChange("")}>Não informado</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onChange("")}>{emptyLabel}</DropdownMenuItem>
             {people.map((person) => (
               <DropdownMenuItem key={person.userId} onClick={() => onChange(person.userId)}>
                 {person.name}
@@ -1250,8 +1439,8 @@ function EditNotice({ text }: { text: string }) {
   return <p className="text-[8.5px] leading-[1.5] text-[#98a2b3]">{text}</p>;
 }
 
-function historyKey(item: object, evidenceRevision: number) {
-  return `${evidenceRevision}:${JSON.stringify({ ...item, tasks: undefined, milestones: undefined })}`;
+function historyKey(item: object, revision: number | string) {
+  return `${revision}:${JSON.stringify({ ...item, tasks: undefined, milestones: undefined })}`;
 }
 
 function emptyToNull(value: string) {
@@ -1269,26 +1458,25 @@ function isHttpUrl(value: string) {
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof ApiError ? error.message : "Não foi possível concluir a atualização.";
+  return reportFailure(error, "Não foi possível concluir a atualização.");
 }
 
 function useSaveController(
   onController: ((controller: EapSaveController) => void) | undefined,
   save: () => void,
   saving: boolean,
+  locked = false,
 ) {
   const saveRef = useRef(save);
   useEffect(() => {
     saveRef.current = save;
   });
   useEffect(() => {
-    onController?.({ save: () => saveRef.current(), saving });
-  }, [onController, saving]);
+    onController?.({ save: () => saveRef.current(), saving, locked });
+  }, [onController, saving, locked]);
 }
 
-const editControlClass = `h-9 w-full rounded-[7px] border border-[#d7dce3] bg-white px-2.5 text-[10px] text-[#344054] outline-none disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#98a2b3] ${controlTransitionClassName} ${controlFocusClassName}`;
-
-function EditContext({ kind, code, status }: { kind: "phase" | "task" | "milestone"; code: string; status: string }) {
+function EditContext({ kind, code, status, statusKind }: { kind: "phase" | "task" | "milestone"; code: string; status: string; statusKind: EapStatusKind }) {
   const label = kind === "phase" ? "Fase" : kind === "task" ? "Tarefa" : "Marco";
   const Icon = kind === "phase" ? Folder : kind === "task" ? Check : Flag;
   const tone = kind === "phase" ? "bg-[#e9f2ff] text-[#2865b9]" : kind === "task" ? "bg-[#eef2f6] text-[#52677e]" : "bg-[#f4ecfb] text-[#8b5bbb]";
@@ -1301,10 +1489,7 @@ function EditContext({ kind, code, status }: { kind: "phase" | "task" | "milesto
         <span className="mb-[3px] block text-[8px] text-[#98a2b3]">Item da EAP</span>
         <strong className="block text-[10px] text-[#344054]">{code} · {label}</strong>
       </span>
-      <span className="inline-flex items-center gap-[5px] rounded-full bg-[#f0f2f4] px-[7px] py-1 text-[8.5px] font-semibold text-[#667085]">
-        <span className="size-[5px] rounded-full bg-current" />
-        {status}
-      </span>
+      <EapStatusBadge kind={statusKind} label={status} />
     </div>
   );
 }
@@ -1375,27 +1560,6 @@ function EditArea({
     <label className={`flex min-w-0 flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
       <EditLabel label={label} hint={hint} />
       <textarea className={`${editControlClass} min-h-[66px] py-2`} rows={3} value={value} placeholder={placeholder} disabled={disabled} onChange={(event) => onChange(event.target.value)} />
-    </label>
-  );
-}
-
-function EditSelect<T extends string>({
-  label,
-  value,
-  onChange,
-  children,
-}: {
-  label: string;
-  value: T;
-  onChange: (value: T) => void;
-  children: ReactNode;
-}) {
-  return (
-    <label className="flex min-w-0 flex-col gap-1.5">
-      <EditLabel label={label} />
-      <select className={editControlClass} value={value} onChange={(event) => onChange(event.target.value as T)}>
-        {children}
-      </select>
     </label>
   );
 }

@@ -12,4 +12,5 @@ export type CreateEapMilestoneBodyType = typeof CreateEapMilestoneBodyType[keyof
 export const CreateEapMilestoneBodyType = {
   ENTREGA: 'ENTREGA',
   APROVACAO: 'APROVACAO',
+  HOMOLOGACAO: 'HOMOLOGACAO',
 } as const;

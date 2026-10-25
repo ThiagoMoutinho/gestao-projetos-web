@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { AppFrame } from "@/components/layout/app-frame";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <TooltipProvider>
           <AppFrame>{children}</AppFrame>
         </TooltipProvider>
+        <Toaster theme="light" richColors />
       </body>
     </html>
   );

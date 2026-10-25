@@ -12,4 +12,5 @@ export type ReviewEapMilestone200Type = typeof ReviewEapMilestone200Type[keyof t
 export const ReviewEapMilestone200Type = {
   ENTREGA: 'ENTREGA',
   APROVACAO: 'APROVACAO',
+  HOMOLOGACAO: 'HOMOLOGACAO',
 } as const;

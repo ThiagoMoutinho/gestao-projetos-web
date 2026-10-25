@@ -6,12 +6,13 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type CreateEapPhaseBodyStatus = typeof CreateEapPhaseBodyStatus[keyof typeof CreateEapPhaseBodyStatus];
+export type ReactivateEapTask200Status = typeof ReactivateEapTask200Status[keyof typeof ReactivateEapTask200Status];
 
 
-export const CreateEapPhaseBodyStatus = {
+export const ReactivateEapTask200Status = {
   NAO_INICIADA: 'NAO_INICIADA',
   EM_ANDAMENTO: 'EM_ANDAMENTO',
+  IMPEDIDA: 'IMPEDIDA',
   CONCLUIDA: 'CONCLUIDA',
-  SUSPENSA: 'SUSPENSA',
+  CANCELADA: 'CANCELADA',
 } as const;

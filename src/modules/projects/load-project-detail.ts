@@ -62,10 +62,20 @@ export async function loadProjectDetail(id: string): Promise<ProjectDetail> {
           userId: member.userId,
           name: member.name,
           email: member.email,
+          role: member.role,
           roleLabel: projectRoleLabel(member.role),
         }))
       : null,
     phases,
+    schedule: {
+      single: false,
+      plannedStartAt: project.plannedStartAt,
+      plannedEndAt: project.plannedEndAt,
+      baselineStartAt: project.baselineStartAt,
+      baselineEndAt: project.baselineEndAt,
+      actualStartAt: null,
+      actualEndAt: null,
+    },
   };
 }
 

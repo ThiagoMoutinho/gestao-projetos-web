@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { ProjectDetail as ProjectDetailData } from "./load-project-detail";
 import { buildEapAccess, type EapAccess } from "./eap-access";
 import { ProjectEap } from "./project-eap";
+import { ProjectSchedule } from "./project-schedule";
 import { projectStatusLabel, projectStatusVariant } from "./project-status";
 
 const FUTURE_TABS = [
@@ -61,9 +62,14 @@ export function ProjectDetail({
     ownerId: project.ownerId,
     memberRoles: project.memberRoles,
   });
-  const people = project.members
-    ? [...new Map(project.members.map((member) => [member.userId, member.name])).entries()]
-        .map(([userId, name]) => ({ userId, name }))
+  const members = project.members;
+  const people = members
+    ? [...new Map(members.map((member) => [member.userId, member.name])).entries()]
+        .map(([userId, name]) => ({
+          userId,
+          name,
+          homologator: !members.some((member) => member.userId === userId && member.role === "FORNECEDOR"),
+        }))
         .sort((left, right) => left.name.localeCompare(right.name, "pt-BR"))
     : null;
   const router = useRouter();
@@ -173,7 +179,7 @@ export function ProjectDetail({
           ))}
         </TabsList>
         <TabsContent value="visao-geral" className={cn("mt-4", animated && tab === "visao-geral" && "motion-enter")}>
-          <Overview project={project} />
+          <Overview project={project} access={access} />
         </TabsContent>
         {FUTURE_TABS.map((item) => (
           <TabsContent
@@ -189,9 +195,12 @@ export function ProjectDetail({
   );
 }
 
-function Overview({ project }: { project: ProjectDetailData }) {
+function Overview({ project, access }: { project: ProjectDetailData; access: EapAccess }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
+      <div className="lg:col-span-2">
+        <ProjectSchedule projectId={project.id} schedule={project.schedule} closed={project.status === "CONCLUIDO"} access={access} />
+      </div>
       <Card>
         <CardContent className="flex flex-col gap-4">
           <section className="space-y-1">

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ListEapAudit200DataItemAction } from './listEapAudit200DataItemAction.ts';
+import type { ListEapAudit200DataItemDetails } from './listEapAudit200DataItemDetails.ts';
 
 export type ListEapAudit200DataItem = {
   id: string;
@@ -17,4 +18,5 @@ export type ListEapAudit200DataItem = {
   /** @nullable */
   actorName: string | null;
   createdAt: string;
+  details: ListEapAudit200DataItemDetails;
 };

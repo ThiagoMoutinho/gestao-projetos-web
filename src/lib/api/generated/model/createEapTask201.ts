@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { CreateEapTask201CalculatedStatus } from './createEapTask201CalculatedStatus.ts';
 import type { CreateEapTask201Status } from './createEapTask201Status.ts';
 
 export type CreateEapTask201 = {
@@ -44,6 +45,10 @@ export type CreateEapTask201 = {
   /** @nullable */
   actualEndAt: string | null;
   hasImpediment: boolean;
+  /** @nullable */
+  correctiveMilestoneId: string | null;
+  /** Situação pela regra da EAP. Difere de status apenas em registros antigos ainda não reconciliados. */
+  calculatedStatus: CreateEapTask201CalculatedStatus;
   createdBy: string;
   updatedBy: string;
   createdAt: string;

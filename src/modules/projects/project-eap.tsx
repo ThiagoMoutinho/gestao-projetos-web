@@ -21,15 +21,17 @@ import {
 } from "@/components/ui/empty";
 import { EapWorkbench, MilestoneRow, PhaseRow, TaskRow, filterPhases, idleEapFilter, type EapListFilter, type RowActions } from "./eap-board";
 import { EapCreateSheet, type EapCreateRequest } from "./eap-create";
+import { EapDeleteDialog, type EapDeleteRequest } from "./eap-delete-dialog";
 import { EapDetail, eapCode } from "./eap-detail-view";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
-import { reorderEapPhases } from "@/lib/api/generated/eap/eap";
+import { getEapPhase, reorderEapPhases } from "@/lib/api/generated/eap/eap";
 import { ApiError, apiFetcher } from "@/lib/api/fetcher";
+import { notifySuccess, reportFailure } from "@/lib/feedback";
 
 import { canEditItem, canUpdateTaskProgress, type EapAccess } from "./eap-access";
 import type { EapPerson } from "./eap-panel";
-import type { ProjectMilestoneView, ProjectPhaseView, ProjectTaskView } from "./eap-present";
+import { presentPhase, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
 import { orderPhaseChildren, selectionKey, type EapSelection, type PhaseChild } from "./eap-selection";
 
 export function ProjectEap({
@@ -58,6 +60,7 @@ export function ProjectEap({
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [createdNotice, setCreatedNotice] = useState<string | null>(null);
+  const [deleteRequest, setDeleteRequest] = useState<EapDeleteRequest | null>(null);
   const dirtyRef = useRef(false);
   const movingPhaseRef = useRef(false);
 
@@ -95,7 +98,8 @@ export function ProjectEap({
     setPanelEditing(true);
     setSelection(next);
     setPending(null);
-    setCreatedNotice(`${createdLabel}. Agora você pode vincular evidências e acompanhar o histórico de alterações.`);
+    notifySuccess(`${createdLabel}.`);
+    setCreatedNotice("Agora você pode vincular evidências e acompanhar o histórico de alterações.");
   }
 
   function requestClose() {
@@ -136,7 +140,46 @@ export function ProjectEap({
       moveUpDisabled: movingPhase || filtering || index <= 0,
       moveDownDisabled: movingPhase || filtering || !items || index >= items.length - 1,
       moveTitle: filtering ? "Limpe a busca e os filtros para reordenar as fases." : undefined,
+      onDelete: access.canManageStructure && phase ? () => setDeleteRequest({ target: { kind: "phase", phaseId }, label: phase.name }) : undefined,
+      deleteBlockedReason:
+        (phase?.tasks?.length ?? 0) > 0 || (phase?.milestones?.length ?? 0) > 0
+          ? "Não é possível excluir esta fase porque existem tarefas ou marcos vinculados. Mova ou trate os itens subordinados antes de continuar."
+          : undefined,
     };
+  }
+
+  async function refreshPhase(phaseId: string) {
+    try {
+      const response = await getEapPhase(projectId, phaseId);
+      if (response.status !== 200) {
+        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar a situação da fase.");
+      }
+      setItems((currentPhases) =>
+        currentPhases?.map((item) =>
+          item.id === phaseId ? presentPhase(response.data, { tasks: item.tasks, milestones: item.milestones }, names) : item,
+        ) ?? currentPhases,
+      );
+    } catch (caught) {
+      reportFailure(caught, "Não foi possível atualizar a situação da fase. Recarregue a página para ver o valor recalculado.");
+    }
+  }
+
+  function handleDeleted(target: EapSelection) {
+    setItems((currentPhases) => removeItem(currentPhases, target));
+    if (target.kind !== "phase") {
+      void refreshPhase(target.phaseId);
+    }
+    const selectedPhase = selection?.phaseId;
+    const removesSelection =
+      selection &&
+      (target.kind === "phase" ? selectedPhase === target.phaseId : selectionKey(selection) === selectionKey(target));
+    if (removesSelection) {
+      dirtyRef.current = false;
+      setSelection(null);
+      setPanelEditing(false);
+      setPending(null);
+      setCreatedNotice(null);
+    }
   }
 
   async function movePhase(phaseId: string, direction: -1 | 1) {
@@ -237,7 +280,7 @@ export function ProjectEap({
       }
     } catch (caught) {
       setItems(previous);
-      setOrderError(caught instanceof ApiError ? caught.message : "Não foi possível reordenar os itens da fase.");
+      setOrderError(reportFailure(caught, "Não foi possível reordenar os itens da fase."));
     } finally {
       movingPhaseRef.current = false;
       setMovingPhase(false);
@@ -261,16 +304,18 @@ export function ProjectEap({
       }
     } catch (caught) {
       setItems(previous);
-      setOrderError(caught instanceof ApiError ? caught.message : "Não foi possível reordenar as fases.");
+      setOrderError(reportFailure(caught, "Não foi possível reordenar as fases."));
     } finally {
       movingPhaseRef.current = false;
       setMovingPhase(false);
     }
   }
 
-  function itemActions(next: EapSelection, canEdit: boolean): RowActions {
+  function itemActions(next: EapSelection, canEdit: boolean, label: string, deleteBlockedReason?: string): RowActions {
     return {
       onEdit: canEdit ? () => requestSelect(next, true) : undefined,
+      onDelete: access.canManageStructure ? () => setDeleteRequest({ target: next, label }) : undefined,
+      deleteBlockedReason,
     };
   }
 
@@ -284,9 +329,17 @@ export function ProjectEap({
           index={index}
           phaseIndex={phaseIndex}
           task={task}
+          showDivergence={access.canManageStructure}
           selected={selection?.kind === "task" && selection.taskId === task.id}
           onOpen={() => requestSelect(taskSelection)}
-          actions={itemActions(taskSelection, canUpdateTaskProgress(access, task))}
+          actions={itemActions(
+            taskSelection,
+            canUpdateTaskProgress(access, task),
+            task.title,
+            task.calculatedStatus === "CONCLUIDA"
+              ? "Não é possível excluir uma tarefa concluída. A conclusão faz parte do histórico de execução do projeto."
+              : undefined,
+          )}
           reorderable={canReorderPhases}
           dragging={draggingPhaseId === `task:${task.id}`}
           dragOver={dragOverPhaseId === `task:${task.id}` && draggingPhaseId !== `task:${task.id}`}
@@ -314,7 +367,14 @@ export function ProjectEap({
         milestone={milestone}
         selected={selection?.kind === "milestone" && selection.milestoneId === milestone.id}
         onOpen={() => requestSelect({ kind: "milestone", phaseId, milestoneId: milestone.id })}
-        actions={itemActions({ kind: "milestone", phaseId, milestoneId: milestone.id }, canEditItem(access, milestone.createdBy))}
+        actions={itemActions(
+          { kind: "milestone", phaseId, milestoneId: milestone.id },
+          canEditItem(access, milestone.createdBy),
+          milestone.title,
+          milestone.status !== "PENDENTE"
+            ? "Não é possível excluir um marco já entregue ou homologado. A entrega e a decisão formal fazem parte do histórico do projeto."
+            : undefined,
+        )}
         reorderable={canReorderPhases}
         dragging={draggingPhaseId === `milestone:${milestone.id}`}
         dragOver={dragOverPhaseId === `milestone:${milestone.id}` && draggingPhaseId !== `milestone:${milestone.id}`}
@@ -359,6 +419,7 @@ export function ProjectEap({
                 key={phase.id}
                 index={phaseIndex}
                 phase={phase}
+                showDivergence={access.canManageStructure}
                 selected={selection?.kind === "phase" && selection.phaseId === phase.id}
                 onOpen={() => requestSelect({ kind: "phase", phaseId: phase.id })}
                 actions={phaseActions(phase.id, phaseIndex)}
@@ -427,8 +488,18 @@ export function ProjectEap({
               onDiscard={discard}
               onSelect={requestSelect}
               onPhase={(phase) => setItems((currentPhases) => patchPhase(currentPhases, phase))}
-              onTask={(task) => setItems((currentPhases) => patchTask(currentPhases, task))}
-              onMilestone={(milestone) => setItems((currentPhases) => patchMilestone(currentPhases, milestone))}
+              onTask={(task) => {
+                setItems((currentPhases) => patchTask(currentPhases, task));
+                void refreshPhase(task.phaseId);
+              }}
+              onMilestone={(milestone) => {
+                setItems((currentPhases) => patchMilestone(currentPhases, milestone));
+                void refreshPhase(milestone.phaseId);
+              }}
+              onCorrectiveTask={(milestone) => {
+                requestClose();
+                setCreate({ kind: "task", phaseId: milestone.phaseId, correctiveFor: { milestoneId: milestone.id, title: milestone.title } });
+              }}
             />
           ) : null}
         </SheetContent>
@@ -449,14 +520,22 @@ export function ProjectEap({
           }}
           onTask={(task) => {
             setItems((currentPhases) => appendTask(currentPhases, task));
+            void refreshPhase(task.phaseId);
             openCreated({ kind: "task", phaseId: task.phaseId, taskId: task.id }, "Tarefa criada");
           }}
           onMilestone={(milestone) => {
             setItems((currentPhases) => appendMilestone(currentPhases, milestone));
+            void refreshPhase(milestone.phaseId);
             openCreated({ kind: "milestone", phaseId: milestone.phaseId, milestoneId: milestone.id }, "Marco criado");
           }}
         />
       ) : null}
+      <EapDeleteDialog
+        projectId={projectId}
+        request={deleteRequest}
+        onClose={() => setDeleteRequest(null)}
+        onDeleted={handleDeleted}
+      />
     </div>
   );
 }
@@ -595,6 +674,24 @@ function childKey(child: PhaseChild) {
 function nextChildSortOrder(phase: ProjectPhaseView) {
   const orders = [...(phase.tasks ?? []), ...(phase.milestones ?? [])].map((item) => item.sortOrder);
   return orders.reduce((maxValue, order) => Math.max(maxValue, order), -1) + 1;
+}
+
+function removeItem(phases: ProjectPhaseView[] | null, target: EapSelection) {
+  if (!phases) {
+    return phases;
+  }
+  if (target.kind === "phase") {
+    return phases.filter((phase) => phase.id !== target.phaseId);
+  }
+
+  return phases.map((phase) => {
+    if (phase.id !== target.phaseId) {
+      return phase;
+    }
+    return target.kind === "task"
+      ? { ...phase, tasks: phase.tasks?.filter((item) => item.id !== target.taskId) ?? null }
+      : { ...phase, milestones: phase.milestones?.filter((item) => item.id !== target.milestoneId) ?? null };
+  });
 }
 
 function appendPhase(phases: ProjectPhaseView[] | null, phase: ProjectPhaseView) {

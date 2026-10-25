@@ -5,7 +5,6 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { CreateEapTaskBodyStatus } from './createEapTaskBodyStatus.ts';
 
 export type CreateEapTaskBody = {
   /**
@@ -28,7 +27,6 @@ export type CreateEapTaskBody = {
      * @maximum 9007199254740991
      */
   weight?: number;
-  status?: CreateEapTaskBodyStatus;
   /**
      * @minLength 1
      * @nullable
@@ -39,4 +37,10 @@ export type CreateEapTaskBody = {
      * @nullable
      */
   plannedEndAt?: string | null;
+  /**
+     * Marco da mesma fase com correções pendentes que a tarefa atende.
+     * @minLength 1
+     * @nullable
+     */
+  correctiveMilestoneId?: string | null;
 };

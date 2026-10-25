@@ -6,7 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ReorderEapPhases200DataItem } from './reorderEapPhases200DataItem.ts';
+import type { ReorderEapPhases200Summary } from './reorderEapPhases200Summary.ts';
 
 export type ReorderEapPhases200 = {
   data: ReorderEapPhases200DataItem[];
+  summary: ReorderEapPhases200Summary;
 };

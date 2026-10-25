@@ -14,4 +14,5 @@ export const CreateEapMilestone201Status = {
   ENTREGUE: 'ENTREGUE',
   APROVADO: 'APROVADO',
   REJEITADO: 'REJEITADO',
+  AJUSTES_SOLICITADOS: 'AJUSTES_SOLICITADOS',
 } as const;

@@ -6,6 +6,20 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
+  AuthorizeEapMilestoneResubmission200,
+  AuthorizeEapMilestoneResubmission400,
+  AuthorizeEapMilestoneResubmission401,
+  AuthorizeEapMilestoneResubmission403,
+  AuthorizeEapMilestoneResubmission404,
+  AuthorizeEapMilestoneResubmission409,
+  AuthorizeEapMilestoneResubmissionBody,
+  CancelEapTask200,
+  CancelEapTask400,
+  CancelEapTask401,
+  CancelEapTask403,
+  CancelEapTask404,
+  CancelEapTask409,
+  CancelEapTaskBody,
   CreateEapEvidence201,
   CreateEapEvidence400,
   CreateEapEvidence401,
@@ -34,6 +48,21 @@ import type {
   CreateEapTask404,
   CreateEapTask409,
   CreateEapTaskBody,
+  DeleteEapMilestone400,
+  DeleteEapMilestone401,
+  DeleteEapMilestone403,
+  DeleteEapMilestone404,
+  DeleteEapMilestone409,
+  DeleteEapPhase400,
+  DeleteEapPhase401,
+  DeleteEapPhase403,
+  DeleteEapPhase404,
+  DeleteEapPhase409,
+  DeleteEapTask400,
+  DeleteEapTask401,
+  DeleteEapTask403,
+  DeleteEapTask404,
+  DeleteEapTask409,
   DeliverEapMilestone200,
   DeliverEapMilestone400,
   DeliverEapMilestone401,
@@ -78,6 +107,12 @@ import type {
   ListEapEvidences404,
   ListEapEvidences409,
   ListEapEvidencesParams,
+  ListEapMilestoneDeliveries200,
+  ListEapMilestoneDeliveries400,
+  ListEapMilestoneDeliveries401,
+  ListEapMilestoneDeliveries403,
+  ListEapMilestoneDeliveries404,
+  ListEapMilestoneDeliveries409,
   ListEapMilestones200,
   ListEapMilestones400,
   ListEapMilestones401,
@@ -90,12 +125,32 @@ import type {
   ListEapPhases403,
   ListEapPhases404,
   ListEapPhases409,
+  ListEapTaskImpediments200,
+  ListEapTaskImpediments400,
+  ListEapTaskImpediments401,
+  ListEapTaskImpediments403,
+  ListEapTaskImpediments404,
+  ListEapTaskImpediments409,
   ListEapTasks200,
   ListEapTasks400,
   ListEapTasks401,
   ListEapTasks403,
   ListEapTasks404,
   ListEapTasks409,
+  ReactivateEapTask200,
+  ReactivateEapTask400,
+  ReactivateEapTask401,
+  ReactivateEapTask403,
+  ReactivateEapTask404,
+  ReactivateEapTask409,
+  ReactivateEapTaskBody,
+  RegisterEapTaskImpediment201,
+  RegisterEapTaskImpediment400,
+  RegisterEapTaskImpediment401,
+  RegisterEapTaskImpediment403,
+  RegisterEapTaskImpediment404,
+  RegisterEapTaskImpediment409,
+  RegisterEapTaskImpedimentBody,
   ReorderEapMilestones200,
   ReorderEapMilestones400,
   ReorderEapMilestones401,
@@ -117,6 +172,13 @@ import type {
   ReorderEapTasks404,
   ReorderEapTasks409,
   ReorderEapTasksBody,
+  ResolveEapTaskImpediment200,
+  ResolveEapTaskImpediment400,
+  ResolveEapTaskImpediment401,
+  ResolveEapTaskImpediment403,
+  ResolveEapTaskImpediment404,
+  ResolveEapTaskImpediment409,
+  ResolveEapTaskImpedimentBody,
   ReviewEapMilestone200,
   ReviewEapMilestone400,
   ReviewEapMilestone401,
@@ -152,6 +214,13 @@ import type {
   UpdateEapTask404,
   UpdateEapTask409,
   UpdateEapTaskBody,
+  UpdateEapTaskImpediment200,
+  UpdateEapTaskImpediment400,
+  UpdateEapTaskImpediment401,
+  UpdateEapTaskImpediment403,
+  UpdateEapTaskImpediment404,
+  UpdateEapTaskImpediment409,
+  UpdateEapTaskImpedimentBody,
   UpdateEapTaskProgress200,
   UpdateEapTaskProgress400,
   UpdateEapTaskProgress401,
@@ -518,6 +587,71 @@ return apiFetcher<updateEapPhaseResponse>(getUpdateEapPhaseUrl(id,phaseId),
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(updateEapPhaseBody)
+  }
+);}
+
+
+export type deleteEapPhaseResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteEapPhaseResponse400 = {
+  data: DeleteEapPhase400
+  status: 400
+}
+
+export type deleteEapPhaseResponse401 = {
+  data: DeleteEapPhase401
+  status: 401
+}
+
+export type deleteEapPhaseResponse403 = {
+  data: DeleteEapPhase403
+  status: 403
+}
+
+export type deleteEapPhaseResponse404 = {
+  data: DeleteEapPhase404
+  status: 404
+}
+
+export type deleteEapPhaseResponse409 = {
+  data: DeleteEapPhase409
+  status: 409
+}
+
+export type deleteEapPhaseResponseSuccess = (deleteEapPhaseResponse204) & {
+  headers: Headers;
+};
+export type deleteEapPhaseResponseError = (deleteEapPhaseResponse400 | deleteEapPhaseResponse401 | deleteEapPhaseResponse403 | deleteEapPhaseResponse404 | deleteEapPhaseResponse409) & {
+  headers: Headers;
+};
+
+export type deleteEapPhaseResponse = (deleteEapPhaseResponseSuccess | deleteEapPhaseResponseError)
+
+export const getDeleteEapPhaseUrl = (id: string,
+    phaseId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}`
+}
+
+/**
+ * Somente a gestão do projeto. Retorna 409 quando a fase possui tarefas, marcos, evidências ou replanejamentos.
+ * @summary Excluir fase sem itens nem histórico formal
+ */
+export const deleteEapPhase = async (id: string,
+    phaseId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<deleteEapPhaseResponse> => {
+
+  return apiFetcher<deleteEapPhaseResponse>(getDeleteEapPhaseUrl(id,phaseId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
   }
 );}
 
@@ -891,6 +1025,73 @@ return apiFetcher<updateEapTaskResponse>(getUpdateEapTaskUrl(id,phaseId,taskId),
 );}
 
 
+export type deleteEapTaskResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteEapTaskResponse400 = {
+  data: DeleteEapTask400
+  status: 400
+}
+
+export type deleteEapTaskResponse401 = {
+  data: DeleteEapTask401
+  status: 401
+}
+
+export type deleteEapTaskResponse403 = {
+  data: DeleteEapTask403
+  status: 403
+}
+
+export type deleteEapTaskResponse404 = {
+  data: DeleteEapTask404
+  status: 404
+}
+
+export type deleteEapTaskResponse409 = {
+  data: DeleteEapTask409
+  status: 409
+}
+
+export type deleteEapTaskResponseSuccess = (deleteEapTaskResponse204) & {
+  headers: Headers;
+};
+export type deleteEapTaskResponseError = (deleteEapTaskResponse400 | deleteEapTaskResponse401 | deleteEapTaskResponse403 | deleteEapTaskResponse404 | deleteEapTaskResponse409) & {
+  headers: Headers;
+};
+
+export type deleteEapTaskResponse = (deleteEapTaskResponseSuccess | deleteEapTaskResponseError)
+
+export const getDeleteEapTaskUrl = (id: string,
+    phaseId: string,
+    taskId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/${taskId}`
+}
+
+/**
+ * Somente a gestão do projeto. Retorna 409 quando a tarefa está concluída ou possui evidências, impedimentos ou replanejamentos.
+ * @summary Excluir tarefa sem movimentação
+ */
+export const deleteEapTask = async (id: string,
+    phaseId: string,
+    taskId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<deleteEapTaskResponse> => {
+
+  return apiFetcher<deleteEapTaskResponse>(getDeleteEapTaskUrl(id,phaseId,taskId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
 export type updateEapTaskProgressResponse200 = {
   data: UpdateEapTaskProgress200
   status: 200
@@ -968,6 +1169,485 @@ return apiFetcher<updateEapTaskProgressResponse>(getUpdateEapTaskProgressUrl(id,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(updateEapTaskProgressBody)
+  }
+);}
+
+
+export type cancelEapTaskResponse200 = {
+  data: CancelEapTask200
+  status: 200
+}
+
+export type cancelEapTaskResponse400 = {
+  data: CancelEapTask400
+  status: 400
+}
+
+export type cancelEapTaskResponse401 = {
+  data: CancelEapTask401
+  status: 401
+}
+
+export type cancelEapTaskResponse403 = {
+  data: CancelEapTask403
+  status: 403
+}
+
+export type cancelEapTaskResponse404 = {
+  data: CancelEapTask404
+  status: 404
+}
+
+export type cancelEapTaskResponse409 = {
+  data: CancelEapTask409
+  status: 409
+}
+
+export type cancelEapTaskResponseSuccess = (cancelEapTaskResponse200) & {
+  headers: Headers;
+};
+export type cancelEapTaskResponseError = (cancelEapTaskResponse400 | cancelEapTaskResponse401 | cancelEapTaskResponse403 | cancelEapTaskResponse404 | cancelEapTaskResponse409) & {
+  headers: Headers;
+};
+
+export type cancelEapTaskResponse = (cancelEapTaskResponseSuccess | cancelEapTaskResponseError)
+
+export const getCancelEapTaskUrl = (id: string,
+    phaseId: string,
+    taskId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/${taskId}/cancel`
+}
+
+/**
+ * Somente a gestão do projeto, com justificativa. Retorna 409 quando a tarefa já está cancelada ou concluída.
+ * @summary Cancelar tarefa
+ */
+export const cancelEapTask = async (id: string,
+    phaseId: string,
+    taskId: string,
+    cancelEapTaskBody: CancelEapTaskBody, options?: Parameters<typeof apiFetcher>[1]): Promise<cancelEapTaskResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<cancelEapTaskResponse>(getCancelEapTaskUrl(id,phaseId,taskId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(cancelEapTaskBody)
+  }
+);}
+
+
+export type reactivateEapTaskResponse200 = {
+  data: ReactivateEapTask200
+  status: 200
+}
+
+export type reactivateEapTaskResponse400 = {
+  data: ReactivateEapTask400
+  status: 400
+}
+
+export type reactivateEapTaskResponse401 = {
+  data: ReactivateEapTask401
+  status: 401
+}
+
+export type reactivateEapTaskResponse403 = {
+  data: ReactivateEapTask403
+  status: 403
+}
+
+export type reactivateEapTaskResponse404 = {
+  data: ReactivateEapTask404
+  status: 404
+}
+
+export type reactivateEapTaskResponse409 = {
+  data: ReactivateEapTask409
+  status: 409
+}
+
+export type reactivateEapTaskResponseSuccess = (reactivateEapTaskResponse200) & {
+  headers: Headers;
+};
+export type reactivateEapTaskResponseError = (reactivateEapTaskResponse400 | reactivateEapTaskResponse401 | reactivateEapTaskResponse403 | reactivateEapTaskResponse404 | reactivateEapTaskResponse409) & {
+  headers: Headers;
+};
+
+export type reactivateEapTaskResponse = (reactivateEapTaskResponseSuccess | reactivateEapTaskResponseError)
+
+export const getReactivateEapTaskUrl = (id: string,
+    phaseId: string,
+    taskId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/${taskId}/reactivate`
+}
+
+/**
+ * Somente a gestão do projeto, com justificativa. A situação volta a ser derivada do percentual.
+ * @summary Reativar tarefa cancelada
+ */
+export const reactivateEapTask = async (id: string,
+    phaseId: string,
+    taskId: string,
+    reactivateEapTaskBody: ReactivateEapTaskBody, options?: Parameters<typeof apiFetcher>[1]): Promise<reactivateEapTaskResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<reactivateEapTaskResponse>(getReactivateEapTaskUrl(id,phaseId,taskId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reactivateEapTaskBody)
+  }
+);}
+
+
+export type listEapTaskImpedimentsResponse200 = {
+  data: ListEapTaskImpediments200
+  status: 200
+}
+
+export type listEapTaskImpedimentsResponse400 = {
+  data: ListEapTaskImpediments400
+  status: 400
+}
+
+export type listEapTaskImpedimentsResponse401 = {
+  data: ListEapTaskImpediments401
+  status: 401
+}
+
+export type listEapTaskImpedimentsResponse403 = {
+  data: ListEapTaskImpediments403
+  status: 403
+}
+
+export type listEapTaskImpedimentsResponse404 = {
+  data: ListEapTaskImpediments404
+  status: 404
+}
+
+export type listEapTaskImpedimentsResponse409 = {
+  data: ListEapTaskImpediments409
+  status: 409
+}
+
+export type listEapTaskImpedimentsResponseSuccess = (listEapTaskImpedimentsResponse200) & {
+  headers: Headers;
+};
+export type listEapTaskImpedimentsResponseError = (listEapTaskImpedimentsResponse400 | listEapTaskImpedimentsResponse401 | listEapTaskImpedimentsResponse403 | listEapTaskImpedimentsResponse404 | listEapTaskImpedimentsResponse409) & {
+  headers: Headers;
+};
+
+export type listEapTaskImpedimentsResponse = (listEapTaskImpedimentsResponseSuccess | listEapTaskImpedimentsResponseError)
+
+export const getListEapTaskImpedimentsUrl = (id: string,
+    phaseId: string,
+    taskId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/${taskId}/impediments`
+}
+
+/**
+ * Impedimentos em aberto e resolvidos, do mais recente para o mais antigo.
+ * @summary Listar impedimentos da tarefa
+ */
+export const listEapTaskImpediments = async (id: string,
+    phaseId: string,
+    taskId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<listEapTaskImpedimentsResponse> => {
+
+  return apiFetcher<listEapTaskImpedimentsResponse>(getListEapTaskImpedimentsUrl(id,phaseId,taskId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+export type registerEapTaskImpedimentResponse201 = {
+  data: RegisterEapTaskImpediment201
+  status: 201
+}
+
+export type registerEapTaskImpedimentResponse400 = {
+  data: RegisterEapTaskImpediment400
+  status: 400
+}
+
+export type registerEapTaskImpedimentResponse401 = {
+  data: RegisterEapTaskImpediment401
+  status: 401
+}
+
+export type registerEapTaskImpedimentResponse403 = {
+  data: RegisterEapTaskImpediment403
+  status: 403
+}
+
+export type registerEapTaskImpedimentResponse404 = {
+  data: RegisterEapTaskImpediment404
+  status: 404
+}
+
+export type registerEapTaskImpedimentResponse409 = {
+  data: RegisterEapTaskImpediment409
+  status: 409
+}
+
+export type registerEapTaskImpedimentResponseSuccess = (registerEapTaskImpedimentResponse201) & {
+  headers: Headers;
+};
+export type registerEapTaskImpedimentResponseError = (registerEapTaskImpedimentResponse400 | registerEapTaskImpedimentResponse401 | registerEapTaskImpedimentResponse403 | registerEapTaskImpedimentResponse404 | registerEapTaskImpedimentResponse409) & {
+  headers: Headers;
+};
+
+export type registerEapTaskImpedimentResponse = (registerEapTaskImpedimentResponseSuccess | registerEapTaskImpedimentResponseError)
+
+export const getRegisterEapTaskImpedimentUrl = (id: string,
+    phaseId: string,
+    taskId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/${taskId}/impediments`
+}
+
+/**
+ * Exige motivo. Não altera percentual, situação, linha de base nem datas planejadas. Retorna 409 quando já existe impedimento em aberto ou a tarefa está cancelada ou concluída.
+ * @summary Registrar impedimento da tarefa
+ */
+export const registerEapTaskImpediment = async (id: string,
+    phaseId: string,
+    taskId: string,
+    registerEapTaskImpedimentBody: RegisterEapTaskImpedimentBody, options?: Parameters<typeof apiFetcher>[1]): Promise<registerEapTaskImpedimentResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<registerEapTaskImpedimentResponse>(getRegisterEapTaskImpedimentUrl(id,phaseId,taskId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(registerEapTaskImpedimentBody)
+  }
+);}
+
+
+export type updateEapTaskImpedimentResponse200 = {
+  data: UpdateEapTaskImpediment200
+  status: 200
+}
+
+export type updateEapTaskImpedimentResponse400 = {
+  data: UpdateEapTaskImpediment400
+  status: 400
+}
+
+export type updateEapTaskImpedimentResponse401 = {
+  data: UpdateEapTaskImpediment401
+  status: 401
+}
+
+export type updateEapTaskImpedimentResponse403 = {
+  data: UpdateEapTaskImpediment403
+  status: 403
+}
+
+export type updateEapTaskImpedimentResponse404 = {
+  data: UpdateEapTaskImpediment404
+  status: 404
+}
+
+export type updateEapTaskImpedimentResponse409 = {
+  data: UpdateEapTaskImpediment409
+  status: 409
+}
+
+export type updateEapTaskImpedimentResponseSuccess = (updateEapTaskImpedimentResponse200) & {
+  headers: Headers;
+};
+export type updateEapTaskImpedimentResponseError = (updateEapTaskImpedimentResponse400 | updateEapTaskImpedimentResponse401 | updateEapTaskImpedimentResponse403 | updateEapTaskImpedimentResponse404 | updateEapTaskImpedimentResponse409) & {
+  headers: Headers;
+};
+
+export type updateEapTaskImpedimentResponse = (updateEapTaskImpedimentResponseSuccess | updateEapTaskImpedimentResponseError)
+
+export const getUpdateEapTaskImpedimentUrl = (id: string,
+    phaseId: string,
+    taskId: string,
+    impedimentId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/${taskId}/impediments/${impedimentId}`
+}
+
+/**
+ * O motivo anterior permanece na auditoria.
+ * @summary Atualizar motivo do impedimento em aberto
+ */
+export const updateEapTaskImpediment = async (id: string,
+    phaseId: string,
+    taskId: string,
+    impedimentId: string,
+    updateEapTaskImpedimentBody: UpdateEapTaskImpedimentBody, options?: Parameters<typeof apiFetcher>[1]): Promise<updateEapTaskImpedimentResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<updateEapTaskImpedimentResponse>(getUpdateEapTaskImpedimentUrl(id,phaseId,taskId,impedimentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateEapTaskImpedimentBody)
+  }
+);}
+
+
+export type resolveEapTaskImpedimentResponse200 = {
+  data: ResolveEapTaskImpediment200
+  status: 200
+}
+
+export type resolveEapTaskImpedimentResponse400 = {
+  data: ResolveEapTaskImpediment400
+  status: 400
+}
+
+export type resolveEapTaskImpedimentResponse401 = {
+  data: ResolveEapTaskImpediment401
+  status: 401
+}
+
+export type resolveEapTaskImpedimentResponse403 = {
+  data: ResolveEapTaskImpediment403
+  status: 403
+}
+
+export type resolveEapTaskImpedimentResponse404 = {
+  data: ResolveEapTaskImpediment404
+  status: 404
+}
+
+export type resolveEapTaskImpedimentResponse409 = {
+  data: ResolveEapTaskImpediment409
+  status: 409
+}
+
+export type resolveEapTaskImpedimentResponseSuccess = (resolveEapTaskImpedimentResponse200) & {
+  headers: Headers;
+};
+export type resolveEapTaskImpedimentResponseError = (resolveEapTaskImpedimentResponse400 | resolveEapTaskImpedimentResponse401 | resolveEapTaskImpedimentResponse403 | resolveEapTaskImpedimentResponse404 | resolveEapTaskImpedimentResponse409) & {
+  headers: Headers;
+};
+
+export type resolveEapTaskImpedimentResponse = (resolveEapTaskImpedimentResponseSuccess | resolveEapTaskImpedimentResponseError)
+
+export const getResolveEapTaskImpedimentUrl = (id: string,
+    phaseId: string,
+    taskId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/${taskId}/impediments/resolve`
+}
+
+/**
+ * Exige nota de resolução. Registra quem resolveu, quando e o tempo em aberto. Não altera percentual, situação, linha de base nem datas planejadas.
+ * @summary Resolver impedimento da tarefa
+ */
+export const resolveEapTaskImpediment = async (id: string,
+    phaseId: string,
+    taskId: string,
+    resolveEapTaskImpedimentBody: ResolveEapTaskImpedimentBody, options?: Parameters<typeof apiFetcher>[1]): Promise<resolveEapTaskImpedimentResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<resolveEapTaskImpedimentResponse>(getResolveEapTaskImpedimentUrl(id,phaseId,taskId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(resolveEapTaskImpedimentBody)
   }
 );}
 
@@ -1341,6 +2021,73 @@ return apiFetcher<updateEapMilestoneResponse>(getUpdateEapMilestoneUrl(id,phaseI
 );}
 
 
+export type deleteEapMilestoneResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteEapMilestoneResponse400 = {
+  data: DeleteEapMilestone400
+  status: 400
+}
+
+export type deleteEapMilestoneResponse401 = {
+  data: DeleteEapMilestone401
+  status: 401
+}
+
+export type deleteEapMilestoneResponse403 = {
+  data: DeleteEapMilestone403
+  status: 403
+}
+
+export type deleteEapMilestoneResponse404 = {
+  data: DeleteEapMilestone404
+  status: 404
+}
+
+export type deleteEapMilestoneResponse409 = {
+  data: DeleteEapMilestone409
+  status: 409
+}
+
+export type deleteEapMilestoneResponseSuccess = (deleteEapMilestoneResponse204) & {
+  headers: Headers;
+};
+export type deleteEapMilestoneResponseError = (deleteEapMilestoneResponse400 | deleteEapMilestoneResponse401 | deleteEapMilestoneResponse403 | deleteEapMilestoneResponse404 | deleteEapMilestoneResponse409) & {
+  headers: Headers;
+};
+
+export type deleteEapMilestoneResponse = (deleteEapMilestoneResponseSuccess | deleteEapMilestoneResponseError)
+
+export const getDeleteEapMilestoneUrl = (id: string,
+    phaseId: string,
+    milestoneId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/milestones/${milestoneId}`
+}
+
+/**
+ * Somente a gestão do projeto. Retorna 409 quando o marco já foi entregue, aceito ou devolvido, ou possui evidências ou replanejamentos.
+ * @summary Excluir marco pendente sem histórico formal
+ */
+export const deleteEapMilestone = async (id: string,
+    phaseId: string,
+    milestoneId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<deleteEapMilestoneResponse> => {
+
+  return apiFetcher<deleteEapMilestoneResponse>(getDeleteEapMilestoneUrl(id,phaseId,milestoneId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
 export type deliverEapMilestoneResponse200 = {
   data: DeliverEapMilestone200
   status: 200
@@ -1472,7 +2219,8 @@ export const getReviewEapMilestoneUrl = (id: string,
 }
 
 /**
- * @summary Aprovar ou rejeitar marco
+ * Somente o homologador designado no marco ou, sem designação, o dono e quem tem DONO_PROJETO/GESTOR no projeto. Quem enviou a rodada não decide.
+ * @summary Aceitar, solicitar correções ou rejeitar a entrega do marco
  */
 export const reviewEapMilestone = async (id: string,
     phaseId: string,
@@ -1499,6 +2247,154 @@ return apiFetcher<reviewEapMilestoneResponse>(getReviewEapMilestoneUrl(id,phaseI
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(reviewEapMilestoneBody)
+  }
+);}
+
+
+export type authorizeEapMilestoneResubmissionResponse200 = {
+  data: AuthorizeEapMilestoneResubmission200
+  status: 200
+}
+
+export type authorizeEapMilestoneResubmissionResponse400 = {
+  data: AuthorizeEapMilestoneResubmission400
+  status: 400
+}
+
+export type authorizeEapMilestoneResubmissionResponse401 = {
+  data: AuthorizeEapMilestoneResubmission401
+  status: 401
+}
+
+export type authorizeEapMilestoneResubmissionResponse403 = {
+  data: AuthorizeEapMilestoneResubmission403
+  status: 403
+}
+
+export type authorizeEapMilestoneResubmissionResponse404 = {
+  data: AuthorizeEapMilestoneResubmission404
+  status: 404
+}
+
+export type authorizeEapMilestoneResubmissionResponse409 = {
+  data: AuthorizeEapMilestoneResubmission409
+  status: 409
+}
+
+export type authorizeEapMilestoneResubmissionResponseSuccess = (authorizeEapMilestoneResubmissionResponse200) & {
+  headers: Headers;
+};
+export type authorizeEapMilestoneResubmissionResponseError = (authorizeEapMilestoneResubmissionResponse400 | authorizeEapMilestoneResubmissionResponse401 | authorizeEapMilestoneResubmissionResponse403 | authorizeEapMilestoneResubmissionResponse404 | authorizeEapMilestoneResubmissionResponse409) & {
+  headers: Headers;
+};
+
+export type authorizeEapMilestoneResubmissionResponse = (authorizeEapMilestoneResubmissionResponseSuccess | authorizeEapMilestoneResubmissionResponseError)
+
+export const getAuthorizeEapMilestoneResubmissionUrl = (id: string,
+    phaseId: string,
+    milestoneId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/milestones/${milestoneId}/resubmission`
+}
+
+/**
+ * PMO, ADMIN ou a gestão do projeto, com justificativa.
+ * @summary Autorizar nova submissão após rejeição
+ */
+export const authorizeEapMilestoneResubmission = async (id: string,
+    phaseId: string,
+    milestoneId: string,
+    authorizeEapMilestoneResubmissionBody: AuthorizeEapMilestoneResubmissionBody, options?: Parameters<typeof apiFetcher>[1]): Promise<authorizeEapMilestoneResubmissionResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<authorizeEapMilestoneResubmissionResponse>(getAuthorizeEapMilestoneResubmissionUrl(id,phaseId,milestoneId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authorizeEapMilestoneResubmissionBody)
+  }
+);}
+
+
+export type listEapMilestoneDeliveriesResponse200 = {
+  data: ListEapMilestoneDeliveries200
+  status: 200
+}
+
+export type listEapMilestoneDeliveriesResponse400 = {
+  data: ListEapMilestoneDeliveries400
+  status: 400
+}
+
+export type listEapMilestoneDeliveriesResponse401 = {
+  data: ListEapMilestoneDeliveries401
+  status: 401
+}
+
+export type listEapMilestoneDeliveriesResponse403 = {
+  data: ListEapMilestoneDeliveries403
+  status: 403
+}
+
+export type listEapMilestoneDeliveriesResponse404 = {
+  data: ListEapMilestoneDeliveries404
+  status: 404
+}
+
+export type listEapMilestoneDeliveriesResponse409 = {
+  data: ListEapMilestoneDeliveries409
+  status: 409
+}
+
+export type listEapMilestoneDeliveriesResponseSuccess = (listEapMilestoneDeliveriesResponse200) & {
+  headers: Headers;
+};
+export type listEapMilestoneDeliveriesResponseError = (listEapMilestoneDeliveriesResponse400 | listEapMilestoneDeliveriesResponse401 | listEapMilestoneDeliveriesResponse403 | listEapMilestoneDeliveriesResponse404 | listEapMilestoneDeliveriesResponse409) & {
+  headers: Headers;
+};
+
+export type listEapMilestoneDeliveriesResponse = (listEapMilestoneDeliveriesResponseSuccess | listEapMilestoneDeliveriesResponseError)
+
+export const getListEapMilestoneDeliveriesUrl = (id: string,
+    phaseId: string,
+    milestoneId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/milestones/${milestoneId}/deliveries`
+}
+
+/**
+ * @summary Listar rodadas de homologação do marco
+ */
+export const listEapMilestoneDeliveries = async (id: string,
+    phaseId: string,
+    milestoneId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<listEapMilestoneDeliveriesResponse> => {
+
+  return apiFetcher<listEapMilestoneDeliveriesResponse>(getListEapMilestoneDeliveriesUrl(id,phaseId,milestoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

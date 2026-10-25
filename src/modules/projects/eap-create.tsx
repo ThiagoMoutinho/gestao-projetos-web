@@ -11,18 +11,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/fetcher";
-import { createEapMilestone, createEapPhase, createEapTask, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
-import type { CreateEapPhaseBodyStatus } from "@/lib/api/generated/model/createEapPhaseBodyStatus";
-import type { CreateEapTaskBodyStatus } from "@/lib/api/generated/model/createEapTaskBodyStatus";
+import { notifyWarning, reportFailure } from "@/lib/feedback";
+import { createEapMilestone, createEapPhase, createEapTask, registerEapTaskImpediment, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
+import type { ListEapMilestones200DataItemType } from "@/lib/api/generated/model/listEapMilestones200DataItemType";
 
 import type { EapAccess } from "./eap-access";
 import { presentMilestone, presentPhase, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
 import type { EapPerson } from "./eap-panel";
-import { PHASE_STATUSES, TASK_STATUSES, phaseStatusLabel, taskStatusLabel } from "./project-records";
+import { Reveal } from "./eap-reveal";
+import { deriveTaskStatus } from "./eap-status";
+import { impedimentTone } from "./eap-tones";
+import { MILESTONE_TYPE_OPTIONS, phaseStatusLabel, taskStatusLabel } from "./project-records";
 
 export type EapCreateRequest =
   | { kind: "phase" }
-  | { kind: "task"; phaseId: string }
+  | { kind: "task"; phaseId: string; correctiveFor?: { milestoneId: string; title: string } }
   | { kind: "milestone"; phaseId: string };
 
 export function EapCreateSheet({
@@ -50,7 +53,14 @@ export function EapCreateSheet({
   onTask: (task: ProjectTaskView) => void;
   onMilestone: (milestone: ProjectMilestoneView) => void;
 }) {
-  const title = request.kind === "phase" ? "Nova fase" : request.kind === "task" ? "Nova tarefa" : "Novo marco";
+  const title =
+    request.kind === "phase"
+      ? "Nova fase"
+      : request.kind === "task"
+        ? request.correctiveFor
+          ? "Nova tarefa corretiva"
+          : "Nova tarefa"
+        : "Novo marco";
   const guidance = "Preencha os campos obrigatórios";
 
   return (
@@ -78,9 +88,26 @@ export function EapCreateSheet({
             request.kind === "phase" ? (
               <PhaseForm projectId={projectId} projectName={projectName} phases={phases} people={people} names={names} onClose={onClose} onPhase={onPhase} />
             ) : request.kind === "task" ? (
-              <TaskForm projectId={projectId} phases={phases} people={people} names={names} phaseId={request.phaseId} onClose={onClose} onTask={onTask} />
+              <TaskForm
+                projectId={projectId}
+                phases={phases}
+                people={people}
+                names={names}
+                phaseId={request.phaseId}
+                correctiveFor={request.correctiveFor ?? null}
+                onClose={onClose}
+                onTask={onTask}
+              />
             ) : (
-              <MilestoneForm projectId={projectId} phases={phases} names={names} phaseId={request.phaseId} onClose={onClose} onMilestone={onMilestone} />
+              <MilestoneForm
+                projectId={projectId}
+                phases={phases}
+                reviewers={access.canManageStructure ? (people?.filter((person) => person.homologator) ?? null) : undefined}
+                names={names}
+                phaseId={request.phaseId}
+                onClose={onClose}
+                onMilestone={onMilestone}
+              />
             )
           ) : (
             <p className="px-5 py-5 text-sm text-[#667085]">Seu acesso não permite cadastrar itens da EAP.</p>
@@ -109,7 +136,6 @@ function PhaseForm({
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<CreateEapPhaseBodyStatus>("NAO_INICIADA");
   const [responsibleId, setResponsibleId] = useState("");
   const [criteria, setCriteria] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -130,7 +156,6 @@ function PhaseForm({
     try {
       const response = await createEapPhase(projectId, {
         name: name.trim(),
-        status,
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(responsibleId ? { responsibleId } : {}),
         ...(criteria.trim() ? { completionCriteria: criteria.trim() } : {}),
@@ -143,7 +168,7 @@ function PhaseForm({
       onPhase(presentPhase(response.data, { tasks: [], milestones: [] }, names));
       onClose();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Não foi possível criar a fase.");
+      setError(reportFailure(caught, "Não foi possível criar a fase."));
     } finally {
       setSaving(false);
     }
@@ -156,11 +181,7 @@ function PhaseForm({
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           <TextControl label="Nome do item" value={name} placeholder="Informe o nome da fase" onChange={setName} full />
           <AreaControl label="Descrição" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
-          <SelectControl label="Situação" value={status} onChange={setStatus}>
-            {PHASE_STATUSES.map((value) => (
-              <option key={value} value={value}>{phaseStatusLabel(value)}</option>
-            ))}
-          </SelectControl>
+          <LockedControl label="Situação" hint="automática" value={phaseStatusLabel("NAO_INICIADA")} />
           <LockedControl label="Item superior" value={projectName} />
           {people ? (
             <SelectControl label="Responsável" value={responsibleId} onChange={setResponsibleId}>
@@ -211,6 +232,7 @@ function TaskForm({
   people,
   names,
   phaseId,
+  correctiveFor,
   onClose,
   onTask,
 }: {
@@ -219,13 +241,14 @@ function TaskForm({
   people: EapPerson[] | null;
   names: Map<string, string> | null;
   phaseId: string;
+  /** Tarefa aberta para atender às correções solicitadas na homologação deste marco. */
+  correctiveFor: { milestoneId: string; title: string } | null;
   onClose: () => void;
   onTask: (task: ProjectTaskView) => void;
 }) {
   const [selectedPhase, setSelectedPhase] = useState(phaseId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<CreateEapTaskBodyStatus>("NAO_INICIADA");
   const [assigneeId, setAssigneeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -248,9 +271,12 @@ function TaskForm({
       setError("A data de término planejada não pode ser anterior à data de início.");
       return;
     }
-    const nextStatus = blocked ? "IMPEDIDA" : status;
-    if (nextStatus === "CONCLUIDA" && progress !== 100) {
-      setError("Uma tarefa concluída precisa estar com 100% de andamento.");
+    if (blocked && blocker.trim().length < 10) {
+      setError("Informe o motivo do impedimento com ao menos 10 caracteres.");
+      return;
+    }
+    if (blocked && progress === 100) {
+      setError("Uma tarefa concluída não pode ser criada com impedimento.");
       return;
     }
     setSaving(true);
@@ -258,29 +284,40 @@ function TaskForm({
     try {
       const response = await createEapTask(projectId, selectedPhase, {
         title: title.trim(),
-        status: nextStatus,
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(assigneeId ? { assigneeId } : {}),
         ...(startDate ? { plannedStartAt: civilToIso(startDate) } : {}),
         ...(endDate ? { plannedEndAt: civilToIso(endDate) } : {}),
+        ...(correctiveFor ? { correctiveMilestoneId: correctiveFor.milestoneId } : {}),
       });
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível criar a tarefa.");
       }
       let created = response.data;
-      if (progress > 0 || blocked) {
-        const patched = await updateEapTaskProgress(projectId, selectedPhase, created.id, {
-          ...(progress > 0 ? { progressPercent: progress } : {}),
-          ...(blocked ? { hasImpediment: true, status: "IMPEDIDA" } : {}),
-        });
+      if (progress > 0) {
+        const patched = await updateEapTaskProgress(projectId, selectedPhase, created.id, { progressPercent: progress });
         if (patched.status === 200) {
           created = patched.data;
+        }
+      }
+      if (blocked) {
+        try {
+          const registered = await registerEapTaskImpediment(projectId, selectedPhase, created.id, { description: blocker.trim() });
+          if (registered.status !== 201) {
+            throw new ApiError(registered.status, "HTTP_ERROR", "O impedimento não foi registrado.");
+          }
+          created = registered.data.task;
+        } catch (caught) {
+          notifyWarning(
+            "Tarefa criada sem o impedimento.",
+            `${caught instanceof ApiError ? caught.message : "O impedimento não foi registrado."} Registre-o na edição da tarefa.`,
+          );
         }
       }
       onTask(presentTask(created, names));
       onClose();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Não foi possível criar a tarefa.");
+      setError(reportFailure(caught, "Não foi possível criar a tarefa."));
     } finally {
       setSaving(false);
     }
@@ -289,27 +326,33 @@ function TaskForm({
   return (
     <FormBody saving={saving} error={error} onClose={onClose} onSubmit={() => void save()}>
       <ItemContext kind="task" />
+      {correctiveFor ? (
+        <p className="mt-4 flex items-start gap-2 rounded-[7px] border border-[#f6d2ad] bg-[#fff6ec] p-2.5 text-[8.5px] leading-[1.45] text-[#b4570f]">
+          <Flag className="mt-px size-[15px] shrink-0" aria-hidden="true" />
+          <span>
+            Tarefa corretiva do marco <strong>{correctiveFor.title}</strong>. Ela fica vinculada às correções da homologação e
+            segue o andamento normal das tarefas.
+          </span>
+        </p>
+      ) : null}
       <PanelSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           <TextControl label="Nome do item" value={title} placeholder="Informe o nome da tarefa" onChange={setTitle} full />
           <AreaControl label="Descrição" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
-          <SelectControl
-            label="Situação"
-            value={blocked ? "IMPEDIDA" : status}
-            onChange={(value) => {
-              setBlocked(value === "IMPEDIDA");
-              setStatus(value);
-            }}
-          >
-            {TASK_STATUSES.map((value) => (
-              <option key={value} value={value}>{taskStatusLabel(value)}</option>
-            ))}
-          </SelectControl>
-          <SelectControl label="Item superior" value={selectedPhase} onChange={setSelectedPhase}>
-            {phases.map((phase, index) => (
-              <option key={phase.id} value={phase.id}>{index + 1} · {phase.name}</option>
-            ))}
-          </SelectControl>
+          <LockedControl label="Situação" hint="pelo andamento" value={taskStatusLabel(deriveTaskStatus(progress))} />
+          {correctiveFor ? (
+            <LockedControl
+              label="Item superior"
+              hint="fase do marco"
+              value={phases.find((phase) => phase.id === selectedPhase)?.name ?? "Fase do marco"}
+            />
+          ) : (
+            <SelectControl label="Item superior" value={selectedPhase} onChange={setSelectedPhase}>
+              {phases.map((phase, index) => (
+                <option key={phase.id} value={phase.id}>{index + 1} · {phase.name}</option>
+              ))}
+            </SelectControl>
+          )}
           {people ? (
             <SelectControl label="Responsável" value={assigneeId} onChange={setAssigneeId}>
               <option value="">Selecione...</option>
@@ -349,10 +392,11 @@ function TaskForm({
         </div>
         <button
           type="button"
-          className={`mt-3.5 grid w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-[9px] rounded-[7px] border px-2.5 py-2.5 text-left ${blocked ? "border-[#efc3bf] bg-[#fff9f8]" : "border-[#e4e7ec] bg-white"}`}
+          aria-expanded={blocked}
+          className={`mt-3.5 grid w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-[9px] rounded-[7px] border px-2.5 py-2.5 text-left ${controlTransitionClassName} ${blocked ? impedimentTone.surface : "border-[#e4e7ec] bg-white"}`}
           onClick={() => setBlocked((current) => !current)}
         >
-          <span className={`grid size-8 place-items-center rounded-[6px] ${blocked ? "bg-[#fdeceb] text-[#b42318]" : "bg-[#f2f4f7] text-[#8a94a6]"}`}>
+          <span className={`grid size-8 place-items-center rounded-[6px] transition-colors duration-200 ease-out motion-reduce:transition-none ${blocked ? impedimentTone.icon : "bg-[#f2f4f7] text-[#8a94a6]"}`}>
             <AlertTriangle className="size-4" aria-hidden="true" />
           </span>
           <span>
@@ -360,11 +404,11 @@ function TaskForm({
             <small className="mt-[3px] block text-[8px] text-[#98a2b3]">Destaque o item na EAP e informe o motivo.</small>
           </span>
         </button>
-        {blocked ? (
-          <div className="mt-3">
-            <AreaControl label="Descrição do impedimento" hint="não gravado" value={blocker} placeholder="Descreva o impedimento e a ação necessária..." onChange={setBlocker} rows={3} full />
+        <Reveal open={blocked}>
+          <div className="pt-3">
+            <AreaControl label="Motivo do impedimento" value={blocker} placeholder="Descreva o impedimento e a ação necessária..." onChange={setBlocker} rows={3} full />
           </div>
-        ) : null}
+        </Reveal>
       </PanelSection>
       <EvidenceSection warning={progress === 100 ? "A tarefa ficará concluída em percentual, e a evidência é vinculada depois da criação." : undefined} />
       <PlanningSection
@@ -381,6 +425,7 @@ function TaskForm({
 function MilestoneForm({
   projectId,
   phases,
+  reviewers,
   names,
   phaseId,
   onClose,
@@ -388,6 +433,8 @@ function MilestoneForm({
 }: {
   projectId: string;
   phases: ProjectPhaseView[];
+  /** Ausente quando o acesso não designa homologador; nulo quando os participantes não foram consultados. */
+  reviewers?: EapPerson[] | null;
   names: Map<string, string> | null;
   phaseId: string;
   onClose: () => void;
@@ -396,8 +443,9 @@ function MilestoneForm({
   const [selectedPhase, setSelectedPhase] = useState(phaseId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [type, setType] = useState<"ENTREGA" | "APROVACAO">("ENTREGA");
+  const [type, setType] = useState<ListEapMilestones200DataItemType>("ENTREGA");
   const [dueDate, setDueDate] = useState("");
+  const [reviewerId, setReviewerId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -418,6 +466,7 @@ function MilestoneForm({
         type,
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(dueDate ? { plannedAt: civilToIso(dueDate) } : {}),
+        ...(reviewerId ? { reviewerId } : {}),
       });
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível criar o marco.");
@@ -425,7 +474,7 @@ function MilestoneForm({
       onMilestone(presentMilestone(response.data, names));
       onClose();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Não foi possível criar o marco.");
+      setError(reportFailure(caught, "Não foi possível criar o marco."));
     } finally {
       setSaving(false);
     }
@@ -444,10 +493,11 @@ function MilestoneForm({
             ))}
           </SelectControl>
           <LockedControl label="Responsável" hint="não gravado" value="O marco não possui responsável próprio" />
-          <CivilDateField label="Prazo vigente" value={dueDate} onChange={setDueDate} />
+          <CivilDateField label="Data prevista" value={dueDate} onChange={setDueDate} />
           <SelectControl label="Tipo do marco" value={type} onChange={setType}>
-            <option value="ENTREGA">Entrega</option>
-            <option value="APROVACAO">Aprovação</option>
+            {MILESTONE_TYPE_OPTIONS.map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </SelectControl>
         </div>
       </PanelSection>
@@ -460,7 +510,19 @@ function MilestoneForm({
         <div className="mt-[15px] border-t border-[#edf0f3] pt-[15px]">
           <span className="mb-2.5 block text-[8.5px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Aprovação formal</span>
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-            <LockedControl label="Responsável pelo aceite" hint="não gravado" value="Definido na validação do marco" />
+            {reviewers ? (
+              <SelectControl label="Homologador designado" value={reviewerId} onChange={setReviewerId}>
+                <option value="">Gestão do projeto (padrão)</option>
+                {reviewers.map((person) => (
+                  <option key={person.userId} value={person.userId}>{person.name}</option>
+                ))}
+              </SelectControl>
+            ) : (
+              <LockedControl
+                label="Homologador designado"
+                value={reviewers === null ? "Não foi possível consultar os participantes." : "Gestão do projeto (padrão)"}
+              />
+            )}
             <LockedControl label="Critérios de aceite" hint="não gravado" value="Evidências validadas e sem pendências críticas" as="text" />
           </div>
         </div>
@@ -615,9 +677,11 @@ function FoldBlock({
           <Icon className="size-4" aria-hidden="true" />
           {title}
         </span>
-        <ChevronRight className={`size-[15px] text-[#98a2b3] transition-transform ${shown ? "rotate-90" : ""}`} aria-hidden="true" />
+        <ChevronRight className={`size-[15px] text-[#98a2b3] transition-transform duration-300 ease-out motion-reduce:transition-none ${shown ? "rotate-90" : ""}`} aria-hidden="true" />
       </button>
-      {shown ? <div className="border-t border-[#edf0f3] px-[15px] pt-[15px] pb-[15px]">{children}</div> : null}
+      <Reveal open={shown} bleed={false}>
+        <div className="border-t border-[#edf0f3] px-[15px] pt-[15px] pb-[15px]">{children}</div>
+      </Reveal>
     </section>
   );
 }

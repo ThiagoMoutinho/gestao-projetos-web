@@ -5,9 +5,11 @@ import type { GetProject200RolesItem } from "@/lib/api/generated/model/getProjec
 
 import {
   buildEapAccess,
+  canAuthorizeResubmission,
   canEditItem,
+  canHomologateMilestone,
   canRegisterEvidenceOn,
-  canReviewMilestone,
+  canReschedule,
   canUpdateTaskProgress,
 } from "./eap-access.ts";
 
@@ -46,9 +48,36 @@ describe("acesso à EAP no frontend", () => {
     assert.equal(canUpdateTaskProgress(access("COLABORADOR", [], "ex-1"), { assigneeId: "ex-1", createdBy: "pmo-1" }), false);
   });
 
-  it("mantém a decisão de marco restrita à gestão e separada de quem entregou", () => {
-    assert.equal(canReviewMilestone(access("PMO", [], "pmo-1"), "forn-1"), true);
-    assert.equal(canReviewMilestone(access("PMO", [], "pmo-1"), "pmo-1"), false);
-    assert.equal(canReviewMilestone(access("COLABORADOR", ["DESENVOLVEDOR"], "dev-1"), "forn-1"), false);
+  it("restringe a homologação à gestão vinculada ou ao designado, nunca a quem entregou", () => {
+    const delivered = { reviewerId: null, deliveredById: "forn-1" };
+    assert.equal(canHomologateMilestone(access("PMO", [], "pmo-1"), delivered), false);
+    assert.equal(canHomologateMilestone(access("GESTOR", ["GESTOR"], "g-1"), delivered), true);
+    assert.equal(canHomologateMilestone(access("COLABORADOR", [], "owner-1"), delivered), true);
+    assert.equal(canHomologateMilestone(access("GESTOR", ["GESTOR"], "g-1"), { ...delivered, deliveredById: "g-1" }), false);
+    assert.equal(canHomologateMilestone(access("GESTOR", ["GESTOR", "FORNECEDOR"], "g-1"), delivered), false);
+    assert.equal(canHomologateMilestone(access("COLABORADOR", ["DESENVOLVEDOR"], "dev-1"), delivered), false);
+
+    const designated = { reviewerId: "obs-1", deliveredById: "forn-1" };
+    assert.equal(canHomologateMilestone(access("COLABORADOR", ["OBSERVADOR"], "obs-1"), designated), true);
+    assert.equal(canHomologateMilestone(access("GESTOR", ["GESTOR"], "g-1"), designated), false);
+  });
+
+  it("libera a autorização de nova submissão ao PMO/ADMIN e à gestão do projeto", () => {
+    assert.equal(canAuthorizeResubmission(access("PMO")), true);
+    assert.equal(canAuthorizeResubmission(access("ADMIN")), true);
+    assert.equal(canAuthorizeResubmission(access("GESTOR", ["GESTOR"])), true);
+    assert.equal(canAuthorizeResubmission(access("COORDENADOR")), false);
+    assert.equal(canAuthorizeResubmission(access("FORNECEDOR", ["FORNECEDOR"])), false);
+  });
+
+  it("libera a reprogramação de prazo só ao ADMIN, PMO e à gestão do projeto", () => {
+    assert.equal(canReschedule(access("ADMIN")), true);
+    assert.equal(canReschedule(access("PMO")), true);
+    assert.equal(canReschedule(access("GESTOR", [], "owner-1")), true);
+    assert.equal(canReschedule(access("GESTOR", ["DONO_PROJETO"])), true);
+    assert.equal(canReschedule(access("COORDENADOR")), false);
+    assert.equal(canReschedule(access("GESTOR")), false);
+    assert.equal(canReschedule(access("GESTOR", ["PO"])), false);
+    assert.equal(canReschedule(access("FORNECEDOR", ["GESTOR"])), false);
   });
 });

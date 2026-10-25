@@ -1,8 +1,27 @@
-import { AlertTriangle, Calendar, Check, ChevronRight, Clock, Flag, Folder, GripVertical, List, ListFilter, MoreHorizontal, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Calendar,
+  Check,
+  ChevronRight,
+  Clock,
+  Copy,
+  Flag,
+  Folder,
+  GripVertical,
+  List,
+  ListFilter,
+  ListPlus,
+  MoreHorizontal,
+  PanelRightOpen,
+  Pencil,
+  Search,
+  Trash2,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -25,7 +44,9 @@ import { cn } from "@/lib/utils";
 import type { ProjectMilestoneView, ProjectPhaseView, ProjectTaskView } from "./eap-present";
 import {
   basisToPercent,
+  finishedLate,
   formatBasis,
+  milestoneDelayReason,
   milestoneIsOverdue,
   milestonePercent,
   phaseIsOverdue,
@@ -35,9 +56,17 @@ import {
   taskIsOverdue,
   vigenteText,
 } from "./eap-progress";
+import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind } from "./eap-status-badge";
+import { impedimentTone, overdueTone } from "./eap-tones";
+import { phaseStatusLabel, taskStatusLabel } from "./project-records";
 
 const columns =
-  "grid grid-cols-1 gap-2 md:min-h-[55px] md:grid-cols-[minmax(300px,2.2fr)_minmax(108px,0.85fr)_minmax(120px,0.95fr)_minmax(138px,1.05fr)_minmax(105px,0.8fr)_40px] md:items-center md:gap-x-3.5";
+  "grid grid-cols-1 gap-2 md:min-h-[46px] md:grid-cols-[minmax(300px,2.2fr)_minmax(108px,0.85fr)_minmax(120px,0.95fr)_minmax(138px,1.05fr)_minmax(105px,0.8fr)_40px] md:items-center md:gap-x-3.5";
+
+const childRow = "py-1 md:min-h-[44px]";
+const rowMenuItem = "h-[30px] gap-2 rounded-[5px] px-[9px] text-[10px] text-[#344054] [&_svg:not([class*='size-'])]:size-3.5";
+const treeGuide =
+  "relative mr-[7px] -my-1 hidden h-[44px] w-[25px] shrink-0 md:block before:absolute before:top-[-4px] before:bottom-[21px] before:left-[11px] before:w-px before:bg-[#dbe1e8] after:absolute after:top-[22px] after:left-[11px] after:h-px after:w-3 after:bg-[#dbe1e8]";
 
 export type EapListFilter = {
   statuses: string[];
@@ -52,11 +81,11 @@ const STATUS_FILTERS = [
   { value: "EM_ANDAMENTO", label: "Em andamento" },
   { value: "CONCLUIDA", label: "Concluída" },
   { value: "SUSPENSA", label: "Suspensa" },
-  { value: "IMPEDIDA", label: "Impedida" },
   { value: "CANCELADA", label: "Cancelada" },
   { value: "PENDENTE", label: "Pendente" },
   { value: "ENTREGUE", label: "Entregue" },
-  { value: "APROVADO", label: "Aprovado" },
+  { value: "AJUSTES_SOLICITADOS", label: "Correções necessárias" },
+  { value: "APROVADO", label: "Aceito" },
   { value: "REJEITADO", label: "Rejeitado" },
 ];
 
@@ -70,6 +99,8 @@ export type RowActions = {
   moveUpDisabled?: boolean;
   moveDownDisabled?: boolean;
   moveTitle?: string;
+  onDelete?: () => void;
+  deleteBlockedReason?: string;
 };
 
 export function EapWorkbench({
@@ -95,8 +126,8 @@ export function EapWorkbench({
   const milestones = count(phases, (phase) => phase.milestones);
   const progress = projectProgress(phases);
   const signals = countSignals(phases);
-  const concluded = phases.filter((phase) => phase.status === "CONCLUIDA").length;
-  const active = phases.filter((phase) => phase.status === "EM_ANDAMENTO").length;
+  const concluded = phases.filter((phase) => phase.calculatedStatus === "CONCLUIDA").length;
+  const active = phases.filter((phase) => phase.calculatedStatus === "EM_ANDAMENTO").length;
   const itemCount = tasks.known && milestones.known ? tasks.value + milestones.value : null;
   const filterCount = filter.statuses.length + Number(filter.impediment) + Number(filter.overdue);
   const untouched = phases.length === 0 && query.trim() === "" && filterCount === 0;
@@ -149,8 +180,8 @@ export function EapWorkbench({
           )}
           <small className="absolute right-[15px] bottom-[17px] text-[8.5px] text-[#98a2b3]">
             {progress.kind === "unavailable" || progress.coverageBasis === null
-              ? "Cobertura do planejamento indisponível"
-              : `Cobertura do planejamento: ${formatBasis(progress.coverageBasis)}%`}
+              ? "Fases com andamento calculado: —"
+              : `Fases com andamento calculado: ${formatBasis(progress.coverageBasis)}%`}
           </small>
         </article>
         <Stat
@@ -158,7 +189,15 @@ export function EapWorkbench({
           tone="amber"
           label="Prazos e pendências"
           value={signals.known ? `${String(signals.critical).padStart(2, "0")} críticas` : "—"}
-          note={signals.known ? `${signals.blocked} impedimento${signals.blocked === 1 ? "" : "s"} · ${signals.overdue} vencido${signals.overdue === 1 ? "" : "s"}` : "Consulta incompleta"}
+          note={
+            signals.known
+              ? [
+                  `${signals.blocked} impedimento${signals.blocked === 1 ? "" : "s"}`,
+                  `${signals.overdue} atrasado${signals.overdue === 1 ? "" : "s"}`,
+                  ...(signals.rejected > 0 ? [`${signals.rejected} rejeitado${signals.rejected === 1 ? "" : "s"}`] : []),
+                ].join(" · ")
+              : "Consulta incompleta"
+          }
           compact
         />
       </div>
@@ -229,7 +268,9 @@ export function PhaseRow({
   onDragEndPhase,
   onDragOverPhase,
   onDropPhase,
+  showDivergence = false,
 }: {
+  showDivergence?: boolean;
   index: number;
   phase: ProjectPhaseView;
   selected: boolean;
@@ -251,7 +292,6 @@ export function PhaseRow({
   const childCount = (phase.tasks?.length ?? 0) + (phase.milestones?.length ?? 0);
   const knownChildren = phase.tasks !== null && phase.milestones !== null;
   const overdue = phaseIsOverdue(phase);
-
   return (
     <Collapsible
       defaultOpen
@@ -274,11 +314,11 @@ export function PhaseRow({
       <div
         className={cn(
           columns,
-          "group/eap relative bg-[#fbfcfd] px-3 py-2 transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none",
+          "group/eap relative bg-[#fbfcfd] px-3 py-1.5 transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none",
           selected && "bg-[#f8fbff]",
         )}
       >
-        {overdue ? <OverdueRail /> : null}
+        <StateRail overdue={overdue} />
         {/* {reorderable ? (
             <button
               type="button"
@@ -309,14 +349,20 @@ export function PhaseRow({
             <span className="block truncate text-[10.5px] font-semibold text-[#253248]">{phase.name}</span>
             <span className="mt-[3px] block text-[8.5px] text-[#98a2b3]">
               {index + 1} · {knownChildren ? `${childCount} ${childCount === 1 ? "entrega" : "entregas"}` : "Consulta incompleta"}
-              {overdue ? <Signal tone="danger">Vencido</Signal> : null}
+              {showDivergence && phase.statusDiverges ? <DivergenceSignal recorded={phaseStatusLabel(phase.status)} /> : null}
             </span>
           </button>
         </div>
-        <StatusBadge kind={phaseKind(phase.status)} label={phase.statusLabel} />
-        <ProgressCell label={progressLabel(progress)} value={progress.kind === "value" ? basisToPercent(progress.basisPoints) : null} done={phase.status === "CONCLUIDA"} />
+        <StatusCell>
+          <EapStatusBadge kind={phaseStatusKind(phase.calculatedStatus)} label={phase.statusLabel} />
+        </StatusCell>
+        <ProgressCell
+          label={progressLabel(progress)}
+          value={progress.kind === "value" ? basisToPercent(progress.basisPoints) : null}
+          done={phase.calculatedStatus === "CONCLUIDA"}
+        />
         <span className="text-xs text-[#98a2b3]">—</span>
-        <Due value={vigenteText(phase.dates)} overdue={overdue} />
+        <Due value={vigenteText(phase.dates)} overdue={overdue} late={finishedLate(phase) ? "Concluída após o prazo" : null} />
         <RowMenu label={phase.name} onOpen={onOpen} actions={actions} />
       </div>
       <CollapsibleContent>
@@ -327,8 +373,17 @@ export function PhaseRow({
   );
 }
 
-function OverdueRail() {
-  return <span aria-hidden="true" className="pointer-events-none absolute top-0 -bottom-px left-0 z-10 w-[3px] bg-[#e05252]" />;
+/** Atraso prevalece sobre impedimento na faixa lateral; o impedimento continua identificado pelo sinal textual. */
+function StateRail({ overdue, blocked = false }: { overdue: boolean; blocked?: boolean }) {
+  if (!overdue && !blocked) {
+    return null;
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("pointer-events-none absolute top-0 -bottom-px left-0 z-10 w-[3px]", overdue ? overdueTone.rail : impedimentTone.rail)}
+    />
+  );
 }
 
 export function TaskRow({
@@ -346,7 +401,9 @@ export function TaskRow({
   onDragEndTask,
   onDragOverTask,
   onDropTask,
+  showDivergence = false,
 }: {
+  showDivergence?: boolean;
   index: number;
   phaseIndex: number;
   task: ProjectTaskView;
@@ -368,8 +425,7 @@ export function TaskRow({
   return (
     <div
       className={cn(
-        "group/eap relative border-t border-[#edf0f3] px-3 py-1.5",
-        blocked && "bg-[#fffafa]",
+        "group/eap relative border-t border-[#edf0f3] px-3",
         selected && "bg-[#f8fbff]",
         dragging && "opacity-60",
         dragOver && "shadow-[inset_0_2px_0_#175cd3]",
@@ -391,7 +447,7 @@ export function TaskRow({
         onDropTask?.(event.dataTransfer.getData("text/plain"));
       }}
     >
-      {overdue || blocked ? <OverdueRail /> : null}
+      <StateRail overdue={overdue} blocked={blocked} />
       {reorderable ? (
         <button
           type="button"
@@ -409,9 +465,9 @@ export function TaskRow({
           <GripVertical className="size-4" aria-hidden="true" />
         </button>
       ) : null}
-      <div className={cn(columns, "transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none")}>
+      <div className={cn(columns, childRow, "transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none")}>
         <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none" onClick={onOpen}>
-          <span className="relative mr-[7px] hidden h-[52px] w-[25px] shrink-0 md:block before:absolute before:top-[-6px] before:bottom-[26px] before:left-[11px] before:w-px before:bg-[#dbe1e8] after:absolute after:top-[25px] after:left-[11px] after:h-px after:w-3 after:bg-[#dbe1e8]" aria-hidden="true" />
+          <span className={treeGuide} aria-hidden="true" />
           <ItemIcon type="task">
             <Check className="size-3.5" aria-hidden="true" />
           </ItemIcon>
@@ -419,15 +475,17 @@ export function TaskRow({
             <span className="block truncate text-[10.5px] font-medium text-[#253248]">{task.title}</span>
             <span className="mt-[3px] block text-[8.5px] text-[#98a2b3]">
               {phaseIndex + 1}.{index + 1} · Tarefa
-              {blocked ? <Signal tone="danger"><AlertTriangle className="size-2.5" aria-hidden="true" /> Impedido</Signal> : null}
-              {overdue && !blocked ? <Signal tone="danger">Vencido</Signal> : null}
+              {blocked ? <Signal tone="impediment"><AlertTriangle className="size-2.5" aria-hidden="true" /> Impedido</Signal> : null}
+              {showDivergence && task.statusDiverges ? <DivergenceSignal recorded={taskStatusLabel(task.status)} /> : null}
             </span>
           </span>
         </button>
-        <StatusBadge kind={taskKind(task.status)} label={task.statusLabel} />
-        <ProgressCell label={`${task.progressPercent}%`} value={task.progressPercent} done={task.status === "CONCLUIDA"} muted={task.status === "CANCELADA"} />
+        <StatusCell>
+          <EapStatusBadge kind={taskStatusKind(task.calculatedStatus)} label={task.statusLabel} />
+        </StatusCell>
+        <ProgressCell label={`${task.progressPercent}%`} value={task.progressPercent} done={task.calculatedStatus === "CONCLUIDA"} muted={task.calculatedStatus === "CANCELADA"} />
         <Owner name={task.assigneeName} />
-        <Due value={vigenteText(task.dates)} overdue={overdue} />
+        <Due value={vigenteText(task.dates)} overdue={overdue} late={finishedLate(task) ? "Concluída após o prazo" : null} />
         <RowMenu label={task.title} onOpen={onOpen} actions={actions} />
       </div>
       {quickEdit ? <div className="mt-2 md:pl-10">{quickEdit}</div> : null}
@@ -471,7 +529,8 @@ export function MilestoneRow({
     <div
       className={cn(
         columns,
-        "group/eap relative border-t border-[#edf0f3] px-3 py-2 transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none",
+        childRow,
+        "group/eap relative border-t border-[#edf0f3] px-3 transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none",
         selected && "bg-[#f8fbff]",
         dragging && "opacity-60",
         dragOver && "shadow-[inset_0_2px_0_#175cd3]",
@@ -493,7 +552,7 @@ export function MilestoneRow({
         onDropMilestone?.(event.dataTransfer.getData("text/plain"));
       }}
     >
-      {overdue ? <OverdueRail /> : null}
+      <StateRail overdue={overdue} />
       {reorderable ? (
         <button
           type="button"
@@ -512,7 +571,7 @@ export function MilestoneRow({
         </button>
       ) : null}
       <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none" onClick={onOpen}>
-        <span className="relative mr-[7px] hidden h-[52px] w-[25px] shrink-0 md:block before:absolute before:top-[-6px] before:bottom-[26px] before:left-[11px] before:w-px before:bg-[#dbe1e8] after:absolute after:top-[25px] after:left-[11px] after:h-px after:w-3 after:bg-[#dbe1e8]" aria-hidden="true" />
+        <span className={treeGuide} aria-hidden="true" />
         <ItemIcon type="milestone">
           <Flag className="size-3.5" aria-hidden="true" />
         </ItemIcon>
@@ -520,14 +579,19 @@ export function MilestoneRow({
           <span className="block truncate text-[10.5px] font-medium text-[#253248]">{milestone.title}</span>
           <span className="mt-[3px] block text-[8.5px] text-[#98a2b3]">
             {phaseIndex + 1}.{index + 1} · Marco
-            {overdue ? <Signal tone="danger">Vencido</Signal> : null}
           </span>
         </span>
       </button>
-      <StatusBadge kind={milestoneKind(milestone.status)} label={milestone.statusLabel} />
-      <ProgressCell label={`${percent}%`} value={percent} done={milestone.status === "APROVADO"} />
+      <StatusCell>
+        <EapStatusBadge kind={milestoneStatusKind(milestone.status)} label={milestone.statusLabel} />
+      </StatusCell>
+      <ProgressCell
+        label={`${percent}%`}
+        value={percent}
+        done={milestone.status === "APROVADO"}
+      />
       <span className="text-xs text-[#98a2b3]">—</span>
-      <Due value={vigenteText(milestone.dates)} overdue={overdue} />
+      <Due value={vigenteText(milestone.dates)} overdue={overdue} reason={milestoneDelayReason(milestone)} late={finishedLate(milestone) ? (milestone.type === "HOMOLOGACAO" ? "Homologado após o prazo" : "Aceito após o prazo") : null} />
       <RowMenu label={milestone.title} onOpen={onOpen} actions={actions} />
     </div>
   );
@@ -562,7 +626,8 @@ export function filterPhases(phases: ProjectPhaseView[], query: string, filter: 
 }
 
 function matchesFilter(item: ProjectPhaseView | ProjectTaskView | ProjectMilestoneView, kind: "phase" | "task" | "milestone", filter: EapListFilter) {
-  if (filter.statuses.length > 0 && !filter.statuses.includes(item.status)) {
+  const status = "calculatedStatus" in item ? item.calculatedStatus : item.status;
+  if (filter.statuses.length > 0 && !filter.statuses.includes(status)) {
     return false;
   }
   if (filter.impediment && !(kind === "task" && ("hasImpediment" in item) && (item.hasImpediment || item.status === "IMPEDIDA"))) {
@@ -630,9 +695,13 @@ function ProgressCell({ label, value, done, muted }: { label: string; value: num
           muted && "[&_[data-slot=progress-indicator]]:bg-[#98a2b3]",
         )}
       />
-      <span className="w-9 text-xs font-semibold text-[#475467] tabular-nums">{label}</span>
+      <span className="w-10 shrink-0 text-xs font-semibold text-[#475467] tabular-nums">{label}</span>
     </div>
   );
+}
+
+function StatusCell({ children }: { children: ReactNode }) {
+  return <span className="flex min-w-0 items-center">{children}</span>;
 }
 
 function Owner({ name }: { name: string }) {
@@ -650,11 +719,17 @@ function Owner({ name }: { name: string }) {
   );
 }
 
-function Due({ value, overdue }: { value: string | null; overdue: boolean }) {
+/** Atraso em aberto em vermelho; atraso histórico só como nota neutra, sem classificar o item como atrasado. */
+function Due({ value, overdue, late = null, reason = null }: { value: string | null; overdue: boolean; late?: string | null; reason?: string | null }) {
   return (
-    <span className={cn("flex items-center gap-1.5 text-xs whitespace-nowrap", overdue ? "font-semibold text-[#b42318]" : "text-[#667085]")}>
-      <Calendar className={cn("size-3.5", overdue ? "text-[#d23b31]" : "text-[#98a2b3]")} aria-hidden="true" />
-      {value ?? "—"}
+    <span className={cn("flex items-start gap-1.5 text-xs whitespace-nowrap", overdue ? cn("font-semibold", overdueTone.text) : "text-[#667085]")}>
+      <Calendar className={cn("mt-px size-3.5 shrink-0", overdue ? overdueTone.text : "text-[#98a2b3]")} aria-hidden="true" />
+      <span className="flex flex-col">
+        {value ?? "—"}
+        {overdue ? <span className="sr-only">Atrasado</span> : null}
+        {overdue && reason ? <span className="text-[8px] leading-tight font-normal">{reason}</span> : null}
+        {!overdue && late ? <span className="text-[8px] leading-tight text-[#98a2b3]">{late}</span> : null}
+      </span>
     </span>
   );
 }
@@ -674,29 +749,27 @@ function ItemIcon({ type, children }: { type: "phase" | "task" | "milestone"; ch
   );
 }
 
-function StatusBadge({ kind, label }: { kind: "done" | "progress" | "pending" | "attention" | "muted"; label: string }) {
+function Signal({ tone, title, children }: { tone: "impediment" | "notice"; title?: string; children: ReactNode }) {
   return (
-    <Badge
+    <span
+      title={title}
       className={cn(
-        "h-auto gap-[5px] rounded-full px-[7px] py-1 text-[8.5px] font-semibold",
-        kind === "done" && "bg-[#e7f7f0] text-[#157454]",
-        kind === "progress" && "bg-[#e8f1ff] text-[#205eb2]",
-        kind === "pending" && "bg-[#f0f2f4] text-[#667085]",
-        kind === "attention" && "bg-[#fff3dc] text-[#a05c0b]",
-        kind === "muted" && "bg-[#f0f2f4] text-[#667085]",
+        "ml-1.5 inline-flex items-center gap-1 border-l border-[#dce1e7] pl-1.5 font-semibold",
+        tone === "impediment" ? impedimentTone.text : "text-muted-foreground",
       )}
     >
-      <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
-      {label}
-    </Badge>
+      {children}
+    </span>
   );
 }
 
-function Signal({ tone, children }: { tone: "danger"; children: ReactNode }) {
+const DIVERGENCE_HINT = "A situação gravada não corresponde ao andamento registrado. A correção é feita pela reconciliação autorizada.";
+
+function DivergenceSignal({ recorded }: { recorded: string }) {
   return (
-    <span className={cn("ml-1.5 inline-flex items-center gap-1 border-l border-[#dce1e7] pl-1.5 font-semibold", tone === "danger" && "text-[#b42318]")}>
-      {children}
-    </span>
+    <Signal tone="notice" title={`${DIVERGENCE_HINT} Situação gravada: ${recorded}.`}>
+      Situação divergente do andamento
+    </Signal>
   );
 }
 
@@ -706,42 +779,56 @@ function RowMenu({ label, onOpen, actions }: { label: string; onOpen: () => void
       <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" className="text-[#667085]" aria-label={`Ações de ${label}`} />}>
         <MoreHorizontal />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[170px] rounded-[8px] p-[5px] shadow-[0_10px_24px_rgba(16,24,40,0.15)]">
+      <DropdownMenuContent align="end" className="w-[196px] rounded-[8px] p-[5px] shadow-[0_10px_24px_rgba(16,24,40,0.15)]">
         <DropdownMenuGroup>
-          <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px] text-[#344054]" disabled={!actions?.onEdit} onClick={actions?.onEdit}>
-            Editar item
+          <DropdownMenuItem className={rowMenuItem} disabled={!actions?.onEdit} onClick={actions?.onEdit}>
+            <Pencil aria-hidden="true" /> Editar item
           </DropdownMenuItem>
-          <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px] text-[#344054]" disabled title="A duplicação ainda não está disponível. A cópia precisa de um endpoint próprio.">
-            Duplicar
+          <DropdownMenuItem className={rowMenuItem} disabled title="A duplicação ainda não está disponível. A cópia precisa de um endpoint próprio.">
+            <Copy aria-hidden="true" /> Duplicar
           </DropdownMenuItem>
           {actions?.canAddChild ? (
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="h-[30px] rounded-[5px] px-[9px] text-[10px] text-[#344054]">Adicionar subordinada</DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger className={rowMenuItem}>
+                <ListPlus aria-hidden="true" /> Adicionar subordinada
+              </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px]" onClick={actions.onAddTask}>Nova tarefa</DropdownMenuItem>
-                <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px]" onClick={actions.onAddMilestone}>Novo marco</DropdownMenuItem>
+                <DropdownMenuItem className={rowMenuItem} onClick={actions.onAddTask}>
+                  <Check aria-hidden="true" /> Nova tarefa
+                </DropdownMenuItem>
+                <DropdownMenuItem className={rowMenuItem} onClick={actions.onAddMilestone}>
+                  <Flag aria-hidden="true" /> Novo marco
+                </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           ) : (
-            <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px] text-[#344054]" disabled title="Este item não recebe subordinados.">
-              Adicionar subordinada
+            <DropdownMenuItem className={rowMenuItem} disabled title="Este item não recebe subordinados.">
+              <ListPlus aria-hidden="true" /> Adicionar subordinada
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px] text-[#344054]" onClick={onOpen}>Abrir detalhes</DropdownMenuItem>
+          <DropdownMenuItem className={rowMenuItem} onClick={onOpen}>
+            <PanelRightOpen aria-hidden="true" /> Abrir detalhes
+          </DropdownMenuItem>
           {actions?.onMoveUp ? (
-            <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px] text-[#344054]" disabled={actions.moveUpDisabled} title={actions.moveUpDisabled ? actions.moveTitle : undefined} onClick={actions.onMoveUp}>
-              Subir fase
+            <DropdownMenuItem className={rowMenuItem} disabled={actions.moveUpDisabled} title={actions.moveUpDisabled ? actions.moveTitle : undefined} onClick={actions.onMoveUp}>
+              <ArrowUp aria-hidden="true" /> Subir fase
             </DropdownMenuItem>
           ) : null}
           {actions?.onMoveDown ? (
-            <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px] text-[#344054]" disabled={actions.moveDownDisabled} title={actions.moveDownDisabled ? actions.moveTitle : undefined} onClick={actions.onMoveDown}>
-              Descer fase
+            <DropdownMenuItem className={rowMenuItem} disabled={actions.moveDownDisabled} title={actions.moveDownDisabled ? actions.moveTitle : undefined} onClick={actions.onMoveDown}>
+              <ArrowDown aria-hidden="true" /> Descer fase
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="h-[30px] rounded-[5px] px-[9px] text-[10px] text-[#b42318] focus:text-[#b42318]" variant="destructive" disabled title="A exclusão ainda não está disponível. A remoção precisa de um endpoint próprio.">
-            Excluir
+          <DropdownMenuItem
+            className={cn(rowMenuItem, "text-[#b42318] focus:text-[#b42318]")}
+            variant="destructive"
+            disabled={!actions?.onDelete || Boolean(actions.deleteBlockedReason)}
+            title={!actions?.onDelete ? "Somente a gestão do projeto pode excluir itens da EAP." : actions.deleteBlockedReason}
+            onClick={actions?.onDelete}
+          >
+            <Trash2 aria-hidden="true" /> Excluir
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -781,7 +868,7 @@ function FilterMenu({ filter, count, onChange }: { filter: EapListFilter; count:
         </label>
         <label className="flex items-center gap-2 text-sm text-[#344054]">
           <Checkbox checked={filter.overdue} onCheckedChange={(checked) => onChange({ ...filter, overdue: checked === true })} />
-          Vencido
+          Atrasado
         </label>
         {count > 0 ? (
           <Button type="button" variant="ghost" size="sm" onClick={() => onChange(idleEapFilter)}>
@@ -803,11 +890,12 @@ function count(phases: ProjectPhaseView[], read: (phase: ProjectPhaseView) => { 
 
 function countSignals(phases: ProjectPhaseView[]) {
   if (phases.some((phase) => phase.tasks === null || phase.milestones === null)) {
-    return { known: false, blocked: 0, overdue: 0, critical: 0 };
+    return { known: false, blocked: 0, overdue: 0, rejected: 0, critical: 0 };
   }
 
   let blocked = 0;
   let overdue = 0;
+  let rejected = 0;
   for (const phase of phases) {
     if (phaseIsOverdue(phase)) {
       overdue += 1;
@@ -820,13 +908,15 @@ function countSignals(phases: ProjectPhaseView[]) {
       }
     }
     for (const milestone of phase.milestones ?? []) {
-      if (milestoneIsOverdue(milestone)) {
+      if (milestone.status === "REJEITADO") {
+        rejected += 1;
+      } else if (milestoneIsOverdue(milestone)) {
         overdue += 1;
       }
     }
   }
 
-  return { known: true, blocked, overdue, critical: blocked + overdue };
+  return { known: true, blocked, overdue, rejected, critical: blocked + overdue + rejected };
 }
 
 function includes(value: string | null | undefined, term: string) {
@@ -837,46 +927,4 @@ function initials(name: string) {
   const parts = name.split(/\s+/).filter((part) => part !== "·" && part !== "Demo" && part !== "-");
   const source = parts.length > 0 ? parts : name.split(/\s+/);
   return source.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("");
-}
-
-function phaseKind(status: ProjectPhaseView["status"]): "done" | "progress" | "pending" | "attention" {
-  if (status === "CONCLUIDA") {
-    return "done";
-  }
-  if (status === "SUSPENSA") {
-    return "attention";
-  }
-  if (status === "NAO_INICIADA") {
-    return "pending";
-  }
-  return "progress";
-}
-
-function taskKind(status: ProjectTaskView["status"]): "done" | "progress" | "pending" | "attention" | "muted" {
-  if (status === "CONCLUIDA") {
-    return "done";
-  }
-  if (status === "CANCELADA") {
-    return "muted";
-  }
-  if (status === "IMPEDIDA") {
-    return "attention";
-  }
-  if (status === "NAO_INICIADA") {
-    return "pending";
-  }
-  return "progress";
-}
-
-function milestoneKind(status: ProjectMilestoneView["status"]): "done" | "progress" | "pending" | "attention" {
-  if (status === "APROVADO") {
-    return "done";
-  }
-  if (status === "REJEITADO") {
-    return "attention";
-  }
-  if (status === "PENDENTE") {
-    return "pending";
-  }
-  return "progress";
 }

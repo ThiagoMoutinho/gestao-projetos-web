@@ -25,6 +25,8 @@ export type EapAccess = {
   globalRole: string;
   memberRoles: readonly GetProject200RolesItem[];
   linked: boolean;
+  /** Dono do projeto ou participante com DONO_PROJETO/GESTOR. */
+  isProjectManager: boolean;
   canManageStructure: boolean;
   canCreateItems: boolean;
   canRegisterEvidence: boolean;
@@ -48,6 +50,8 @@ export function buildEapAccess(input: {
     globalRole: input.globalRole,
     memberRoles: input.memberRoles,
     linked,
+    isProjectManager:
+      input.userId === input.ownerId || input.memberRoles.some((role) => MANAGEMENT_ROLES.has(role)),
     canManageStructure,
     canCreateItems:
       STRUCTURE_GLOBALS.has(input.globalRole) ||
@@ -84,8 +88,41 @@ export function canRegisterEvidenceOn(
   return access.canRegisterEvidence || canUpdateTaskProgress(access, parent);
 }
 
-export function canReviewMilestone(access: EapAccess, deliveredById: string | null) {
-  return access.canManageStructure && deliveredById !== access.userId;
+/** Espelha a política da API: o homologador designado ou, sem designação, o dono e a gestão vinculada; nunca quem entregou. */
+export function canHomologateMilestone(
+  access: EapAccess,
+  milestone: { reviewerId: string | null; deliveredById: string | null },
+) {
+  if (actsAsSupplier(access) || milestone.deliveredById === access.userId) {
+    return false;
+  }
+
+  if (milestone.reviewerId) {
+    return milestone.reviewerId === access.userId;
+  }
+
+  return access.isProjectManager;
+}
+
+/** Espelha a política da API: ADMIN, PMO ou a gestão do projeto; COORDENADOR não reprograma. */
+export function canReschedule(access: EapAccess) {
+  if (access.globalRole === "ADMIN" || access.globalRole === "PMO") {
+    return true;
+  }
+
+  return !BLOCKED_STRUCTURE_GLOBALS.has(access.globalRole) && access.isProjectManager;
+}
+
+export function canAuthorizeResubmission(access: EapAccess) {
+  if (access.globalRole === "ADMIN" || access.globalRole === "PMO") {
+    return true;
+  }
+
+  return access.globalRole !== "FORNECEDOR" && access.isProjectManager;
+}
+
+function actsAsSupplier(access: EapAccess) {
+  return access.globalRole === "FORNECEDOR" || access.memberRoles.includes("FORNECEDOR");
 }
 
 function canManage(input: {

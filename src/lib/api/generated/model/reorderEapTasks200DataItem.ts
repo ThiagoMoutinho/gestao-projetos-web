@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { ReorderEapTasks200DataItemCalculatedStatus } from './reorderEapTasks200DataItemCalculatedStatus.ts';
 import type { ReorderEapTasks200DataItemStatus } from './reorderEapTasks200DataItemStatus.ts';
 
 export type ReorderEapTasks200DataItem = {
@@ -44,6 +45,10 @@ export type ReorderEapTasks200DataItem = {
   /** @nullable */
   actualEndAt: string | null;
   hasImpediment: boolean;
+  /** @nullable */
+  correctiveMilestoneId: string | null;
+  /** Situação pela regra da EAP. Difere de status apenas em registros antigos ainda não reconciliados. */
+  calculatedStatus: ReorderEapTasks200DataItemCalculatedStatus;
   createdBy: string;
   updatedBy: string;
   createdAt: string;

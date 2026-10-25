@@ -5,6 +5,8 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { ListEapPhases200DataItemCalculatedStatus } from './listEapPhases200DataItemCalculatedStatus.ts';
+import type { ListEapPhases200DataItemProgressState } from './listEapPhases200DataItemProgressState.ts';
 import type { ListEapPhases200DataItemStatus } from './listEapPhases200DataItemStatus.ts';
 
 export type ListEapPhases200DataItem = {
@@ -35,6 +37,16 @@ export type ListEapPhases200DataItem = {
   actualStartAt: string | null;
   /** @nullable */
   actualEndAt: string | null;
+  /** Situação pela regra da EAP. Difere de status apenas em registros antigos ainda não reconciliados. */
+  calculatedStatus: ListEapPhases200DataItemCalculatedStatus;
+  progressState: ListEapPhases200DataItemProgressState;
+  /**
+     * Andamento consolidado em centésimos de ponto percentual (6625 = 66,25%).
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  progressBasisPoints: number | null;
   createdBy: string;
   updatedBy: string;
   createdAt: string;

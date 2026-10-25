@@ -17,10 +17,22 @@ import {
   taskStatusTone,
   type RecordTone,
 } from "./project-records";
+import { MILESTONE_DONE_LABEL, MILESTONE_DUE_LABEL } from "./eap-progress";
 
 export type ProjectDateField = {
   label: string;
   value: string;
+};
+
+/** Datas cruas (ISO) do item. Marco usa só o término: data prevista, original e efetiva. */
+export type ScheduleView = {
+  single: boolean;
+  plannedStartAt: string | null;
+  plannedEndAt: string | null;
+  baselineStartAt: string | null;
+  baselineEndAt: string | null;
+  actualStartAt: string | null;
+  actualEndAt: string | null;
 };
 
 export type ProjectMemberView = {
@@ -28,6 +40,7 @@ export type ProjectMemberView = {
   userId: string;
   name: string;
   email: string;
+  role: GetProject200RolesItem;
   roleLabel: string;
 };
 
@@ -37,6 +50,8 @@ export type ProjectTaskView = {
   title: string;
   description: string | null;
   status: ListEapTasks200DataItemStatus;
+  calculatedStatus: ListEapTasks200DataItemStatus;
+  statusDiverges: boolean;
   statusLabel: string;
   statusTone: RecordTone;
   progressPercent: number;
@@ -48,7 +63,9 @@ export type ProjectTaskView = {
   createdBy: string;
   actualStartAt: string | null;
   actualEndAt: string | null;
+  correctiveMilestoneId: string | null;
   dates: ProjectDateField[];
+  schedule: ScheduleView;
 };
 
 export type ProjectMilestoneView = {
@@ -63,13 +80,19 @@ export type ProjectMilestoneView = {
   statusLabel: string;
   statusTone: RecordTone;
   dates: ProjectDateField[];
+  schedule: ScheduleView;
   deliveredById: string | null;
   deliveredBy: string | null;
   validatedById: string | null;
   validatedBy: string | null;
+  validatedAt: string | null;
   validationNote: string | null;
+  reviewerId: string | null;
+  reviewerName: string | null;
   createdBy: string;
 };
+
+export type PhaseProgressState = "VALUE" | "EMPTY" | "NO_ELIGIBLE";
 
 export type ProjectPhaseView = {
   id: string;
@@ -80,9 +103,14 @@ export type ProjectPhaseView = {
   responsibleName: string | null;
   completionCriteria: string | null;
   status: ListEapPhases200DataItemStatus;
+  calculatedStatus: ListEapPhases200DataItemStatus;
+  statusDiverges: boolean;
   statusLabel: string;
   statusTone: RecordTone;
+  progressState: PhaseProgressState;
+  progressBasisPoints: number | null;
   dates: ProjectDateField[];
+  schedule: ScheduleView;
   tasks: ProjectTaskView[] | null;
   milestones: ProjectMilestoneView[] | null;
 };
@@ -102,6 +130,8 @@ export type ProjectDetail = {
   memberRoles: GetProject200RolesItem[];
   members: ProjectMemberView[] | null;
   phases: ProjectPhaseView[] | null;
+  /** Datas realizadas ficam nulas aqui: são derivadas das fases pelo monitoramento da API. */
+  schedule: ScheduleView;
 };
 
 type DatedSpan = {
@@ -118,6 +148,9 @@ export function presentPhase<T extends DatedSpan & {
   name: string;
   description: string | null;
   status: ListEapPhases200DataItemStatus;
+  calculatedStatus: ListEapPhases200DataItemStatus;
+  progressState: PhaseProgressState;
+  progressBasisPoints: number | null;
   createdBy: string;
   responsibleId: string | null;
   completionCriteria: string | null;
@@ -135,9 +168,14 @@ export function presentPhase<T extends DatedSpan & {
     responsibleName: phase.responsibleId ? personName(phase.responsibleId, names) : null,
     completionCriteria: phase.completionCriteria,
     status: phase.status,
-    statusLabel: phaseStatusLabel(phase.status),
-    statusTone: phaseStatusTone(phase.status),
+    calculatedStatus: phase.calculatedStatus,
+    statusDiverges: phase.status !== phase.calculatedStatus,
+    statusLabel: phaseStatusLabel(phase.calculatedStatus),
+    statusTone: phaseStatusTone(phase.calculatedStatus),
+    progressState: phase.progressState,
+    progressBasisPoints: phase.progressBasisPoints,
     dates: spanDates(phase),
+    schedule: spanSchedule(phase),
     tasks: children.tasks,
     milestones: children.milestones,
   };
@@ -150,9 +188,11 @@ export function presentTask<T extends DatedSpan & {
   description: string | null;
   assigneeId: string | null;
   status: ListEapTasks200DataItemStatus;
+  calculatedStatus: ListEapTasks200DataItemStatus;
   progressPercent: number;
   weight: number;
   hasImpediment: boolean;
+  correctiveMilestoneId?: string | null;
   createdBy: string;
 }>(task: T, names: Map<string, string> | null): ProjectTaskView {
   return {
@@ -161,8 +201,10 @@ export function presentTask<T extends DatedSpan & {
     title: task.title,
     description: task.description,
     status: task.status,
-    statusLabel: taskStatusLabel(task.status),
-    statusTone: taskStatusTone(task.status),
+    calculatedStatus: task.calculatedStatus,
+    statusDiverges: task.status !== task.calculatedStatus,
+    statusLabel: taskStatusLabel(task.calculatedStatus),
+    statusTone: taskStatusTone(task.calculatedStatus),
     progressPercent: task.progressPercent,
     weight: task.weight,
     sortOrder: 0,
@@ -172,7 +214,9 @@ export function presentTask<T extends DatedSpan & {
     createdBy: task.createdBy,
     actualStartAt: task.actualStartAt,
     actualEndAt: task.actualEndAt,
+    correctiveMilestoneId: task.correctiveMilestoneId ?? null,
     dates: spanDates(task),
+    schedule: spanSchedule(task),
   };
 }
 
@@ -188,9 +232,13 @@ export function presentMilestone<T extends {
   actualAt: string | null;
   deliveredBy: string | null;
   validatedBy: string | null;
+  validatedAt: string | null;
   validationNote: string | null;
+  reviewerId: string | null;
   createdBy: string;
 }>(milestone: T, names: Map<string, string> | null): ProjectMilestoneView {
+  // Marcos de entrega legados gravam actualAt no envio; a conclusão efetiva só existe após o aceite.
+  const concludedAt = milestone.status === "APROVADO" ? milestone.actualAt : null;
   return {
     id: milestone.id,
     phaseId: milestone.phaseId,
@@ -200,18 +248,29 @@ export function presentMilestone<T extends {
     typeLabel: milestoneTypeLabel(milestone.type),
     sortOrder: 0,
     status: milestone.status,
-    statusLabel: milestoneStatusLabel(milestone.status),
+    statusLabel: milestoneStatusLabel(milestone.status, milestone.type),
     statusTone: milestoneStatusTone(milestone.status),
     dates: [
-      { label: "Planejada (vigente)", value: recordedDate(milestone.plannedAt) },
-      { label: "Linha de base", value: recordedDate(milestone.baselineAt) },
-      { label: "Realizada", value: recordedDate(milestone.actualAt) },
+      { label: MILESTONE_DUE_LABEL, value: recordedDate(milestone.plannedAt) },
+      { label: MILESTONE_DONE_LABEL, value: recordedDate(concludedAt) },
     ],
+    schedule: {
+      single: true,
+      plannedStartAt: null,
+      plannedEndAt: milestone.plannedAt,
+      baselineStartAt: null,
+      baselineEndAt: milestone.baselineAt,
+      actualStartAt: null,
+      actualEndAt: concludedAt,
+    },
     deliveredById: milestone.deliveredBy,
     deliveredBy: milestone.deliveredBy ? personName(milestone.deliveredBy, names) : null,
     validatedById: milestone.validatedBy,
     validatedBy: milestone.validatedBy ? personName(milestone.validatedBy, names) : null,
+    validatedAt: milestone.validatedAt,
     validationNote: milestone.validationNote,
+    reviewerId: milestone.reviewerId,
+    reviewerName: milestone.reviewerId ? personName(milestone.reviewerId, names) : null,
     createdBy: milestone.createdBy,
   };
 }
@@ -241,6 +300,18 @@ export function civilDateToIso(value: string) {
   }
 
   return `${value}T12:00:00.000-03:00`;
+}
+
+function spanSchedule(item: DatedSpan): ScheduleView {
+  return {
+    single: false,
+    plannedStartAt: item.plannedStartAt,
+    plannedEndAt: item.plannedEndAt,
+    baselineStartAt: item.baselineStartAt,
+    baselineEndAt: item.baselineEndAt,
+    actualStartAt: item.actualStartAt,
+    actualEndAt: item.actualEndAt,
+  };
 }
 
 function spanDates(item: DatedSpan): ProjectDateField[] {

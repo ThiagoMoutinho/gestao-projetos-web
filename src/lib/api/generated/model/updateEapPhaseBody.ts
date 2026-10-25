@@ -5,7 +5,6 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateEapPhaseBodyStatus } from './updateEapPhaseBodyStatus.ts';
 
 export type UpdateEapPhaseBody = {
   /**
@@ -18,7 +17,8 @@ export type UpdateEapPhaseBody = {
      * @nullable
      */
   description?: string | null;
-  status?: UpdateEapPhaseBodyStatus;
+  /** Suspende ou retoma a fase. A situação de execução é calculada a partir das tarefas e marcos. */
+  suspended?: boolean;
   /**
      * @minLength 1
      * @nullable

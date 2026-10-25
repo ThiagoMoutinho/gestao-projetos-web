@@ -12,4 +12,5 @@ export type UpdateEapMilestone200Type = typeof UpdateEapMilestone200Type[keyof t
 export const UpdateEapMilestone200Type = {
   ENTREGA: 'ENTREGA',
   APROVACAO: 'APROVACAO',
+  HOMOLOGACAO: 'HOMOLOGACAO',
 } as const;

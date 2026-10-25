@@ -33,6 +33,10 @@ export type ReorderEapMilestones200DataItem = {
   validatedBy: string | null;
   /** @nullable */
   validationNote: string | null;
+  /** @nullable */
+  validatedAt: string | null;
+  /** @nullable */
+  reviewerId: string | null;
   createdBy: string;
   updatedBy: string;
   createdAt: string;

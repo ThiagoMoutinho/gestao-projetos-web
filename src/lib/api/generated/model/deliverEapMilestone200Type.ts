@@ -12,4 +12,5 @@ export type DeliverEapMilestone200Type = typeof DeliverEapMilestone200Type[keyof
 export const DeliverEapMilestone200Type = {
   ENTREGA: 'ENTREGA',
   APROVACAO: 'APROVACAO',
+  HOMOLOGACAO: 'HOMOLOGACAO',
 } as const;

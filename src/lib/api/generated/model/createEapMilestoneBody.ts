@@ -24,4 +24,9 @@ export type CreateEapMilestoneBody = {
      * @nullable
      */
   plannedAt?: string | null;
+  /**
+     * @minLength 1
+     * @nullable
+     */
+  reviewerId?: string | null;
 };

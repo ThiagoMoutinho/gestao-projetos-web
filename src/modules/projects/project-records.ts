@@ -22,14 +22,28 @@ const TASK_LABELS: Record<ListEapTasks200DataItemStatus, string> = {
 const MILESTONE_LABELS: Record<ListEapMilestones200DataItemStatus, string> = {
   PENDENTE: "Pendente",
   ENTREGUE: "Entregue",
-  APROVADO: "Aprovado",
+  AJUSTES_SOLICITADOS: "Correções necessárias",
+  APROVADO: "Aceito",
+  REJEITADO: "Rejeitado",
+};
+
+const HOMOLOGATION_LABELS: Record<ListEapMilestones200DataItemStatus, string> = {
+  PENDENTE: "Não iniciado",
+  ENTREGUE: "Aguardando homologação",
+  AJUSTES_SOLICITADOS: "Correções necessárias",
+  APROVADO: "Homologado",
   REJEITADO: "Rejeitado",
 };
 
 const MILESTONE_TYPES: Record<ListEapMilestones200DataItemType, string> = {
   ENTREGA: "Entrega",
   APROVACAO: "Aprovação",
+  HOMOLOGACAO: "Homologação",
 };
+
+export const MILESTONE_TYPE_OPTIONS = Object.entries(MILESTONE_TYPES) as Array<
+  [ListEapMilestones200DataItemType, string]
+>;
 
 const ROLE_LABELS: Record<ListProjectMembers200DataItemRole, string> = {
   DONO_PROJETO: "Dono do projeto",
@@ -54,8 +68,16 @@ export function taskStatusLabel(status: ListEapTasks200DataItemStatus) {
   return TASK_LABELS[status];
 }
 
-export function milestoneStatusLabel(status: ListEapMilestones200DataItemStatus) {
-  return MILESTONE_LABELS[status];
+export function milestoneStatusLabel(
+  status: ListEapMilestones200DataItemStatus,
+  type?: ListEapMilestones200DataItemType,
+) {
+  return (type === "HOMOLOGACAO" ? HOMOLOGATION_LABELS : MILESTONE_LABELS)[status];
+}
+
+export function recordedStatusLabel(status: string) {
+  const labels: Record<string, string> = { ...PHASE_LABELS, ...TASK_LABELS, ...MILESTONE_LABELS };
+  return labels[status] ?? status;
 }
 
 export function milestoneTypeLabel(type: ListEapMilestones200DataItemType) {
@@ -101,6 +123,10 @@ export function taskStatusTone(status: ListEapTasks200DataItemStatus): RecordTon
 export function milestoneStatusTone(status: ListEapMilestones200DataItemStatus): RecordTone {
   if (status === "REJEITADO") {
     return "destructive";
+  }
+
+  if (status === "AJUSTES_SOLICITADOS") {
+    return "outline";
   }
 
   if (status === "APROVADO") {

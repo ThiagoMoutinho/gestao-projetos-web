@@ -6,10 +6,13 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type CreateEapTaskBodyStatus = typeof CreateEapTaskBodyStatus[keyof typeof CreateEapTaskBodyStatus];
+/**
+ * Situação pela regra da EAP. Difere de status apenas em registros antigos ainda não reconciliados.
+ */
+export type UpdateEapTask200CalculatedStatus = typeof UpdateEapTask200CalculatedStatus[keyof typeof UpdateEapTask200CalculatedStatus];
 
 
-export const CreateEapTaskBodyStatus = {
+export const UpdateEapTask200CalculatedStatus = {
   NAO_INICIADA: 'NAO_INICIADA',
   EM_ANDAMENTO: 'EM_ANDAMENTO',
   IMPEDIDA: 'IMPEDIDA',

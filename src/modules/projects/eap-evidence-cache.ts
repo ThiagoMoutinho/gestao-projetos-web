@@ -6,7 +6,7 @@ import { recordedDate } from "./project-records";
 export type EvidenceParent = { phaseId: string } | { taskId: string } | { milestoneId: string };
 
 export type EvidenceState =
-  | { status: "ready"; items: { id: string; title: string; url: string; createdAt: string }[] }
+  | { status: "ready"; items: { id: string; title: string; url: string; createdAt: string; deliveryId: string | null }[] }
   | { status: "error"; message: string };
 
 const requests = new Map<string, Promise<EvidenceState>>();
@@ -49,6 +49,7 @@ async function loadEvidences(projectId: string, parent: EvidenceParent): Promise
         title: item.title,
         url: item.url,
         createdAt: recordedDate(item.createdAt),
+        deliveryId: item.deliveryId,
       })),
     };
   } catch (error) {

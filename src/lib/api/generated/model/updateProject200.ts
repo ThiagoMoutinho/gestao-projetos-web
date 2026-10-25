@@ -18,6 +18,26 @@ export type UpdateProject200 = {
   glpiTicketId: string | null;
   ownerId: string;
   status: UpdateProject200Status;
+  /**
+     * Início do planejamento original.
+     * @nullable
+     */
+  baselineStartAt: string | null;
+  /**
+     * Término do planejamento original.
+     * @nullable
+     */
+  baselineEndAt: string | null;
+  /**
+     * Início planejado vigente.
+     * @nullable
+     */
+  plannedStartAt: string | null;
+  /**
+     * Término planejado vigente.
+     * @nullable
+     */
+  plannedEndAt: string | null;
   createdAt: string;
   updatedAt: string;
   owner: UpdateProject200Owner;

@@ -1,23 +1,35 @@
 "use client";
 
 import { Suspense, use, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { AlertTriangle, Calendar, Check, ChevronRight, FileText, Flag, Folder, User, X } from "lucide-react";
+import { AlertTriangle, Calendar, Check, ChevronRight, Clock, FileText, Flag, Folder, Info, Plus, User, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/fetcher";
-import { deliverEapMilestone, reviewEapMilestone, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
+import { notifySuccess, reportFailure } from "@/lib/feedback";
+import { getEapMilestone, getEapPhase, getEapTask, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
 import { cn } from "@/lib/utils";
 
-import { canEditItem, canReviewMilestone, canUpdateTaskProgress, type EapAccess } from "./eap-access";
+import { canEditItem, canHomologateMilestone, canReschedule, canUpdateTaskProgress, type EapAccess } from "./eap-access";
+import { MilestoneDecisionFeedback } from "./eap-decision-feedback";
 import { evidenceRequest, type EvidenceParent } from "./eap-evidence-cache";
 import { EapHistory } from "./eap-history";
+import { impedimentRequest } from "./eap-impediment-cache";
+import { impedimentTone, overdueTone } from "./eap-tones";
 import { EapPanel, type EapPerson, type EapSaveController } from "./eap-panel";
-import { presentMilestone, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
-import { basisToPercent, formatBasis, milestoneIsOverdue, phaseProgress, progressLabel, taskIsOverdue, vigenteText } from "./eap-progress";
+import { MilestoneHomologation } from "./eap-milestone-homologation";
+import {
+  presentMilestone,
+  presentPhase,
+  presentTask,
+  type ProjectMilestoneView,
+  type ProjectPhaseView,
+  type ProjectTaskView,
+} from "./eap-present";
+import { EapSchedule } from "./eap-schedule";
+import { basisToPercent, formatBasis, milestoneDelayReason, milestoneIsOverdue, phaseIsOverdue, phaseProgress, progressLabel, taskIsOverdue, vigenteText } from "./eap-progress";
+import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind, type EapStatusKind } from "./eap-status-badge";
 import type { EapSelection } from "./eap-selection";
-
 const PERCENT_OPTIONS = [25, 50, 75, 90, 100];
 
 export function EapDetail({
@@ -41,6 +53,7 @@ export function EapDetail({
   onTask,
   onMilestone,
   onEditingChange,
+  onCorrectiveTask,
 }: {
   projectId: string;
   phases: ProjectPhaseView[];
@@ -62,14 +75,17 @@ export function EapDetail({
   onTask: (task: ProjectTaskView) => void;
   onMilestone: (milestone: ProjectMilestoneView) => void;
   onEditingChange?: (editing: boolean) => void;
+  onCorrectiveTask?: (milestone: ProjectMilestoneView) => void;
 }) {
   const [editing, setEditing] = useState(initialEditing);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [editorSaving, setEditorSaving] = useState(false);
+  const [editorLocked, setEditorLocked] = useState(false);
   const saveRef = useRef<() => void>(() => undefined);
   const onController = useCallback((controller: EapSaveController) => {
     saveRef.current = controller.save;
     setEditorSaving((current) => (current === controller.saving ? current : controller.saving));
+    setEditorLocked((current) => (current === controller.locked ? current : controller.locked));
   }, []);
   const phase = phases.find((item) => item.id === selection.phaseId) ?? null;
   const task = selection.kind === "task" ? (phase?.tasks?.find((item) => item.id === selection.taskId) ?? null) : null;
@@ -102,7 +118,7 @@ export function EapDetail({
         <div className="min-w-0">
           <span className="mb-[9px] block text-[9px] leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">{eyebrow}</span>
           <h2 className="max-w-[470px] truncate text-[17px] leading-[1.35] font-semibold text-[#172033]">{title}</h2>
-          {editing ? (
+          {editing && !editorLocked ? (
             <span className="mt-[7px] flex items-center gap-1.5 text-[8.5px] font-semibold text-[#8a6116]">
               <span className="size-1.5 rounded-full bg-[#e0a130]" />
               Alterações não salvas
@@ -176,11 +192,21 @@ export function EapDetail({
             onMilestone={onMilestone}
           />
         ) : phase && selection.kind === "phase" ? (
-          <PhaseDetail projectId={projectId} phase={phase} code={code} onSelect={onSelect} />
+          <PhaseDetail projectId={projectId} phase={phase} code={code} access={access} names={names} onSelect={onSelect} onPhase={onPhase} />
         ) : phase && task ? (
           <TaskDetail projectId={projectId} phase={phase} task={task} code={code} access={access} names={names} onTask={onTask} />
         ) : phase && milestone ? (
-          <MilestoneDetail projectId={projectId} milestone={milestone} code={code} access={access} names={names} onMilestone={onMilestone} />
+          <MilestoneDetail
+            projectId={projectId}
+            phase={phase}
+            milestone={milestone}
+            code={code}
+            access={access}
+            names={names}
+            onMilestone={onMilestone}
+            onSelect={onSelect}
+            onCorrectiveTask={onCorrectiveTask}
+          />
         ) : (
           <p className={paragraph}>Este item não está mais na EAP carregada.</p>
         )}
@@ -191,7 +217,7 @@ export function EapDetail({
             <Button type="button" variant="outline" className={secondaryButton} onClick={cancelEdit}>
               Cancelar
             </Button>
-            <Button type="button" className={cn(primaryButton, "gap-1.5")} disabled={editorSaving} onClick={() => saveRef.current()}>
+            <Button type="button" className={cn(primaryButton, "gap-1.5")} disabled={editorSaving || editorLocked} onClick={() => saveRef.current()}>
               <Check aria-hidden="true" />
               {editorSaving ? "Salvando…" : "Salvar alterações"}
             </Button>
@@ -206,17 +232,22 @@ export function EapDetail({
             Editar fase
           </Button>
         ) : null}
-        {!editing && task && canUpdateTaskProgress(access, task) ? (
+        {!editing && task && task.calculatedStatus !== "CANCELADA" && canUpdateTaskProgress(access, task) ? (
           <Button type="button" className={primaryButton} onClick={() => setEditing(true)}>
             Atualizar andamento
           </Button>
         ) : null}
-        {!editing && milestone && milestone.status === "ENTREGUE" && canReviewMilestone(access, milestone.deliveredById) ? (
+        {!editing && task && task.calculatedStatus === "CANCELADA" && access.canManageStructure ? (
+          <Button type="button" className={primaryButton} onClick={() => setEditing(true)}>
+            Reativar tarefa
+          </Button>
+        ) : null}
+        {!editing && milestone && milestone.status === "ENTREGUE" && canHomologateMilestone(access, milestone) ? (
           <Button type="button" className={primaryButton} onClick={() => document.getElementById("eap-milestone-decision")?.scrollIntoView({ block: "nearest" })}>
             Registrar decisão
           </Button>
         ) : null}
-        {!editing && milestone && canEditItem(access, milestone.createdBy) && !(milestone.status === "ENTREGUE" && canReviewMilestone(access, milestone.deliveredById)) ? (
+        {!editing && milestone && canEditItem(access, milestone.createdBy) && !(milestone.status === "ENTREGUE" && canHomologateMilestone(access, milestone)) ? (
           <Button type="button" className={primaryButton} onClick={() => setEditing(true)}>
             Editar marco
           </Button>
@@ -230,12 +261,18 @@ function PhaseDetail({
   projectId,
   phase,
   code,
+  access,
+  names,
   onSelect,
+  onPhase,
 }: {
   projectId: string;
   phase: ProjectPhaseView;
   code: string;
+  access: EapAccess;
+  names: Map<string, string> | null;
   onSelect: (selection: EapSelection) => void;
+  onPhase: (phase: ProjectPhaseView) => void;
 }) {
   const progress = phaseProgress(phase);
   const tasks = phase.tasks;
@@ -244,17 +281,16 @@ function PhaseDetail({
   const pending = known
     ? [
         ...tasks
-          .filter((task) => task.status !== "CONCLUIDA" && task.status !== "CANCELADA")
-          .map((task) => ({ id: task.id, title: task.title, label: task.statusLabel, blocked: task.hasImpediment || task.status === "IMPEDIDA", selection: { kind: "task" as const, phaseId: phase.id, taskId: task.id } })),
+          .filter((task) => task.calculatedStatus !== "CONCLUIDA" && task.calculatedStatus !== "CANCELADA")
+          .map((task) => ({ id: task.id, title: task.title, label: task.statusLabel, kind: taskStatusKind(task.calculatedStatus), blocked: task.hasImpediment || task.status === "IMPEDIDA", overdue: taskIsOverdue(task), selection: { kind: "task" as const, phaseId: phase.id, taskId: task.id } })),
         ...milestones
           .filter((milestone) => milestone.status !== "APROVADO")
-          .map((milestone) => ({ id: milestone.id, title: milestone.title, label: milestone.statusLabel, blocked: false, selection: { kind: "milestone" as const, phaseId: phase.id, milestoneId: milestone.id } })),
+          .map((milestone) => ({ id: milestone.id, title: milestone.title, label: milestone.statusLabel, kind: milestoneStatusKind(milestone.status), blocked: false, overdue: milestoneIsOverdue(milestone), selection: { kind: "milestone" as const, phaseId: phase.id, milestoneId: milestone.id } })),
       ]
     : null;
-
   return (
     <div>
-      <Topline type="phase" code={code} label={phase.statusLabel} kind={phaseKind(phase.status)} />
+      <Topline type="phase" code={code} label={phase.statusLabel} kind={phaseStatusKind(phase.calculatedStatus)} />
       <Section label="Descrição da fase">
         <p className={paragraph}>{phase.description?.trim() || "Nenhuma descrição registrada."}</p>
       </Section>
@@ -268,12 +304,12 @@ function PhaseDetail({
           <span className="mt-[9px] block text-[8.5px] leading-normal text-[#8a94a6]">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</span>
         </Section>
       ) : (
-        <div className="my-4 flex items-start gap-2.5 rounded-lg border border-[#f3dcae] bg-[#fff8e9] p-[13px] text-[#9c5c0a]">
-          <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+        <div className="my-4 flex items-start gap-2.5 rounded-lg border border-[#e4e7ec] bg-[#f8f9fb] p-[13px] text-[#475467]">
+          <Info className="size-4 shrink-0 text-[#667085]" aria-hidden="true" />
           <span>
             <strong className="mb-[3px] block text-[10.5px]">{progressLabel(progress)}</strong>
-            <span className="block text-[9px] text-[#9b6c2d]">
-              {progress.kind === "incomplete" ? "Inclua tarefas ou marcos para calcular o andamento." : "O percentual desta fase não está disponível."}
+            <span className="block text-[9px] text-[#667085]">
+              {progress.kind === "empty" ? "Inclua tarefas ou marcos para calcular o andamento." : "O percentual desta fase não está disponível."}
             </span>
           </span>
         </div>
@@ -281,7 +317,7 @@ function PhaseDetail({
       <div className="grid grid-cols-3 gap-2 border-t border-[#edf0f3] py-[18px]">
         <Metric value={tasks ? String(tasks.length) : "—"} label="Tarefas" />
         <Metric value={milestones ? String(milestones.length) : "—"} label="Marcos" />
-        <Metric value={pending ? String(pending.length) : "—"} label="Pendências" warning={Boolean(pending && pending.length > 0)} />
+        <Metric value={pending ? String(pending.length) : "—"} label="Pendências" />
       </div>
       <Section label="Pendências da fase">
         {pending === null ? (
@@ -294,10 +330,10 @@ function PhaseDetail({
           <ul className="flex flex-col gap-[7px]">
             {pending.map((item) => (
               <li key={item.id}>
-                <button type="button" className="grid min-h-[35px] w-full grid-cols-[7px_minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[9.5px] text-[#475467] hover:bg-[#f8fbff]" onClick={() => onSelect(item.selection)}>
-                  <span className={cn("size-[5px] rounded-full", item.blocked ? "bg-[#d23b31]" : "bg-[#e0a130]")} />
+                <button type="button" className="grid min-h-[35px] w-full grid-cols-[12px_minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[9.5px] text-[#475467] hover:bg-[#f8fbff]" onClick={() => onSelect(item.selection)}>
+                  <PendingSignal blocked={item.blocked} overdue={item.overdue} />
                   <span className="truncate">{item.title}</span>
-                  <StatusPill label={item.label} kind={item.blocked ? "attention" : "pending"} small />
+                  <EapStatusBadge kind={item.kind} label={item.label} size="sm" />
                 </button>
               </li>
             ))}
@@ -306,7 +342,7 @@ function PhaseDetail({
       </Section>
       <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
         <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={phase.responsibleName ?? "Não informado"} />
-        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Prazo vigente" value={vigenteText(phase.dates) ?? "Não informado"} />
+        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Prazo vigente" value={vigenteText(phase.dates) ?? "Não informado"} overdue={phaseIsOverdue(phase)} note={phaseIsOverdue(phase) ? "Em atraso" : null} />
       </div>
       <Section label="Critério de conclusão">
         <p className={paragraph}>{phase.completionCriteria?.trim() || "Nenhum critério registrado."}</p>
@@ -316,7 +352,21 @@ function PhaseDetail({
           <EvidenceList projectId={projectId} parent={{ phaseId: phase.id }} />
         </Suspense>
       </Section>
-      <PlanningDates dates={phase.dates} />
+      <Section label="Planejamento e prazos">
+        <EapSchedule
+          projectId={projectId}
+          target={{ entityType: "PHASE", phaseId: phase.id }}
+          schedule={phase.schedule}
+          closed={phase.status === "CONCLUIDA"}
+          canReschedule={canReschedule(access)}
+          onSaved={async () => {
+            const response = await getEapPhase(projectId, phase.id);
+            if (response.status === 200) {
+              onPhase(presentPhase(response.data, { tasks: phase.tasks, milestones: phase.milestones }, names));
+            }
+          }}
+        />
+      </Section>
       <Section label="Histórico de alterações">
         <EapHistory projectId={projectId} entityType="PHASE" entityId={phase.id} refreshKey={detailKey(phase)} />
       </Section>
@@ -352,15 +402,11 @@ function TaskDetail({
   const [feedback, setFeedback] = useState<string | null>(null);
   const overdue = taskIsOverdue(task);
   const blocked = task.hasImpediment || task.status === "IMPEDIDA";
-  const locked = task.status === "CONCLUIDA" || task.status === "CANCELADA";
+  const locked = task.calculatedStatus === "CANCELADA";
 
   async function save(percent: number) {
     if (!canUpdate || percent === task.progressPercent) {
       setFeedback(percent === task.progressPercent ? "O percentual registrado já está neste valor." : null);
-      return;
-    }
-    if (task.status === "CONCLUIDA" && percent !== 100) {
-      setError("Tarefa concluída deve permanecer em 100%.");
       return;
     }
     setSaving(true);
@@ -372,9 +418,9 @@ function TaskDetail({
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar o andamento.");
       }
       onTask(presentTask(response.data, names));
-      setFeedback("Andamento salvo.");
+      notifySuccess("Andamento salvo.");
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Não foi possível atualizar o andamento.");
+      setError(reportFailure(caught, "Não foi possível atualizar o andamento."));
     } finally {
       setSaving(false);
     }
@@ -382,18 +428,20 @@ function TaskDetail({
 
   return (
     <div>
-      <Topline type="task" code={code} label={task.statusLabel} kind={taskKind(task.status)} />
+      <Topline type="task" code={code} label={task.statusLabel} kind={taskStatusKind(task.calculatedStatus)} />
       <Section label="Descrição da tarefa">
         <p className={paragraph}>{task.description?.trim() || "Nenhuma descrição registrada."}</p>
       </Section>
       {blocked ? (
-        <div className="mt-4 mb-0.5 grid grid-cols-[30px_minmax(0,1fr)] gap-2.5 rounded-lg border border-[#f2c7c3] bg-[#fff7f6] p-[13px]">
-          <span className="grid size-[30px] place-items-center rounded-[7px] bg-[#fde7e5] text-[#b42318]">
+        <div className={cn("mt-4 mb-0.5 grid grid-cols-[30px_minmax(0,1fr)] gap-2.5 rounded-lg border p-[13px]", impedimentTone.surface)}>
+          <span className={cn("grid size-[30px] place-items-center rounded-[7px]", impedimentTone.icon)}>
             <AlertTriangle className="size-[17px]" aria-hidden="true" />
           </span>
           <span>
-            <strong className="mb-[5px] block text-[10px] text-[#9f2219]">Impedimento ativo</strong>
-            <p className="text-[9.5px] leading-[1.55] text-[#74534f]">Esta tarefa está marcada com impedimento.</p>
+            <strong className={cn("mb-[5px] block text-[10px]", impedimentTone.text)}>Impedimento ativo</strong>
+            <Suspense fallback={<p className={impedimentText}>Consultando o motivo…</p>}>
+              <ImpedimentNote projectId={projectId} phaseId={phase.id} task={task} />
+            </Suspense>
           </span>
         </div>
       ) : null}
@@ -410,9 +458,9 @@ function TaskDetail({
           aria-label={`Andamento registrado de ${task.title}`}
           className={cn(
             "[&_[data-slot=progress-track]]:h-[7px] [&_[data-slot=progress-track]]:bg-[#e9eef5]",
-            task.status === "CONCLUIDA" && "[&_[data-slot=progress-indicator]]:bg-[#1c8b65]",
-            task.status === "CANCELADA" && "[&_[data-slot=progress-indicator]]:bg-[#98a2b3]",
-            task.status !== "CONCLUIDA" && task.status !== "CANCELADA" && "[&_[data-slot=progress-indicator]]:bg-[#2873cf]",
+            task.calculatedStatus === "CONCLUIDA" && "[&_[data-slot=progress-indicator]]:bg-[#1c8b65]",
+            task.calculatedStatus === "CANCELADA" && "[&_[data-slot=progress-indicator]]:bg-[#98a2b3]",
+            task.calculatedStatus !== "CONCLUIDA" && task.calculatedStatus !== "CANCELADA" && "[&_[data-slot=progress-indicator]]:bg-[#2873cf]",
           )}
         />
         <div className="mt-3 grid grid-cols-5 gap-1.5">
@@ -437,6 +485,7 @@ function TaskDetail({
           ))}
         </div>
         {!canUpdate ? <p className="mt-2 text-[8.5px] text-[#667085]">Seu acesso não permite atualizar o andamento desta tarefa.</p> : null}
+        {canUpdate && locked ? <p className="mt-2 text-[8.5px] text-[#667085]">Tarefa cancelada. Somente a gestão do projeto pode reativá-la.</p> : null}
         {error ? <p className="mt-2 text-[8.5px] text-destructive">{error}</p> : null}
         {feedback ? <p className="mt-2 text-[8.5px] text-[#667085]" role="status">{feedback}</p> : null}
       </section>
@@ -449,9 +498,24 @@ function TaskDetail({
           <EvidenceList
             projectId={projectId}
             parent={{ taskId: task.id }}
-            emptyWarning={task.status === "CONCLUIDA" ? "Tarefa concluída sem as evidências exigidas. Vincule os documentos para regularizar o registro." : null}
+            emptyWarning={task.calculatedStatus === "CONCLUIDA" ? "Tarefa concluída sem as evidências exigidas. Vincule os documentos para regularizar o registro." : null}
           />
         </Suspense>
+      </Section>
+      <Section label="Planejamento e prazos">
+        <EapSchedule
+          projectId={projectId}
+          target={{ entityType: "TASK", phaseId: phase.id, taskId: task.id }}
+          schedule={task.schedule}
+          closed={task.calculatedStatus === "CONCLUIDA" || task.calculatedStatus === "CANCELADA"}
+          canReschedule={canReschedule(access)}
+          onSaved={async () => {
+            const response = await getEapTask(projectId, phase.id, task.id);
+            if (response.status === 200) {
+              onTask(presentTask(response.data, names));
+            }
+          }}
+        />
       </Section>
       <Section label="Histórico de alterações">
         <EapHistory projectId={projectId} entityType="TASK" entityId={task.id} refreshKey={detailKey(task)} />
@@ -462,174 +526,149 @@ function TaskDetail({
 
 function MilestoneDetail({
   projectId,
+  phase,
   milestone,
   code,
   access,
   names,
   onMilestone,
+  onSelect,
+  onCorrectiveTask,
 }: {
   projectId: string;
+  phase: ProjectPhaseView;
   milestone: ProjectMilestoneView;
   code: string;
   access: EapAccess;
   names: Map<string, string> | null;
   onMilestone: (milestone: ProjectMilestoneView) => void;
+  onSelect: (selection: EapSelection) => void;
+  onCorrectiveTask?: (milestone: ProjectMilestoneView) => void;
 }) {
+  const [historyRevision, setHistoryRevision] = useState(0);
+  const homologation = milestone.type === "HOMOLOGACAO";
   const flow = milestone.status === "APROVADO" ? "accepted" : milestone.status === "ENTREGUE" ? "delivered" : "pending";
-  const canReview = canReviewMilestone(access, milestone.deliveredById);
-  const selfDelivery = milestone.deliveredById === access.userId;
-  const [note, setNote] = useState("");
-  const [returning, setReturning] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const firstStep = milestone.status === "AJUSTES_SOLICITADOS" || milestone.status === "REJEITADO" ? milestone.statusLabel : "Pendente";
   const overdue = milestoneIsOverdue(milestone);
-
-  async function deliver() {
-    setSaving(true);
-    setError(null);
-    try {
-      const response = await deliverEapMilestone(projectId, milestone.phaseId, milestone.id, {});
-      if (response.status !== 200) {
-        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível registrar a entrega.");
-      }
-      onMilestone(presentMilestone(response.data, names));
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Não foi possível registrar a entrega.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function review(decision: "APROVADO" | "REJEITADO") {
-    if (decision === "REJEITADO" && note.trim().length < 10) {
-      setError("A rejeição exige justificativa com ao menos 10 caracteres.");
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      const response = await reviewEapMilestone(projectId, milestone.phaseId, milestone.id, {
-        decision,
-        ...(decision === "REJEITADO" ? { note: note.trim() } : {}),
-      });
-      if (response.status !== 200) {
-        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível registrar a decisão.");
-      }
-      onMilestone(presentMilestone(response.data, names));
-      setReturning(false);
-      setNote("");
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Não foi possível registrar a decisão.");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const delayReason = milestoneDelayReason(milestone);
+  const correctiveTasks = phase.tasks?.filter((item) => item.correctiveMilestoneId === milestone.id) ?? null;
+  const needsCorrection = milestone.status === "AJUSTES_SOLICITADOS" || milestone.status === "REJEITADO";
+  const showCorrective = (correctiveTasks !== null && correctiveTasks.length > 0) || needsCorrection;
 
   return (
     <div>
-      <Topline type="milestone" code={code} label={milestone.statusLabel} kind={milestoneKind(milestone.status)} />
+      <Topline type="milestone" code={code} label={milestone.statusLabel} kind={milestoneStatusKind(milestone.status)} />
+      <MilestoneDecisionFeedback milestone={milestone} />
       <Section label="Descrição do marco">
         <p className={paragraph}>{milestone.description?.trim() || "Nenhuma descrição registrada."}</p>
       </Section>
-      <Section label="Fluxo de entrega e aceite">
+      <Section label={homologation ? "Fluxo de homologação" : "Fluxo de entrega e aceite"}>
         <ol className="relative mt-3.5 mb-[7px] grid grid-cols-3">
           <span className="absolute top-3 right-[16.6%] left-[16.6%] h-0.5 bg-[#e2e7ed]" aria-hidden="true" />
-          <FlowStep index={1} label="Pendente" active={flow !== "pending"} done={flow === "accepted"} />
-          <FlowStep index={2} label="Entregue" active={flow === "delivered" || flow === "accepted"} done={flow === "accepted"} />
-          <FlowStep index={3} label="Aceito" active={flow === "accepted"} done={flow === "accepted"} />
+          <FlowStep index={1} label={firstStep} active={flow !== "pending"} done={flow === "accepted"} />
+          <FlowStep index={2} label={homologation ? "Aguardando homologação" : "Entregue"} active={flow === "delivered" || flow === "accepted"} done={flow === "accepted"} />
+          <FlowStep index={3} label={homologation ? "Homologado" : "Aceito"} active={flow === "accepted"} done={flow === "accepted"} />
         </ol>
         {flow === "delivered" ? (
-          <p className="mt-3.5 flex items-start gap-2 rounded-[7px] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.45] text-[#865516]">
-            <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
-            <span>Entrega registrada. O progresso permanece em 0% até o aceite formal.</span>
+          <p className="mt-3.5 flex items-start gap-2 rounded-[7px] bg-[#f7f2fd] p-2.5 text-[8.5px] leading-[1.45] text-[#6343a8]">
+            <Clock className="size-[15px] shrink-0" aria-hidden="true" />
+            <span>
+              {homologation
+                ? "Aguardando homologação. O progresso permanece em 0% e a data efetiva de conclusão só é registrada na homologação."
+                : "Entregue, aguardando homologação. O progresso permanece em 0% até o aceite formal."}
+            </span>
           </p>
-        ) : null}
-        {milestone.status === "REJEITADO" ? (
-          <p className="mt-3.5 flex items-start gap-2 rounded-[7px] bg-[#fff4f1] p-2.5 text-[8.5px] leading-[1.45] text-[#9f3a22]">
-            <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
-            <span>Este marco foi devolvido para ajustes e não conta como aceito.</span>
-          </p>
-        ) : null}
-        {milestone.status === "PENDENTE" && access.canDeliverMilestone ? (
-          <div className="mt-3 flex justify-end">
-            <Button type="button" variant="outline" className={compactButton} disabled={saving} onClick={() => void deliver()}>
-              {saving ? "Registrando…" : "Registrar entrega"}
-            </Button>
-          </div>
         ) : null}
       </Section>
       <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
-        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Prazo vigente" value={vigenteText(milestone.dates) ?? "Não informado"} overdue={overdue} note={overdue ? "Em atraso" : null} />
-        <Fact icon={<Check className="size-[17px]" aria-hidden="true" />} label="Entrega registrada por" value={milestone.deliveredBy ?? "Ainda não registrada"} />
+        <Fact
+          icon={<Calendar className="size-[17px]" aria-hidden="true" />}
+          label="Prazo vigente"
+          value={vigenteText(milestone.dates) ?? "Não informado"}
+          overdue={overdue}
+          note={overdue ? (delayReason ? `Em atraso · ${delayReason.toLowerCase()}` : "Em atraso") : null}
+        />
+        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Homologador" value={milestone.reviewerName ?? "Gestão do projeto"} />
       </div>
-      <Section label="Evidências da entrega">
-        <Suspense fallback={<p className={emptyInline}>Consultando evidências…</p>}>
-          <EvidenceList projectId={projectId} parent={{ milestoneId: milestone.id }} />
-        </Suspense>
+      <Section label="Entrega e homologação">
+        <MilestoneHomologation
+          projectId={projectId}
+          milestone={milestone}
+          access={access}
+          names={names}
+          showEvidence
+          onMilestone={onMilestone}
+          onChanged={() => setHistoryRevision((value) => value + 1)}
+        />
       </Section>
-      {milestone.status === "ENTREGUE" && canReview ? (
-        <section id="eap-milestone-decision" className="mt-[17px] mb-0.5 rounded-[9px] border border-[#bad1f0] bg-[#f5f9ff] p-3.5">
-          <span className={cn(sectionLabel, "mb-[5px] text-[#3971ba]")}>Decisão de aceite</span>
-          <strong className="block text-[10px] text-[#253d60]">Esta entrega está aguardando análise</strong>
-          <p className="mt-[5px] text-[8.5px] text-[#667b98]">Confira as evidências antes de aceitar ou devolver para ajustes.</p>
-          {returning ? (
-            <Textarea className="mt-3 min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]" aria-label="Justificativa da devolução" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Justificativa da devolução" />
+      {showCorrective ? (
+        <Section label="Tarefas corretivas">
+          {correctiveTasks === null ? (
+            <p className={emptyInline}>Não foi possível consultar as tarefas desta fase.</p>
+          ) : correctiveTasks.length === 0 ? (
+            <p className={emptyInline}>Nenhuma tarefa corretiva registrada para este marco.</p>
+          ) : (
+            <ul className="flex flex-col gap-[7px]">
+              {correctiveTasks.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="grid min-h-[35px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[9.5px] text-[#475467] hover:bg-[#f8fbff]"
+                    onClick={() => onSelect({ kind: "task", phaseId: phase.id, taskId: item.id })}
+                  >
+                    <span className="truncate">{item.title}</span>
+                    <EapStatusBadge kind={taskStatusKind(item.calculatedStatus)} label={item.statusLabel} size="sm" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {needsCorrection && access.canCreateItems && onCorrectiveTask ? (
+            <div className="mt-2.5 flex justify-end">
+              <Button type="button" variant="outline" className={compactButton} onClick={() => onCorrectiveTask(milestone)}>
+                <Plus aria-hidden="true" /> Registrar tarefa corretiva
+              </Button>
+            </div>
           ) : null}
-          <div className="mt-[13px] flex justify-end gap-[7px]">
-            <Button type="button" variant="outline" className={cn(secondaryButton, "text-[#9f2219]")} disabled={saving} onClick={() => (returning ? void review("REJEITADO") : setReturning(true))}>
-              Devolver
-            </Button>
-            <Button type="button" className={cn(primaryButton, "gap-1.5")} disabled={saving} onClick={() => void review("APROVADO")}>
-              <Check aria-hidden="true" /> Aceitar entrega
-            </Button>
-          </div>
-        </section>
+        </Section>
       ) : null}
-      {milestone.status === "ENTREGUE" && !canReview ? (
-        <p className="mt-3.5 flex items-start gap-2 rounded-[7px] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.45] text-[#865516]">
-          <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
-          <span>
-            {selfDelivery
-              ? "Quem registrou a entrega não aprova o próprio marco."
-              : "O aceite depende de quem estrutura a EAP."}
-          </span>
-        </p>
-      ) : null}
-      {error ? <p className="mt-2 text-[8.5px] text-destructive">{error}</p> : null}
-      <Section label="Histórico de entrega e aceite">
-        <EapHistory projectId={projectId} entityType="MILESTONE" entityId={milestone.id} refreshKey={detailKey(milestone)} />
+      <Section label="Datas do marco">
+        <EapSchedule
+          projectId={projectId}
+          target={{ entityType: "MILESTONE", phaseId: milestone.phaseId, milestoneId: milestone.id }}
+          schedule={milestone.schedule}
+          closed={milestone.status === "APROVADO"}
+          canReschedule={canReschedule(access)}
+          onSaved={async () => {
+            const response = await getEapMilestone(projectId, milestone.phaseId, milestone.id);
+            if (response.status === 200) {
+              onMilestone(presentMilestone(response.data, names));
+            }
+          }}
+        />
+      </Section>
+      <Section label={homologation ? "Histórico de homologação" : "Histórico de entrega e aceite"}>
+        <EapHistory projectId={projectId} entityType="MILESTONE" entityId={milestone.id} refreshKey={`${historyRevision}:${detailKey(milestone)}`} />
       </Section>
     </div>
   );
 }
 
-function PlanningDates({ dates }: { dates: ProjectPhaseView["dates"] }) {
-  const [open, setOpen] = useState(true);
-  const start = dateText(dates, "Início planejado (vigente)");
-  const due = dateText(dates, "Fim planejado (vigente)");
-  const baseline = dateText(dates, "Fim da linha de base");
-
+function ImpedimentNote({ projectId, phaseId, task }: { projectId: string; phaseId: string; task: ProjectTaskView }) {
+  const state = use(impedimentRequest(projectId, phaseId, task));
+  if (state.status === "error") {
+    return <p className={impedimentText}>{state.message}</p>;
+  }
+  if (!state.open) {
+    return <p className={impedimentText}>Impedimento sinalizado antes do registro de motivos; o motivo não foi gravado.</p>;
+  }
   return (
-    <section className="border-t border-[#edf0f3] pt-2.5 pb-0.5">
-      <button
-        type="button"
-        aria-expanded={open}
-        className="flex h-[38px] w-full items-center justify-between px-[3px] text-[10px] font-semibold text-[#344054] hover:text-[#175cd3]"
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className="flex items-center gap-2">
-          <Calendar className="size-4" aria-hidden="true" /> Planejamento e datas
-        </span>
-        <ChevronRight className={cn("size-[15px] transition-transform", open && "rotate-90")} aria-hidden="true" />
-      </button>
-      {open ? (
-        <div className="grid grid-cols-3 gap-[7px] pt-[7px] pb-3">
-          <DateCell label="Início planejado" value={start} />
-          <DateCell label="Prazo vigente" value={due} />
-          <DateCell label="Linha de base" value={baseline} />
-        </div>
-      ) : null}
-    </section>
+    <>
+      <p className={cn(impedimentText, "whitespace-pre-wrap")}>{state.open.description}</p>
+      <small className="mt-1.5 block text-[8px] text-[#667085]">
+        Registrado por {state.open.author} em {state.open.openedAt}
+      </small>
+    </>
   );
 }
 
@@ -687,13 +726,14 @@ function EvidenceList({
 
 const paragraph = "text-[11px] leading-[1.65] text-[#475467]";
 const sectionLabel = "block text-[9px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase";
+const impedimentText = "text-[9.5px] leading-[1.55] text-[#475467]";
 const emptyInline = "flex min-h-[39px] items-center gap-1.5 rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[8.5px] text-[#98a2b3]";
 const progressClass = "[&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-[7px] [&_[data-slot=progress-track]]:bg-[#e9eef5]";
 const secondaryButton = "h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054] hover:bg-[#f8fafc]";
 const primaryButton = "h-9 rounded-[7px] bg-[#175cd3] px-[13px] text-[11px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]";
 const compactButton = "h-[30px] gap-[5px] rounded-[7px] border-[#d7dce3] px-[9px] text-[8.5px] font-semibold text-[#344054]";
 
-function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milestone"; code: string; label: string; kind: "done" | "progress" | "pending" | "attention" | "muted" }) {
+function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milestone"; code: string; label: string; kind: EapStatusKind }) {
   return (
     <div className="flex items-center gap-[9px] pb-5">
       <span className={cn("grid size-[30px] place-items-center rounded-[7px]", type === "phase" && "bg-[#e9f2ff] text-[#2865b9]", type === "task" && "bg-[#eef2f6] text-[#52677e]", type === "milestone" && "bg-[#f4ecfb] text-[#8b5bbb]")}>
@@ -702,7 +742,7 @@ function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milest
         {type === "milestone" ? <Flag className="size-4" aria-hidden="true" /> : null}
       </span>
       <span className="mr-auto text-[10px] text-[#667085]">EAP {code}</span>
-      <StatusPill label={label} kind={kind} />
+      <EapStatusBadge kind={kind} label={label} />
     </div>
   );
 }
@@ -719,33 +759,44 @@ function Section({ label, extra, children }: { label: string; extra?: ReactNode;
   );
 }
 
-function Metric({ value, label, warning = false }: { value: string; label: string; warning?: boolean }) {
+function Metric({ value, label }: { value: string; label: string }) {
   return (
-    <div className={cn("rounded-lg border p-3", warning ? "border-[#f4dfb5] bg-[#fffaf0]" : "border-[#e4e7ec] bg-[#fafbfc]")}>
-      <strong className={cn("mb-[3px] block text-[16px]", warning ? "text-[#a15c08]" : "text-[#253248]")}>{value}</strong>
+    <div className="rounded-lg border border-[#e4e7ec] bg-[#fafbfc] p-3">
+      <strong className="mb-[3px] block text-[16px] text-[#253248]">{value}</strong>
       <span className="block text-[8.5px] text-[#8a94a6]">{label}</span>
     </div>
   );
 }
 
+function PendingSignal({ blocked, overdue }: { blocked: boolean; overdue: boolean }) {
+  if (overdue) {
+    return (
+      <span className={overdueTone.text}>
+        <Clock className="size-3" aria-hidden="true" />
+        <span className="sr-only">Atrasado{blocked ? " e impedido" : ""}</span>
+      </span>
+    );
+  }
+  if (blocked) {
+    return (
+      <span className={impedimentTone.text}>
+        <AlertTriangle className="size-3" aria-hidden="true" />
+        <span className="sr-only">Impedido</span>
+      </span>
+    );
+  }
+  return <span className="size-[5px] justify-self-center rounded-full bg-muted-foreground/50" aria-hidden="true" />;
+}
+
 function Fact({ icon, label, value, overdue = false, note }: { icon: ReactNode; label: string; value: string; overdue?: boolean; note?: string | null }) {
   return (
-    <div className={cn("flex min-h-[67px] items-center gap-[9px] rounded-lg border p-[11px]", overdue ? "border-[#f4c8c5] bg-[#fffafa]" : "border-[#e4e7ec]")}>
-      <span className={cn("grid size-[29px] shrink-0 place-items-center rounded-[6px]", overdue ? "bg-[#fdeceb] text-[#b42318]" : "bg-[#edf4ff] text-[#2864bb]")}>{icon}</span>
+    <div className={cn("flex min-h-[67px] items-center gap-[9px] rounded-lg border p-[11px]", overdue ? overdueTone.surface : "border-[#e4e7ec]")}>
+      <span className={cn("grid size-[29px] shrink-0 place-items-center rounded-[6px]", overdue ? overdueTone.icon : "bg-[#edf4ff] text-[#2864bb]")}>{icon}</span>
       <span className="min-w-0">
         <span className="mb-1 block text-[7.5px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">{label}</span>
         <strong className="block truncate text-[9.5px] text-[#344054]">{value}</strong>
-        {note ? <em className="mt-[3px] block text-[8px] font-semibold text-[#b42318] not-italic">{note}</em> : null}
+        {note ? <em className={cn("mt-[3px] block text-[8px] font-semibold not-italic", overdueTone.text)}>{note}</em> : null}
       </span>
-    </div>
-  );
-}
-
-function DateCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[7px] bg-[#f7f9fb] p-2.5">
-      <span className="mb-1 block text-[7.5px] text-[#8a94a6]">{label}</span>
-      <strong className="block text-[8.5px] text-[#344054]">{value}</strong>
     </div>
   );
 }
@@ -759,45 +810,6 @@ function FlowStep({ index, label, active, done }: { index: number; label: string
       <strong className={cn("text-[8px]", done || active ? "text-[#285da8]" : "text-[#8a94a6]")}>{label}</strong>
     </li>
   );
-}
-
-function StatusPill({ label, kind, small = false }: { label: string; kind: "done" | "progress" | "pending" | "attention" | "muted"; small?: boolean }) {
-  return (
-    <span className={cn("inline-flex w-max items-center gap-[5px] rounded-full font-semibold whitespace-nowrap", small ? "px-1.5 py-[3px] text-[7.5px]" : "px-[7px] py-1 text-[8.5px]", kind === "done" && "bg-[#e7f7f0] text-[#157454]", kind === "progress" && "bg-[#e8f1ff] text-[#205eb2]", kind === "pending" && "bg-[#f0f2f4] text-[#667085]", kind === "attention" && "bg-[#fff3dc] text-[#a05c0b]", kind === "muted" && "bg-[#f0f2f4] text-[#667085]")}>
-      <span className="size-[5px] rounded-full bg-current" aria-hidden="true" />
-      {label}
-    </span>
-  );
-}
-
-function dateText(dates: { label: string; value: string }[], label: string) {
-  const value = dates.find((date) => date.label === label)?.value;
-  if (!value || value === "Não informada") {
-    return "Não informada";
-  }
-  return value.split(",")[0] ?? value;
-}
-
-function phaseKind(status: ProjectPhaseView["status"]) {
-  if (status === "CONCLUIDA") return "done" as const;
-  if (status === "SUSPENSA") return "attention" as const;
-  if (status === "NAO_INICIADA") return "pending" as const;
-  return "progress" as const;
-}
-
-function taskKind(status: ProjectTaskView["status"]) {
-  if (status === "CONCLUIDA") return "done" as const;
-  if (status === "CANCELADA") return "muted" as const;
-  if (status === "IMPEDIDA") return "attention" as const;
-  if (status === "NAO_INICIADA") return "pending" as const;
-  return "progress" as const;
-}
-
-function milestoneKind(status: ProjectMilestoneView["status"]) {
-  if (status === "APROVADO") return "done" as const;
-  if (status === "REJEITADO") return "attention" as const;
-  if (status === "PENDENTE") return "pending" as const;
-  return "progress" as const;
 }
 
 export function eapCode(phases: ProjectPhaseView[], selection: EapSelection) {

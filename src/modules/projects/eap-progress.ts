@@ -1,8 +1,11 @@
 import type { ProjectMilestoneView, ProjectPhaseView, ProjectTaskView } from "./eap-present";
 
+export const MILESTONE_DUE_LABEL = "Data prevista";
+export const MILESTONE_DONE_LABEL = "Data efetiva de conclusão";
+
 export type PhaseProgress =
   | { kind: "value"; basisPoints: number }
-  | { kind: "incomplete" }
+  | { kind: "empty" }
   | { kind: "unavailable" }
   | { kind: "no-eligible" };
 
@@ -11,48 +14,17 @@ export type ProjectProgress =
   | { kind: "none"; coverageBasis: number | null }
   | { kind: "unavailable" };
 
-const MILESTONE_WEIGHT = 1;
-
+/** O andamento da fase é calculado pela API; aqui só se traduz o estado para a apresentação. */
 export function phaseProgress(phase: ProjectPhaseView): PhaseProgress {
-  if (phase.tasks === null || phase.milestones === null) {
-    return { kind: "unavailable" };
+  if (phase.progressState === "VALUE" && phase.progressBasisPoints !== null) {
+    return { kind: "value", basisPoints: phase.progressBasisPoints };
   }
 
-  if (phase.tasks.length === 0 && phase.milestones.length === 0) {
-    return { kind: "incomplete" };
-  }
-
-  const tasks = phase.tasks.filter((task) => task.status !== "CANCELADA");
-  if (tasks.length === 0 && phase.milestones.length === 0) {
-    return { kind: "no-eligible" };
-  }
-
-  let weighted = 0;
-  let weights = 0;
-
-  for (const task of tasks) {
-    const weight = task.weight >= 1 ? task.weight : 1;
-    weighted += task.progressPercent * weight;
-    weights += weight;
-  }
-
-  for (const milestone of phase.milestones) {
-    weighted += milestonePercent(milestone) * MILESTONE_WEIGHT;
-    weights += MILESTONE_WEIGHT;
-  }
-
-  if (weights === 0) {
-    return { kind: "no-eligible" };
-  }
-
-  return { kind: "value", basisPoints: Math.round((weighted * 100) / weights) };
+  return phase.progressState === "NO_ELIGIBLE" ? { kind: "no-eligible" } : { kind: "empty" };
 }
 
+/** Mesma média do resumo da API, refeita sobre as fases já atualizadas na tela. */
 export function projectProgress(phases: ProjectPhaseView[]): ProjectProgress {
-  if (phases.some((phase) => phase.tasks === null || phase.milestones === null)) {
-    return { kind: "unavailable" };
-  }
-
   const rolls = phases.map((phase) => phaseProgress(phase));
   const calculable = rolls.filter((item): item is Extract<PhaseProgress, { kind: "value" }> => item.kind === "value");
 
@@ -85,8 +57,8 @@ export function progressLabel(progress: PhaseProgress) {
     return `${formatBasis(progress.basisPoints)}%`;
   }
 
-  if (progress.kind === "incomplete") {
-    return "Planejamento incompleto";
+  if (progress.kind === "empty") {
+    return "Sem itens subordinados";
   }
 
   if (progress.kind === "no-eligible") {
@@ -97,7 +69,7 @@ export function progressLabel(progress: PhaseProgress) {
 }
 
 export function vigenteText(dates: { label: string; value: string }[]) {
-  const value = dates.find((date) => date.label === "Fim planejado (vigente)" || date.label === "Planejada (vigente)")?.value;
+  const value = dates.find((date) => date.label === "Fim planejado (vigente)" || date.label === MILESTONE_DUE_LABEL)?.value;
   if (!value || value === "Não informada") {
     return null;
   }
@@ -106,29 +78,55 @@ export function vigenteText(dates: { label: string; value: string }[]) {
 }
 
 export function isPastDue(dates: { label: string; value: string }[], today = belemToday()) {
-  const text = vigenteText(dates);
-  if (!text) {
+  const due = isoDay(vigenteText(dates));
+  return due !== null && due < today;
+}
+
+/** Atraso histórico: o item já foi finalizado, mas a data realizada passou do prazo vigente. */
+export function finishedLate(item: ProjectPhaseView | ProjectTaskView | ProjectMilestoneView) {
+  const finished = "type" in item ? item.status === "APROVADO" : item.calculatedStatus === "CONCLUIDA";
+  if (!finished) {
     return false;
   }
+  const due = isoDay(vigenteText(item.dates));
+  const done = isoDay(dateValue(item.dates, "type" in item ? MILESTONE_DONE_LABEL : "Fim realizado"));
+  return due !== null && done !== null && done > due;
+}
 
-  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
-  if (!match) {
-    return false;
-  }
+function dateValue(dates: { label: string; value: string }[], label: string) {
+  const value = dates.find((date) => date.label === label)?.value;
+  return !value || value === "Não informada" ? null : (value.split(",")[0]?.trim() ?? null);
+}
 
-  return `${match[3]}-${match[2]}-${match[1]}` < today;
+function isoDay(text: string | null) {
+  const match = text ? /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text) : null;
+  return match ? `${match[3]}-${match[2]}-${match[1]}` : null;
 }
 
 export function taskIsOverdue(task: ProjectTaskView, today = belemToday()) {
-  return task.status !== "CONCLUIDA" && task.status !== "CANCELADA" && isPastDue(task.dates, today);
+  return task.calculatedStatus !== "CONCLUIDA" && task.calculatedStatus !== "CANCELADA" && isPastDue(task.dates, today);
 }
 
 export function milestoneIsOverdue(milestone: ProjectMilestoneView, today = belemToday()) {
   return milestone.status !== "APROVADO" && isPastDue(milestone.dates, today);
 }
 
+/** De quem depende o marco atrasado: da análise do homologador ou da correção pela entrega. */
+export function milestoneDelayReason(milestone: ProjectMilestoneView, today = belemToday()) {
+  if (!milestoneIsOverdue(milestone, today)) {
+    return null;
+  }
+  if (milestone.status === "ENTREGUE") {
+    return "Aguardando análise";
+  }
+  if (milestone.status === "AJUSTES_SOLICITADOS" || milestone.status === "REJEITADO") {
+    return "Correção pendente";
+  }
+  return null;
+}
+
 export function phaseIsOverdue(phase: ProjectPhaseView, today = belemToday()) {
-  return phase.status !== "CONCLUIDA" && isPastDue(phase.dates, today);
+  return phase.calculatedStatus !== "CONCLUIDA" && isPastDue(phase.dates, today);
 }
 
 function belemToday() {

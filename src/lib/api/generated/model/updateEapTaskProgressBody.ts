@@ -5,15 +5,14 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateEapTaskProgressBodyStatus } from './updateEapTaskProgressBodyStatus.ts';
 
 export type UpdateEapTaskProgressBody = {
   /**
+     * A situação é derivada: 0% não iniciada, 1–99% em andamento, 100% concluída.
      * @minimum 0
      * @maximum 100
      */
   progressPercent?: number;
-  status?: UpdateEapTaskProgressBodyStatus;
   /**
      * @minLength 1
      * @nullable
@@ -24,5 +23,4 @@ export type UpdateEapTaskProgressBody = {
      * @nullable
      */
   actualEndAt?: string | null;
-  hasImpediment?: boolean;
 };

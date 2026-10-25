@@ -22,4 +22,5 @@ export const ListEapAudit200DataItemAction = {
   VALIDATE: 'VALIDATE',
   IMPEDE: 'IMPEDE',
   CLEAR_IMPEDIMENT: 'CLEAR_IMPEDIMENT',
+  DELETE: 'DELETE',
 } as const;

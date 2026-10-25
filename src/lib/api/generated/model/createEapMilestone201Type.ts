@@ -12,4 +12,5 @@ export type CreateEapMilestone201Type = typeof CreateEapMilestone201Type[keyof t
 export const CreateEapMilestone201Type = {
   ENTREGA: 'ENTREGA',
   APROVACAO: 'APROVACAO',
+  HOMOLOGACAO: 'HOMOLOGACAO',
 } as const;

@@ -17,6 +17,26 @@ export type ListProjects200DataItem = {
   glpiTicketId: string | null;
   ownerId: string;
   status: ListProjects200DataItemStatus;
+  /**
+     * Início do planejamento original.
+     * @nullable
+     */
+  baselineStartAt: string | null;
+  /**
+     * Término do planejamento original.
+     * @nullable
+     */
+  baselineEndAt: string | null;
+  /**
+     * Início planejado vigente.
+     * @nullable
+     */
+  plannedStartAt: string | null;
+  /**
+     * Término planejado vigente.
+     * @nullable
+     */
+  plannedEndAt: string | null;
   createdAt: string;
   updatedAt: string;
   isOwner: boolean;

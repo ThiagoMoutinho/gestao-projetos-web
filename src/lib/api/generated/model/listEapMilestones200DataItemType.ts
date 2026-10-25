@@ -12,4 +12,5 @@ export type ListEapMilestones200DataItemType = typeof ListEapMilestones200DataIt
 export const ListEapMilestones200DataItemType = {
   ENTREGA: 'ENTREGA',
   APROVACAO: 'APROVACAO',
+  HOMOLOGACAO: 'HOMOLOGACAO',
 } as const;

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ReviewEapMilestoneBodyDecision } from './reviewEapMilestoneBodyDecision.ts';
+import type { ReviewEapMilestoneBodyEvidencesItem } from './reviewEapMilestoneBodyEvidencesItem.ts';
 
 export type ReviewEapMilestoneBody = {
   decision: ReviewEapMilestoneBodyDecision;
@@ -14,4 +15,16 @@ export type ReviewEapMilestoneBody = {
      * @nullable
      */
   note?: string | null;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  nonconformities?: string | null;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  adjustments?: string | null;
+  /** @maxItems 10 */
+  evidences?: ReviewEapMilestoneBodyEvidencesItem[];
 };

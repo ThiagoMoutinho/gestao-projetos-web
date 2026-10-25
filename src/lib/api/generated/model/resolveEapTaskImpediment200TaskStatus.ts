@@ -6,12 +6,13 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type UpdateEapPhaseBodyStatus = typeof UpdateEapPhaseBodyStatus[keyof typeof UpdateEapPhaseBodyStatus];
+export type ResolveEapTaskImpediment200TaskStatus = typeof ResolveEapTaskImpediment200TaskStatus[keyof typeof ResolveEapTaskImpediment200TaskStatus];
 
 
-export const UpdateEapPhaseBodyStatus = {
+export const ResolveEapTaskImpediment200TaskStatus = {
   NAO_INICIADA: 'NAO_INICIADA',
   EM_ANDAMENTO: 'EM_ANDAMENTO',
+  IMPEDIDA: 'IMPEDIDA',
   CONCLUIDA: 'CONCLUIDA',
-  SUSPENSA: 'SUSPENSA',
+  CANCELADA: 'CANCELADA',
 } as const;
