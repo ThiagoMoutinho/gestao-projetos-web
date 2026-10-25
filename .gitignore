@@ -34,6 +34,22 @@ yarn-error.log*
 .env*
 !.env.example
 
+# senhas, chaves e arquivos locais
+*.password
+*.key
+*.p12
+*.pfx
+.local/
+
+# backups de banco
+*.dump
+*.pgdump
+*.backup
+*.bak
+*.sql.gz
+*.sql.zip
+backups/
+
 # vercel
 .vercel
 
