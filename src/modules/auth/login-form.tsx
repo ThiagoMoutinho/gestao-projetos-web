@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 
@@ -294,9 +294,9 @@ export function LoginForm() {
         type="submit"
         size="lg"
         className="h-12 w-full rounded-lg text-sm font-medium"
-        disabled={pending}
+        loading={pending}
       >
-        {pending ? <Loader2 className="animate-spin" /> : <ArrowRight />}
+        <ArrowRight />
         {pending ? "Acessando…" : "Acessar sistema"}
       </Button>
     </form>

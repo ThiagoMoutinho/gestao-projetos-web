@@ -163,8 +163,24 @@
   animation: motion-enter 220ms ease-out both;
 }
 
+/* Troca de abas e conteúdo carregado: só opacidade, curta, sem deslocar o layout. */
+@keyframes motion-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.motion-fade {
+  animation: motion-fade 180ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .motion-enter {
+  .motion-enter,
+  .motion-fade {
     animation: none;
   }
 }

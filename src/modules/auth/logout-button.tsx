@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -32,11 +31,10 @@ export function LogoutButton({ className }: { className?: string }) {
     <Button
       type="button"
       variant="outline"
-      disabled={pending}
+      loading={pending}
       className={cn("w-full", className)}
       onClick={onLogout}
     >
-      {pending ? <Loader2 className="animate-spin" /> : null}
       Sair
     </Button>
   );
