@@ -28,6 +28,7 @@ export type CreateEapTaskBody = {
      */
   weight?: number;
   /**
+     * Opcional na criação; o planejamento pode ser definido depois, nos detalhes da tarefa.
      * @minLength 1
      * @nullable
      */
@@ -43,4 +44,12 @@ export type CreateEapTaskBody = {
      * @nullable
      */
   correctiveMilestoneId?: string | null;
+  /** Estende o planejamento da fase para cobrir as datas da tarefa (ajuste em cascata; exige permissão de reprogramar). */
+  extendPhase?: boolean;
+  /**
+     * Justificativa do ajuste em cascata, obrigatória (mín. 10 caracteres) quando estender um prazo já definido da fase.
+     * @maxLength 2000
+     * @nullable
+     */
+  justification?: string | null;
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Check, ChevronDown, Flag, Folder, ListTodo, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,13 @@ export function ProjectEap({
   const [create, setCreate] = useState<EapCreateRequest | null>(null);
   const [startEditing, setStartEditing] = useState(false);
   const [panelEditing, setPanelEditing] = useState(false);
+  const [panelWide, setPanelWide] = useState(false);
+  // Só o expandir/reduzir anima a largura; na troca editar ↔ detalhes a largura muda direto e o conteúdo entra com fade.
+  const [panelResizing, setPanelResizing] = useState(false);
+  const handleEditingChange = useCallback((editing: boolean) => {
+    setPanelResizing(false);
+    setPanelEditing(editing);
+  }, []);
   const [movingPhase, setMovingPhase] = useState(false);
   const [draggingPhaseId, setDraggingPhaseId] = useState<string | null>(null);
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
@@ -465,7 +472,7 @@ export function ProjectEap({
         <SheetContent
           showCloseButton={false}
           overlayClassName="bg-[rgba(13,25,42,0.2)] supports-backdrop-filter:backdrop-blur-[1px]"
-          className={`w-full gap-0 overflow-hidden bg-white p-0 transition-[max-width] duration-200 data-[side=right]:w-full ${panelEditing ? "data-[side=right]:sm:max-w-[620px]" : "data-[side=right]:sm:max-w-[430px]"}`}
+          className={`w-full gap-0 overflow-hidden bg-white p-0 ease-out motion-reduce:transition-none data-[side=right]:w-full ${panelResizing ? "transition-[translate,opacity,max-width] duration-300" : "transition-[translate,opacity] duration-200"} ${panelWide ? "data-[side=right]:sm:max-w-[min(860px,92vw)]" : panelEditing ? "data-[side=right]:sm:max-w-[620px]" : "data-[side=right]:sm:max-w-[430px]"}`}
         >
           {selection ? (
             <EapDetail
@@ -480,7 +487,12 @@ export function ProjectEap({
               projectName={projectName}
               initialEditing={startEditing}
               notice={createdNotice}
-              onEditingChange={setPanelEditing}
+              onEditingChange={handleEditingChange}
+              wide={panelWide}
+              onToggleWide={() => {
+                setPanelResizing(true);
+                setPanelWide((value) => !value);
+              }}
               pending={pending !== null}
               dirtyRef={dirtyRef}
               onClose={requestClose}
@@ -571,14 +583,14 @@ function CreateMenu({
               <small className="mt-1 block text-[8px] leading-snug text-[#98a2b3]">Organize uma grande etapa do projeto</small>
             </span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || !firstPhase} onClick={() => firstPhase && onCreate({ kind: "task", phaseId: firstPhase })}>
+          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || !firstPhase} onClick={() => firstPhase && onCreate({ kind: "task", phaseId: "" })}>
             <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-[#eef2f6] text-[#52677e]"><Check className="size-4" aria-hidden="true" /></span>
             <span>
               <strong className="block text-[10px]">Nova tarefa</strong>
               <small className="mt-1 block text-[8px] leading-snug text-[#98a2b3]">Crie uma atividade com responsável e prazo</small>
             </span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || !firstPhase} onClick={() => firstPhase && onCreate({ kind: "milestone", phaseId: firstPhase })}>
+          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || !firstPhase} onClick={() => firstPhase && onCreate({ kind: "milestone", phaseId: "" })}>
             <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-[#f4ecfb] text-[#8b5bbb]"><Flag className="size-4" aria-hidden="true" /></span>
             <span>
               <strong className="block text-[10px]">Novo marco</strong>

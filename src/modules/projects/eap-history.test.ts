@@ -34,6 +34,13 @@ function item(id: string, createdAt: string, details: Partial<ListEapAudit200Dat
       previousReason: null,
       resolutionNote: null,
       openMinutes: null,
+      memberName: null,
+      fromRole: null,
+      toRole: null,
+      fromOwnerName: null,
+      toOwnerName: null,
+      actualDates: [],
+      correction: false,
       ...details,
     },
   };
@@ -193,5 +200,55 @@ describe("Histórico de alterações", () => {
     assert.equal(rescheduled.tone, "reschedule");
     assert.deepEqual(rescheduled.notes, [{ label: "Justificativa da reprogramação", text: "Fornecedor atrasou o ambiente." }]);
     assert.equal(defined.kindLabel, "Planejamento");
+  });
+
+  it("mostra datas reais anteriores e novas e identifica correções", () => {
+    const civil = { ...format, civilDate: (value: string) => `dia ${value.slice(0, 10)}` };
+    const [corrected, registered] = presentHistory(
+      [
+        item("c", "2026-06-05T10:00:00.000Z", {
+          kind: "ACTUAL_DATES",
+          correction: true,
+          justification: "Início registrado errado.",
+          actualDates: [{ field: "START", previous: "2026-06-02T15:00:00.000Z", next: "2026-06-04T15:00:00.000Z" }],
+        }),
+        item("r", "2026-06-02T10:00:00.000Z", {
+          kind: "ACTUAL_DATES",
+          actualDates: [{ field: "END", previous: null, next: "2026-06-20T15:00:00.000Z" }],
+        }),
+      ],
+      civil,
+    );
+
+    assert.equal(corrected.kindLabel, "Correção de datas");
+    assert.equal(corrected.group, "execution");
+    assert.deepEqual(corrected.notes, [
+      { label: "Início real", text: "dia 2026-06-02 → dia 2026-06-04" },
+      { label: "Justificativa da correção", text: "Início registrado errado." },
+    ]);
+    assert.equal(registered.kindLabel, "Datas reais");
+    assert.deepEqual(registered.notes, [{ label: "Término real", text: "dia 2026-06-20" }]);
+  });
+
+  it("agrupa os eventos para os filtros sem misturar reprogramação e execução", () => {
+    const entries = presentHistory(
+      [
+        item("a", "2026-06-05T10:00:00.000Z", { kind: "RESCHEDULE" }),
+        item("b", "2026-06-04T10:00:00.000Z", { kind: "COMPLETION" }),
+        item("c", "2026-06-03T10:00:00.000Z", { kind: "DELIVERY" }),
+        item("d", "2026-06-02T10:00:00.000Z", { kind: "EVIDENCE" }),
+      ],
+      format,
+    );
+
+    assert.deepEqual(
+      entries.map((entry) => [entry.kindLabel, entry.group]),
+      [
+        ["Reprogramação", "schedule"],
+        ["Conclusão", "execution"],
+        ["Entrega", "homologation"],
+        ["Evidência", "evidence"],
+      ],
+    );
   });
 });

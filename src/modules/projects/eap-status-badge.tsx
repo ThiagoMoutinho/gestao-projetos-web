@@ -8,18 +8,21 @@ import type { EapStatusKind } from "./eap-status";
 export { milestoneStatusKind, phaseStatusKind, taskStatusKind, type EapStatusKind } from "./eap-status";
 
 const KIND_CLASS: Record<EapStatusKind, string> = {
-  "not-started": "bg-muted text-muted-foreground",
+  "not-started": "border-[#c7d4e5] bg-[#f3f7fc] text-[#45627f]",
   "in-progress": "bg-primary/10 text-primary",
   done: "bg-success/15 text-success-foreground",
   delivered: "bg-[#f4ecfb] text-[#7450bf]",
   adjustments: "bg-[#fdeedd] text-[#b4570f]",
   rejected: "bg-destructive/10 text-destructive",
   suspended: "bg-warning/20 text-warning-foreground",
-  cancelled: "border-muted-foreground/30 bg-muted text-muted-foreground",
+  cancelled: "border-[#d0d5dd] bg-[#f2f4f7] text-[#98a2b3] line-through decoration-[#98a2b3]",
   attention: "bg-warning/20 text-warning-foreground",
 };
 
-/** Selo da situação principal. O texto sempre acompanha a cor; cancelada e suspensa também mudam o ícone. */
+/**
+ * Selo da situação principal. O texto sempre acompanha a cor: não iniciado usa azul-acinzentado com
+ * ponto vazado; cancelada usa cinza esmaecido, texto riscado e ícone próprio; suspensa também muda o ícone.
+ */
 export function EapStatusBadge({
   kind,
   label,
@@ -47,6 +50,8 @@ export function EapStatusBadge({
         <Ban className="size-2.5!" aria-hidden="true" />
       ) : kind === "suspended" ? (
         <Pause className="size-2.5!" aria-hidden="true" />
+      ) : kind === "not-started" ? (
+        <span className="size-1.5 rounded-full border border-current" aria-hidden="true" />
       ) : (
         <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
       )}

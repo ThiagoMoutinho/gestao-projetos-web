@@ -49,9 +49,11 @@ describe("cores semânticas das situações", () => {
     assert.equal(milestoneStatusKind("REJEITADO"), "rejected");
   });
 
-  it("marco entregue continua em 0% até o aceite", () => {
-    assert.equal(milestonePercent(milestone({ status: "ENTREGUE" })), 0);
+  it("marco entregue conta 50% e só o aceite completa 100%", () => {
+    assert.equal(milestonePercent(milestone({ status: "ENTREGUE" })), 50);
     assert.equal(milestonePercent(milestone({ status: "APROVADO" })), 100);
+    assert.equal(milestonePercent(milestone({ status: "REJEITADO" })), 0);
+    assert.equal(milestonePercent(milestone({ status: "AJUSTES_SOLICITADOS" })), 0);
   });
 });
 

@@ -33,10 +33,36 @@ export type ListEapPhases200DataItem = {
   plannedStartAt: string | null;
   /** @nullable */
   plannedEndAt: string | null;
-  /** @nullable */
+  /**
+     * Início indicado pelos itens (menor início planejado das tarefas). Não substitui o planejamento da fase.
+     * @nullable
+     */
+  consolidatedStartAt: string | null;
+  /**
+     * Término indicado pelos itens (maior término entre tarefas e marcos). Não substitui o planejamento da fase.
+     * @nullable
+     */
+  consolidatedEndAt: string | null;
+  /**
+     * Início real registrado na fase.
+     * @nullable
+     */
   actualStartAt: string | null;
-  /** @nullable */
+  /**
+     * Término real registrado na fase.
+     * @nullable
+     */
   actualEndAt: string | null;
+  /**
+     * Início real indicado pelos itens (menor início real das tarefas). Não substitui o registro da fase.
+     * @nullable
+     */
+  consolidatedActualStartAt: string | null;
+  /**
+     * Término real indicado pelos itens, só com a fase concluída. Não substitui o registro da fase.
+     * @nullable
+     */
+  consolidatedActualEndAt: string | null;
   /** Situação pela regra da EAP. Difere de status apenas em registros antigos ainda não reconciliados. */
   calculatedStatus: ListEapPhases200DataItemCalculatedStatus;
   progressState: ListEapPhases200DataItemProgressState;

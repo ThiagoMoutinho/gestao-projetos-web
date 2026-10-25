@@ -54,6 +54,7 @@ import {
   progressLabel,
   projectProgress,
   taskIsOverdue,
+  inicioText,
   vigenteText,
 } from "./eap-progress";
 import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind } from "./eap-status-badge";
@@ -61,7 +62,7 @@ import { impedimentTone, overdueTone } from "./eap-tones";
 import { phaseStatusLabel, taskStatusLabel } from "./project-records";
 
 const columns =
-  "grid grid-cols-1 gap-2 md:min-h-[46px] md:grid-cols-[minmax(300px,2.2fr)_minmax(108px,0.85fr)_minmax(120px,0.95fr)_minmax(138px,1.05fr)_minmax(105px,0.8fr)_40px] md:items-center md:gap-x-3.5";
+  "grid grid-cols-1 gap-2 md:min-h-[46px] md:grid-cols-[minmax(280px,2.1fr)_minmax(108px,0.85fr)_minmax(110px,0.9fr)_minmax(130px,1fr)_minmax(96px,0.75fr)_minmax(105px,0.8fr)_40px] md:items-center md:gap-x-3.5";
 
 const childRow = "py-1 md:min-h-[44px]";
 const rowMenuItem = "h-[30px] gap-2 rounded-[5px] px-[9px] text-[10px] text-[#344054] [&_svg:not([class*='size-'])]:size-3.5";
@@ -234,7 +235,8 @@ export function EapWorkbench({
           <span>Situação</span>
           <span>Andamento</span>
           <span>Responsável</span>
-          <span>Prazo</span>
+          <span>Início planejado</span>
+          <span>Término planejado</span>
           <span className="sr-only">Ações</span>
         </div>
         {empty ? (
@@ -361,7 +363,8 @@ export function PhaseRow({
           value={progress.kind === "value" ? basisToPercent(progress.basisPoints) : null}
           done={phase.calculatedStatus === "CONCLUIDA"}
         />
-        <span className="text-xs text-[#98a2b3]">—</span>
+        <Owner name={phase.responsibleName ?? ""} />
+        <PlannedStart value={inicioText(phase.dates)} />
         <Due value={vigenteText(phase.dates)} overdue={overdue} late={finishedLate(phase) ? "Concluída após o prazo" : null} />
         <RowMenu label={phase.name} onOpen={onOpen} actions={actions} />
       </div>
@@ -485,6 +488,7 @@ export function TaskRow({
         </StatusCell>
         <ProgressCell label={`${task.progressPercent}%`} value={task.progressPercent} done={task.calculatedStatus === "CONCLUIDA"} muted={task.calculatedStatus === "CANCELADA"} />
         <Owner name={task.assigneeName} />
+        <PlannedStart value={inicioText(task.dates)} />
         <Due value={vigenteText(task.dates)} overdue={overdue} late={finishedLate(task) ? "Concluída após o prazo" : null} />
         <RowMenu label={task.title} onOpen={onOpen} actions={actions} />
       </div>
@@ -590,7 +594,8 @@ export function MilestoneRow({
         value={percent}
         done={milestone.status === "APROVADO"}
       />
-      <span className="text-xs text-[#98a2b3]">—</span>
+      <Owner name={milestone.presenterName ?? ""} />
+      <PlannedStart value={null} title="Marco tem data única" />
       <Due value={vigenteText(milestone.dates)} overdue={overdue} reason={milestoneDelayReason(milestone)} late={finishedLate(milestone) ? (milestone.type === "HOMOLOGACAO" ? "Homologado após o prazo" : "Aceito após o prazo") : null} />
       <RowMenu label={milestone.title} onOpen={onOpen} actions={actions} />
     </div>
@@ -720,6 +725,15 @@ function Owner({ name }: { name: string }) {
 }
 
 /** Atraso em aberto em vermelho; atraso histórico só como nota neutra, sem classificar o item como atrasado. */
+function PlannedStart({ value, title }: { value: string | null; title?: string }) {
+  return (
+    <span className="flex items-start gap-1.5 text-xs whitespace-nowrap text-[#667085]" title={title}>
+      <Calendar className="mt-px size-3.5 shrink-0 text-[#98a2b3]" aria-hidden="true" />
+      {value ?? "—"}
+    </span>
+  );
+}
+
 function Due({ value, overdue, late = null, reason = null }: { value: string | null; overdue: boolean; late?: string | null; reason?: string | null }) {
   return (
     <span className={cn("flex items-start gap-1.5 text-xs whitespace-nowrap", overdue ? cn("font-semibold", overdueTone.text) : "text-[#667085]")}>

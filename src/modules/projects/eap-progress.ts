@@ -39,8 +39,11 @@ export function projectProgress(phases: ProjectPhaseView[]): ProjectProgress {
   };
 }
 
+/** Entregue conta 50% e aceito 100%, como no cálculo da API; pendente, rejeitado ou em correção, 0%. */
 export function milestonePercent(milestone: ProjectMilestoneView) {
-  return milestone.status === "APROVADO" ? 100 : 0;
+  if (milestone.status === "APROVADO") return 100;
+  if (milestone.status === "ENTREGUE") return 50;
+  return 0;
 }
 
 export function formatBasis(basisPoints: number) {
@@ -70,6 +73,16 @@ export function progressLabel(progress: PhaseProgress) {
 
 export function vigenteText(dates: { label: string; value: string }[]) {
   const value = dates.find((date) => date.label === "Fim planejado (vigente)" || date.label === MILESTONE_DUE_LABEL)?.value;
+  if (!value || value === "Não informada") {
+    return null;
+  }
+
+  return value.split(",")[0]?.trim() ?? null;
+}
+
+/** Início planejado vigente; marcos não têm período, então não possuem início. */
+export function inicioText(dates: { label: string; value: string }[]) {
+  const value = dates.find((date) => date.label === "Início planejado (vigente)")?.value;
   if (!value || value === "Não informada") {
     return null;
   }

@@ -106,7 +106,7 @@ export function SaveRow({
       ) : null}
       {onSave ? (
         <div className="flex flex-wrap gap-2">
-          <Button type="button" disabled={saving} onClick={onSave}>
+          <Button type="button" loading={saving} onClick={onSave}>
             {saving ? "Salvando…" : "Salvar"}
           </Button>
           {extra}

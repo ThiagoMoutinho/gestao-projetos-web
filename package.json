@@ -8,7 +8,7 @@
     "start": "next start --port 3001",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/modules/projects/eap-access.test.ts src/modules/projects/eap-status.test.ts src/modules/projects/eap-history.test.ts",
+    "test": "node --test src/modules/projects/eap-access.test.ts src/modules/projects/eap-status.test.ts src/modules/projects/eap-history.test.ts src/modules/projects/eap-deadline.test.ts",
     "api:generate": "orval"
   },
   "dependencies": {

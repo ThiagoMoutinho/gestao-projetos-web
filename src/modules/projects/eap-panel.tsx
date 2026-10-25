@@ -7,13 +7,7 @@ import { Button } from "@/components/ui/button";
 import { controlTransitionClassName } from "@/components/ui/control-motion";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/fetcher";
 import { notifySuccess, reportFailure } from "@/lib/feedback";
 import {
@@ -35,10 +29,12 @@ import {
   canUpdateTaskProgress,
   type EapAccess,
 } from "./eap-access";
-import { DateField, dateControlClass as editControlClass } from "./eap-date-field";
+import { DateField, dateControlClass as editControlClass, selectTriggerClass } from "./eap-date-field";
+import { actualDatesProblem, correctsActualDate } from "./eap-deadline";
 import { MilestoneDecisionFeedback } from "./eap-decision-feedback";
 import { evidenceRequest, forgetEvidences, type EvidenceParent, type EvidenceState } from "./eap-evidence-cache";
 import { EapHistory } from "./eap-history";
+import { MilestoneFlow } from "./eap-milestone-flow";
 import { MilestoneHomologation } from "./eap-milestone-homologation";
 import { forgetImpediment, impedimentRequest, type ImpedimentState } from "./eap-impediment-cache";
 import { cancelTone, impedimentTone } from "./eap-tones";
@@ -186,11 +182,15 @@ function PhaseEditor({
   onController?: (controller: EapSaveController) => void;
   onPhase: (phase: ProjectPhaseView) => void;
 }) {
-  const canEdit = canEditItem(access, phase.createdBy);
+  // Fase concluída fica somente leitura até algum item voltar para andamento.
+  const concluded = phase.calculatedStatus === "CONCLUIDA";
+  const canEdit = canEditItem(access, phase.createdBy) && !concluded;
   const [name, setName] = useState(phase.name);
   const [description, setDescription] = useState(phase.description ?? "");
   const [responsibleId, setResponsibleId] = useState(phase.responsibleId ?? "");
   const [suspending, setSuspending] = useState(false);
+  const [suspendOpen, setSuspendOpen] = useState(false);
+  const [suspendText, setSuspendText] = useState("");
   const [criteria, setCriteria] = useState(phase.completionCriteria ?? "");
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
@@ -265,15 +265,24 @@ function PhaseEditor({
 
   async function toggleSuspension() {
     const suspended = phase.status !== "SUSPENSA";
+    if (suspended && suspendText.trim().length < 10) {
+      setError("Informe a justificativa da suspensão com ao menos 10 caracteres.");
+      return;
+    }
     setSuspending(true);
     setError(null);
     setFeedback(null);
     try {
-      const response = await updateEapPhase(projectId, phase.id, { suspended });
+      const response = await updateEapPhase(projectId, phase.id, {
+        suspended,
+        ...(suspended ? { justification: suspendText.trim() } : {}),
+      });
       if (response.status !== 200) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível alterar a suspensão da fase.");
       }
       onPhase(presentPhase(response.data, { tasks: phase.tasks, milestones: phase.milestones }, names));
+      setSuspendOpen(false);
+      setSuspendText("");
       notifySuccess(suspended ? "Fase suspensa." : "Fase retomada.");
     } catch (caught) {
       setError(errorMessage(caught));
@@ -282,9 +291,8 @@ function PhaseEditor({
     }
   }
 
-  useSaveController(onController, () => void save(), saving);
+  useSaveController(onController, () => void save(), saving, concluded);
   const progress = phaseProgress(phase);
-  const due = phase.dates.find((date) => date.label.startsWith("Fim planejado"))?.value || "Não informada";
 
   return (
     <div className="flex flex-col pb-4">
@@ -297,14 +305,19 @@ function PhaseEditor({
             <EditLocked label="Situação" hint="automática" value={phase.statusLabel} />
             <EditLocked label="Item superior" value={projectName} />
             <AssigneeField people={people} value={responsibleId} onChange={(value) => { setResponsibleId(value); publish({ ...draft(), responsibleId: value }); }} />
-            <EditLocked label="Prazo vigente" value={due} />
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
+            <EditLocked label="Nome do item" value={phase.name} />
             <EditLocked label="Responsável" value={phase.responsibleName ?? "Não informado"} />
-            <EditLocked label="Prazo vigente" value={due} />
             <div className="sm:col-span-2">
-              <EditNotice text="Os dados da fase podem ser alterados por quem estrutura a EAP ou por quem cadastrou a fase." />
+              <EditNotice
+                text={
+                  concluded
+                    ? "Fase concluída: os campos ficam bloqueados e voltam a ser editáveis quando algum item retornar para andamento."
+                    : "Os dados da fase podem ser alterados por quem estrutura a EAP ou por quem cadastrou a fase."
+                }
+              />
             </div>
           </div>
         )}
@@ -324,16 +337,44 @@ function PhaseEditor({
             A situação muda sozinha conforme as tarefas e os marcos. A fase só fica concluída quando todas as tarefas ativas estão em 100% e todos os marcos foram aceitos.
           </p>
         </div>
-        {access.canManageStructure ? (
-          <div className="mb-3.5 flex items-center justify-between gap-3 rounded-[7px] border border-[#e4e7ec] px-[11px] py-2.5">
-            <span className="text-[8.5px] leading-normal text-[#667085]">
-              {phase.status === "SUSPENSA"
-                ? "Fase suspensa pela gestão. Ao retomar, a situação volta a ser calculada pelos itens."
-                : "Suspender interrompe a atualização automática da situação até a fase ser retomada."}
-            </span>
-            <Button type="button" variant="outline" className="h-[30px] shrink-0 rounded-[7px] px-[9px] text-[8.5px]" disabled={suspending} onClick={() => void toggleSuspension()}>
-              {suspending ? "Salvando…" : phase.status === "SUSPENSA" ? "Retomar fase" : "Suspender fase"}
-            </Button>
+        {access.canManageStructure && !concluded ? (
+          <div className="mb-3.5 rounded-[7px] border border-[#e4e7ec] px-[11px] py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[8.5px] leading-normal text-[#667085]">
+                {phase.status === "SUSPENSA"
+                  ? "Fase suspensa pela gestão. Ao retomar, a situação volta a ser calculada pelos itens."
+                  : "Suspender interrompe a atualização automática da situação até a fase ser retomada."}
+              </span>
+              {phase.status === "SUSPENSA" ? (
+                <Button type="button" variant="outline" className="h-[30px] shrink-0 rounded-[7px] px-[9px] text-[8.5px]" loading={suspending} onClick={() => void toggleSuspension()}>
+                  {suspending ? "Salvando…" : "Retomar fase"}
+                </Button>
+              ) : suspendOpen ? null : (
+                <Button type="button" variant="outline" className="h-[30px] shrink-0 rounded-[7px] px-[9px] text-[8.5px]" onClick={() => setSuspendOpen(true)}>
+                  Suspender fase
+                </Button>
+              )}
+            </div>
+            <Reveal open={suspendOpen && phase.status !== "SUSPENSA"}>
+              <div className="mt-2.5 flex flex-col gap-2.5">
+                <EditArea
+                  label="Justificativa da suspensão"
+                  hint="obrigatória"
+                  value={suspendText}
+                  placeholder="Explique por que a fase será suspensa."
+                  onChange={setSuspendText}
+                  full
+                />
+                <div className="flex flex-wrap justify-end gap-[7px]">
+                  <Button type="button" variant="outline" className="h-[30px] rounded-[7px] px-[9px] text-[8.5px]" disabled={suspending} onClick={() => { setSuspendOpen(false); setSuspendText(""); }}>
+                    Cancelar
+                  </Button>
+                  <Button type="button" className="h-[30px] rounded-[7px] bg-[#c4620f] px-[9px] text-[8.5px] text-white hover:bg-[#b4570f]" loading={suspending} onClick={() => void toggleSuspension()}>
+                    {suspending ? "Suspendendo…" : "Confirmar suspensão"}
+                  </Button>
+                </div>
+              </div>
+            </Reveal>
           </div>
         ) : null}
         {canEdit ? (
@@ -364,7 +405,6 @@ function PhaseEditor({
           setEvidenceRevision((value) => value + 1);
         }}
       />
-      <PlanningDates dates={phase.dates} startLabel="Início planejado (vigente)" dueLabel="Fim planejado (vigente)" />
       <HistoryNote projectId={projectId} entityType="PHASE" entityId={phase.id} refreshKey={historyKey(phase, evidenceRevision)} />
       <EditStatus error={error} feedback={feedback} />
     </div>
@@ -403,6 +443,7 @@ function TaskEditor({
   const [percent, setPercent] = useState(String(task.progressPercent));
   const [actualStart, setActualStart] = useState(civilDateInput(task.actualStartAt));
   const [actualEnd, setActualEnd] = useState(civilDateInput(task.actualEndAt));
+  const [dateJustification, setDateJustification] = useState("");
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [saving, setSaving] = useState(false);
@@ -411,7 +452,9 @@ function TaskEditor({
   const [evidenceRevision, setEvidenceRevision] = useState(0);
   const [impedimentRevision, setImpedimentRevision] = useState(0);
   const cancelled = task.calculatedStatus === "CANCELADA";
-  const editable = canEdit && !cancelled;
+  // Concluída: estrutura bloqueada; só o andamento segue disponível para reabrir a tarefa com justificativa.
+  const concluded = task.calculatedStatus === "CONCLUIDA";
+  const editable = canEdit && !cancelled && !concluded;
   const structureDirty =
     editable &&
     (title.trim() !== task.title ||
@@ -424,6 +467,11 @@ function TaskEditor({
     (percent !== String(task.progressPercent) ||
       actualStart !== civilDateInput(task.actualStartAt) ||
       actualEnd !== civilDateInput(task.actualEndAt));
+  const correctingDates =
+    correctsActualDate(civilDateInput(task.actualStartAt), actualStart) ||
+    correctsActualDate(civilDateInput(task.actualEndAt), actualEnd);
+  const completing = percent === "100" && task.progressPercent < 100;
+  const reopeningTask = task.progressPercent === 100 && Number(percent) < 100;
 
   function publish(next: {
     title: string;
@@ -435,6 +483,7 @@ function TaskEditor({
     actualEnd: string;
     evidenceTitle: string;
     evidenceUrl: string;
+    dateJustification: string;
   }) {
     const nextStructure =
       editable &&
@@ -449,11 +498,15 @@ function TaskEditor({
         next.actualStart !== civilDateInput(task.actualStartAt) ||
         next.actualEnd !== civilDateInput(task.actualEndAt));
     dirtyRef.current =
-      nextStructure || nextProgress || next.evidenceTitle.trim() !== "" || next.evidenceUrl.trim() !== "";
+      nextStructure ||
+      nextProgress ||
+      next.evidenceTitle.trim() !== "" ||
+      next.evidenceUrl.trim() !== "" ||
+      next.dateJustification.trim() !== "";
   }
 
   function draft() {
-    return { title, description, assigneeId, weight, percent, actualStart, actualEnd, evidenceTitle, evidenceUrl };
+    return { title, description, assigneeId, weight, percent, actualStart, actualEnd, evidenceTitle, evidenceUrl, dateJustification };
   }
 
   function choosePercent(value: string) {
@@ -486,18 +539,22 @@ function TaskEditor({
       return;
     }
 
-    if (canProgress && [actualStart, actualEnd].some((value) => value && value > belemToday())) {
-      setError("Datas realizadas não podem estar no futuro.");
+    // Concluir pelo andamento usa as mesmas regras de "Concluir tarefa": datas reais confirmadas.
+    const datesProblem = canProgress
+      ? actualDatesProblem({ start: actualStart, end: actualEnd, today: belemToday(), requireBoth: progress === 100 })
+      : null;
+    if (datesProblem) {
+      setError(datesProblem);
       return;
     }
 
-    if (canProgress && actualEnd && !actualStart) {
-      setError("A data real de término exige uma data real de início.");
+    if (canProgress && correctingDates && dateJustification.trim().length < 10) {
+      setError("A correção de uma data real já registrada exige justificativa com ao menos 10 caracteres.");
       return;
     }
 
-    if (canProgress && actualStart && actualEnd && actualEnd < actualStart) {
-      setError("A data real de término não pode ser anterior à data de início.");
+    if (canProgress && reopeningTask && dateJustification.trim().length < 10) {
+      setError("Reabrir uma tarefa concluída exige justificativa com ao menos 10 caracteres.");
       return;
     }
 
@@ -530,6 +587,7 @@ function TaskEditor({
           ...(actualEnd !== civilDateInput(current.actualEndAt)
             ? { actualEndAt: civilDateToIso(actualEnd) }
             : {}),
+          ...((correctingDates || reopeningTask) && dateJustification.trim() ? { justification: dateJustification.trim() } : {}),
         });
         if (response.status !== 200) {
           throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar o andamento.");
@@ -538,8 +596,9 @@ function TaskEditor({
       }
 
       onTask(current);
+      setDateJustification("");
       dirtyRef.current = evidenceTitle.trim() !== "" || evidenceUrl.trim() !== "";
-      notifySuccess("Tarefa atualizada.");
+      notifySuccess(progressDirty && progress === 100 && task.progressPercent < 100 ? "Tarefa concluída." : "Tarefa atualizada.");
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -548,11 +607,26 @@ function TaskEditor({
   }
 
   useSaveController(onController, () => void save(), saving, cancelled);
-  const due = task.dates.find((date) => date.label.startsWith("Fim planejado"))?.value || "Não informada";
   const progressValue = Number(percent);
   const progressShown = Number.isFinite(progressValue) ? Math.min(100, Math.max(0, progressValue)) : 0;
   const statusPreview = cancelled ? task.calculatedStatus : deriveTaskStatus(progressShown);
   const statusShown = taskStatusLabel(statusPreview);
+  const actualFields = (
+    <>
+      <DateField label="Início realizado" hint={completing ? "obrigatório para concluir" : undefined} value={actualStart} onChange={(value) => { setActualStart(value); publish({ ...draft(), actualStart: value }); }} />
+      <DateField label="Fim realizado" hint={completing ? "obrigatório para concluir" : undefined} value={actualEnd} onChange={(value) => { setActualEnd(value); publish({ ...draft(), actualEnd: value }); }} />
+      {correctingDates ? (
+        <EditArea
+          label="Justificativa da correção"
+          hint="obrigatória · o valor anterior fica no histórico"
+          value={dateJustification}
+          placeholder="Explique por que a data real registrada está sendo corrigida."
+          onChange={(value) => { setDateJustification(value); publish({ ...draft(), dateJustification: value }); }}
+          full
+        />
+      ) : null}
+    </>
+  );
   const decision = access.canManageStructure ? (
     <TaskStatusDecision projectId={projectId} phaseId={phase.id} task={task} names={names} onTask={onTask} />
   ) : null;
@@ -572,6 +646,11 @@ function TaskEditor({
           ) : (
             <EditLocked label="Descrição" value={task.description?.trim() || "Nenhuma descrição registrada."} />
           )}
+          {concluded ? (
+            <div className="sm:col-span-2">
+              <EditNotice text="Tarefa concluída: os campos ficam bloqueados. Para editar, volte o andamento para menos de 100% informando a justificativa da reabertura." />
+            </div>
+          ) : null}
           <EditLocked label="Situação" hint={cancelled ? "decisão da gestão" : "pelo andamento"} value={statusShown} />
           <EditLocked label="Item superior" value={phase.name} />
           {editable ? (
@@ -579,7 +658,6 @@ function TaskEditor({
           ) : (
             <EditLocked label="Responsável" value={task.assigneeName || "Não informado"} />
           )}
-          <EditLocked label="Prazo vigente" value={due} />
         </div>
       </EditSection>
       <EditSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" tone="accent" aside={<strong className="text-[12px] text-[#175cd3]">{progressShown}%</strong>}>
@@ -601,10 +679,33 @@ function TaskEditor({
                 Concluir
               </Button>
             </div>
+            <Reveal open={completing}>
+              <div className="mb-3.5 rounded-[9px] border border-[#bfe4d5] bg-[#f6fcf9] p-3">
+                <span className="mb-1 block text-[9px] font-semibold tracking-[0.04em] text-[#157454] uppercase">Concluir tarefa</span>
+                <p className="mb-2.5 text-[8.5px] leading-[1.45] text-[#475467]">Para concluir, confirme o início e o término reais. A conclusão é gravada ao salvar.</p>
+                <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">{completing ? actualFields : null}</div>
+              </div>
+            </Reveal>
+            <Reveal open={reopeningTask}>
+              <div className="mb-3.5 rounded-[9px] border border-[#f6d2ad] bg-[#fff8f1] p-3">
+                <span className="mb-1 block text-[9px] font-semibold tracking-[0.04em] text-[#b4570f] uppercase">Reabrir tarefa concluída</span>
+                <p className="mb-2.5 text-[8.5px] leading-[1.45] text-[#475467]">O término real registrado é retirado e fica preservado no histórico. A reabertura é gravada ao salvar.</p>
+                {reopeningTask ? (
+                  <EditArea
+                    label="Justificativa da reabertura"
+                    hint="obrigatória"
+                    value={dateJustification}
+                    placeholder="Explique por que a tarefa concluída precisa voltar a ser executada."
+                    onChange={(value) => { setDateJustification(value); publish({ ...draft(), dateJustification: value }); }}
+                    full
+                  />
+                ) : null}
+              </div>
+            </Reveal>
             <p className="mb-3.5 text-[8px] leading-normal text-[#98a2b3]">
-              A situação acompanha o percentual: 0% não iniciada, de 1% a 99% em andamento e 100% concluída. As datas realizadas são preenchidas ao iniciar e ao concluir, e você pode corrigi-las abaixo.
+              A situação acompanha o percentual: 0% não iniciada, de 1% a 99% em andamento e 100% concluída. O início real é registrado ao iniciar o andamento; para concluir, confirme as datas reais. Corrigir uma data já registrada exige justificativa.
             </p>
-            {canEdit ? (
+            {editable ? (
               <EditText label="Peso" value={weight} onChange={(value) => { setWeight(value); publish({ ...draft(), weight: value }); }} />
             ) : null}
             <div className="mt-3 grid grid-cols-1 gap-[13px] sm:grid-cols-2">
@@ -653,19 +754,6 @@ function TaskEditor({
           setEvidenceRevision((value) => value + 1);
         }}
         emptyWarning={progressShown === 100 ? "A tarefa está concluída, mas ainda não possui as evidências exigidas." : null}
-      />
-      <PlanningDates
-        dates={task.dates}
-        startLabel="Início planejado (vigente)"
-        dueLabel="Fim planejado (vigente)"
-        extra={
-          canProgress && !cancelled ? (
-            <>
-              <DateField label="Início realizado" value={actualStart} onChange={(value) => { setActualStart(value); publish({ ...draft(), actualStart: value }); }} />
-              <DateField label="Fim realizado" value={actualEnd} onChange={(value) => { setActualEnd(value); publish({ ...draft(), actualEnd: value }); }} />
-            </>
-          ) : null
-        }
       />
       <HistoryNote projectId={projectId} entityType="TASK" entityId={task.id} refreshKey={historyKey(task, `${evidenceRevision}:${impedimentRevision}`)} />
       <EditStatus error={error} feedback={feedback} />
@@ -759,7 +847,7 @@ function TaskStatusDecision({
               type="button"
               variant={cancelled ? "default" : "destructive"}
               className="h-[30px] rounded-[7px] px-[11px] text-[8.5px]"
-              disabled={saving}
+              loading={saving}
               onClick={() => void decide()}
             >
               {saving ? "Salvando…" : cancelled ? "Reativar tarefa" : "Cancelar tarefa"}
@@ -936,7 +1024,7 @@ function TaskImpediment({
             <Button
               type="button"
               className="h-[30px] rounded-[7px] px-[11px] text-[8.5px]"
-              disabled={saving}
+              loading={saving}
               onClick={() => void submit(form)}
             >
               {saving ? "Salvando…" : IMPEDIMENT_ACTIONS[form].label}
@@ -994,11 +1082,14 @@ function MilestoneEditor({
   onController?: (controller: EapSaveController) => void;
   onMilestone: (milestone: ProjectMilestoneView) => void;
 }) {
-  const canEdit = canEditItem(access, milestone.createdBy);
-  const canDesignate = access.canManageStructure;
+  // Marco aceito é definitivo: todos os campos ficam bloqueados.
+  const accepted = milestone.status === "APROVADO";
+  const canEdit = canEditItem(access, milestone.createdBy) && !accepted;
+  const canDesignate = access.canManageStructure && !accepted;
   const [title, setTitle] = useState(milestone.title);
   const [description, setDescription] = useState(milestone.description ?? "");
   const [reviewerId, setReviewerId] = useState(milestone.reviewerId ?? "");
+  const [presenterId, setPresenterId] = useState(milestone.presenterId ?? "");
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1006,25 +1097,30 @@ function MilestoneEditor({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [evidenceRevision, setEvidenceRevision] = useState(0);
   const reviewerChanged = canDesignate && (reviewerId || null) !== milestone.reviewerId;
+  // O apresentador pode ser trocado, mas não removido.
+  const presenterChanged = canDesignate && presenterId !== "" && presenterId !== (milestone.presenterId ?? "");
   const structureDirty =
     reviewerChanged ||
+    presenterChanged ||
     (canEdit && (title.trim() !== milestone.title || emptyToNull(description) !== milestone.description));
 
   function publish(next: {
     title: string;
     description: string;
     reviewerId: string;
+    presenterId: string;
     evidenceTitle: string;
     evidenceUrl: string;
   }) {
     const nextStructure =
       (canDesignate && (next.reviewerId || null) !== milestone.reviewerId) ||
+      (canDesignate && next.presenterId !== "" && next.presenterId !== (milestone.presenterId ?? "")) ||
       (canEdit && (next.title.trim() !== milestone.title || emptyToNull(next.description) !== milestone.description));
     dirtyRef.current = nextStructure || next.evidenceTitle.trim() !== "" || next.evidenceUrl.trim() !== "";
   }
 
   function draft() {
-    return { title, description, reviewerId, evidenceTitle, evidenceUrl };
+    return { title, description, reviewerId, presenterId, evidenceTitle, evidenceUrl };
   }
 
   async function saveDetails() {
@@ -1039,24 +1135,34 @@ function MilestoneEditor({
       return;
     }
 
+    if (presenterId && presenterId === reviewerId) {
+      setError("Quem apresenta o marco não pode ser o gestor que vai validá-lo.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
     setFeedback(null);
 
     try {
-      const response = await updateEapMilestone(projectId, phase.id, milestone.id, {
-        ...(canEdit && title.trim() !== milestone.title ? { title: title.trim() } : {}),
-        ...(canEdit && emptyToNull(description) !== milestone.description
-          ? { description: emptyToNull(description) }
-          : {}),
-        ...(reviewerChanged ? { reviewerId: reviewerId || null } : {}),
-      });
-      if (response.status !== 200) {
-        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar o marco.");
+      if (structureDirty) {
+        const response = await updateEapMilestone(projectId, phase.id, milestone.id, {
+          ...(canEdit && title.trim() !== milestone.title ? { title: title.trim() } : {}),
+          ...(canEdit && emptyToNull(description) !== milestone.description
+            ? { description: emptyToNull(description) }
+            : {}),
+          ...(reviewerChanged ? { reviewerId: reviewerId || null } : {}),
+          ...(presenterChanged ? { presenterId } : {}),
+        });
+        if (response.status !== 200) {
+          throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar o marco.");
+        }
+        onMilestone(presentMilestone(response.data, names));
       }
-      onMilestone(presentMilestone(response.data, names));
       dirtyRef.current = evidenceTitle.trim() !== "" || evidenceUrl.trim() !== "";
-      notifySuccess("Marco atualizado.");
+      if (structureDirty) {
+        notifySuccess("Marco atualizado.");
+      }
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -1064,8 +1170,7 @@ function MilestoneEditor({
     }
   }
 
-  useSaveController(onController, () => void saveDetails(), saving);
-  const due = milestone.dates.find((date) => date.label === "Data prevista")?.value || "Não informada";
+  useSaveController(onController, () => void saveDetails(), saving, accepted);
 
   return (
     <div className="flex flex-col pb-4">
@@ -1083,25 +1188,42 @@ function MilestoneEditor({
           ) : (
             <EditLocked label="Descrição" value={milestone.description?.trim() || "Nenhuma descrição registrada."} />
           )}
+          {accepted ? (
+            <div className="sm:col-span-2">
+              <EditNotice text="Marco aceito: os campos ficam bloqueados. A decisão e o histórico são definitivos." />
+            </div>
+          ) : null}
           <EditLocked label="Item superior" value={phase.name} />
-          <EditLocked label="Responsável" hint="não gravado" value="O marco não possui responsável próprio" />
-          <EditLocked label="Prazo vigente" value={due} />
+          {canDesignate ? (
+            <AssigneeField
+              people={people}
+              value={presenterId}
+              label="Apresentador do marco"
+              emptyLabel="Não designado"
+              onChange={(value) => { setPresenterId(value); publish({ ...draft(), presenterId: value }); }}
+            />
+          ) : (
+            <EditLocked label="Apresentador do marco" value={milestone.presenterName ?? "Não designado"} />
+          )}
           <EditLocked label="Tipo do marco" value={milestone.typeLabel} />
         </div>
       </EditSection>
-      <EditSection title="Entrega e homologação" subtitle="A entrega e o aceite formal são etapas independentes" tone="accent">
+      <EditSection title="Fluxo de entrega e aceite" subtitle="Pendente, entregue e aceito pelo gestor" tone="accent">
+        <div className="mb-[13px]">
+          <MilestoneFlow status={milestone.status} />
+        </div>
         <div className="mb-[13px] grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           <EditLocked label="Entrega registrada por" value={milestone.deliveredBy ?? "Ainda não registrada"} />
           {canDesignate ? (
             <AssigneeField
               people={people?.filter((person) => person.homologator) ?? null}
               value={reviewerId}
-              label="Homologador designado"
+              label="Gestor validador"
               emptyLabel="Gestão do projeto (padrão)"
               onChange={(value) => { setReviewerId(value); publish({ ...draft(), reviewerId: value }); }}
             />
           ) : (
-            <EditLocked label="Homologador designado" value={milestone.reviewerName ?? "Gestão do projeto (padrão)"} />
+            <EditLocked label="Gestor validador" value={milestone.reviewerName ?? "Gestão do projeto (padrão)"} />
           )}
         </div>
         <MilestoneHomologation
@@ -1130,7 +1252,6 @@ function MilestoneEditor({
           setEvidenceRevision((value) => value + 1);
         }}
       />
-      <PlanningDates dates={milestone.dates} dueLabel="Data prevista" />
       <HistoryNote projectId={projectId} entityType="MILESTONE" entityId={milestone.id} refreshKey={historyKey(milestone, evidenceRevision)} />
       <EditStatus error={error} feedback={feedback} />
     </div>
@@ -1233,7 +1354,7 @@ function EvidenceSection({
             <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={cancel}>
               Cancelar
             </Button>
-            <Button type="button" className={`${compactButtonClass} border-transparent bg-[#175cd3] text-white hover:bg-[#144ca8]`} disabled={saving} onClick={() => void create()}>
+            <Button type="button" className={`${compactButtonClass} border-transparent bg-[#175cd3] text-white hover:bg-[#144ca8]`} loading={saving} onClick={() => void create()}>
               <Check className="size-3.5" aria-hidden="true" />
               {saving ? "Registrando…" : "Vincular evidência"}
             </Button>
@@ -1355,33 +1476,6 @@ function HistoryNote({
   );
 }
 
-function PlanningDates({
-  dates,
-  startLabel,
-  dueLabel,
-  extra,
-}: {
-  dates: { label: string; value: string }[];
-  startLabel?: string;
-  dueLabel: string;
-  extra?: ReactNode;
-}) {
-  const pick = (label: string) => dates.find((date) => date.label === label)?.value ?? "Não informada";
-  return (
-    <FoldBlock title="Planejamento e datas" icon={CalendarIcon}>
-      <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-        {startLabel ? <EditLocked label="Início planejado" value={pick(startLabel)} /> : null}
-        <EditLocked label={startLabel ? "Prazo vigente" : "Data prevista"} value={pick(dueLabel)} />
-        <p className="flex items-start gap-1.5 text-[8.5px] leading-[1.45] text-[#667085] sm:col-span-2">
-          <Lock className="mt-px size-3 shrink-0" aria-hidden="true" />
-          O planejamento muda só por reprogramação, com justificativa, em “Reprogramar prazo” nos detalhes do item.
-        </p>
-        {extra}
-      </div>
-    </FoldBlock>
-  );
-}
-
 function AssigneeField({
   people,
   value,
@@ -1399,27 +1493,26 @@ function AssigneeField({
     return <EditNotice text="A lista de participantes não pôde ser consultada." />;
   }
 
-  const current = people.find((person) => person.userId === value)?.name ?? emptyLabel;
-
+  // O Select (shadcn/Base UI) não aceita item com valor "": a opção vazia usa um valor interno.
+  const empty = "__vazio__";
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <EditLabel label={label} />
-      <DropdownMenu>
-        <DropdownMenuTrigger render={<Button type="button" variant="outline" className={`${editControlClass} justify-between px-2.5 font-normal shadow-none hover:bg-white`} />}>
-          <span className="truncate">{current}</span>
-          <ChevronRight className="size-3.5 rotate-90 text-[#667085]" aria-hidden="true" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-64">
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => onChange("")}>{emptyLabel}</DropdownMenuItem>
-            {people.map((person) => (
-              <DropdownMenuItem key={person.userId} onClick={() => onChange(person.userId)}>
-                {person.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Select value={value || empty} onValueChange={(next) => onChange(next === null || next === empty ? "" : next)}>
+        <SelectTrigger aria-label={label} className={selectTriggerClass}>
+          <SelectValue>
+            {(selected: string | null) => people.find((person) => person.userId === selected)?.name ?? emptyLabel}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={empty}>{emptyLabel}</SelectItem>
+          {people.map((person) => (
+            <SelectItem key={person.userId} value={person.userId}>
+              {person.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

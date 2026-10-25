@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
+/**
+ * As datas da fase não são informadas: são calculadas pelas tarefas e marcos vinculados.
+ */
 export type CreateEapPhaseBody = {
   /**
      * @minLength 1
@@ -23,20 +26,10 @@ export type CreateEapPhaseBody = {
      */
   sortOrder?: number;
   /**
+     * Responsável pela fase, obrigatório na criação: participante do projeto.
      * @minLength 1
-     * @nullable
      */
-  plannedStartAt?: string | null;
-  /**
-     * @minLength 1
-     * @nullable
-     */
-  plannedEndAt?: string | null;
-  /**
-     * @minLength 1
-     * @nullable
-     */
-  responsibleId?: string | null;
+  responsibleId: string;
   /**
      * @maxLength 4000
      * @nullable

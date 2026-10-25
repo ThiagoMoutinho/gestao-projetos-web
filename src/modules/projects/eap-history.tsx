@@ -4,12 +4,15 @@ import { AlertTriangle, Ban, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { SkeletonList } from "@/components/ui/skeleton-list";
 import { ApiError } from "@/lib/api/fetcher";
 import { listEapAudit } from "@/lib/api/generated/eap/eap";
 import type { ListEapAuditEntityType } from "@/lib/api/generated/model/listEapAuditEntityType";
 import { cn } from "@/lib/utils";
 
-import { presentHistory, type HistoryEntry, type HistoryTone } from "./eap-history-entries";
+import { formatCivilDate } from "./eap-date-field";
+import { HISTORY_GROUP_LABELS, presentHistory, type HistoryEntry, type HistoryGroup, type HistoryTone } from "./eap-history-entries";
+import { civilDateInput } from "./eap-present";
 import { recordedDate, recordedStatusLabel } from "./project-records";
 
 type HistoryState =
@@ -29,6 +32,7 @@ const TONE: Record<HistoryTone, { dot: string; badge: string }> = {
   evidence: { dot: "bg-[#8b5bbb] ring-4 ring-[#f4ecfb]", badge: "bg-[#f4ecfb] text-[#7450bf]" },
   impediment: { dot: "bg-warning ring-4 ring-warning/20", badge: "bg-warning/20 text-warning-foreground" },
   reschedule: { dot: "bg-[#3871bf] ring-4 ring-[#e9f2ff]", badge: "bg-[#e9f2ff] text-[#285da8]" },
+  dates: { dot: "bg-[#0e7c86] ring-4 ring-[#e3f6f5]", badge: "bg-[#e3f6f5] text-[#0b6a72]" },
   neutral: { dot: "bg-primary ring-4 ring-primary/10", badge: "bg-muted text-muted-foreground" },
 };
 
@@ -44,6 +48,7 @@ export function EapHistory({
   refreshKey?: string;
 }) {
   const [state, setState] = useState<HistoryState>({ status: "loading" });
+  const [filter, setFilter] = useState<HistoryGroup | "all">("all");
 
   useEffect(() => {
     let active = true;
@@ -56,7 +61,11 @@ export function EapHistory({
         }
         setState({
           status: "ready",
-          entries: presentHistory(response.data.data, { statusLabel: recordedStatusLabel, date: recordedDate }),
+          entries: presentHistory(response.data.data, {
+            statusLabel: recordedStatusLabel,
+            date: recordedDate,
+            civilDate: (value) => formatCivilDate(civilDateInput(value)),
+          }),
         });
       })
       .catch((error: unknown) => {
@@ -72,7 +81,7 @@ export function EapHistory({
   }, [projectId, entityType, entityId, refreshKey]);
 
   if (state.status === "loading") {
-    return <p className={emptyInline}>Consultando histórico…</p>;
+    return <SkeletonList rows={3} label="Consultando histórico" rowClassName="h-[34px]" />;
   }
   if (state.status === "error") {
     return <p className={emptyInline}>{state.message}</p>;
@@ -81,15 +90,41 @@ export function EapHistory({
     return <p className={emptyInline}>Nenhuma alteração registrada para este item.</p>;
   }
 
+  const groups = [...new Set(state.entries.map((entry) => entry.group))];
+  const active = filter !== "all" && groups.includes(filter) ? filter : "all";
+  const visible = active === "all" ? state.entries : state.entries.filter((entry) => entry.group === active);
+
   return (
-    <ul className="flex flex-col gap-3.5">
-      {state.entries.map((entry) => (
+    <div className="motion-fade flex flex-col gap-3">
+      {groups.length > 1 ? (
+        <div role="group" aria-label="Filtrar histórico por tipo de evento" className="flex flex-wrap gap-1.5">
+          {(["all", ...groups] as const).map((group) => (
+            <button
+              key={group}
+              type="button"
+              aria-pressed={active === group}
+              className={cn(
+                "h-[24px] rounded-full border px-2.5 text-[8.5px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none",
+                active === group
+                  ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]"
+                  : "border-[#dce1e7] bg-white text-[#667085] hover:border-[#8eb4e7] hover:text-[#175cd3]",
+              )}
+              onClick={() => setFilter(group)}
+            >
+              {group === "all" ? "Todos" : HISTORY_GROUP_LABELS[group]}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <ul className="flex flex-col gap-3.5">
+      {visible.map((entry) => (
         <li key={entry.id} className="grid grid-cols-[10px_minmax(0,1fr)] gap-[9px]">
           <span className={cn("mt-1 size-[7px] rounded-full", TONE[entry.tone].dot)} />
           <HistoryItem entry={entry} />
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }
 

@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { GetScheduleMonitoring200ItemsItemDeadlinePerformance } from './getScheduleMonitoring200ItemsItemDeadlinePerformance.ts';
 import type { GetScheduleMonitoring200ItemsItemEntityType } from './getScheduleMonitoring200ItemsItemEntityType.ts';
 
 export type GetScheduleMonitoring200ItemsItem = {
@@ -28,6 +29,11 @@ export type GetScheduleMonitoring200ItemsItem = {
   /** @nullable */
   actualEndAt: string | null;
   overdue: boolean;
+  /**
+     * Cumprimento de prazo em relação ao planejamento original e ao vigente.
+     * @nullable
+     */
+  deadlinePerformance: GetScheduleMonitoring200ItemsItemDeadlinePerformance;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991

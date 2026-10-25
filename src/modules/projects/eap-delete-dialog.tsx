@@ -98,7 +98,7 @@ export function EapDeleteDialog({
           <AlertDialogCancel className="h-8 text-[11px]" disabled={busy}>
             Cancelar
           </AlertDialogCancel>
-          <Button type="button" variant="destructive" className="h-8 text-[11px]" disabled={busy} onClick={() => void confirm()}>
+          <Button type="button" variant="destructive" className="h-8 text-[11px]" loading={busy} onClick={() => void confirm()}>
             {busy ? "Excluindo…" : "Excluir"}
           </Button>
         </AlertDialogFooter>

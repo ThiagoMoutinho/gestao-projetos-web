@@ -1,24 +1,33 @@
 "use client";
 
 import { Suspense, use, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { AlertTriangle, Calendar, Check, ChevronRight, Clock, FileText, Flag, Folder, Info, Plus, User, X } from "lucide-react";
+import { AlertTriangle, Calendar, Check, ChevronRight, CircleCheck, Clock, FileText, Flag, Folder, Info, Maximize2, Minimize2, Plus, User, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { SkeletonList } from "@/components/ui/skeleton-list";
+import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/fetcher";
 import { notifySuccess, reportFailure } from "@/lib/feedback";
 import { getEapMilestone, getEapPhase, getEapTask, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
 import { cn } from "@/lib/utils";
 
 import { canEditItem, canHomologateMilestone, canReschedule, canUpdateTaskProgress, type EapAccess } from "./eap-access";
+import { PhaseActualCorrection } from "./eap-actual-correction";
+import { DateField, formatCivilDate } from "./eap-date-field";
+import { actualDatesProblem, civilDay, correctsActualDate } from "./eap-deadline";
 import { MilestoneDecisionFeedback } from "./eap-decision-feedback";
 import { evidenceRequest, type EvidenceParent } from "./eap-evidence-cache";
 import { EapHistory } from "./eap-history";
 import { impedimentRequest } from "./eap-impediment-cache";
 import { impedimentTone, overdueTone } from "./eap-tones";
 import { EapPanel, type EapPerson, type EapSaveController } from "./eap-panel";
+import { MilestoneFlow } from "./eap-milestone-flow";
 import { MilestoneHomologation } from "./eap-milestone-homologation";
 import {
+  civilDateInput,
+  civilDateToIso,
+  phaseItemRanges,
   presentMilestone,
   presentPhase,
   presentTask,
@@ -27,6 +36,7 @@ import {
   type ProjectTaskView,
 } from "./eap-present";
 import { EapSchedule } from "./eap-schedule";
+import { Reveal } from "./eap-reveal";
 import { basisToPercent, formatBasis, milestoneDelayReason, milestoneIsOverdue, phaseIsOverdue, phaseProgress, progressLabel, taskIsOverdue, vigenteText } from "./eap-progress";
 import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind, type EapStatusKind } from "./eap-status-badge";
 import type { EapSelection } from "./eap-selection";
@@ -54,6 +64,8 @@ export function EapDetail({
   onMilestone,
   onEditingChange,
   onCorrectiveTask,
+  wide = false,
+  onToggleWide,
 }: {
   projectId: string;
   phases: ProjectPhaseView[];
@@ -76,8 +88,17 @@ export function EapDetail({
   onMilestone: (milestone: ProjectMilestoneView) => void;
   onEditingChange?: (editing: boolean) => void;
   onCorrectiveTask?: (milestone: ProjectMilestoneView) => void;
+  wide?: boolean;
+  onToggleWide?: () => void;
 }) {
   const [editing, setEditing] = useState(initialEditing);
+  /** Formulários abertos no painel (datas reais, reprogramação, conclusão) protegem dados não salvos. */
+  const markDirty = useCallback(
+    (dirty: boolean) => {
+      dirtyRef.current = dirty;
+    },
+    [dirtyRef],
+  );
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [editorSaving, setEditorSaving] = useState(false);
   const [editorLocked, setEditorLocked] = useState(false);
@@ -125,12 +146,28 @@ export function EapDetail({
             </span>
           ) : null}
         </div>
-        <Button type="button" variant="ghost" size="icon-sm" className="text-[#667085]" aria-label="Fechar painel" onClick={onClose}>
-          <X />
-        </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          {onToggleWide ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="hidden text-[#667085] sm:inline-flex"
+              aria-label={wide ? "Reduzir painel" : "Expandir painel"}
+              aria-pressed={wide}
+              title={wide ? "Reduzir painel" : "Expandir painel"}
+              onClick={onToggleWide}
+            >
+              {wide ? <Minimize2 /> : <Maximize2 />}
+            </Button>
+          ) : null}
+          <Button type="button" variant="ghost" size="icon-sm" className="text-[#667085]" aria-label="Fechar painel" onClick={onClose}>
+            <X />
+          </Button>
+        </div>
       </header>
-      <div className={`min-h-0 flex-1 overflow-y-auto ${editing ? "bg-[#f8fafc] px-6" : "px-[22px] py-5"}`}>
-        {confirmCancel || (editing && pending) ? (
+      <div key={editing ? "edit" : "view"} className={`motion-fade min-h-0 flex-1 overflow-y-auto ${editing ? "bg-[#f8fafc] px-6" : "px-[22px] py-5"}`}>
+        {confirmCancel || pending ? (
           <div role="alert" className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[#865516]">
             <AlertTriangle className="mt-0.5 size-[15px] shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
@@ -192,9 +229,9 @@ export function EapDetail({
             onMilestone={onMilestone}
           />
         ) : phase && selection.kind === "phase" ? (
-          <PhaseDetail projectId={projectId} phase={phase} code={code} access={access} names={names} onSelect={onSelect} onPhase={onPhase} />
+          <PhaseDetail projectId={projectId} phase={phase} code={code} access={access} names={names} onSelect={onSelect} onPhase={onPhase} onDirty={markDirty} />
         ) : phase && task ? (
-          <TaskDetail projectId={projectId} phase={phase} task={task} code={code} access={access} names={names} onTask={onTask} />
+          <TaskDetail projectId={projectId} phase={phase} task={task} code={code} access={access} names={names} onTask={onTask} onDirty={markDirty} />
         ) : phase && milestone ? (
           <MilestoneDetail
             projectId={projectId}
@@ -206,6 +243,7 @@ export function EapDetail({
             onMilestone={onMilestone}
             onSelect={onSelect}
             onCorrectiveTask={onCorrectiveTask}
+            onDirty={markDirty}
           />
         ) : (
           <p className={paragraph}>Este item não está mais na EAP carregada.</p>
@@ -217,7 +255,7 @@ export function EapDetail({
             <Button type="button" variant="outline" className={secondaryButton} onClick={cancelEdit}>
               Cancelar
             </Button>
-            <Button type="button" className={cn(primaryButton, "gap-1.5")} disabled={editorSaving || editorLocked} onClick={() => saveRef.current()}>
+            <Button type="button" className={cn(primaryButton, "gap-1.5")} disabled={editorLocked} loading={editorSaving} onClick={() => saveRef.current()}>
               <Check aria-hidden="true" />
               {editorSaving ? "Salvando…" : "Salvar alterações"}
             </Button>
@@ -265,6 +303,7 @@ function PhaseDetail({
   names,
   onSelect,
   onPhase,
+  onDirty,
 }: {
   projectId: string;
   phase: ProjectPhaseView;
@@ -273,8 +312,15 @@ function PhaseDetail({
   names: Map<string, string> | null;
   onSelect: (selection: EapSelection) => void;
   onPhase: (phase: ProjectPhaseView) => void;
+  onDirty: (dirty: boolean) => void;
 }) {
   const progress = phaseProgress(phase);
+  async function refresh() {
+    const response = await getEapPhase(projectId, phase.id);
+    if (response.status === 200) {
+      onPhase(presentPhase(response.data, { tasks: phase.tasks, milestones: phase.milestones }, names));
+    }
+  }
   const tasks = phase.tasks;
   const milestones = phase.milestones;
   const known = tasks !== null && milestones !== null;
@@ -342,13 +388,13 @@ function PhaseDetail({
       </Section>
       <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
         <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={phase.responsibleName ?? "Não informado"} />
-        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Prazo vigente" value={vigenteText(phase.dates) ?? "Não informado"} overdue={phaseIsOverdue(phase)} note={phaseIsOverdue(phase) ? "Em atraso" : null} />
+        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(phase.dates) ?? "Não informado"} overdue={phaseIsOverdue(phase)} note={phaseIsOverdue(phase) ? "Em atraso" : null} />
       </div>
       <Section label="Critério de conclusão">
         <p className={paragraph}>{phase.completionCriteria?.trim() || "Nenhum critério registrado."}</p>
       </Section>
       <Section label="Evidências vinculadas">
-        <Suspense fallback={<p className={emptyInline}>Consultando evidências…</p>}>
+        <Suspense fallback={<SkeletonList rows={2} label="Consultando evidências" rowClassName="h-[45px]" />}>
           <EvidenceList projectId={projectId} parent={{ phaseId: phase.id }} />
         </Suspense>
       </Section>
@@ -357,15 +403,19 @@ function PhaseDetail({
           projectId={projectId}
           target={{ entityType: "PHASE", phaseId: phase.id }}
           schedule={phase.schedule}
+          state={phase.calculatedStatus === "CONCLUIDA" ? "DONE" : "OPEN"}
           closed={phase.status === "CONCLUIDA"}
           canReschedule={canReschedule(access)}
-          onSaved={async () => {
-            const response = await getEapPhase(projectId, phase.id);
-            if (response.status === 200) {
-              onPhase(presentPhase(response.data, { tasks: phase.tasks, milestones: phase.milestones }, names));
-            }
-          }}
+          consolidated={phase.consolidated}
+          actualOrigin="Datas reais registradas na fase. Campos vazios são preenchidos pelas tarefas e marcos; o término real só é registrado com a fase concluída."
+          onDirtyChange={onDirty}
+          onSaved={refresh}
         />
+        {canReschedule(access) ? (
+          <div className="mt-3 flex justify-end">
+            <PhaseActualCorrection projectId={projectId} phase={phase} onSaved={refresh} />
+          </div>
+        ) : null}
       </Section>
       <Section label="Histórico de alterações">
         <EapHistory projectId={projectId} entityType="PHASE" entityId={phase.id} refreshKey={detailKey(phase)} />
@@ -386,6 +436,7 @@ function TaskDetail({
   access,
   names,
   onTask,
+  onDirty,
 }: {
   projectId: string;
   phase: ProjectPhaseView;
@@ -394,19 +445,61 @@ function TaskDetail({
   access: EapAccess;
   names: Map<string, string> | null;
   onTask: (task: ProjectTaskView) => void;
+  onDirty: (dirty: boolean) => void;
 }) {
   const canUpdate = canUpdateTaskProgress(access, task);
   const [draft, setDraft] = useState(task.progressPercent);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
+  const [completionKey, setCompletionKey] = useState(0);
+  const [completionDirty, setCompletionDirty] = useState(false);
+  const [scheduleDirty, setScheduleDirty] = useState(false);
+  const [reopenTarget, setReopenTarget] = useState<number | null>(null);
+  const [reopenText, setReopenText] = useState("");
+  const [reopening, setReopening] = useState(false);
+  const [reopenError, setReopenError] = useState<string | null>(null);
   const overdue = taskIsOverdue(task);
   const blocked = task.hasImpediment || task.status === "IMPEDIDA";
   const locked = task.calculatedStatus === "CANCELADA";
+  const concluded = task.calculatedStatus === "CONCLUIDA";
+  const canComplete = canUpdate && !locked && !concluded;
+
+  const reopenDirty = reopenTarget !== null && reopenText.trim() !== "";
+
+  useEffect(() => {
+    onDirty(completionDirty || scheduleDirty || reopenDirty);
+  }, [completionDirty, scheduleDirty, reopenDirty, onDirty]);
+
+  function openCompletion() {
+    setError(null);
+    setFeedback(null);
+    setCompletionKey((value) => value + 1);
+    setCompleting(true);
+  }
+
+  function closeCompletion() {
+    setCompleting(false);
+    setCompletionDirty(false);
+  }
 
   async function save(percent: number) {
     if (!canUpdate || percent === task.progressPercent) {
       setFeedback(percent === task.progressPercent ? "O percentual registrado já está neste valor." : null);
+      return;
+    }
+    // 100% é conclusão: segue o mesmo fluxo de "Concluir tarefa", com as datas reais confirmadas.
+    if (percent === 100) {
+      setDraft(task.progressPercent);
+      openCompletion();
+      return;
+    }
+    // Baixar o andamento de uma tarefa concluída é reabertura: exige justificativa.
+    if (concluded) {
+      setReopenTarget(percent);
+      setReopenText("");
+      setReopenError(null);
       return;
     }
     setSaving(true);
@@ -426,6 +519,36 @@ function TaskDetail({
     }
   }
 
+  async function confirmReopen() {
+    if (reopenTarget === null) {
+      return;
+    }
+    if (reopenText.trim().length < 10) {
+      setReopenError("Informe a justificativa da reabertura com ao menos 10 caracteres.");
+      return;
+    }
+    setReopening(true);
+    setReopenError(null);
+    try {
+      const response = await updateEapTaskProgress(projectId, phase.id, task.id, {
+        progressPercent: reopenTarget,
+        justification: reopenText.trim(),
+      });
+      if (response.status !== 200) {
+        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível reabrir a tarefa.");
+      }
+      onTask(presentTask(response.data, names));
+      setDraft(reopenTarget);
+      setReopenTarget(null);
+      setReopenText("");
+      notifySuccess("Tarefa reaberta.");
+    } catch (caught) {
+      setReopenError(reportFailure(caught, "Não foi possível reabrir a tarefa."));
+    } finally {
+      setReopening(false);
+    }
+  }
+
   return (
     <div>
       <Topline type="task" code={code} label={task.statusLabel} kind={taskStatusKind(task.calculatedStatus)} />
@@ -439,7 +562,7 @@ function TaskDetail({
           </span>
           <span>
             <strong className={cn("mb-[5px] block text-[10px]", impedimentTone.text)}>Impedimento ativo</strong>
-            <Suspense fallback={<p className={impedimentText}>Consultando o motivo…</p>}>
+            <Suspense fallback={<SkeletonList rows={1} label="Consultando o motivo" rowClassName="h-4 w-3/4 rounded" />}>
               <ImpedimentNote projectId={projectId} phaseId={phase.id} task={task} />
             </Suspense>
           </span>
@@ -468,7 +591,7 @@ function TaskDetail({
             <button
               key={value}
               type="button"
-              disabled={!canUpdate || saving || locked}
+              disabled={!canUpdate || saving || locked || completing || reopenTarget !== null}
               className={cn(
                 "h-[29px] min-w-0 rounded-[6px] border text-[8.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                 draft === value
@@ -476,7 +599,9 @@ function TaskDetail({
                   : "border-[#dce1e7] bg-white text-[#667085] enabled:hover:border-[#8eb4e7] enabled:hover:bg-[#edf4ff] enabled:hover:text-[#175cd3]",
               )}
               onClick={() => {
-                setDraft(value);
+                if (value !== 100 && !concluded) {
+                  setDraft(value);
+                }
                 void save(value);
               }}
             >
@@ -484,17 +609,69 @@ function TaskDetail({
             </button>
           ))}
         </div>
+        {canComplete && !completing ? (
+          <div className="mt-3 flex justify-end">
+            <Button type="button" variant="outline" className={cn(compactButton, "border-[#bfe4d5] text-[#157454] hover:bg-[#f0faf6]")} disabled={saving} onClick={openCompletion}>
+              <CircleCheck aria-hidden="true" /> Concluir tarefa
+            </Button>
+          </div>
+        ) : null}
+        {canComplete ? (
+          <Reveal open={completing}>
+            <TaskCompletion
+              key={completionKey}
+              projectId={projectId}
+              phaseId={phase.id}
+              task={task}
+              names={names}
+              onTask={onTask}
+              onClose={closeCompletion}
+              onDirtyChange={setCompletionDirty}
+            />
+          </Reveal>
+        ) : null}
+        {canUpdate && concluded ? (
+          <Reveal open={reopenTarget !== null}>
+            <div className="mt-3 flex flex-col gap-2.5 rounded-[9px] border border-[#f6d2ad] bg-[#fff8f1] p-3.5">
+              <span className="block text-[9px] font-semibold tracking-[0.04em] text-[#b4570f] uppercase">Reabrir tarefa concluída</span>
+              <p className="text-[8.5px] leading-[1.45] text-[#475467]">
+                O andamento passa de 100% para {reopenTarget ?? 0}%. O término real registrado é retirado e fica preservado no histórico.
+              </p>
+              <label className="flex flex-col gap-1.5">
+                <span className="flex items-baseline justify-between text-[8.5px] font-semibold text-[#475467]">
+                  Justificativa da reabertura
+                  <small className="text-[7.5px] font-normal text-[#98a2b3]">obrigatória</small>
+                </span>
+                <Textarea
+                  className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]"
+                  value={reopenText}
+                  onChange={(event) => setReopenText(event.target.value)}
+                  placeholder="Explique por que a tarefa concluída precisa voltar a ser executada."
+                />
+              </label>
+              {reopenError ? <p role="alert" className="text-[8.5px] text-destructive">{reopenError}</p> : null}
+              <div className="flex flex-wrap justify-end gap-[7px]">
+                <Button type="button" variant="outline" className={compactButton} disabled={reopening} onClick={() => setReopenTarget(null)}>
+                  Cancelar
+                </Button>
+                <Button type="button" className={cn(compactButton, "border-transparent bg-[#c4620f] text-white hover:bg-[#b4570f]")} loading={reopening} onClick={() => void confirmReopen()}>
+                  <Check aria-hidden="true" /> {reopening ? "Reabrindo…" : "Confirmar reabertura"}
+                </Button>
+              </div>
+            </div>
+          </Reveal>
+        ) : null}
         {!canUpdate ? <p className="mt-2 text-[8.5px] text-[#667085]">Seu acesso não permite atualizar o andamento desta tarefa.</p> : null}
         {canUpdate && locked ? <p className="mt-2 text-[8.5px] text-[#667085]">Tarefa cancelada. Somente a gestão do projeto pode reativá-la.</p> : null}
-        {error ? <p className="mt-2 text-[8.5px] text-destructive">{error}</p> : null}
+        {error ? <p role="alert" className="mt-2 text-[8.5px] text-destructive">{error}</p> : null}
         {feedback ? <p className="mt-2 text-[8.5px] text-[#667085]" role="status">{feedback}</p> : null}
       </section>
       <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
         <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={task.assigneeName || "Não informado"} />
-        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Prazo vigente" value={vigenteText(task.dates) ?? "Não informado"} overdue={overdue} note={overdue ? "Em atraso" : null} />
+        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(task.dates) ?? "Não informado"} overdue={overdue} note={overdue ? "Em atraso" : null} />
       </div>
       <Section label="Evidências vinculadas">
-        <Suspense fallback={<p className={emptyInline}>Consultando evidências…</p>}>
+        <Suspense fallback={<SkeletonList rows={2} label="Consultando evidências" rowClassName="h-[45px]" />}>
           <EvidenceList
             projectId={projectId}
             parent={{ taskId: task.id }}
@@ -507,8 +684,11 @@ function TaskDetail({
           projectId={projectId}
           target={{ entityType: "TASK", phaseId: phase.id, taskId: task.id }}
           schedule={task.schedule}
+          state={concluded ? "DONE" : locked ? "CLOSED" : "OPEN"}
           closed={task.calculatedStatus === "CONCLUIDA" || task.calculatedStatus === "CANCELADA"}
           canReschedule={canReschedule(access)}
+          onDirtyChange={setScheduleDirty}
+          phasePlan={{ startAt: phase.schedule.plannedStartAt, endAt: phase.schedule.plannedEndAt, others: phaseItemRanges(phase, task.id) }}
           onSaved={async () => {
             const response = await getEapTask(projectId, phase.id, task.id);
             if (response.status === 200) {
@@ -524,6 +704,176 @@ function TaskDetail({
   );
 }
 
+/**
+ * Conclusão da tarefa no próprio painel: confirma as datas reais, revisa e grava 100% numa única
+ * operação. É o mesmo caminho usado ao escolher 100% no andamento, com as mesmas validações da API.
+ */
+function TaskCompletion({
+  projectId,
+  phaseId,
+  task,
+  names,
+  onTask,
+  onClose,
+  onDirtyChange,
+}: {
+  projectId: string;
+  phaseId: string;
+  task: ProjectTaskView;
+  names: Map<string, string> | null;
+  onTask: (task: ProjectTaskView) => void;
+  onClose: () => void;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
+  const today = civilDay(new Date()) ?? "";
+  const recorded = { start: civilDateInput(task.actualStartAt), end: civilDateInput(task.actualEndAt) };
+  const initial = { start: recorded.start, end: recorded.end || today };
+  const [step, setStep] = useState<"editing" | "review">("editing");
+  const [start, setStart] = useState(initial.start);
+  const [end, setEnd] = useState(initial.end);
+  const [justification, setJustification] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const correction = correctsActualDate(recorded.start, start) || correctsActualDate(recorded.end, end);
+
+  useEffect(() => {
+    onDirtyChange(start !== initial.start || end !== initial.end || justification.trim() !== "");
+  }, [start, end, justification, initial.start, initial.end, onDirtyChange]);
+
+  function review() {
+    const problem =
+      actualDatesProblem({ start, end, today, requireBoth: true }) ??
+      (correction && justification.trim().length < 10
+        ? "A correção de uma data real já registrada exige justificativa com ao menos 10 caracteres."
+        : null);
+    setError(problem);
+    if (!problem) {
+      setStep("review");
+    }
+  }
+
+  async function confirm() {
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await updateEapTaskProgress(projectId, phaseId, task.id, {
+        progressPercent: 100,
+        ...(start !== recorded.start ? { actualStartAt: civilDateToIso(start) } : {}),
+        ...(end !== recorded.end ? { actualEndAt: civilDateToIso(end) } : {}),
+        ...(justification.trim() ? { justification: justification.trim() } : {}),
+      });
+      if (response.status !== 200) {
+        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível concluir a tarefa.");
+      }
+      onTask(presentTask(response.data, names));
+      notifySuccess("Tarefa concluída.");
+      onClose();
+    } catch (caught) {
+      setError(reportFailure(caught, "Não foi possível concluir a tarefa."));
+      setStep("editing");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 flex flex-col gap-2.5 rounded-[9px] border border-[#bfe4d5] bg-[#f6fcf9] p-3.5">
+      <span className="block text-[9px] font-semibold tracking-[0.04em] text-[#157454] uppercase">Concluir tarefa</span>
+      <Reveal open={step === "editing"}>
+        <div className="flex flex-col gap-2.5">
+          <p className="text-[8.5px] leading-[1.45] text-[#475467]">Confirme as datas reais. A conclusão grava o andamento em 100% e recalcula a fase.</p>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <DateField label="Início real" hint={recorded.start ? undefined : "obrigatório"} value={start} onChange={setStart} />
+            <DateField label="Término real" hint={recorded.end ? undefined : "sugestão: hoje"} value={end} onChange={setEnd} />
+          </div>
+          <Reveal open={correction}>
+            <label className="flex flex-col gap-1.5">
+              <span className="flex items-baseline justify-between text-[8.5px] font-semibold text-[#475467]">
+                Justificativa da correção
+                <small className="text-[7.5px] font-normal text-[#98a2b3]">obrigatória · altera data real já registrada</small>
+              </span>
+              <Textarea
+                className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]"
+                value={justification}
+                onChange={(event) => setJustification(event.target.value)}
+                placeholder="Explique por que a data real registrada está sendo corrigida."
+              />
+            </label>
+          </Reveal>
+        </div>
+      </Reveal>
+      <Reveal open={step === "review"}>
+        <dl className="flex flex-col gap-1 rounded-[7px] border border-[#d5ece2] bg-white p-2.5 text-[8.5px] leading-[1.5] text-[#475467]">
+          <ReviewLine label="Andamento">{task.progressPercent}% → 100%</ReviewLine>
+          <ReviewLine label="Início real">{reviewDate(recorded.start, start)}</ReviewLine>
+          <ReviewLine label="Término real">{reviewDate(recorded.end, end)}</ReviewLine>
+          {justification.trim() ? <ReviewLine label="Justificativa">{justification.trim()}</ReviewLine> : null}
+          <ReviewLine label="Evidências">
+            <Suspense fallback="Consultando…">
+              <EvidenceCount projectId={projectId} taskId={task.id} />
+            </Suspense>
+          </ReviewLine>
+          <span className="mt-1 block text-[#667085]">Marcos da fase continuam dependendo de entrega e homologação formais.</span>
+        </dl>
+      </Reveal>
+      {error ? <p role="alert" className="text-[8.5px] text-destructive">{error}</p> : null}
+      <div className="flex flex-wrap justify-end gap-[7px]">
+        <Button
+          type="button"
+          variant="outline"
+          className={compactButton}
+          disabled={saving}
+          onClick={() => {
+            setError(null);
+            if (step === "review") {
+              setStep("editing");
+              return;
+            }
+            onClose();
+          }}
+        >
+          {step === "review" ? "Voltar" : "Cancelar"}
+        </Button>
+        {step === "review" ? (
+          <Button type="button" className={cn(compactButton, "border-transparent bg-[#1c8b65] text-white hover:bg-[#157454]")} loading={saving} onClick={() => void confirm()}>
+            <Check aria-hidden="true" /> {saving ? "Concluindo…" : "Confirmar conclusão"}
+          </Button>
+        ) : (
+          <Button type="button" className={cn(compactButton, "border-transparent bg-[#175cd3] text-white hover:bg-[#144ca8]")} onClick={review}>
+            Revisar conclusão
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function reviewDate(previous: string, next: string) {
+  const text = next ? formatCivilDate(next) : "Não informada";
+  return previous && previous !== next ? `${formatCivilDate(previous)} → ${text} (correção)` : text;
+}
+
+function ReviewLine({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[86px_minmax(0,1fr)] gap-2">
+      <dt className="text-[#98a2b3]">{label}</dt>
+      <dd className="break-words whitespace-pre-wrap">{children}</dd>
+    </div>
+  );
+}
+
+/** Não há regra formal de evidência obrigatória por tarefa: a revisão apenas alerta quando falta. */
+function EvidenceCount({ projectId, taskId }: { projectId: string; taskId: string }) {
+  const state = use(evidenceRequest(projectId, { taskId }));
+  if (state.status === "error") {
+    return <>{state.message}</>;
+  }
+  if (state.items.length === 0) {
+    return <span className="text-[#b54708]">Nenhuma evidência vinculada. Vincule os documentos exigidos em “Atualizar andamento”.</span>;
+  }
+  return <>{state.items.length === 1 ? "1 evidência vinculada" : `${state.items.length} evidências vinculadas`}</>;
+}
+
 function MilestoneDetail({
   projectId,
   phase,
@@ -534,6 +884,7 @@ function MilestoneDetail({
   onMilestone,
   onSelect,
   onCorrectiveTask,
+  onDirty,
 }: {
   projectId: string;
   phase: ProjectPhaseView;
@@ -544,11 +895,10 @@ function MilestoneDetail({
   onMilestone: (milestone: ProjectMilestoneView) => void;
   onSelect: (selection: EapSelection) => void;
   onCorrectiveTask?: (milestone: ProjectMilestoneView) => void;
+  onDirty: (dirty: boolean) => void;
 }) {
   const [historyRevision, setHistoryRevision] = useState(0);
   const homologation = milestone.type === "HOMOLOGACAO";
-  const flow = milestone.status === "APROVADO" ? "accepted" : milestone.status === "ENTREGUE" ? "delivered" : "pending";
-  const firstStep = milestone.status === "AJUSTES_SOLICITADOS" || milestone.status === "REJEITADO" ? milestone.statusLabel : "Pendente";
   const overdue = milestoneIsOverdue(milestone);
   const delayReason = milestoneDelayReason(milestone);
   const correctiveTasks = phase.tasks?.filter((item) => item.correctiveMilestoneId === milestone.id) ?? null;
@@ -562,33 +912,19 @@ function MilestoneDetail({
       <Section label="Descrição do marco">
         <p className={paragraph}>{milestone.description?.trim() || "Nenhuma descrição registrada."}</p>
       </Section>
-      <Section label={homologation ? "Fluxo de homologação" : "Fluxo de entrega e aceite"}>
-        <ol className="relative mt-3.5 mb-[7px] grid grid-cols-3">
-          <span className="absolute top-3 right-[16.6%] left-[16.6%] h-0.5 bg-[#e2e7ed]" aria-hidden="true" />
-          <FlowStep index={1} label={firstStep} active={flow !== "pending"} done={flow === "accepted"} />
-          <FlowStep index={2} label={homologation ? "Aguardando homologação" : "Entregue"} active={flow === "delivered" || flow === "accepted"} done={flow === "accepted"} />
-          <FlowStep index={3} label={homologation ? "Homologado" : "Aceito"} active={flow === "accepted"} done={flow === "accepted"} />
-        </ol>
-        {flow === "delivered" ? (
-          <p className="mt-3.5 flex items-start gap-2 rounded-[7px] bg-[#f7f2fd] p-2.5 text-[8.5px] leading-[1.45] text-[#6343a8]">
-            <Clock className="size-[15px] shrink-0" aria-hidden="true" />
-            <span>
-              {homologation
-                ? "Aguardando homologação. O progresso permanece em 0% e a data efetiva de conclusão só é registrada na homologação."
-                : "Entregue, aguardando homologação. O progresso permanece em 0% até o aceite formal."}
-            </span>
-          </p>
-        ) : null}
+      <Section label="Fluxo de entrega e aceite">
+        <MilestoneFlow status={milestone.status} />
       </Section>
       <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
         <Fact
           icon={<Calendar className="size-[17px]" aria-hidden="true" />}
-          label="Prazo vigente"
+          label="Data prevista"
           value={vigenteText(milestone.dates) ?? "Não informado"}
           overdue={overdue}
           note={overdue ? (delayReason ? `Em atraso · ${delayReason.toLowerCase()}` : "Em atraso") : null}
         />
-        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Homologador" value={milestone.reviewerName ?? "Gestão do projeto"} />
+        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Apresentador" value={milestone.presenterName ?? "Não designado"} />
+        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Gestor validador" value={milestone.reviewerName ?? "Gestão do projeto"} />
       </div>
       <Section label="Entrega e homologação">
         <MilestoneHomologation
@@ -636,9 +972,12 @@ function MilestoneDetail({
         <EapSchedule
           projectId={projectId}
           target={{ entityType: "MILESTONE", phaseId: milestone.phaseId, milestoneId: milestone.id }}
+          phasePlan={{ startAt: phase.schedule.plannedStartAt, endAt: phase.schedule.plannedEndAt, others: phaseItemRanges(phase, milestone.id) }}
           schedule={milestone.schedule}
+          state={milestone.status === "APROVADO" ? "DONE" : "OPEN"}
           closed={milestone.status === "APROVADO"}
           canReschedule={canReschedule(access)}
+          onDirtyChange={onDirty}
           onSaved={async () => {
             const response = await getEapMilestone(projectId, milestone.phaseId, milestone.id);
             if (response.status === 200) {
@@ -798,17 +1137,6 @@ function Fact({ icon, label, value, overdue = false, note }: { icon: ReactNode; 
         {note ? <em className={cn("mt-[3px] block text-[8px] font-semibold not-italic", overdueTone.text)}>{note}</em> : null}
       </span>
     </div>
-  );
-}
-
-function FlowStep({ index, label, active, done }: { index: number; label: string; active: boolean; done: boolean }) {
-  return (
-    <li className="z-1 text-center">
-      <span className={cn("mx-auto mb-[7px] grid size-[25px] place-items-center rounded-full border-2 border-white text-[8px] font-bold shadow-[0_0_0_1px_#dce1e7]", done ? "bg-[#258363] text-white shadow-[0_0_0_1px_#258363]" : active ? "bg-[#286cc4] text-white shadow-[0_0_0_1px_#286cc4]" : "bg-[#f0f2f4] text-[#98a2b3]")}>
-        {index}
-      </span>
-      <strong className={cn("text-[8px]", done || active ? "text-[#285da8]" : "text-[#8a94a6]")}>{label}</strong>
-    </li>
   );
 }
 

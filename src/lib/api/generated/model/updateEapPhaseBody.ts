@@ -20,6 +20,12 @@ export type UpdateEapPhaseBody = {
   /** Suspende ou retoma a fase. A situação de execução é calculada a partir das tarefas e marcos. */
   suspended?: boolean;
   /**
+     * Obrigatória (mín. 10 caracteres) para suspender a fase ou corrigir suas datas reais.
+     * @maxLength 2000
+     * @nullable
+     */
+  justification?: string | null;
+  /**
      * @minLength 1
      * @nullable
      */
@@ -29,4 +35,16 @@ export type UpdateEapPhaseBody = {
      * @nullable
      */
   completionCriteria?: string | null;
+  /**
+     * Correção explícita do início real registrado (gestão do projeto, PMO ou administração).
+     * @minLength 1
+     * @nullable
+     */
+  actualStartAt?: string | null;
+  /**
+     * Correção explícita do término real registrado; só para fase concluída.
+     * @minLength 1
+     * @nullable
+     */
+  actualEndAt?: string | null;
 };

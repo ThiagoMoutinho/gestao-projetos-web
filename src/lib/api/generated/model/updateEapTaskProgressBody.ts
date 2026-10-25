@@ -23,4 +23,10 @@ export type UpdateEapTaskProgressBody = {
      * @nullable
      */
   actualEndAt?: string | null;
+  /**
+     * Obrigatória (mín. 10 caracteres) ao corrigir uma data real já registrada.
+     * @maxLength 2000
+     * @nullable
+     */
+  justification?: string | null;
 };

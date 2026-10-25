@@ -89,10 +89,19 @@ export type ProjectMilestoneView = {
   validationNote: string | null;
   reviewerId: string | null;
   reviewerName: string | null;
+  presenterId: string | null;
+  presenterName: string | null;
   createdBy: string;
 };
 
 export type PhaseProgressState = "VALUE" | "EMPTY" | "NO_ELIGIBLE";
+
+export type ConsolidatedView = {
+  startAt: string | null;
+  endAt: string | null;
+  actualStartAt: string | null;
+  actualEndAt: string | null;
+};
 
 export type ProjectPhaseView = {
   id: string;
@@ -110,7 +119,10 @@ export type ProjectPhaseView = {
   progressState: PhaseProgressState;
   progressBasisPoints: number | null;
   dates: ProjectDateField[];
+  /** Planejamento gravado na fase (o que a tela exibe). */
   schedule: ScheduleView;
+  /** Datas indicadas pelas tarefas e marcos; servem só para sinalizar divergência. */
+  consolidated: ConsolidatedView;
   tasks: ProjectTaskView[] | null;
   milestones: ProjectMilestoneView[] | null;
 };
@@ -154,6 +166,10 @@ export function presentPhase<T extends DatedSpan & {
   createdBy: string;
   responsibleId: string | null;
   completionCriteria: string | null;
+  consolidatedStartAt: string | null;
+  consolidatedEndAt: string | null;
+  consolidatedActualStartAt: string | null;
+  consolidatedActualEndAt: string | null;
 }>(
   phase: T,
   children: Pick<ProjectPhaseView, "tasks" | "milestones">,
@@ -176,6 +192,12 @@ export function presentPhase<T extends DatedSpan & {
     progressBasisPoints: phase.progressBasisPoints,
     dates: spanDates(phase),
     schedule: spanSchedule(phase),
+    consolidated: {
+      startAt: phase.consolidatedStartAt,
+      endAt: phase.consolidatedEndAt,
+      actualStartAt: phase.consolidatedActualStartAt,
+      actualEndAt: phase.consolidatedActualEndAt,
+    },
     tasks: children.tasks,
     milestones: children.milestones,
   };
@@ -235,6 +257,7 @@ export function presentMilestone<T extends {
   validatedAt: string | null;
   validationNote: string | null;
   reviewerId: string | null;
+  presenterId: string | null;
   createdBy: string;
 }>(milestone: T, names: Map<string, string> | null): ProjectMilestoneView {
   // Marcos de entrega legados gravam actualAt no envio; a conclusão efetiva só existe após o aceite.
@@ -271,8 +294,20 @@ export function presentMilestone<T extends {
     validationNote: milestone.validationNote,
     reviewerId: milestone.reviewerId,
     reviewerName: milestone.reviewerId ? personName(milestone.reviewerId, names) : null,
+    presenterId: milestone.presenterId,
+    presenterName: milestone.presenterId ? personName(milestone.presenterId, names) : null,
     createdBy: milestone.createdBy,
   };
+}
+
+/** Períodos planejados (AAAA-MM-DD) das tarefas ativas e dos marcos da fase; `except` exclui o item em edição. */
+export function phaseItemRanges(phase: Pick<ProjectPhaseView, "tasks" | "milestones">, except?: string) {
+  const tasks = (phase.tasks ?? []).filter((task) => task.id !== except && task.calculatedStatus !== "CANCELADA");
+  const milestones = (phase.milestones ?? []).filter((milestone) => milestone.id !== except);
+  return [
+    ...tasks.map((task) => ({ start: civilDateInput(task.schedule.plannedStartAt), end: civilDateInput(task.schedule.plannedEndAt) })),
+    ...milestones.map((milestone) => ({ start: "", end: civilDateInput(milestone.schedule.plannedEndAt) })),
+  ];
 }
 
 export function civilDateInput(value: string | null) {

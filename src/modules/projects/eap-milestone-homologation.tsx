@@ -104,7 +104,7 @@ function HomologationBody({
   const awaitingAuthorization =
     delivery && milestone.status === "REJEITADO" && latest !== null && latest.resubmissionAuthorizedAt === null;
   const canDeliver =
-    access.canDeliverMilestone &&
+    (access.canDeliverMilestone || (access.linked && milestone.presenterId === access.userId)) &&
     delivery &&
     (milestone.status === "PENDENTE" ||
       milestone.status === "AJUSTES_SOLICITADOS" ||
@@ -261,7 +261,7 @@ function HomologationBody({
                   type="button"
                   variant={mode === "reject" ? "destructive" : "default"}
                   className={cn(secondaryButton, mode === "adjust" && "border-transparent bg-[#c4620f] text-white hover:bg-[#a9530b]")}
-                  disabled={saving}
+                  loading={saving}
                   onClick={() => decide(mode === "adjust" ? "AJUSTES_SOLICITADOS" : "REJEITADO")}
                 >
                   {mode === "adjust" ? "Solicitar correções" : homologation ? "Rejeitar homologação" : "Rejeitar entrega"}
@@ -277,7 +277,7 @@ function HomologationBody({
                     <RotateCcw aria-hidden="true" /> Solicitar correções
                   </Button>
                 ) : null}
-                <Button type="button" className={primaryButton} disabled={saving} onClick={() => decide("APROVADO")}>
+                <Button type="button" className={primaryButton} loading={saving} onClick={() => decide("APROVADO")}>
                   <Check aria-hidden="true" /> {homologation ? "Homologar" : delivery ? "Aceitar entrega" : "Aprovar marco"}
                 </Button>
               </>
@@ -309,7 +309,7 @@ function HomologationBody({
                     <Button type="button" variant="outline" className={secondaryButton} disabled={saving} onClick={() => open(null)}>
                       Voltar
                     </Button>
-                    <Button type="button" className={primaryButton} disabled={saving} onClick={authorize}>
+                    <Button type="button" className={primaryButton} loading={saving} onClick={authorize}>
                       Autorizar nova submissão
                     </Button>
                   </>
@@ -347,7 +347,7 @@ function HomologationBody({
                 <Button type="button" variant="outline" className={secondaryButton} disabled={saving} onClick={() => open(null)}>
                   Voltar
                 </Button>
-                <Button type="button" className={primaryButton} disabled={saving} onClick={deliver}>
+                <Button type="button" className={primaryButton} loading={saving} onClick={deliver}>
                   <Upload aria-hidden="true" /> {saving ? "Enviando…" : homologation ? "Enviar para homologação" : "Enviar entrega"}
                 </Button>
               </>

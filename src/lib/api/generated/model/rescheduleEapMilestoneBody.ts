@@ -15,4 +15,6 @@ export type RescheduleEapMilestoneBody = {
      * @nullable
      */
   justification?: string | null;
+  /** Estende o planejamento da fase para cobrir o item, com a mesma justificativa (ajuste em cascata). */
+  extendPhase?: boolean;
 };

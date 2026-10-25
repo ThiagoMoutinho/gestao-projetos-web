@@ -11,6 +11,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 export const dateControlClass = `h-9 w-full rounded-[7px] border border-[#d7dce3] bg-white px-2.5 text-[10px] text-[#344054] outline-none disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#98a2b3] ${controlTransitionClassName} ${controlFocusClassName}`;
 
+/** Gatilho do Select (shadcn/ui) com a mesma altura, borda e foco dos demais campos da EAP. */
+export const selectTriggerClass = `w-full data-[size=default]:h-9 rounded-[7px] border-[#d7dce3] bg-white px-2.5 text-[10px] text-[#344054] shadow-none data-placeholder:text-[#98a2b3] disabled:bg-[#f8fafc] disabled:text-[#98a2b3] disabled:opacity-100 ${controlTransitionClassName} ${controlFocusClassName}`;
+
 /** Campo de data civil (AAAA-MM-DD) com calendário em português. */
 export function DateField({
   label,

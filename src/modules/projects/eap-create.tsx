@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { controlFocusClassName, controlTransitionClassName } from "@/components/ui/control-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/fetcher";
@@ -15,8 +16,12 @@ import { notifyWarning, reportFailure } from "@/lib/feedback";
 import { createEapMilestone, createEapPhase, createEapTask, registerEapTaskImpediment, updateEapTaskProgress } from "@/lib/api/generated/eap/eap";
 import type { ListEapMilestones200DataItemType } from "@/lib/api/generated/model/listEapMilestones200DataItemType";
 
-import type { EapAccess } from "./eap-access";
-import { presentMilestone, presentPhase, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
+import { canReschedule, type EapAccess } from "./eap-access";
+import { phaseCoverage, spanOf } from "./eap-deadline";
+import { CascadeProposal } from "./eap-schedule";
+import { selectTriggerClass } from "./eap-date-field";
+import { MilestoneFlow } from "./eap-milestone-flow";
+import { civilDateInput, phaseItemRanges, presentMilestone, presentPhase, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
 import type { EapPerson } from "./eap-panel";
 import { Reveal } from "./eap-reveal";
 import { deriveTaskStatus } from "./eap-status";
@@ -103,8 +108,10 @@ export function EapCreateSheet({
                 projectId={projectId}
                 phases={phases}
                 reviewers={access.canManageStructure ? (people?.filter((person) => person.homologator) ?? null) : undefined}
+                presenters={access.canManageStructure ? people : undefined}
                 names={names}
                 phaseId={request.phaseId}
+                canExtendPhase={canReschedule(access)}
                 onClose={onClose}
                 onMilestone={onMilestone}
               />
@@ -138,8 +145,6 @@ function PhaseForm({
   const [description, setDescription] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
   const [criteria, setCriteria] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function save() {
@@ -147,8 +152,8 @@ function PhaseForm({
       setError("Informe o nome da fase.");
       return;
     }
-    if (startDate && endDate && endDate < startDate) {
-      setError("A data de término planejada não pode ser anterior à data de início.");
+    if (!responsibleId) {
+      setError("Designe o responsável pela fase.");
       return;
     }
     setSaving(true);
@@ -157,10 +162,8 @@ function PhaseForm({
       const response = await createEapPhase(projectId, {
         name: name.trim(),
         ...(description.trim() ? { description: description.trim() } : {}),
-        ...(responsibleId ? { responsibleId } : {}),
+        responsibleId,
         ...(criteria.trim() ? { completionCriteria: criteria.trim() } : {}),
-        ...(startDate ? { plannedStartAt: civilToIso(startDate) } : {}),
-        ...(endDate ? { plannedEndAt: civilToIso(endDate) } : {}),
       });
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível criar a fase.");
@@ -184,16 +187,17 @@ function PhaseForm({
           <LockedControl label="Situação" hint="automática" value={phaseStatusLabel("NAO_INICIADA")} />
           <LockedControl label="Item superior" value={projectName} />
           {people ? (
-            <SelectControl label="Responsável" value={responsibleId} onChange={setResponsibleId}>
-              <option value="">Selecione...</option>
-              {people.map((person) => (
-                <option key={person.userId} value={person.userId}>{person.name}</option>
-              ))}
-            </SelectControl>
+            <SelectControl
+              label="Responsável *"
+              value={responsibleId}
+              onChange={setResponsibleId}
+              placeholder="Selecione o responsável..."
+              options={people.map((person) => ({ value: person.userId, label: person.name }))}
+            />
           ) : (
-            <LockedControl label="Responsável" value="Não foi possível consultar os participantes." />
+            <LockedControl label="Responsável *" value="Não foi possível consultar os participantes." />
           )}
-          <CivilDateField label="Prazo vigente" value={endDate} onChange={setEndDate} />
+          <LockedControl label="Planejamento" hint="nos detalhes da fase" value="Início e término definidos após a criação" />
         </div>
       </PanelSection>
       <PanelSection
@@ -215,12 +219,6 @@ function PhaseForm({
         <AreaControl label="Critério de conclusão" value={criteria} placeholder="Descreva o que precisa estar pronto para concluir a fase." onChange={setCriteria} rows={2} full />
       </PanelSection>
       <EvidenceSection />
-      <PlanningSection
-        start={startDate}
-        end={endDate}
-        onStart={setStartDate}
-        onEnd={setEndDate}
-      />
       <HistorySection />
     </FormBody>
   );
@@ -250,8 +248,6 @@ function TaskForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [progress, setProgress] = useState(0);
   const [blocked, setBlocked] = useState(false);
   const [blocker, setBlocker] = useState("");
@@ -267,16 +263,8 @@ function TaskForm({
       setError("Escolha a fase da tarefa.");
       return;
     }
-    if (startDate && endDate && endDate < startDate) {
-      setError("A data de término planejada não pode ser anterior à data de início.");
-      return;
-    }
     if (blocked && blocker.trim().length < 10) {
       setError("Informe o motivo do impedimento com ao menos 10 caracteres.");
-      return;
-    }
-    if (blocked && progress === 100) {
-      setError("Uma tarefa concluída não pode ser criada com impedimento.");
       return;
     }
     setSaving(true);
@@ -286,8 +274,6 @@ function TaskForm({
         title: title.trim(),
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(assigneeId ? { assigneeId } : {}),
-        ...(startDate ? { plannedStartAt: civilToIso(startDate) } : {}),
-        ...(endDate ? { plannedEndAt: civilToIso(endDate) } : {}),
         ...(correctiveFor ? { correctiveMilestoneId: correctiveFor.milestoneId } : {}),
       });
       if (response.status !== 201) {
@@ -347,31 +333,33 @@ function TaskForm({
               value={phases.find((phase) => phase.id === selectedPhase)?.name ?? "Fase do marco"}
             />
           ) : (
-            <SelectControl label="Item superior" value={selectedPhase} onChange={setSelectedPhase}>
-              {phases.map((phase, index) => (
-                <option key={phase.id} value={phase.id}>{index + 1} · {phase.name}</option>
-              ))}
-            </SelectControl>
+            <SelectControl
+              label="Item superior *"
+              value={selectedPhase}
+              onChange={setSelectedPhase}
+              placeholder="Selecione a fase..."
+              options={phases.map((phase, index) => ({ value: phase.id, label: `${index + 1} · ${phase.name}` }))}
+            />
           )}
           {people ? (
-            <SelectControl label="Responsável" value={assigneeId} onChange={setAssigneeId}>
-              <option value="">Selecione...</option>
-              {people.map((person) => (
-                <option key={person.userId} value={person.userId}>{person.name}</option>
-              ))}
-            </SelectControl>
+            <SelectControl
+              label="Responsável"
+              value={assigneeId}
+              onChange={setAssigneeId}
+              options={[{ value: "", label: "Sem responsável" }, ...people.map((person) => ({ value: person.userId, label: person.name }))]}
+            />
           ) : (
             <LockedControl label="Responsável" value="Não foi possível consultar os participantes." />
           )}
-          <CivilDateField label="Prazo vigente" value={endDate} onChange={setEndDate} />
+          <LockedControl label="Planejamento" hint="nos detalhes da tarefa" value="Início e término definidos após a criação" />
         </div>
       </PanelSection>
       <PanelSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" aside={<strong className="text-[12px] text-[#175cd3]">{progress}%</strong>} tone="accent">
         <div className="h-1.5 overflow-hidden rounded-full bg-[#e9eef5]">
           <div className="h-full rounded-full bg-[#2873cf]" style={{ width: `${progress}%` }} />
         </div>
-        <div className="mt-[11px] mb-3.5 grid grid-cols-6 gap-1.5">
-          {[0, 25, 50, 75, 90, 100].map((value) => (
+        <div className="mt-[11px] mb-3.5 grid grid-cols-5 gap-1.5">
+          {[0, 25, 50, 75, 90].map((value) => (
             <button
               key={value}
               type="button"
@@ -383,9 +371,10 @@ function TaskForm({
           ))}
         </div>
         <div className="mb-3.5 grid grid-cols-[140px_auto] items-end gap-2">
-          <TextControl label="Percentual exato de andamento" value={String(progress)} onChange={(value) => setProgress(clampPercent(value))} />
+          <TextControl label="Percentual exato de andamento" value={String(progress)} onChange={(value) => setProgress(Math.min(90, clampPercent(value)))} />
           <span className="flex h-9 items-center text-[8px] text-[#98a2b3]">% concluído</span>
         </div>
+        <p className="mb-3.5 text-[8px] leading-normal text-[#98a2b3]">A conclusão é registrada depois, em “Concluir tarefa”, com as datas reais confirmadas.</p>
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           <LockedControl label="Prioridade" hint="não gravado" value="Indisponível neste cadastro" />
           <LockedControl label="Dependência" hint="não gravado" value="Indisponível neste cadastro" />
@@ -410,13 +399,7 @@ function TaskForm({
           </div>
         </Reveal>
       </PanelSection>
-      <EvidenceSection warning={progress === 100 ? "A tarefa ficará concluída em percentual, e a evidência é vinculada depois da criação." : undefined} />
-      <PlanningSection
-        start={startDate}
-        end={endDate}
-        onStart={setStartDate}
-        onEnd={setEndDate}
-      />
+      <EvidenceSection />
       <HistorySection />
     </FormBody>
   );
@@ -426,15 +409,21 @@ function MilestoneForm({
   projectId,
   phases,
   reviewers,
+  presenters,
   names,
   phaseId,
+  canExtendPhase,
   onClose,
   onMilestone,
 }: {
   projectId: string;
   phases: ProjectPhaseView[];
-  /** Ausente quando o acesso não designa homologador; nulo quando os participantes não foram consultados. */
+  /** Quem pode reprogramar pode estender a fase na criação (ajuste em cascata). */
+  canExtendPhase: boolean;
+  /** Ausente quando o acesso não designa o gestor validador; nulo quando os participantes não foram consultados. */
   reviewers?: EapPerson[] | null;
+  /** Participantes que podem apresentar o marco; mesma regra de ausência de `reviewers`. */
+  presenters?: EapPerson[] | null;
   names: Map<string, string> | null;
   phaseId: string;
   onClose: () => void;
@@ -446,16 +435,48 @@ function MilestoneForm({
   const [type, setType] = useState<ListEapMilestones200DataItemType>("ENTREGA");
   const [dueDate, setDueDate] = useState("");
   const [reviewerId, setReviewerId] = useState("");
+  const [presenterId, setPresenterId] = useState("");
+  const [extendPhase, setExtendPhase] = useState(false);
+  const [justification, setJustification] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const phase = phases.find((item) => item.id === selectedPhase);
+  const phaseCurrent = phase ? { start: civilDateInput(phase.schedule.plannedStartAt), end: civilDateInput(phase.schedule.plannedEndAt) } : null;
+  const coverage = phaseCurrent && dueDate ? phaseCoverage(phaseCurrent, spanOf([{ start: "", end: dueDate }, ...(phase ? phaseItemRanges(phase) : [])])) : null;
+  const cascade = coverage && phaseCurrent ? { current: phaseCurrent, next: coverage, apply: canExtendPhase && extendPhase } : null;
+  const needsJustification = cascade !== null && cascade.apply && (cascade.current.start !== "" || cascade.current.end !== "");
 
   async function save() {
     if (!title.trim()) {
       setError("Informe o nome do marco.");
       return;
     }
+    if (!description.trim()) {
+      setError("Informe a descrição do marco.");
+      return;
+    }
     if (!selectedPhase) {
-      setError("Escolha a fase do marco.");
+      setError("Escolha o item superior (fase) do marco.");
+      return;
+    }
+    if (!dueDate) {
+      setError(type === "HOMOLOGACAO" ? "Informe a data prevista da homologação." : "Informe a data prevista do marco.");
+      return;
+    }
+    if (!presenterId) {
+      setError("Designe quem vai apresentar o marco ao gestor.");
+      return;
+    }
+    if (!reviewerId) {
+      setError("Designe o gestor que vai validar o marco.");
+      return;
+    }
+    if (presenterId === reviewerId) {
+      setError("Quem apresenta o marco não pode ser o gestor que vai validá-lo.");
+      return;
+    }
+    if (needsJustification && justification.trim().length < 10) {
+      setError("Estender o prazo da fase é replanejamento: informe a justificativa com ao menos 10 caracteres.");
       return;
     }
     setSaving(true);
@@ -464,9 +485,11 @@ function MilestoneForm({
       const response = await createEapMilestone(projectId, selectedPhase, {
         title: title.trim(),
         type,
-        ...(description.trim() ? { description: description.trim() } : {}),
-        ...(dueDate ? { plannedAt: civilToIso(dueDate) } : {}),
-        ...(reviewerId ? { reviewerId } : {}),
+        plannedAt: civilToIso(dueDate),
+        description: description.trim(),
+        reviewerId,
+        presenterId,
+        ...(cascade?.apply ? { extendPhase: true, justification: justification.trim() || null } : {}),
       });
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível criar o marco.");
@@ -485,42 +508,77 @@ function MilestoneForm({
       <ItemContext kind="milestone" />
       <PanelSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          <TextControl label="Nome do item" value={title} placeholder="Informe o nome do marco" onChange={setTitle} full />
-          <AreaControl label="Descrição" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
-          <SelectControl label="Item superior" value={selectedPhase} onChange={setSelectedPhase}>
-            {phases.map((phase, index) => (
-              <option key={phase.id} value={phase.id}>{index + 1} · {phase.name}</option>
-            ))}
-          </SelectControl>
-          <LockedControl label="Responsável" hint="não gravado" value="O marco não possui responsável próprio" />
-          <CivilDateField label="Data prevista" value={dueDate} onChange={setDueDate} />
-          <SelectControl label="Tipo do marco" value={type} onChange={setType}>
-            {MILESTONE_TYPE_OPTIONS.map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </SelectControl>
+          <TextControl label="Nome do item *" value={title} placeholder="Informe o nome do marco" onChange={setTitle} full />
+          <AreaControl label="Descrição *" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
+          <SelectControl
+            label="Item superior *"
+            value={selectedPhase}
+            onChange={setSelectedPhase}
+            placeholder="Selecione a fase..."
+            options={phases.map((phase, index) => ({ value: phase.id, label: `${index + 1} · ${phase.name}` }))}
+          />
+          {presenters ? (
+            <SelectControl
+              label="Apresentador do marco *"
+              value={presenterId}
+              onChange={setPresenterId}
+              placeholder="Quem apresenta ao gestor..."
+              options={presenters.map((person) => ({ value: person.userId, label: person.name }))}
+            />
+          ) : (
+            <LockedControl
+              label="Apresentador do marco *"
+              value={presenters === null ? "Não foi possível consultar os participantes." : "A designação cabe à gestão do projeto."}
+            />
+          )}
+          <CivilDateField label={type === "HOMOLOGACAO" ? "Data prevista da homologação *" : "Data prevista *"} value={dueDate} onChange={setDueDate} />
+          <SelectControl
+            label="Tipo do marco"
+            value={type}
+            onChange={setType}
+            options={MILESTONE_TYPE_OPTIONS.map(([value, label]) => ({ value, label }))}
+          />
         </div>
+        {cascade ? (
+          <div className="mt-[13px] flex flex-col gap-[13px]">
+            {canExtendPhase ? (
+              <CascadeProposal cascade={cascade} onApplyChange={setExtendPhase} />
+            ) : (
+              <p role="status" className="flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.45] text-[#865516]">
+                <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                A data fica fora do período planejado da fase. O ajuste do prazo da fase cabe à gestão do projeto ou ao PMO.
+              </p>
+            )}
+            {needsJustification ? (
+              <AreaControl label="Justificativa do ajuste da fase *" value={justification} placeholder="Por que o prazo da fase precisa ser estendido?" onChange={setJustification} full />
+            ) : null}
+          </div>
+        ) : null}
       </PanelSection>
-      <PanelSection title="Registro da entrega" subtitle="A entrega e a aprovação formal são etapas independentes" tone="accent">
+      <PanelSection title="Fluxo de entrega e aceite" subtitle="Pendente, entregue e aceito pelo gestor" tone="accent">
+        <div className="mb-[13px]">
+          <MilestoneFlow status="PENDENTE" />
+        </div>
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           <LockedControl label="Situação da entrega" value="Pendente" />
-          <LockedControl label="Responsável pela entrega" hint="não gravado" value="O marco não possui responsável próprio" />
+          <LockedControl label="Entrega registrada por" value="Apresentador designado ou gestão do projeto" />
           <AreaControl label="Observações da entrega" hint="não gravado" value="" placeholder="As observações formais entram na entrega, depois que o marco existe." onChange={() => undefined} disabled rows={3} full />
         </div>
         <div className="mt-[15px] border-t border-[#edf0f3] pt-[15px]">
           <span className="mb-2.5 block text-[8.5px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Aprovação formal</span>
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
             {reviewers ? (
-              <SelectControl label="Homologador designado" value={reviewerId} onChange={setReviewerId}>
-                <option value="">Gestão do projeto (padrão)</option>
-                {reviewers.map((person) => (
-                  <option key={person.userId} value={person.userId}>{person.name}</option>
-                ))}
-              </SelectControl>
+              <SelectControl
+                label="Gestor validador *"
+                value={reviewerId}
+                onChange={setReviewerId}
+                placeholder="Quem valida o marco..."
+                options={reviewers.map((person) => ({ value: person.userId, label: person.name }))}
+              />
             ) : (
               <LockedControl
-                label="Homologador designado"
-                value={reviewers === null ? "Não foi possível consultar os participantes." : "Gestão do projeto (padrão)"}
+                label="Gestor validador *"
+                value={reviewers === null ? "Não foi possível consultar os participantes." : "Nenhum participante pode validar: inclua um gestor no projeto."}
               />
             )}
             <LockedControl label="Critérios de aceite" hint="não gravado" value="Evidências validadas e sem pendências críticas" as="text" />
@@ -538,13 +596,6 @@ function MilestoneForm({
         </div>
       </PanelSection>
       <EvidenceSection />
-      <PlanningSection
-        start=""
-        end={dueDate}
-        onStart={() => undefined}
-        onEnd={setDueDate}
-        startLocked
-      />
       <HistorySection />
     </FormBody>
   );
@@ -571,7 +622,7 @@ function FormBody({
         <Button type="button" variant="outline" className="h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054]" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="button" className="h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-[13px] text-[11px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]" disabled={saving} onClick={onSubmit}>
+        <Button type="button" className="h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-[13px] text-[11px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]" loading={saving} onClick={onSubmit}>
           <Check className="size-[15px]" aria-hidden="true" />
           {saving ? "Salvando…" : "Criar item"}
         </Button>
@@ -686,33 +737,6 @@ function FoldBlock({
   );
 }
 
-function PlanningSection({
-  start,
-  end,
-  onStart,
-  onEnd,
-  startLocked = false,
-}: {
-  start: string;
-  end: string;
-  onStart: (value: string) => void;
-  onEnd: (value: string) => void;
-  startLocked?: boolean;
-}) {
-  return (
-    <FoldBlock title="Planejamento e datas" icon={CalendarIcon}>
-      <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-        {startLocked ? (
-          <LockedControl label="Início planejado" value="O marco usa o prazo vigente" />
-        ) : (
-          <CivilDateField label="Início planejado" value={start} onChange={onStart} />
-        )}
-        <CivilDateField label="Prazo planejado" value={end} onChange={onEnd} />
-      </div>
-    </FoldBlock>
-  );
-}
-
 function HistorySection() {
   return (
     <FoldBlock title="Histórico de alterações" icon={Clock}>
@@ -786,26 +810,47 @@ function AreaControl({
   );
 }
 
+/** Valor interno da opção "vazia" (ex.: sem responsável): o Select do shadcn/Base UI não aceita item com valor "". */
+const EMPTY_OPTION = "__vazio__";
+
+/** Seleção no padrão shadcn/ui. `""` representa "nada selecionado" e mostra o placeholder. */
 function SelectControl<T extends string>({
   label,
   hint,
   value,
   onChange,
-  children,
+  options,
+  placeholder = "Selecione...",
 }: {
   label: string;
   hint?: string;
-  value: T;
+  value: T | "";
   onChange: (value: T) => void;
-  children: ReactNode;
+  options: ReadonlyArray<{ value: T | ""; label: string }>;
+  placeholder?: string;
 }) {
+  const hasEmpty = options.some((option) => option.value === "");
+  const current = value === "" ? (hasEmpty ? EMPTY_OPTION : null) : value;
   return (
-    <label className="flex min-w-0 flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <FieldLabel label={label} hint={hint} />
-      <select className={fieldClass} value={value} onChange={(event) => onChange(event.target.value as T)}>
-        {children}
-      </select>
-    </label>
+      <Select value={current} onValueChange={(next) => onChange((next === null || next === EMPTY_OPTION ? "" : next) as T)}>
+        <SelectTrigger aria-label={label} className={selectTriggerClass}>
+          <SelectValue>
+            {(selected: string | null) =>
+              options.find((option) => (option.value === "" ? EMPTY_OPTION : option.value) === selected)?.label ?? placeholder
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value || EMPTY_OPTION} value={option.value === "" ? EMPTY_OPTION : option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -821,16 +866,18 @@ function LockedControl({
   as?: "select" | "text";
 }) {
   return (
-    <label className="flex min-w-0 flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <FieldLabel label={label} hint={hint} />
       {as === "text" ? (
-        <input className={fieldClass} disabled readOnly value={value} />
+        <input className={fieldClass} aria-label={label} disabled readOnly value={value} />
       ) : (
-        <select className={fieldClass} disabled value={value}>
-          <option>{value}</option>
-        </select>
+        <Select value={value} disabled>
+          <SelectTrigger aria-label={label} className={selectTriggerClass}>
+            <SelectValue>{value}</SelectValue>
+          </SelectTrigger>
+        </Select>
       )}
-    </label>
+    </div>
   );
 }
 

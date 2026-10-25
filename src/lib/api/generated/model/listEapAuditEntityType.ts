@@ -13,4 +13,6 @@ export const ListEapAuditEntityType = {
   PHASE: 'PHASE',
   TASK: 'TASK',
   MILESTONE: 'MILESTONE',
+  PROJECT: 'PROJECT',
+  PROJECT_MEMBER: 'PROJECT_MEMBER',
 } as const;

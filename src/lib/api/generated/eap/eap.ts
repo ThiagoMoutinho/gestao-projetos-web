@@ -2741,7 +2741,7 @@ export const getListEapAuditUrl = (id: string,
 }
 
 /**
- * @summary Listar histórico de alterações de um item da EAP
+ * @summary Listar histórico de alterações de um item da EAP, do projeto ou de um participante
  */
 export const listEapAudit = async (id: string,
     params: ListEapAuditParams, options?: Parameters<typeof apiFetcher>[1]): Promise<listEapAuditResponse> => {

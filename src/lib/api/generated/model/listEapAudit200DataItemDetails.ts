@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { ListEapAudit200DataItemDetailsActualDatesItem } from './listEapAudit200DataItemDetailsActualDatesItem.ts';
 import type { ListEapAudit200DataItemDetailsKind } from './listEapAudit200DataItemDetailsKind.ts';
 
 export type ListEapAudit200DataItemDetails = {
@@ -38,4 +39,16 @@ export type ListEapAudit200DataItemDetails = {
   resolutionNote: string | null;
   /** @nullable */
   openMinutes: number | null;
+  /** @nullable */
+  memberName: string | null;
+  /** @nullable */
+  fromRole: string | null;
+  /** @nullable */
+  toRole: string | null;
+  /** @nullable */
+  fromOwnerName: string | null;
+  /** @nullable */
+  toOwnerName: string | null;
+  actualDates: ListEapAudit200DataItemDetailsActualDatesItem[];
+  correction: boolean;
 };

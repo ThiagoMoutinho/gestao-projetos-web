@@ -22,4 +22,9 @@ export type UpdateEapMilestoneBody = {
      * @nullable
      */
   reviewerId?: string | null;
+  /**
+     * Novo apresentador do marco; não pode ser removido.
+     * @minLength 1
+     */
+  presenterId?: string;
 };

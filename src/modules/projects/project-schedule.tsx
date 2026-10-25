@@ -87,6 +87,7 @@ export function ProjectSchedule({
           projectId={projectId}
           target={{ entityType: "PROJECT" }}
           schedule={current}
+          state={closed ? "DONE" : "OPEN"}
           closed={closed}
           canReschedule={canReschedule(access)}
           onSaved={async () => {

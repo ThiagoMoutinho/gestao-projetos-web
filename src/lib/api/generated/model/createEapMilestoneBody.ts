@@ -14,19 +14,29 @@ export type CreateEapMilestoneBody = {
      */
   title: string;
   /**
+     * @minLength 1
      * @maxLength 4000
-     * @nullable
      */
-  description?: string | null;
+  description: string;
   type: CreateEapMilestoneBodyType;
+  /** @minLength 1 */
+  plannedAt: string;
   /**
+     * Gestor validador, obrigatório na criação: participante do projeto que não atua como fornecedor.
      * @minLength 1
+     */
+  reviewerId: string;
+  /**
+     * Pessoa designada para apresentar o marco ao gestor validador: participante do projeto, diferente do validador.
+     * @minLength 1
+     */
+  presenterId: string;
+  /** Estende o planejamento da fase para cobrir a data do marco (ajuste em cascata; exige permissão de reprogramar). */
+  extendPhase?: boolean;
+  /**
+     * Justificativa do ajuste em cascata, obrigatória (mín. 10 caracteres) quando estender um prazo já definido da fase.
+     * @maxLength 2000
      * @nullable
      */
-  plannedAt?: string | null;
-  /**
-     * @minLength 1
-     * @nullable
-     */
-  reviewerId?: string | null;
+  justification?: string | null;
 };
