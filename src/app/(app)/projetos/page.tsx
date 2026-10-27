@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ApiError } from "@/lib/api/fetcher";
+import { getServerSession } from "@/modules/auth/session";
 import { loadProjectList } from "@/modules/projects/load-project-list";
 import { ProjectList, ProjectListError } from "@/modules/projects/project-list";
 
@@ -28,5 +29,8 @@ export default async function ProjectsPage({
     return <ProjectListError message={message ?? "A consulta dos projetos falhou."} />;
   }
 
-  return <ProjectList projects={projects} eapPrompt={aviso === "eap"} />;
+  const session = await getServerSession();
+  const role = session.data?.user?.role;
+
+  return <ProjectList projects={projects} eapPrompt={aviso === "eap"} viewerRole={typeof role === "string" ? role : ""} />;
 }
