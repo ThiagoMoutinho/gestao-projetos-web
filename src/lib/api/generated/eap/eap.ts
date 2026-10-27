@@ -94,6 +94,13 @@ import type {
   GetEapTask403,
   GetEapTask404,
   GetEapTask409,
+  ImportEap200,
+  ImportEap400,
+  ImportEap401,
+  ImportEap403,
+  ImportEap404,
+  ImportEap409,
+  ImportEapBody,
   ListEapAudit200,
   ListEapAudit400,
   ListEapAudit401,
@@ -367,6 +374,84 @@ return apiFetcher<createEapPhaseResponse>(getCreateEapPhaseUrl(id),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(createEapPhaseBody)
+  }
+);}
+
+
+export type importEapResponse200 = {
+  data: ImportEap200
+  status: 200
+}
+
+export type importEapResponse400 = {
+  data: ImportEap400
+  status: 400
+}
+
+export type importEapResponse401 = {
+  data: ImportEap401
+  status: 401
+}
+
+export type importEapResponse403 = {
+  data: ImportEap403
+  status: 403
+}
+
+export type importEapResponse404 = {
+  data: ImportEap404
+  status: 404
+}
+
+export type importEapResponse409 = {
+  data: ImportEap409
+  status: 409
+}
+
+export type importEapResponseSuccess = (importEapResponse200) & {
+  headers: Headers;
+};
+export type importEapResponseError = (importEapResponse400 | importEapResponse401 | importEapResponse403 | importEapResponse404 | importEapResponse409) & {
+  headers: Headers;
+};
+
+export type importEapResponse = (importEapResponseSuccess | importEapResponseError)
+
+export const getImportEapUrl = (id: string,) => {
+
+
+
+
+  return `/projects/${id}/eap/import`
+}
+
+/**
+ * Valida fases, tarefas e marcos da planilha e devolve os erros por linha. Com confirm=true e sem erros, grava todos os itens numa única transação.
+ * @summary Importar EAP por planilha (pré-visualização ou confirmação)
+ */
+export const importEap = async (id: string,
+    importEapBody: ImportEapBody, options?: Parameters<typeof apiFetcher>[1]): Promise<importEapResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<importEapResponse>(getImportEapUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(importEapBody)
   }
 );}
 

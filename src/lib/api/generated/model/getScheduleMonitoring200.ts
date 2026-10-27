@@ -10,8 +10,11 @@ import type { GetScheduleMonitoring200ItemsItem } from './getScheduleMonitoring2
 import type { GetScheduleMonitoring200Overdue } from './getScheduleMonitoring200Overdue.ts';
 import type { GetScheduleMonitoring200Project } from './getScheduleMonitoring200Project.ts';
 import type { GetScheduleMonitoring200Reschedules } from './getScheduleMonitoring200Reschedules.ts';
+import type { GetScheduleMonitoring200Situation } from './getScheduleMonitoring200Situation.ts';
 
 export type GetScheduleMonitoring200 = {
+  /** Situação calculada pela EAP; a situação gravada no cadastro é preservada. */
+  situation: GetScheduleMonitoring200Situation;
   project: GetScheduleMonitoring200Project;
   reschedules: GetScheduleMonitoring200Reschedules;
   overdue: GetScheduleMonitoring200Overdue;

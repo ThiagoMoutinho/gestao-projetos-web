@@ -6,6 +6,12 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
+  CloseProject200,
+  CloseProject400,
+  CloseProject401,
+  CloseProject403,
+  CloseProject404,
+  CloseProject409,
   CreateProject201,
   CreateProject400,
   CreateProject401,
@@ -285,6 +291,69 @@ return apiFetcher<updateProjectResponse>(getUpdateProjectUrl(id),
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(updateProjectBody)
+  }
+);}
+
+
+export type closeProjectResponse200 = {
+  data: CloseProject200
+  status: 200
+}
+
+export type closeProjectResponse400 = {
+  data: CloseProject400
+  status: 400
+}
+
+export type closeProjectResponse401 = {
+  data: CloseProject401
+  status: 401
+}
+
+export type closeProjectResponse403 = {
+  data: CloseProject403
+  status: 403
+}
+
+export type closeProjectResponse404 = {
+  data: CloseProject404
+  status: 404
+}
+
+export type closeProjectResponse409 = {
+  data: CloseProject409
+  status: 409
+}
+
+export type closeProjectResponseSuccess = (closeProjectResponse200) & {
+  headers: Headers;
+};
+export type closeProjectResponseError = (closeProjectResponse400 | closeProjectResponse401 | closeProjectResponse403 | closeProjectResponse404 | closeProjectResponse409) & {
+  headers: Headers;
+};
+
+export type closeProjectResponse = (closeProjectResponseSuccess | closeProjectResponseError)
+
+export const getCloseProjectUrl = (id: string,) => {
+
+
+
+
+  return `/projects/${id}/closure`
+}
+
+/**
+ * Conclui o projeto quando o backend confirma que está apto (fases concluídas, marcos aceitos, sem homologação pendente, não suspenso). Registra o encerramento no histórico.
+ * @summary Encerrar formalmente o projeto
+ */
+export const closeProject = async (id: string, options?: Parameters<typeof apiFetcher>[1]): Promise<closeProjectResponse> => {
+
+  return apiFetcher<closeProjectResponse>(getCloseProjectUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 
