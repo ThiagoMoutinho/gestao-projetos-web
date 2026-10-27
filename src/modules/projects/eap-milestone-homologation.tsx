@@ -3,6 +3,7 @@
 import { AlertTriangle, Check, ChevronRight, FileText, Lock, Plus, RotateCcw, Upload, X } from "lucide-react";
 import { Suspense, use, useState, type ReactNode } from "react";
 
+import { FieldError, useFieldErrors } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -121,7 +122,7 @@ function HomologationBody({
   const [adjustments, setAdjustments] = useState("");
   const [links, setLinks] = useState<EvidenceLink[]>([]);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear, reset } = useFieldErrors<"note" | "evidences">();
 
   function open(next: Mode) {
     setMode(next);
@@ -129,12 +130,11 @@ function HomologationBody({
     setNonconformities("");
     setAdjustments("");
     setLinks([]);
-    setError(null);
+    reset();
   }
 
   async function run(action: () => Promise<{ status: number; data: unknown }>, success: string, failure: string) {
     setSaving(true);
-    setError(null);
     try {
       const response = await action();
       if (response.status !== 200) {
@@ -145,7 +145,7 @@ function HomologationBody({
       notifySuccess(success);
       onChanged();
     } catch (caught) {
-      setError(reportFailure(caught, failure));
+      reportFailure(caught, failure);
     } finally {
       setSaving(false);
     }
@@ -162,15 +162,14 @@ function HomologationBody({
 
   function decide(decision: "APROVADO" | "AJUSTES_SOLICITADOS" | "REJEITADO") {
     const text = note.trim();
-    if (decision !== "APROVADO" && text.length < 10) {
-      setError("Registre a justificativa com ao menos 10 caracteres.");
-      return;
-    }
     const evidences = links
       .map((link) => ({ title: link.title.trim(), url: link.url.trim() }))
       .filter((link) => link.title || link.url);
-    if (decision !== "APROVADO" && evidences.some((link) => !link.title || !isHttpUrl(link.url))) {
-      setError("Cada evidência precisa de título e de um link http(s) válido.");
+    const valid = validate([
+      ["note", decision !== "APROVADO" && text.length < 10 && "Registre a justificativa com ao menos 10 caracteres."],
+      ["evidences", decision !== "APROVADO" && evidences.some((link) => !link.title || !isHttpUrl(link.url)) && "Cada evidência precisa de título e de um link http(s) válido."],
+    ]);
+    if (!valid) {
       return;
     }
     const found = nonconformities.trim();
@@ -199,8 +198,7 @@ function HomologationBody({
 
   function authorize() {
     const text = note.trim();
-    if (text.length < 10) {
-      setError("Registre a justificativa com ao menos 10 caracteres.");
+    if (!validate([["note", text.length < 10 && "Registre a justificativa com ao menos 10 caracteres."]])) {
       return;
     }
     void run(
@@ -238,7 +236,18 @@ function HomologationBody({
           <Reveal open={deciding}>
             <div className="mt-3 flex flex-col gap-2">
               <Field label="Justificativa" hint="obrigatória">
-                <Textarea className={textareaClass} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Explique o motivo da decisão." />
+                <Textarea
+                  className={textareaClass}
+                  value={note}
+                  onChange={(event) => {
+                    setNote(event.target.value);
+                    clear("note");
+                  }}
+                  aria-invalid={errors.note ? true : undefined}
+                  aria-describedby={errors.note ? "homologation-note-error" : undefined}
+                  placeholder="Explique o motivo da decisão."
+                />
+                <FieldError id="homologation-note-error" message={errors.note} />
               </Field>
               <Field label="Inconformidades encontradas" hint="opcional">
                 <Textarea className={textareaClass} value={nonconformities} onChange={(event) => setNonconformities(event.target.value)} placeholder="Descreva o que não atendeu ao critério de aceite." />
@@ -248,7 +257,14 @@ function HomologationBody({
                   <Textarea className={textareaClass} value={adjustments} onChange={(event) => setAdjustments(event.target.value)} placeholder="Liste o que deve ser corrigido na próxima tentativa." />
                 </Field>
               </Reveal>
-              <DecisionEvidenceLinks links={links} onChange={setLinks} />
+              <DecisionEvidenceLinks
+                links={links}
+                onChange={(next) => {
+                  setLinks(next);
+                  clear("evidences");
+                }}
+              />
+              <FieldError id="homologation-evidences-error" message={errors.evidences} />
             </div>
           </Reveal>
           <div className="mt-[13px] flex flex-wrap justify-end gap-[7px]">
@@ -299,7 +315,18 @@ function HomologationBody({
               <Reveal open={mode === "authorize"}>
                 <div className="mt-3">
                   <Field label="Justificativa da autorização" hint="obrigatória">
-                    <Textarea className={textareaClass} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Explique por que a nova submissão foi autorizada." />
+                    <Textarea
+                      className={textareaClass}
+                      value={note}
+                      onChange={(event) => {
+                        setNote(event.target.value);
+                        clear("note");
+                      }}
+                      aria-invalid={errors.note ? true : undefined}
+                      aria-describedby={errors.note ? "resubmission-note-error" : undefined}
+                      placeholder="Explique por que a nova submissão foi autorizada."
+                    />
+                    <FieldError id="resubmission-note-error" message={errors.note} />
                   </Field>
                 </div>
               </Reveal>
@@ -367,7 +394,6 @@ function HomologationBody({
         </section>
       ) : null}
 
-      {error ? <p role="alert" className="text-[8.5px] text-destructive">{error}</p> : null}
 
       {deliveries.status === "error" ? <Notice tone="muted" text={deliveries.message} /> : null}
       {milestone.status === "ENTREGUE" && rounds.length === 0 && deliveries.status === "ready" ? (

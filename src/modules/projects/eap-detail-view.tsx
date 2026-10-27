@@ -3,6 +3,7 @@
 import { Suspense, use, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { AlertTriangle, Calendar, Check, ChevronRight, CircleCheck, Clock, FileText, Flag, Folder, Info, Maximize2, Minimize2, Plus, User, X } from "lucide-react";
 
+import { FieldError, useFieldErrors } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { SkeletonList } from "@/components/ui/skeleton-list";
@@ -450,7 +451,6 @@ function TaskDetail({
   const canUpdate = canUpdateTaskProgress(access, task);
   const [draft, setDraft] = useState(task.progressPercent);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
   const [completionKey, setCompletionKey] = useState(0);
@@ -459,7 +459,7 @@ function TaskDetail({
   const [reopenTarget, setReopenTarget] = useState<number | null>(null);
   const [reopenText, setReopenText] = useState("");
   const [reopening, setReopening] = useState(false);
-  const [reopenError, setReopenError] = useState<string | null>(null);
+  const { errors: reopenErrors, validate: validateReopen, clear: clearReopen, reset: resetReopen } = useFieldErrors<"text">();
   const overdue = taskIsOverdue(task);
   const blocked = task.hasImpediment || task.status === "IMPEDIDA";
   const locked = task.calculatedStatus === "CANCELADA";
@@ -473,7 +473,6 @@ function TaskDetail({
   }, [completionDirty, scheduleDirty, reopenDirty, onDirty]);
 
   function openCompletion() {
-    setError(null);
     setFeedback(null);
     setCompletionKey((value) => value + 1);
     setCompleting(true);
@@ -499,11 +498,9 @@ function TaskDetail({
     if (concluded) {
       setReopenTarget(percent);
       setReopenText("");
-      setReopenError(null);
       return;
     }
     setSaving(true);
-    setError(null);
     setFeedback(null);
     try {
       const response = await updateEapTaskProgress(projectId, phase.id, task.id, { progressPercent: percent });
@@ -513,7 +510,7 @@ function TaskDetail({
       onTask(presentTask(response.data, names));
       notifySuccess("Andamento salvo.");
     } catch (caught) {
-      setError(reportFailure(caught, "Não foi possível atualizar o andamento."));
+      reportFailure(caught, "Não foi possível atualizar o andamento.");
     } finally {
       setSaving(false);
     }
@@ -523,12 +520,10 @@ function TaskDetail({
     if (reopenTarget === null) {
       return;
     }
-    if (reopenText.trim().length < 10) {
-      setReopenError("Informe a justificativa da reabertura com ao menos 10 caracteres.");
+    if (!validateReopen([["text", reopenText.trim().length < 10 && "Informe a justificativa da reabertura com ao menos 10 caracteres."]])) {
       return;
     }
     setReopening(true);
-    setReopenError(null);
     try {
       const response = await updateEapTaskProgress(projectId, phase.id, task.id, {
         progressPercent: reopenTarget,
@@ -543,7 +538,7 @@ function TaskDetail({
       setReopenText("");
       notifySuccess("Tarefa reaberta.");
     } catch (caught) {
-      setReopenError(reportFailure(caught, "Não foi possível reabrir a tarefa."));
+      reportFailure(caught, "Não foi possível reabrir a tarefa.");
     } finally {
       setReopening(false);
     }
@@ -645,13 +640,18 @@ function TaskDetail({
                 <Textarea
                   className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]"
                   value={reopenText}
-                  onChange={(event) => setReopenText(event.target.value)}
+                  onChange={(event) => {
+                    setReopenText(event.target.value);
+                    clearReopen("text");
+                  }}
+                  aria-invalid={reopenErrors.text ? true : undefined}
+                  aria-describedby={reopenErrors.text ? "reopen-justification-error" : undefined}
                   placeholder="Explique por que a tarefa concluída precisa voltar a ser executada."
                 />
+                <FieldError id="reopen-justification-error" message={reopenErrors.text} />
               </label>
-              {reopenError ? <p role="alert" className="text-[8.5px] text-destructive">{reopenError}</p> : null}
               <div className="flex flex-wrap justify-end gap-[7px]">
-                <Button type="button" variant="outline" className={compactButton} disabled={reopening} onClick={() => setReopenTarget(null)}>
+                <Button type="button" variant="outline" className={compactButton} disabled={reopening} onClick={() => { setReopenTarget(null); resetReopen(); }}>
                   Cancelar
                 </Button>
                 <Button type="button" className={cn(compactButton, "border-transparent bg-[#c4620f] text-white hover:bg-[#b4570f]")} loading={reopening} onClick={() => void confirmReopen()}>
@@ -663,7 +663,6 @@ function TaskDetail({
         ) : null}
         {!canUpdate ? <p className="mt-2 text-[8.5px] text-[#667085]">Seu acesso não permite atualizar o andamento desta tarefa.</p> : null}
         {canUpdate && locked ? <p className="mt-2 text-[8.5px] text-[#667085]">Tarefa cancelada. Somente a gestão do projeto pode reativá-la.</p> : null}
-        {error ? <p role="alert" className="mt-2 text-[8.5px] text-destructive">{error}</p> : null}
         {feedback ? <p className="mt-2 text-[8.5px] text-[#667085]" role="status">{feedback}</p> : null}
       </section>
       <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
@@ -733,7 +732,7 @@ function TaskCompletion({
   const [end, setEnd] = useState(initial.end);
   const [justification, setJustification] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear, reset } = useFieldErrors<"start" | "end" | "justification">();
   const correction = correctsActualDate(recorded.start, start) || correctsActualDate(recorded.end, end);
 
   useEffect(() => {
@@ -741,20 +740,19 @@ function TaskCompletion({
   }, [start, end, justification, initial.start, initial.end, onDirtyChange]);
 
   function review() {
-    const problem =
-      actualDatesProblem({ start, end, today, requireBoth: true }) ??
-      (correction && justification.trim().length < 10
-        ? "A correção de uma data real já registrada exige justificativa com ao menos 10 caracteres."
-        : null);
-    setError(problem);
-    if (!problem) {
+    // O problema de datas aparece no campo a corrigir: início ausente ou futuro, senão o término.
+    const datesProblem = actualDatesProblem({ start, end, today, requireBoth: true });
+    const valid = validate([
+      [!start || start > today ? "start" : "end", datesProblem],
+      ["justification", correction && justification.trim().length < 10 && "Informe a justificativa da correção com ao menos 10 caracteres."],
+    ]);
+    if (valid) {
       setStep("review");
     }
   }
 
   async function confirm() {
     setSaving(true);
-    setError(null);
     try {
       const response = await updateEapTaskProgress(projectId, phaseId, task.id, {
         progressPercent: 100,
@@ -769,7 +767,7 @@ function TaskCompletion({
       notifySuccess("Tarefa concluída.");
       onClose();
     } catch (caught) {
-      setError(reportFailure(caught, "Não foi possível concluir a tarefa."));
+      reportFailure(caught, "Não foi possível concluir a tarefa.");
       setStep("editing");
     } finally {
       setSaving(false);
@@ -783,8 +781,8 @@ function TaskCompletion({
         <div className="flex flex-col gap-2.5">
           <p className="text-[8.5px] leading-[1.45] text-[#475467]">Confirme as datas reais. A conclusão grava o andamento em 100% e recalcula a fase.</p>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            <DateField label="Início real" hint={recorded.start ? undefined : "obrigatório"} value={start} onChange={setStart} />
-            <DateField label="Término real" hint={recorded.end ? undefined : "sugestão: hoje"} value={end} onChange={setEnd} />
+            <DateField label="Início real" hint={recorded.start ? undefined : "obrigatório"} value={start} onChange={(value) => { setStart(value); clear("start"); }} error={errors.start} />
+            <DateField label="Término real" hint={recorded.end ? undefined : "sugestão: hoje"} value={end} onChange={(value) => { setEnd(value); clear("end"); }} error={errors.end} />
           </div>
           <Reveal open={correction}>
             <label className="flex flex-col gap-1.5">
@@ -795,9 +793,15 @@ function TaskCompletion({
               <Textarea
                 className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]"
                 value={justification}
-                onChange={(event) => setJustification(event.target.value)}
+                onChange={(event) => {
+                  setJustification(event.target.value);
+                  clear("justification");
+                }}
+                aria-invalid={errors.justification ? true : undefined}
+                aria-describedby={errors.justification ? "completion-justification-error" : undefined}
                 placeholder="Explique por que a data real registrada está sendo corrigida."
               />
+              <FieldError id="completion-justification-error" message={errors.justification} />
             </label>
           </Reveal>
         </div>
@@ -816,7 +820,6 @@ function TaskCompletion({
           <span className="mt-1 block text-[#667085]">Marcos da fase continuam dependendo de entrega e homologação formais.</span>
         </dl>
       </Reveal>
-      {error ? <p role="alert" className="text-[8.5px] text-destructive">{error}</p> : null}
       <div className="flex flex-wrap justify-end gap-[7px]">
         <Button
           type="button"
@@ -824,7 +827,7 @@ function TaskCompletion({
           className={compactButton}
           disabled={saving}
           onClick={() => {
-            setError(null);
+            reset();
             if (step === "review") {
               setStep("editing");
               return;

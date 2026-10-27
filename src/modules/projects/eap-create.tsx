@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { AlertTriangle, CalendarIcon, Check, ChevronRight, Clock, Flag, Folder, List, Plus, X } from "lucide-react";
 import { ptBR } from "react-day-picker/locale";
 
+import { FieldError, useFieldErrors } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { controlFocusClassName, controlTransitionClassName } from "@/components/ui/control-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { OptionCombobox } from "@/components/option-combobox";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/fetcher";
 import { notifyWarning, reportFailure } from "@/lib/feedback";
@@ -19,7 +20,7 @@ import type { ListEapMilestones200DataItemType } from "@/lib/api/generated/model
 import { canReschedule, type EapAccess } from "./eap-access";
 import { phaseCoverage, spanOf } from "./eap-deadline";
 import { CascadeProposal } from "./eap-schedule";
-import { selectTriggerClass } from "./eap-date-field";
+import { comboboxControlClass } from "./eap-date-field";
 import { MilestoneFlow } from "./eap-milestone-flow";
 import { civilDateInput, phaseItemRanges, presentMilestone, presentPhase, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
 import type { EapPerson } from "./eap-panel";
@@ -146,18 +147,16 @@ function PhaseForm({
   const [responsibleId, setResponsibleId] = useState("");
   const [criteria, setCriteria] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear } = useFieldErrors<"name" | "responsible">();
   async function save() {
-    if (!name.trim()) {
-      setError("Informe o nome da fase.");
-      return;
-    }
-    if (!responsibleId) {
-      setError("Designe o responsável pela fase.");
+    const valid = validate([
+      ["name", !name.trim() && "Informe o nome da fase."],
+      ["responsible", !responsibleId && "Designe o responsável pela fase."],
+    ]);
+    if (!valid) {
       return;
     }
     setSaving(true);
-    setError(null);
     try {
       const response = await createEapPhase(projectId, {
         name: name.trim(),
@@ -171,18 +170,18 @@ function PhaseForm({
       onPhase(presentPhase(response.data, { tasks: [], milestones: [] }, names));
       onClose();
     } catch (caught) {
-      setError(reportFailure(caught, "Não foi possível criar a fase."));
+      reportFailure(caught, "Não foi possível criar a fase.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <FormBody saving={saving} error={error} onClose={onClose} onSubmit={() => void save()}>
+    <FormBody saving={saving} onClose={onClose} onSubmit={() => void save()}>
       <ItemContext kind="phase" />
       <PanelSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          <TextControl label="Nome do item" value={name} placeholder="Informe o nome da fase" onChange={setName} full />
+          <TextControl label="Nome do item *" value={name} placeholder="Informe o nome da fase" onChange={(value) => { setName(value); clear("name"); }} error={errors.name} full />
           <AreaControl label="Descrição" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
           <LockedControl label="Situação" hint="automática" value={phaseStatusLabel("NAO_INICIADA")} />
           <LockedControl label="Item superior" value={projectName} />
@@ -190,7 +189,8 @@ function PhaseForm({
             <SelectControl
               label="Responsável *"
               value={responsibleId}
-              onChange={setResponsibleId}
+              onChange={(value) => { setResponsibleId(value); clear("responsible"); }}
+              error={errors.responsible}
               placeholder="Selecione o responsável..."
               options={people.map((person) => ({ value: person.userId, label: person.name }))}
             />
@@ -252,23 +252,18 @@ function TaskForm({
   const [blocked, setBlocked] = useState(false);
   const [blocker, setBlocker] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear } = useFieldErrors<"title" | "phase" | "blocker">();
 
   async function save() {
-    if (!title.trim()) {
-      setError("Informe o nome da tarefa.");
-      return;
-    }
-    if (!selectedPhase) {
-      setError("Escolha a fase da tarefa.");
-      return;
-    }
-    if (blocked && blocker.trim().length < 10) {
-      setError("Informe o motivo do impedimento com ao menos 10 caracteres.");
+    const valid = validate([
+      ["title", !title.trim() && "Informe o nome da tarefa."],
+      ["phase", !selectedPhase && "Escolha a fase da tarefa."],
+      ["blocker", blocked && blocker.trim().length < 10 && "Informe o motivo do impedimento com ao menos 10 caracteres."],
+    ]);
+    if (!valid) {
       return;
     }
     setSaving(true);
-    setError(null);
     try {
       const response = await createEapTask(projectId, selectedPhase, {
         title: title.trim(),
@@ -303,14 +298,14 @@ function TaskForm({
       onTask(presentTask(created, names));
       onClose();
     } catch (caught) {
-      setError(reportFailure(caught, "Não foi possível criar a tarefa."));
+      reportFailure(caught, "Não foi possível criar a tarefa.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <FormBody saving={saving} error={error} onClose={onClose} onSubmit={() => void save()}>
+    <FormBody saving={saving} onClose={onClose} onSubmit={() => void save()}>
       <ItemContext kind="task" />
       {correctiveFor ? (
         <p className="mt-4 flex items-start gap-2 rounded-[7px] border border-[#f6d2ad] bg-[#fff6ec] p-2.5 text-[8.5px] leading-[1.45] text-[#b4570f]">
@@ -323,7 +318,7 @@ function TaskForm({
       ) : null}
       <PanelSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          <TextControl label="Nome do item" value={title} placeholder="Informe o nome da tarefa" onChange={setTitle} full />
+          <TextControl label="Nome do item *" value={title} placeholder="Informe o nome da tarefa" onChange={(value) => { setTitle(value); clear("title"); }} error={errors.title} full />
           <AreaControl label="Descrição" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
           <LockedControl label="Situação" hint="pelo andamento" value={taskStatusLabel(deriveTaskStatus(progress))} />
           {correctiveFor ? (
@@ -336,7 +331,8 @@ function TaskForm({
             <SelectControl
               label="Item superior *"
               value={selectedPhase}
-              onChange={setSelectedPhase}
+              onChange={(value) => { setSelectedPhase(value); clear("phase"); }}
+              error={errors.phase}
               placeholder="Selecione a fase..."
               options={phases.map((phase, index) => ({ value: phase.id, label: `${index + 1} · ${phase.name}` }))}
             />
@@ -395,7 +391,7 @@ function TaskForm({
         </button>
         <Reveal open={blocked}>
           <div className="pt-3">
-            <AreaControl label="Motivo do impedimento" value={blocker} placeholder="Descreva o impedimento e a ação necessária..." onChange={setBlocker} rows={3} full />
+            <AreaControl label="Motivo do impedimento *" value={blocker} placeholder="Descreva o impedimento e a ação necessária..." onChange={(value) => { setBlocker(value); clear("blocker"); }} error={errors.blocker} rows={3} full />
           </div>
         </Reveal>
       </PanelSection>
@@ -439,7 +435,7 @@ function MilestoneForm({
   const [extendPhase, setExtendPhase] = useState(false);
   const [justification, setJustification] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear } = useFieldErrors<"title" | "description" | "phase" | "dueDate" | "presenter" | "reviewer" | "justification">();
   const phase = phases.find((item) => item.id === selectedPhase);
   const phaseCurrent = phase ? { start: civilDateInput(phase.schedule.plannedStartAt), end: civilDateInput(phase.schedule.plannedEndAt) } : null;
   const coverage = phaseCurrent && dueDate ? phaseCoverage(phaseCurrent, spanOf([{ start: "", end: dueDate }, ...(phase ? phaseItemRanges(phase) : [])])) : null;
@@ -447,40 +443,20 @@ function MilestoneForm({
   const needsJustification = cascade !== null && cascade.apply && (cascade.current.start !== "" || cascade.current.end !== "");
 
   async function save() {
-    if (!title.trim()) {
-      setError("Informe o nome do marco.");
-      return;
-    }
-    if (!description.trim()) {
-      setError("Informe a descrição do marco.");
-      return;
-    }
-    if (!selectedPhase) {
-      setError("Escolha o item superior (fase) do marco.");
-      return;
-    }
-    if (!dueDate) {
-      setError(type === "HOMOLOGACAO" ? "Informe a data prevista da homologação." : "Informe a data prevista do marco.");
-      return;
-    }
-    if (!presenterId) {
-      setError("Designe quem vai apresentar o marco ao gestor.");
-      return;
-    }
-    if (!reviewerId) {
-      setError("Designe o gestor que vai validar o marco.");
-      return;
-    }
-    if (presenterId === reviewerId) {
-      setError("Quem apresenta o marco não pode ser o gestor que vai validá-lo.");
-      return;
-    }
-    if (needsJustification && justification.trim().length < 10) {
-      setError("Estender o prazo da fase é replanejamento: informe a justificativa com ao menos 10 caracteres.");
+    const valid = validate([
+      ["title", !title.trim() && "Informe o nome do marco."],
+      ["description", !description.trim() && "Informe a descrição do marco."],
+      ["phase", !selectedPhase && "Escolha o item superior (fase) do marco."],
+      ["dueDate", !dueDate && (type === "HOMOLOGACAO" ? "Informe a data prevista da homologação." : "Informe a data prevista do marco.")],
+      ["presenter", !presenterId && "Designe quem vai apresentar o marco ao gestor."],
+      ["reviewer", !reviewerId && "Designe o gestor que vai validar o marco."],
+      ["reviewer", presenterId !== "" && presenterId === reviewerId && "Quem apresenta o marco não pode ser o gestor que vai validá-lo."],
+      ["justification", needsJustification && justification.trim().length < 10 && "Informe a justificativa com ao menos 10 caracteres."],
+    ]);
+    if (!valid) {
       return;
     }
     setSaving(true);
-    setError(null);
     try {
       const response = await createEapMilestone(projectId, selectedPhase, {
         title: title.trim(),
@@ -497,23 +473,24 @@ function MilestoneForm({
       onMilestone(presentMilestone(response.data, names));
       onClose();
     } catch (caught) {
-      setError(reportFailure(caught, "Não foi possível criar o marco."));
+      reportFailure(caught, "Não foi possível criar o marco.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <FormBody saving={saving} error={error} onClose={onClose} onSubmit={() => void save()}>
+    <FormBody saving={saving} onClose={onClose} onSubmit={() => void save()}>
       <ItemContext kind="milestone" />
       <PanelSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          <TextControl label="Nome do item *" value={title} placeholder="Informe o nome do marco" onChange={setTitle} full />
-          <AreaControl label="Descrição *" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
+          <TextControl label="Nome do item *" value={title} placeholder="Informe o nome do marco" onChange={(value) => { setTitle(value); clear("title"); }} error={errors.title} full />
+          <AreaControl label="Descrição *" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={(value) => { setDescription(value); clear("description"); }} error={errors.description} full />
           <SelectControl
             label="Item superior *"
             value={selectedPhase}
-            onChange={setSelectedPhase}
+            onChange={(value) => { setSelectedPhase(value); clear("phase"); }}
+            error={errors.phase}
             placeholder="Selecione a fase..."
             options={phases.map((phase, index) => ({ value: phase.id, label: `${index + 1} · ${phase.name}` }))}
           />
@@ -521,7 +498,8 @@ function MilestoneForm({
             <SelectControl
               label="Apresentador do marco *"
               value={presenterId}
-              onChange={setPresenterId}
+              onChange={(value) => { setPresenterId(value); clear("presenter"); clear("reviewer"); }}
+              error={errors.presenter}
               placeholder="Quem apresenta ao gestor..."
               options={presenters.map((person) => ({ value: person.userId, label: person.name }))}
             />
@@ -531,7 +509,7 @@ function MilestoneForm({
               value={presenters === null ? "Não foi possível consultar os participantes." : "A designação cabe à gestão do projeto."}
             />
           )}
-          <CivilDateField label={type === "HOMOLOGACAO" ? "Data prevista da homologação *" : "Data prevista *"} value={dueDate} onChange={setDueDate} />
+          <CivilDateField label={type === "HOMOLOGACAO" ? "Data prevista da homologação *" : "Data prevista *"} value={dueDate} onChange={(value) => { setDueDate(value); clear("dueDate"); }} error={errors.dueDate} />
           <SelectControl
             label="Tipo do marco"
             value={type}
@@ -550,7 +528,7 @@ function MilestoneForm({
               </p>
             )}
             {needsJustification ? (
-              <AreaControl label="Justificativa do ajuste da fase *" value={justification} placeholder="Por que o prazo da fase precisa ser estendido?" onChange={setJustification} full />
+              <AreaControl label="Justificativa do ajuste da fase *" value={justification} placeholder="Por que o prazo da fase precisa ser estendido?" onChange={(value) => { setJustification(value); clear("justification"); }} error={errors.justification} full />
             ) : null}
           </div>
         ) : null}
@@ -571,7 +549,8 @@ function MilestoneForm({
               <SelectControl
                 label="Gestor validador *"
                 value={reviewerId}
-                onChange={setReviewerId}
+                onChange={(value) => { setReviewerId(value); clear("reviewer"); }}
+                error={errors.reviewer}
                 placeholder="Quem valida o marco..."
                 options={reviewers.map((person) => ({ value: person.userId, label: person.name }))}
               />
@@ -604,20 +583,17 @@ function MilestoneForm({
 function FormBody({
   children,
   saving,
-  error,
   onClose,
   onSubmit,
 }: {
   children: ReactNode;
   saving: boolean;
-  error: string | null;
   onClose: () => void;
   onSubmit: () => void;
 }) {
   return (
     <>
       <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-6 pb-6">{children}</div>
-      {error ? <p className="bg-white px-6 pb-2 text-[10px] text-destructive">{error}</p> : null}
       <footer className="grid shrink-0 grid-cols-2 gap-[7px] border-t border-[#e4e7ec] bg-white px-6 py-3 sm:flex sm:min-h-[74px] sm:items-center sm:justify-end">
         <Button type="button" variant="outline" className="h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054]" onClick={onClose}>
           Cancelar
@@ -767,6 +743,7 @@ function TextControl({
   placeholder,
   onChange,
   full = false,
+  error,
 }: {
   label: string;
   hint?: string;
@@ -774,11 +751,21 @@ function TextControl({
   placeholder?: string;
   onChange: (value: string) => void;
   full?: boolean;
+  error?: string | null;
 }) {
+  const errorId = useId();
   return (
     <label className={`flex min-w-0 flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
       <FieldLabel label={label} hint={hint} />
-      <input className={fieldClass} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
+      <input
+        className={fieldClass}
+        value={value}
+        placeholder={placeholder}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }
@@ -792,6 +779,7 @@ function AreaControl({
   disabled = false,
   rows = 3,
   full = false,
+  error,
 }: {
   label: string;
   hint?: string;
@@ -801,19 +789,28 @@ function AreaControl({
   disabled?: boolean;
   rows?: number;
   full?: boolean;
+  error?: string | null;
 }) {
+  const errorId = useId();
   return (
     <label className={`flex min-w-0 flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
       <FieldLabel label={label} hint={hint} />
-      <textarea className={`${fieldClass} h-auto min-h-[66px] py-[9px] leading-normal`} rows={rows} value={value} placeholder={placeholder} disabled={disabled} onChange={(event) => onChange(event.target.value)} />
+      <textarea
+        className={`${fieldClass} h-auto min-h-[66px] py-[9px] leading-normal`}
+        rows={rows}
+        value={value}
+        placeholder={placeholder}
+        disabled={disabled}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }
 
-/** Valor interno da opção "vazia" (ex.: sem responsável): o Select do shadcn/Base UI não aceita item com valor "". */
-const EMPTY_OPTION = "__vazio__";
-
-/** Seleção no padrão shadcn/ui. `""` representa "nada selecionado" e mostra o placeholder. */
+/** Seleção com o Combobox do shadcn/ui. `""` representa "nada selecionado" e mostra o placeholder. */
 function SelectControl<T extends string>({
   label,
   hint,
@@ -821,6 +818,7 @@ function SelectControl<T extends string>({
   onChange,
   options,
   placeholder = "Selecione...",
+  error,
 }: {
   label: string;
   hint?: string;
@@ -828,28 +826,24 @@ function SelectControl<T extends string>({
   onChange: (value: T) => void;
   options: ReadonlyArray<{ value: T | ""; label: string }>;
   placeholder?: string;
+  error?: string | null;
 }) {
-  const hasEmpty = options.some((option) => option.value === "");
-  const current = value === "" ? (hasEmpty ? EMPTY_OPTION : null) : value;
+  const errorId = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <FieldLabel label={label} hint={hint} />
-      <Select value={current} onValueChange={(next) => onChange((next === null || next === EMPTY_OPTION ? "" : next) as T)}>
-        <SelectTrigger aria-label={label} className={selectTriggerClass}>
-          <SelectValue>
-            {(selected: string | null) =>
-              options.find((option) => (option.value === "" ? EMPTY_OPTION : option.value) === selected)?.label ?? placeholder
-            }
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value || EMPTY_OPTION} value={option.value === "" ? EMPTY_OPTION : option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <OptionCombobox
+        label={label}
+        value={value}
+        onChange={(next) => onChange(next as T)}
+        options={options}
+        placeholder={placeholder}
+        invalid={Boolean(error)}
+        describedBy={errorId}
+        compact
+        className={comboboxControlClass}
+      />
+      <FieldError id={errorId} message={error} />
     </div>
   );
 }
@@ -871,25 +865,38 @@ function LockedControl({
       {as === "text" ? (
         <input className={fieldClass} aria-label={label} disabled readOnly value={value} />
       ) : (
-        <Select value={value} disabled>
-          <SelectTrigger aria-label={label} className={selectTriggerClass}>
-            <SelectValue>{value}</SelectValue>
-          </SelectTrigger>
-        </Select>
+        <OptionCombobox label={label} value={value} onChange={() => undefined} options={[{ value, label: value }]} disabled compact className={comboboxControlClass} />
       )}
     </div>
   );
 }
 
-function CivilDateField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function CivilDateField({
+  label,
+  value,
+  onChange,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string | null;
+}) {
   const [open, setOpen] = useState(false);
+  const errorId = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <FieldLabel label={label} />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
-            <Button type="button" variant="outline" className={`${fieldClass} justify-start px-2.5 font-normal shadow-none hover:bg-white ${value ? "text-[#344054]" : "text-[#98a2b3]"}`} />
+            <Button
+              type="button"
+              variant="outline"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? errorId : undefined}
+              className={`${fieldClass} justify-start px-2.5 font-normal shadow-none hover:bg-white ${value ? "text-[#344054]" : "text-[#98a2b3]"}`}
+            />
           }
         >
           <CalendarIcon className="size-3.5" aria-hidden="true" />
@@ -907,6 +914,7 @@ function CivilDateField({ label, value, onChange }: { label: string; value: stri
           />
         </PopoverContent>
       </Popover>
+      <FieldError id={errorId} message={error} />
     </div>
   );
 }

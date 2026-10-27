@@ -37,7 +37,6 @@ export function EapDeleteDialog({
   onDeleted: (target: EapSelection) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const copy = request ? KIND_COPY[request.target.kind] : null;
 
   async function confirm() {
@@ -46,7 +45,6 @@ export function EapDeleteDialog({
     }
 
     setBusy(true);
-    setError(null);
     try {
       const { target } = request;
       const response =
@@ -62,7 +60,7 @@ export function EapDeleteDialog({
       onDeleted(target);
       onClose();
     } catch (caught) {
-      setError(reportFailure(caught, "Não foi possível excluir o item."));
+      reportFailure(caught, "Não foi possível excluir o item.");
     } finally {
       setBusy(false);
     }
@@ -73,7 +71,6 @@ export function EapDeleteDialog({
       open={request !== null}
       onOpenChange={(open) => {
         if (!open && !busy) {
-          setError(null);
           onClose();
         }
       }}
@@ -89,11 +86,6 @@ export function EapDeleteDialog({
             histórico do projeto.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error ? (
-          <p role="alert" className="rounded-[7px] border border-[#efc3bf] bg-[#fff4f1] px-3 py-2 text-[11px] leading-snug text-[#9f2219]">
-            {error}
-          </p>
-        ) : null}
         <AlertDialogFooter className="-mx-5 -mb-5 px-5 py-3">
           <AlertDialogCancel className="h-8 text-[11px]" disabled={busy}>
             Cancelar

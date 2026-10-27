@@ -1,15 +1,16 @@
 "use client";
 
 import { AlertTriangle, Ban, CalendarIcon, Check, ChevronRight, Clock, FileText, Flag, Folder, List, Lock, Plus, RotateCcw } from "lucide-react";
-import { Suspense, use, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Suspense, use, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 
+import { FieldError, useFieldErrors } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { controlTransitionClassName } from "@/components/ui/control-motion";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { OptionCombobox } from "@/components/option-combobox";
 import { ApiError } from "@/lib/api/fetcher";
-import { notifySuccess, reportFailure } from "@/lib/feedback";
+import { notifySuccess, reportFailure, showAlert } from "@/lib/feedback";
 import {
   cancelEapTask,
   createEapEvidence,
@@ -29,7 +30,7 @@ import {
   canUpdateTaskProgress,
   type EapAccess,
 } from "./eap-access";
-import { DateField, dateControlClass as editControlClass, selectTriggerClass } from "./eap-date-field";
+import { comboboxControlClass, DateField, dateControlClass as editControlClass } from "./eap-date-field";
 import { actualDatesProblem, correctsActualDate } from "./eap-deadline";
 import { MilestoneDecisionFeedback } from "./eap-decision-feedback";
 import { evidenceRequest, forgetEvidences, type EvidenceParent, type EvidenceState } from "./eap-evidence-cache";
@@ -196,7 +197,7 @@ function PhaseEditor({
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [evidenceRevision, setEvidenceRevision] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear } = useFieldErrors<"name" | "suspend">();
   const [feedback, setFeedback] = useState<string | null>(null);
   const dirty =
     canEdit &&
@@ -230,17 +231,14 @@ function PhaseEditor({
   async function save() {
     if (!dirty) {
       setFeedback("Nada para salvar.");
-      setError(null);
       return;
     }
 
-    if (!name.trim()) {
-      setError("Informe o nome da fase.");
+    if (!validate([["name", !name.trim() && "Informe o nome da fase."]])) {
       return;
     }
 
     setSaving(true);
-    setError(null);
     setFeedback(null);
 
     try {
@@ -257,7 +255,7 @@ function PhaseEditor({
       dirtyRef.current = false;
       notifySuccess("Fase atualizada.");
     } catch (caught) {
-      setError(errorMessage(caught));
+      showAlert(errorMessage(caught));
     } finally {
       setSaving(false);
     }
@@ -265,12 +263,10 @@ function PhaseEditor({
 
   async function toggleSuspension() {
     const suspended = phase.status !== "SUSPENSA";
-    if (suspended && suspendText.trim().length < 10) {
-      setError("Informe a justificativa da suspensão com ao menos 10 caracteres.");
+    if (!validate([["suspend", suspended && suspendText.trim().length < 10 && "Informe a justificativa da suspensão com ao menos 10 caracteres."]])) {
       return;
     }
     setSuspending(true);
-    setError(null);
     setFeedback(null);
     try {
       const response = await updateEapPhase(projectId, phase.id, {
@@ -285,7 +281,7 @@ function PhaseEditor({
       setSuspendText("");
       notifySuccess(suspended ? "Fase suspensa." : "Fase retomada.");
     } catch (caught) {
-      setError(errorMessage(caught));
+      showAlert(errorMessage(caught));
     } finally {
       setSuspending(false);
     }
@@ -300,7 +296,7 @@ function PhaseEditor({
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         {canEdit ? (
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-            <EditText label="Nome do item" value={name} onChange={(value) => { setName(value); publish({ ...draft(), name: value }); }} full />
+            <EditText label="Nome do item *" value={name} onChange={(value) => { setName(value); clear("name"); publish({ ...draft(), name: value }); }} error={errors.name} full />
             <EditArea label="Descrição" value={description} onChange={(value) => { setDescription(value); publish({ ...draft(), description: value }); }} full />
             <EditLocked label="Situação" hint="automática" value={phase.statusLabel} />
             <EditLocked label="Item superior" value={projectName} />
@@ -362,7 +358,8 @@ function PhaseEditor({
                   hint="obrigatória"
                   value={suspendText}
                   placeholder="Explique por que a fase será suspensa."
-                  onChange={setSuspendText}
+                  onChange={(value) => { setSuspendText(value); clear("suspend"); }}
+                  error={errors.suspend}
                   full
                 />
                 <div className="flex flex-wrap justify-end gap-[7px]">
@@ -406,7 +403,7 @@ function PhaseEditor({
         }}
       />
       <HistoryNote projectId={projectId} entityType="PHASE" entityId={phase.id} refreshKey={historyKey(phase, evidenceRevision)} />
-      <EditStatus error={error} feedback={feedback} />
+      <EditStatus feedback={feedback} />
     </div>
   );
 }
@@ -447,7 +444,7 @@ function TaskEditor({
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear } = useFieldErrors<"title" | "weight" | "percent" | "actualStart" | "actualEnd" | "correction" | "reopen">();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [evidenceRevision, setEvidenceRevision] = useState(0);
   const [impedimentRevision, setImpedimentRevision] = useState(0);
@@ -520,46 +517,29 @@ function TaskEditor({
 
     if (!structureDirty && !progressDirty) {
       setFeedback("Nada para salvar.");
-      setError(null);
-      return;
-    }
-
-    if (editable && !title.trim()) {
-      setError("Informe o título da tarefa.");
-      return;
-    }
-
-    if (editable && (!Number.isInteger(parsedWeight) || parsedWeight < 1)) {
-      setError("O peso precisa ser um número inteiro maior que zero.");
-      return;
-    }
-
-    if (canProgress && (!Number.isInteger(progress) || progress < 0 || progress > 100)) {
-      setError("O percentual precisa ser um inteiro de 0 a 100.");
       return;
     }
 
     // Concluir pelo andamento usa as mesmas regras de "Concluir tarefa": datas reais confirmadas.
+    const today = belemToday();
     const datesProblem = canProgress
-      ? actualDatesProblem({ start: actualStart, end: actualEnd, today: belemToday(), requireBoth: progress === 100 })
+      ? actualDatesProblem({ start: actualStart, end: actualEnd, today, requireBoth: progress === 100 })
       : null;
-    if (datesProblem) {
-      setError(datesProblem);
-      return;
-    }
-
-    if (canProgress && correctingDates && dateJustification.trim().length < 10) {
-      setError("A correção de uma data real já registrada exige justificativa com ao menos 10 caracteres.");
-      return;
-    }
-
-    if (canProgress && reopeningTask && dateJustification.trim().length < 10) {
-      setError("Reabrir uma tarefa concluída exige justificativa com ao menos 10 caracteres.");
+    // O problema de datas aparece no campo que precisa ser corrigido: início ausente ou futuro, senão o fim.
+    const dateField = !actualStart || actualStart > today ? "actualStart" : "actualEnd";
+    const valid = validate([
+      ["title", editable && !title.trim() && "Informe o título da tarefa."],
+      ["weight", editable && (!Number.isInteger(parsedWeight) || parsedWeight < 1) && "O peso precisa ser um número inteiro maior que zero."],
+      ["percent", canProgress && (!Number.isInteger(progress) || progress < 0 || progress > 100) && "O percentual precisa ser um inteiro de 0 a 100."],
+      [dateField, datesProblem],
+      ["correction", canProgress && correctingDates && dateJustification.trim().length < 10 && "Informe a justificativa da correção com ao menos 10 caracteres."],
+      ["reopen", canProgress && reopeningTask && dateJustification.trim().length < 10 && "Informe a justificativa da reabertura com ao menos 10 caracteres."],
+    ]);
+    if (!valid) {
       return;
     }
 
     setSaving(true);
-    setError(null);
     setFeedback(null);
 
     try {
@@ -600,7 +580,7 @@ function TaskEditor({
       dirtyRef.current = evidenceTitle.trim() !== "" || evidenceUrl.trim() !== "";
       notifySuccess(progressDirty && progress === 100 && task.progressPercent < 100 ? "Tarefa concluída." : "Tarefa atualizada.");
     } catch (caught) {
-      setError(errorMessage(caught));
+      showAlert(errorMessage(caught));
     } finally {
       setSaving(false);
     }
@@ -613,15 +593,16 @@ function TaskEditor({
   const statusShown = taskStatusLabel(statusPreview);
   const actualFields = (
     <>
-      <DateField label="Início realizado" hint={completing ? "obrigatório para concluir" : undefined} value={actualStart} onChange={(value) => { setActualStart(value); publish({ ...draft(), actualStart: value }); }} />
-      <DateField label="Fim realizado" hint={completing ? "obrigatório para concluir" : undefined} value={actualEnd} onChange={(value) => { setActualEnd(value); publish({ ...draft(), actualEnd: value }); }} />
+      <DateField label="Início realizado" hint={completing ? "obrigatório para concluir" : undefined} value={actualStart} onChange={(value) => { setActualStart(value); clear("actualStart"); publish({ ...draft(), actualStart: value }); }} error={errors.actualStart} />
+      <DateField label="Fim realizado" hint={completing ? "obrigatório para concluir" : undefined} value={actualEnd} onChange={(value) => { setActualEnd(value); clear("actualEnd"); publish({ ...draft(), actualEnd: value }); }} error={errors.actualEnd} />
       {correctingDates ? (
         <EditArea
           label="Justificativa da correção"
           hint="obrigatória · o valor anterior fica no histórico"
           value={dateJustification}
           placeholder="Explique por que a data real registrada está sendo corrigida."
-          onChange={(value) => { setDateJustification(value); publish({ ...draft(), dateJustification: value }); }}
+          onChange={(value) => { setDateJustification(value); clear("correction"); publish({ ...draft(), dateJustification: value }); }}
+          error={errors.correction}
           full
         />
       ) : null}
@@ -637,7 +618,7 @@ function TaskEditor({
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           {editable ? (
-            <EditText label="Nome do item" value={title} onChange={(value) => { setTitle(value); publish({ ...draft(), title: value }); }} full />
+            <EditText label="Nome do item *" value={title} onChange={(value) => { setTitle(value); clear("title"); publish({ ...draft(), title: value }); }} error={errors.title} full />
           ) : (
             <EditLocked label="Nome do item" value={task.title} />
           )}
@@ -672,7 +653,7 @@ function TaskEditor({
               ))}
             </div>
             <div className="mb-3.5 grid grid-cols-[140px_auto_1fr] items-end gap-2">
-              <EditText label="Percentual exato de andamento" value={percent} onChange={choosePercent} />
+              <EditText label="Percentual exato de andamento" value={percent} onChange={(value) => { choosePercent(value); clear("percent"); }} error={errors.percent} />
               <span className="flex h-9 items-center text-[8px] text-[#98a2b3]">% concluído</span>
               <Button type="button" variant="outline" className="h-9 justify-self-end gap-1.5 rounded-[7px] px-[11px] text-[9px]" disabled={progressShown === 100} onClick={() => choosePercent("100")}>
                 <Check className="size-3.5" aria-hidden="true" />
@@ -696,7 +677,8 @@ function TaskEditor({
                     hint="obrigatória"
                     value={dateJustification}
                     placeholder="Explique por que a tarefa concluída precisa voltar a ser executada."
-                    onChange={(value) => { setDateJustification(value); publish({ ...draft(), dateJustification: value }); }}
+                    onChange={(value) => { setDateJustification(value); clear("reopen"); publish({ ...draft(), dateJustification: value }); }}
+                    error={errors.reopen}
                     full
                   />
                 ) : null}
@@ -706,7 +688,7 @@ function TaskEditor({
               A situação acompanha o percentual: 0% não iniciada, de 1% a 99% em andamento e 100% concluída. O início real é registrado ao iniciar o andamento; para concluir, confirme as datas reais. Corrigir uma data já registrada exige justificativa.
             </p>
             {editable ? (
-              <EditText label="Peso" value={weight} onChange={(value) => { setWeight(value); publish({ ...draft(), weight: value }); }} />
+              <EditText label="Peso" value={weight} onChange={(value) => { setWeight(value); clear("weight"); publish({ ...draft(), weight: value }); }} error={errors.weight} />
             ) : null}
             <div className="mt-3 grid grid-cols-1 gap-[13px] sm:grid-cols-2">
               <EditLocked label="Prioridade" hint="não gravado" value="Indisponível neste cadastro" />
@@ -756,7 +738,7 @@ function TaskEditor({
         emptyWarning={progressShown === 100 ? "A tarefa está concluída, mas ainda não possui as evidências exigidas." : null}
       />
       <HistoryNote projectId={projectId} entityType="TASK" entityId={task.id} refreshKey={historyKey(task, `${evidenceRevision}:${impedimentRevision}`)} />
-      <EditStatus error={error} feedback={feedback} />
+      <EditStatus feedback={feedback} />
     </div>
   );
 }
@@ -779,23 +761,21 @@ function TaskStatusDecision({
   const [opened, setOpened] = useState(false);
   const [justification, setJustification] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear, reset } = useFieldErrors<"justification">();
 
   function toggle() {
     if (!opened) {
       setJustification("");
     }
     setOpened(!opened);
-    setError(null);
+    reset();
   }
 
   async function decide() {
-    if (justification.trim().length < 10) {
-      setError("Informe a justificativa com ao menos 10 caracteres.");
+    if (!validate([["justification", justification.trim().length < 10 && "Informe a justificativa com ao menos 10 caracteres."]])) {
       return;
     }
     setSaving(true);
-    setError(null);
     try {
       const body = { justification: justification.trim() };
       const response = cancelled
@@ -809,7 +789,7 @@ function TaskStatusDecision({
       onTask(presentTask(response.data, names));
       notifySuccess(cancelled ? "Tarefa reativada." : "Tarefa cancelada.");
     } catch (caught) {
-      setError(errorMessage(caught));
+      showAlert(errorMessage(caught));
     } finally {
       setSaving(false);
     }
@@ -835,11 +815,11 @@ function TaskStatusDecision({
             label="Justificativa"
             value={justification}
             placeholder={cancelled ? "Explique por que a tarefa volta ao escopo." : "Explique por que a tarefa não será executada."}
-            onChange={setJustification}
+            onChange={(value) => { setJustification(value); clear("justification"); }}
+            error={errors.justification}
             full
           />
           <div className="mt-3 flex items-center justify-end gap-[7px]">
-            {error ? <p role="alert" className="mr-auto text-[8.5px] text-destructive">{error}</p> : null}
             <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={toggle}>
               Voltar
             </Button>
@@ -937,7 +917,7 @@ function TaskImpediment({
   const [form, setForm] = useState<ImpedimentAction>("register");
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear, reset } = useFieldErrors<"text">();
 
   if (state.status === "error") {
     return <p className={`mt-3.5 ${emptyInlineClass}`}>{state.message}</p>;
@@ -958,22 +938,20 @@ function TaskImpediment({
     setAction(next);
     setForm(next);
     setText(next === "update" && open ? open.description : "");
-    setError(null);
+    reset();
   }
 
   function cancel() {
     setAction(null);
-    setError(null);
+    reset();
   }
 
   async function submit(current: ImpedimentAction) {
     const value = text.trim();
-    if (value.length < 10) {
-      setError(current === "resolve" ? "Descreva a resolução com ao menos 10 caracteres." : "Informe o motivo com ao menos 10 caracteres.");
+    if (!validate([["text", value.length < 10 && (current === "resolve" ? "Descreva a resolução com ao menos 10 caracteres." : "Informe o motivo com ao menos 10 caracteres.")]])) {
       return;
     }
     setSaving(true);
-    setError(null);
     try {
       const response =
         current === "resolve"
@@ -989,7 +967,7 @@ function TaskImpediment({
       notifySuccess(IMPEDIMENT_ACTIONS[current].done);
       onChanged(presentTask(response.data.task, names));
     } catch (caught) {
-      setError(errorMessage(caught));
+      showAlert(errorMessage(caught));
     } finally {
       setSaving(false);
     }
@@ -1015,9 +993,8 @@ function TaskImpediment({
       ) : null}
       <Reveal open={action !== null}>
         <div className="pt-3">
-          <EditArea label={IMPEDIMENT_ACTIONS[form].field} value={text} placeholder={IMPEDIMENT_ACTIONS[form].placeholder} onChange={setText} full />
+          <EditArea label={IMPEDIMENT_ACTIONS[form].field} value={text} placeholder={IMPEDIMENT_ACTIONS[form].placeholder} onChange={(value) => { setText(value); clear("text"); }} error={errors.text} full />
           <div className="mt-3 flex items-center justify-end gap-[7px]">
-            {error ? <p role="alert" className="mr-auto text-[8.5px] text-destructive">{error}</p> : null}
             <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={cancel}>
               Voltar
             </Button>
@@ -1093,7 +1070,7 @@ function MilestoneEditor({
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear } = useFieldErrors<"title" | "reviewer">();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [evidenceRevision, setEvidenceRevision] = useState(0);
   const reviewerChanged = canDesignate && (reviewerId || null) !== milestone.reviewerId;
@@ -1126,22 +1103,18 @@ function MilestoneEditor({
   async function saveDetails() {
     if (!structureDirty) {
       setFeedback("Nada para salvar.");
-      setError(null);
       return;
     }
 
-    if (canEdit && !title.trim()) {
-      setError("Informe o título do marco.");
-      return;
-    }
-
-    if (presenterId && presenterId === reviewerId) {
-      setError("Quem apresenta o marco não pode ser o gestor que vai validá-lo.");
+    const valid = validate([
+      ["title", canEdit && !title.trim() && "Informe o título do marco."],
+      ["reviewer", presenterId !== "" && presenterId === reviewerId && "Quem apresenta o marco não pode ser o gestor que vai validá-lo."],
+    ]);
+    if (!valid) {
       return;
     }
 
     setSaving(true);
-    setError(null);
     setFeedback(null);
 
     try {
@@ -1164,7 +1137,7 @@ function MilestoneEditor({
         notifySuccess("Marco atualizado.");
       }
     } catch (caught) {
-      setError(errorMessage(caught));
+      showAlert(errorMessage(caught));
     } finally {
       setSaving(false);
     }
@@ -1179,7 +1152,7 @@ function MilestoneEditor({
       <EditSection title="Informações básicas" subtitle="Identificação e organização do item">
         <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
           {canEdit ? (
-            <EditText label="Nome do item" value={title} onChange={(value) => { setTitle(value); publish({ ...draft(), title: value }); }} full />
+            <EditText label="Nome do item *" value={title} onChange={(value) => { setTitle(value); clear("title"); publish({ ...draft(), title: value }); }} error={errors.title} full />
           ) : (
             <EditLocked label="Nome do item" value={milestone.title} />
           )}
@@ -1200,7 +1173,7 @@ function MilestoneEditor({
               value={presenterId}
               label="Apresentador do marco"
               emptyLabel="Não designado"
-              onChange={(value) => { setPresenterId(value); publish({ ...draft(), presenterId: value }); }}
+              onChange={(value) => { setPresenterId(value); clear("reviewer"); publish({ ...draft(), presenterId: value }); }}
             />
           ) : (
             <EditLocked label="Apresentador do marco" value={milestone.presenterName ?? "Não designado"} />
@@ -1220,7 +1193,8 @@ function MilestoneEditor({
               value={reviewerId}
               label="Gestor validador"
               emptyLabel="Gestão do projeto (padrão)"
-              onChange={(value) => { setReviewerId(value); publish({ ...draft(), reviewerId: value }); }}
+              onChange={(value) => { setReviewerId(value); clear("reviewer"); publish({ ...draft(), reviewerId: value }); }}
+              error={errors.reviewer}
             />
           ) : (
             <EditLocked label="Gestor validador" value={milestone.reviewerName ?? "Gestão do projeto (padrão)"} />
@@ -1253,7 +1227,7 @@ function MilestoneEditor({
         }}
       />
       <HistoryNote projectId={projectId} entityType="MILESTONE" entityId={milestone.id} refreshKey={historyKey(milestone, evidenceRevision)} />
-      <EditStatus error={error} feedback={feedback} />
+      <EditStatus feedback={feedback} />
     </div>
   );
 }
@@ -1285,18 +1259,20 @@ function EvidenceSection({
 }) {
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear, reset } = useFieldErrors<"title" | "url">();
   const request = evidenceRequest(projectId, parent, revision);
   const formOpen = adding || title !== "" || url !== "";
 
   async function create() {
-    if (!title.trim() || !isHttpUrl(url)) {
-      setError("Informe um título e um link http ou https.");
+    const valid = validate([
+      ["title", !title.trim() && "Informe o título da evidência."],
+      ["url", !isHttpUrl(url) && "Informe um link http ou https."],
+    ]);
+    if (!valid) {
       return;
     }
 
     setSaving(true);
-    setError(null);
     try {
       const response = await createEapEvidence(projectId, {
         title: title.trim(),
@@ -1313,7 +1289,7 @@ function EvidenceSection({
       setAdding(false);
       onCreated();
     } catch (caught) {
-      setError(errorMessage(caught));
+      showAlert(errorMessage(caught));
     } finally {
       setSaving(false);
     }
@@ -1322,7 +1298,7 @@ function EvidenceSection({
   function cancel() {
     onTitle("");
     onUrl("");
-    setError(null);
+    reset();
     setAdding(false);
   }
 
@@ -1346,10 +1322,9 @@ function EvidenceSection({
         <Reveal open={formOpen}>
         <div className="mt-3 rounded-[7px] border border-[#e4e7ec] bg-[#fafbfc] p-3">
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-            <EditText label="Título da evidência" value={title} onChange={onTitle} />
-            <EditText label="Link" value={url} onChange={onUrl} />
+            <EditText label="Título da evidência *" value={title} onChange={(value) => { onTitle(value); clear("title"); }} error={errors.title} />
+            <EditText label="Link *" value={url} onChange={(value) => { onUrl(value); clear("url"); }} error={errors.url} />
           </div>
-          {error ? <p className="mt-2 text-[8.5px] text-destructive">{error}</p> : null}
           <div className="mt-3 flex justify-end gap-[7px]">
             <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={cancel}>
               Cancelar
@@ -1482,48 +1457,46 @@ function AssigneeField({
   onChange,
   label = "Responsável",
   emptyLabel = "Não informado",
+  error,
 }: {
   people: EapPerson[] | null;
   value: string;
   onChange: (value: string) => void;
   label?: string;
   emptyLabel?: string;
+  error?: string | null;
 }) {
+  const errorId = useId();
   if (!people) {
     return <EditNotice text="A lista de participantes não pôde ser consultada." />;
   }
 
-  // O Select (shadcn/Base UI) não aceita item com valor "": a opção vazia usa um valor interno.
-  const empty = "__vazio__";
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <EditLabel label={label} />
-      <Select value={value || empty} onValueChange={(next) => onChange(next === null || next === empty ? "" : next)}>
-        <SelectTrigger aria-label={label} className={selectTriggerClass}>
-          <SelectValue>
-            {(selected: string | null) => people.find((person) => person.userId === selected)?.name ?? emptyLabel}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={empty}>{emptyLabel}</SelectItem>
-          {people.map((person) => (
-            <SelectItem key={person.userId} value={person.userId}>
-              {person.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <OptionCombobox
+        label={label}
+        value={value}
+        onChange={onChange}
+        options={[{ value: "", label: emptyLabel }, ...people.map((person) => ({ value: person.userId, label: person.name }))]}
+        placeholder={emptyLabel}
+        invalid={Boolean(error)}
+        describedBy={errorId}
+        compact
+        className={comboboxControlClass}
+      />
+      <FieldError id={errorId} message={error} />
     </div>
   );
 }
 
-function EditStatus({ error, feedback }: { error: string | null; feedback: string | null }) {
-  if (!error && !feedback) {
+function EditStatus({ feedback }: { feedback: string | null }) {
+  if (!feedback) {
     return null;
   }
   return (
-    <p role={error ? "alert" : "status"} className={`mt-3 text-[8.5px] ${error ? "text-destructive" : "text-[#667085]"}`}>
-      {error ?? feedback}
+    <p role="status" className="mt-3 text-[8.5px] text-[#667085]">
+      {feedback}
     </p>
   );
 }
@@ -1623,11 +1596,31 @@ function EditLabel({ label, hint }: { label: string; hint?: string }) {
   );
 }
 
-function EditText({ label, value, onChange, full = false }: { label: string; value: string; onChange: (value: string) => void; full?: boolean }) {
+function EditText({
+  label,
+  value,
+  onChange,
+  full = false,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  full?: boolean;
+  error?: string | null;
+}) {
+  const errorId = useId();
   return (
     <label className={`flex min-w-0 flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
       <EditLabel label={label} />
-      <input className={editControlClass} value={value} onChange={(event) => onChange(event.target.value)} />
+      <input
+        className={editControlClass}
+        value={value}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }
@@ -1640,6 +1633,7 @@ function EditArea({
   placeholder,
   disabled = false,
   full = false,
+  error,
 }: {
   label: string;
   value: string;
@@ -1648,11 +1642,23 @@ function EditArea({
   placeholder?: string;
   disabled?: boolean;
   full?: boolean;
+  error?: string | null;
 }) {
+  const errorId = useId();
   return (
     <label className={`flex min-w-0 flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
       <EditLabel label={label} hint={hint} />
-      <textarea className={`${editControlClass} min-h-[66px] py-2`} rows={3} value={value} placeholder={placeholder} disabled={disabled} onChange={(event) => onChange(event.target.value)} />
+      <textarea
+        className={`${editControlClass} min-h-[66px] py-2`}
+        rows={3}
+        value={value}
+        placeholder={placeholder}
+        disabled={disabled}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }

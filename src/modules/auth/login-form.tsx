@@ -3,6 +3,7 @@
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
+import { showAlert } from "@/lib/feedback";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -144,7 +145,6 @@ export function LoginForm() {
   const [saveUserDraft, setSaveUserDraft] = useState<boolean | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const email = emailDraft ?? savedLogin.email;
   const password = passwordDraft ?? savedLogin.password;
@@ -158,7 +158,6 @@ export function LoginForm() {
 
     const errors = validate(email, password);
     setFieldErrors(errors);
-    setFormError(null);
     if (errors.email || errors.password) {
       return;
     }
@@ -168,7 +167,7 @@ export function LoginForm() {
       const trimmedEmail = email.trim();
       const result = await loginWithEmail(trimmedEmail, password, saveUser);
       if (result.error) {
-        setFormError(messageFromAuthError(result.error));
+        showAlert(messageFromAuthError(result.error));
         return;
       }
 
@@ -182,7 +181,7 @@ export function LoginForm() {
       router.replace("/");
       router.refresh();
     } catch {
-      setFormError("Não foi possível entrar. Tente novamente.");
+      showAlert("Não foi possível entrar. Tente novamente.");
     } finally {
       setPending(false);
     }
@@ -285,10 +284,6 @@ export function LoginForm() {
           Guarda o e-mail e a senha neste navegador. A sessão também permanece neste dispositivo.
         </span>
       </div>
-
-      <p role="alert" aria-live="polite" className="min-h-5 text-sm leading-5 text-destructive">
-        {formError}
-      </p>
 
       <Button
         type="submit"

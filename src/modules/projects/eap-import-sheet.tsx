@@ -10,7 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ApiError } from "@/lib/api/fetcher";
 import { importEap } from "@/lib/api/generated/eap/eap";
 import type { ImportEap200 } from "@/lib/api/generated/model/importEap200";
-import { notifySuccess, reportFailure } from "@/lib/feedback";
+import { notifySuccess, reportFailure, showAlert } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 
 import { formatCivilDate } from "./eap-date-field";
@@ -48,7 +48,6 @@ export function EapImportSheet({
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [result, setResult] = useState<ImportEap200 | null>(null);
   const [busy, setBusy] = useState<"reading" | "importing" | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,7 +56,6 @@ export function EapImportSheet({
     setFileName(null);
     setRows([]);
     setResult(null);
-    setProblem(null);
     if (inputRef.current) {
       inputRef.current.value = "";
     }
@@ -76,12 +74,11 @@ export function EapImportSheet({
       return;
     }
     setBusy("reading");
-    setProblem(null);
     setFileName(file.name);
     try {
       const parsed = rowsFromTable(await readImportTable(file));
       if (parsed.problem) {
-        setProblem(parsed.problem);
+        showAlert(parsed.problem);
         return;
       }
       const response = await importEap(projectId, { fileName: file.name, rows: parsed.rows, confirm: false });
@@ -92,7 +89,7 @@ export function EapImportSheet({
       setResult(response.data);
       setStep("preview");
     } catch (caught) {
-      setProblem(caught instanceof ApiError ? reportFailure(caught, "Não foi possível validar a planilha.") : caught instanceof Error ? caught.message : "Não foi possível ler o arquivo.");
+      showAlert(caught instanceof ApiError ? reportFailure(caught, "Não foi possível validar a planilha.") : caught instanceof Error ? caught.message : "Não foi possível ler o arquivo.");
     } finally {
       setBusy(null);
     }
@@ -103,7 +100,6 @@ export function EapImportSheet({
       return;
     }
     setBusy("importing");
-    setProblem(null);
     try {
       const response = await importEap(projectId, { fileName, rows, confirm: true });
       if (response.status !== 200) {
@@ -113,7 +109,7 @@ export function EapImportSheet({
         // A EAP mudou desde a validação: volta para a pré-visualização com os novos erros.
         setResult(response.data);
         setStep("preview");
-        setProblem("A EAP mudou desde a validação. Revise os erros antes de importar.");
+        showAlert("A EAP mudou desde a validação. Revise os erros antes de importar.");
         return;
       }
       const { summary } = response.data;
@@ -122,7 +118,7 @@ export function EapImportSheet({
       reset();
       onClose();
     } catch (caught) {
-      setProblem(reportFailure(caught, "Não foi possível importar a EAP. Nenhum item foi gravado."));
+      reportFailure(caught, "Não foi possível importar a EAP. Nenhum item foi gravado.");
     } finally {
       setBusy(null);
     }
@@ -174,12 +170,6 @@ export function EapImportSheet({
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-6 py-5">
-            {problem ? (
-              <p role="alert" className="motion-fade mb-4 flex items-start gap-2 rounded-[7px] border border-[#efc3bf] bg-[#fff4f1] px-3 py-2 text-[10.5px] leading-snug text-[#9f2219]">
-                <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-                {problem}
-              </p>
-            ) : null}
 
             {step === "upload" ? (
               <div key="upload" className="motion-fade flex flex-col gap-4">

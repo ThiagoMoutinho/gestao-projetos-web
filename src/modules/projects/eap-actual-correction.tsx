@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { FieldError, useFieldErrors } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/fetcher";
@@ -42,7 +43,7 @@ export function PhaseActualCorrection({
   const [end, setEnd] = useState(recorded.end);
   const [justification, setJustification] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { errors, validate, clear, reset } = useFieldErrors<"start" | "end" | "justification">();
   const changes = [
     { label: "Início real", previous: recorded.start, next: start },
     { label: "Término real", previous: recorded.end, next: end },
@@ -52,30 +53,30 @@ export function PhaseActualCorrection({
     setStart(recorded.start);
     setEnd(recorded.end);
     setJustification("");
-    setError(null);
+    reset();
     setOpen(true);
   }
 
-  function problem() {
+  /** Marca os campos inválidos (mensagem abaixo de cada um); retorna true quando dá para confirmar. */
+  function check() {
     if (changes.length === 0) {
-      return "Altere ao menos uma data real para corrigir.";
+      return false;
     }
-    if (end && !concluded) {
-      return "O término real só pode ser registrado em fase concluída.";
-    }
-    if (justification.trim().length < 10) {
-      return "Informe a justificativa da correção com ao menos 10 caracteres.";
-    }
-    return actualDatesProblem({ start, end, today: civilDay(new Date()) ?? "" });
+    const today = civilDay(new Date()) ?? "";
+    const datesProblem = actualDatesProblem({ start, end, today });
+    return validate([
+      ["end", end !== "" && !concluded && "O término real só pode ser registrado em fase concluída."],
+      // O problema de datas aparece no campo a corrigir: início ausente ou futuro, senão o término.
+      [!start || start > today ? "start" : "end", datesProblem],
+      ["justification", justification.trim().length < 10 && "Informe a justificativa da correção com ao menos 10 caracteres."],
+    ]);
   }
 
   async function confirm() {
     if (busy) {
       return;
     }
-    const found = problem();
-    setError(found);
-    if (found) {
+    if (!check()) {
       return;
     }
     setBusy(true);
@@ -92,7 +93,7 @@ export function PhaseActualCorrection({
       setOpen(false);
       await onSaved();
     } catch (caught) {
-      setError(reportFailure(caught, "Não foi possível corrigir as datas reais."));
+      reportFailure(caught, "Não foi possível corrigir as datas reais.");
     } finally {
       setBusy(false);
     }
@@ -121,9 +122,9 @@ export function PhaseActualCorrection({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <DateField label="Início real" value={start} onChange={setStart} />
+            <DateField label="Início real" value={start} onChange={(value) => { setStart(value); clear("start"); }} error={errors.start} />
             {concluded ? (
-              <DateField label="Término real" value={end} onChange={setEnd} />
+              <DateField label="Término real" value={end} onChange={(value) => { setEnd(value); clear("end"); }} error={errors.end} />
             ) : (
               <div className="flex flex-col gap-1.5">
                 <span className="text-[8.5px] font-semibold text-[#475467]">Término real</span>
@@ -138,9 +139,15 @@ export function PhaseActualCorrection({
             <Textarea
               className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]"
               value={justification}
-              onChange={(event) => setJustification(event.target.value)}
+              onChange={(event) => {
+                setJustification(event.target.value);
+                clear("justification");
+              }}
+              aria-invalid={errors.justification ? true : undefined}
+              aria-describedby={errors.justification ? "actual-correction-justification-error" : undefined}
               placeholder="Obrigatória, com ao menos 10 caracteres (ex.: data registrada em ata)."
             />
+            <FieldError id="actual-correction-justification-error" message={errors.justification} />
           </label>
           {changes.length > 0 ? (
             <ul className="motion-fade flex flex-col gap-1 rounded-[7px] bg-[#f5f9ff] p-2.5 text-[9px] leading-[1.45] text-[#475467]">
@@ -153,11 +160,6 @@ export function PhaseActualCorrection({
                 </li>
               ))}
             </ul>
-          ) : null}
-          {error ? (
-            <p role="alert" className="rounded-[7px] border border-[#efc3bf] bg-[#fff4f1] px-3 py-2 text-[11px] leading-snug text-[#9f2219]">
-              {error}
-            </p>
           ) : null}
           <AlertDialogFooter className="-mx-5 -mb-5 px-5 py-3">
             <AlertDialogCancel className="h-8 text-[11px]" disabled={busy}>

@@ -68,7 +68,6 @@ export function ProjectEap({
   const [movingPhase, setMovingPhase] = useState(false);
   const [draggingPhaseId, setDraggingPhaseId] = useState<string | null>(null);
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
-  const [orderError, setOrderError] = useState<string | null>(null);
   const [createdNotice, setCreatedNotice] = useState<string | null>(null);
   const [deleteRequest, setDeleteRequest] = useState<EapDeleteRequest | null>(null);
   const [importing, setImporting] = useState(false);
@@ -259,7 +258,6 @@ export function ProjectEap({
     movingPhaseRef.current = true;
     setItems(next);
     setMovingPhase(true);
-    setOrderError(null);
     setDraggingPhaseId(null);
     setDragOverPhaseId(null);
 
@@ -291,7 +289,7 @@ export function ProjectEap({
       }
     } catch (caught) {
       setItems(previous);
-      setOrderError(reportFailure(caught, "Não foi possível reordenar os itens da fase."));
+      reportFailure(caught, "Não foi possível reordenar os itens da fase.");
     } finally {
       movingPhaseRef.current = false;
       setMovingPhase(false);
@@ -302,7 +300,6 @@ export function ProjectEap({
     movingPhaseRef.current = true;
     setItems(next);
     setMovingPhase(true);
-    setOrderError(null);
     setDraggingPhaseId(null);
     setDragOverPhaseId(null);
 
@@ -315,7 +312,7 @@ export function ProjectEap({
       }
     } catch (caught) {
       setItems(previous);
-      setOrderError(reportFailure(caught, "Não foi possível reordenar as fases."));
+      reportFailure(caught, "Não foi possível reordenar as fases.");
     } finally {
       movingPhaseRef.current = false;
       setMovingPhase(false);
@@ -408,11 +405,6 @@ export function ProjectEap({
     <div className="flex flex-col gap-4">
       {pending && !selection ? (
         <UnsavedNotice onDiscard={discard} onKeep={() => setPending(null)} />
-      ) : null}
-      {orderError ? (
-        <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {orderError}
-        </p>
       ) : null}
       <EapWorkbench
         phases={items}

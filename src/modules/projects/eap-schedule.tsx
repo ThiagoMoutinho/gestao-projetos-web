@@ -1,8 +1,9 @@
 "use client";
 
 import { AlertTriangle, ArrowRight, CalendarClock, Check, Info, Lock } from "lucide-react";
-import { startTransition, Suspense, use, useDeferredValue, useEffect, useState, type ReactNode } from "react";
+import { startTransition, Suspense, use, useDeferredValue, useEffect, useId, useState, type ReactNode } from "react";
 
+import { FieldError, useFieldErrors } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,6 +62,7 @@ export function usePlanDraft({
   const [start, setStart] = useState(current.start);
   const [end, setEnd] = useState(current.end);
   const [justification, setJustification] = useState("");
+  const fieldErrors = useFieldErrors<"start" | "end" | "justification">();
   const startChanged = !single && start !== current.start;
   const endChanged = end !== current.end;
   const changed = startChanged || endChanged;
@@ -77,23 +79,21 @@ export function usePlanDraft({
     onDirty?.(dirty);
   }, [dirty, onDirty]);
 
-  function problem() {
+  /** Marca os campos inválidos (mensagem abaixo de cada um); retorna true quando dá para salvar. */
+  function check() {
     if (!changed) {
-      return null;
+      return false;
     }
-    if (!end || (!single && !start)) {
-      return single ? "Informe a data prevista." : "Informe o início e o término planejados.";
-    }
-    if (!single && end < start) {
-      return "O término planejado não pode ser anterior ao início.";
-    }
-    if (reschedule && justification.trim().length < 10) {
-      return "A alteração do prazo exige justificativa de replanejamento com ao menos 10 caracteres.";
-    }
-    if (phaseReschedule && justification.trim().length < 10) {
-      return "Estender o prazo da fase também é replanejamento: informe a justificativa com ao menos 10 caracteres.";
-    }
-    return null;
+    return fieldErrors.validate([
+      ["start", !single && !start && "Informe o início planejado."],
+      ["end", !end && (single ? "Informe a data prevista." : "Informe o término planejado.")],
+      ["end", !single && start !== "" && end !== "" && end < start && "O término planejado não pode ser anterior ao início."],
+      ["justification", reschedule && justification.trim().length < 10 && "Informe a justificativa de replanejamento com ao menos 10 caracteres."],
+      [
+        "justification",
+        phaseReschedule && justification.trim().length < 10 && "Estender o prazo da fase também é replanejamento: informe a justificativa com ao menos 10 caracteres.",
+      ],
+    ]);
   }
 
   async function save(): Promise<SavedChange> {
@@ -126,15 +126,25 @@ export function usePlanDraft({
     start,
     end,
     justification,
-    setStart,
-    setEnd,
-    setJustification,
+    setStart: (value: string) => {
+      setStart(value);
+      fieldErrors.clear("start");
+    },
+    setEnd: (value: string) => {
+      setEnd(value);
+      fieldErrors.clear("end");
+    },
+    setJustification: (value: string) => {
+      setJustification(value);
+      fieldErrors.clear("justification");
+    },
+    errors: fieldErrors.errors,
     changed,
     reschedule,
     cascade,
     setExtendPhase,
     dirty,
-    problem,
+    check,
     save,
   };
 }
@@ -143,11 +153,12 @@ export type PlanDraft = ReturnType<typeof usePlanDraft>;
 
 /** Campos de planejamento com justificativa e a prévia das datas anteriores e novas. */
 export function PlanFields({ plan }: { plan: PlanDraft }) {
+  const justificationErrorId = useId();
   return (
     <div className="flex flex-col gap-[13px]">
       <div className={cn("grid grid-cols-1 gap-[13px]", plan.single ? "" : "sm:grid-cols-2")}>
-        {plan.single ? null : <DateField label="Início planejado" value={plan.start} onChange={plan.setStart} />}
-        <DateField label={plan.single ? "Data prevista" : "Término planejado"} value={plan.end} onChange={plan.setEnd} />
+        {plan.single ? null : <DateField label="Início planejado" value={plan.start} onChange={plan.setStart} error={plan.errors.start} />}
+        <DateField label={plan.single ? "Data prevista" : "Término planejado"} value={plan.end} onChange={plan.setEnd} error={plan.errors.end} />
       </div>
       <label className="flex flex-col gap-1.5">
         <span className="text-[8.5px] font-semibold text-[#475467]">Justificativa de replanejamento</span>
@@ -155,8 +166,11 @@ export function PlanFields({ plan }: { plan: PlanDraft }) {
           className={textareaClass}
           value={plan.justification}
           onChange={(event) => plan.setJustification(event.target.value)}
+          aria-invalid={plan.errors.justification ? true : undefined}
+          aria-describedby={plan.errors.justification ? justificationErrorId : undefined}
           placeholder="Obrigatória quando o prazo for alterado."
         />
+        <FieldError id={justificationErrorId} message={plan.errors.justification} />
       </label>
       {plan.cascade ? <CascadeProposal cascade={plan.cascade} onApplyChange={plan.setExtendPhase} /> : null}
       {plan.changed ? (
@@ -382,19 +396,15 @@ function PlanForm({
 }) {
   const plan = usePlanDraft({ projectId, target, schedule, enabled: active, phasePlan, onDirty: onDirtyChange });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   async function save() {
-    const problem = plan.changed ? plan.problem() : "Altere o início ou o término para salvar.";
-    setError(problem);
-    if (problem) {
+    if (!plan.check()) {
       return;
     }
     setSaving(true);
     try {
       await onSaved(await plan.save());
     } catch (caught) {
-      setError(reportFailure(caught, "Não foi possível salvar o planejamento."));
+      reportFailure(caught, "Não foi possível salvar o planejamento.");
     } finally {
       setSaving(false);
     }
@@ -404,7 +414,6 @@ function PlanForm({
     <div className="flex flex-col gap-3">
       <span className="block text-[9px] font-semibold tracking-[0.04em] text-[#3971ba] uppercase">{title}</span>
       <PlanFields plan={plan} />
-      {error ? <p role="alert" className="text-[8.5px] text-destructive">{error}</p> : null}
       <div className="flex flex-wrap justify-end gap-[7px]">
         <Button type="button" variant="outline" className={secondaryButton} disabled={saving} onClick={onCancel}>
           Cancelar
