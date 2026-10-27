@@ -105,6 +105,15 @@ export function canHomologateMilestone(
 }
 
 /** Espelha a política da API: ADMIN, PMO ou a gestão do projeto; COORDENADOR não reprograma. */
+/** Encerramento formal (mesma regra da API): PMO, coordenação, administração ou a gestão do projeto. */
+export function canCloseProject(access: EapAccess) {
+  if (access.globalRole === "ADMIN" || access.globalRole === "PMO" || access.globalRole === "COORDENADOR") {
+    return true;
+  }
+
+  return !BLOCKED_STRUCTURE_GLOBALS.has(access.globalRole) && access.isProjectManager;
+}
+
 export function canReschedule(access: EapAccess) {
   if (access.globalRole === "ADMIN" || access.globalRole === "PMO") {
     return true;

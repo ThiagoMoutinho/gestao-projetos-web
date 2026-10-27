@@ -6,6 +6,7 @@ import type { GetProject200RolesItem } from "@/lib/api/generated/model/getProjec
 import {
   buildEapAccess,
   canAuthorizeResubmission,
+  canCloseProject,
   canEditItem,
   canHomologateMilestone,
   canRegisterEvidenceOn,
@@ -79,5 +80,16 @@ describe("acesso à EAP no frontend", () => {
     assert.equal(canReschedule(access("GESTOR")), false);
     assert.equal(canReschedule(access("GESTOR", ["PO"])), false);
     assert.equal(canReschedule(access("FORNECEDOR", ["GESTOR"])), false);
+  });
+
+  it("libera o encerramento ao PMO, coordenação, ADMIN e gestão do projeto; nunca a fornecedor ou colaborador", () => {
+    assert.equal(canCloseProject(access("PMO")), true);
+    assert.equal(canCloseProject(access("COORDENADOR")), true);
+    assert.equal(canCloseProject(access("ADMIN")), true);
+    assert.equal(canCloseProject(access("GESTOR", [], "owner-1")), true);
+    assert.equal(canCloseProject(access("GESTOR", ["GESTOR"])), true);
+    assert.equal(canCloseProject(access("GESTOR", ["PO"])), false);
+    assert.equal(canCloseProject(access("FORNECEDOR", ["GESTOR"])), false);
+    assert.equal(canCloseProject(access("COLABORADOR", [], "owner-1")), false);
   });
 });

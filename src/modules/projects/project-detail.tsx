@@ -19,7 +19,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 import type { ProjectDetail as ProjectDetailData } from "./load-project-detail";
-import { buildEapAccess, type EapAccess } from "./eap-access";
+import { buildEapAccess, canCloseProject, type EapAccess } from "./eap-access";
+import { ProjectClosure } from "./project-closure";
 import { ProjectEap } from "./project-eap";
 import { ProjectSchedule } from "./project-schedule";
 import { projectStatusLabel, projectStatusVariant } from "./project-status";
@@ -157,7 +158,10 @@ export function ProjectDetail({
             <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">{project.name}</h1>
             <p className="text-sm break-all text-muted-foreground">Identificador {project.id}</p>
           </div>
-          <Badge variant={projectStatusVariant(project.status)}>{projectStatusLabel(project.status)}</Badge>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <Badge variant={projectStatusVariant(project.status)}>{projectStatusLabel(project.status)}</Badge>
+            <ProjectClosure projectId={project.id} closed={project.status === "CONCLUIDO"} canClose={canCloseProject(access)} />
+          </div>
         </div>
         <dl className="grid gap-3 sm:grid-cols-2">
           <Fact label="Responsável principal" value={project.ownerName} />
@@ -198,7 +202,7 @@ export function ProjectDetail({
 function Overview({ project, access }: { project: ProjectDetailData; access: EapAccess }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
-      <div className="lg:col-span-2">
+      <div id="cronograma" className="scroll-mt-6 lg:col-span-2">
         <ProjectSchedule projectId={project.id} schedule={project.schedule} closed={project.status === "CONCLUIDO"} access={access} />
       </div>
       <Card>
