@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Check, ChevronDown, Flag, Folder, ListTodo, Plus } from "lucide-react";
+import { Check, ChevronDown, FileSpreadsheet, Flag, Folder, ListTodo, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -22,6 +23,8 @@ import {
 import { EapWorkbench, MilestoneRow, PhaseRow, TaskRow, filterPhases, idleEapFilter, type EapListFilter, type RowActions } from "./eap-board";
 import { EapCreateSheet, type EapCreateRequest } from "./eap-create";
 import { EapDeleteDialog, type EapDeleteRequest } from "./eap-delete-dialog";
+import { EapImportSheet } from "./eap-import-sheet";
+import { readPhases } from "./load-project-detail";
 import { EapDetail, eapCode } from "./eap-detail-view";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -68,6 +71,7 @@ export function ProjectEap({
   const [orderError, setOrderError] = useState<string | null>(null);
   const [createdNotice, setCreatedNotice] = useState<string | null>(null);
   const [deleteRequest, setDeleteRequest] = useState<EapDeleteRequest | null>(null);
+  const [importing, setImporting] = useState(false);
   const dirtyRef = useRef(false);
   const movingPhaseRef = useRef(false);
 
@@ -417,7 +421,7 @@ export function ProjectEap({
         filter={filter}
         onFilterChange={setFilter}
         empty={visible.length === 0}
-        headingAction={<CreateMenu phases={items} enabled={access.canCreateItems} onCreate={setCreate} />}
+        headingAction={<CreateMenu phases={items} enabled={access.canCreateItems} onCreate={setCreate} onImport={() => setImporting(true)} importBlocked={items.length > 0} />}
       >
         {visible.map(({ phase, tasks, milestones }) => {
             const phaseIndex = items.findIndex((item) => item.id === phase.id);
@@ -542,6 +546,19 @@ export function ProjectEap({
           }}
         />
       ) : null}
+      <EapImportSheet
+        projectId={projectId}
+        open={importing}
+        onClose={() => setImporting(false)}
+        onImported={async () => {
+          const next = await readPhases(projectId, names);
+          if (next) {
+            setItems(next);
+          } else {
+            reportFailure(null, "EAP importada, mas não foi possível atualizar a lista. Recarregue a página.");
+          }
+        }}
+      />
       <EapDeleteDialog
         projectId={projectId}
         request={deleteRequest}
@@ -557,10 +574,15 @@ function CreateMenu({
   phases,
   enabled,
   onCreate,
+  onImport,
+  importBlocked,
 }: {
   phases: ProjectPhaseView[];
   enabled: boolean;
   onCreate: (request: EapCreateRequest) => void;
+  onImport: () => void;
+  /** A importação é só a carga inicial: fica indisponível quando a EAP já tem itens. */
+  importBlocked: boolean;
 }) {
   const firstPhase = phases[0]?.id;
 
@@ -595,6 +617,16 @@ function CreateMenu({
             <span>
               <strong className="block text-[10px]">Novo marco</strong>
               <small className="mt-1 block text-[8px] leading-snug text-[#98a2b3]">Registre uma entrega ou decisão importante</small>
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="my-1.5" />
+          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || importBlocked} onClick={onImport}>
+            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-[#e8f6ef] text-[#157454]"><FileSpreadsheet className="size-4" aria-hidden="true" /></span>
+            <span>
+              <strong className="block text-[10px]">Importar EAP</strong>
+              <small className="mt-1 block text-[8px] leading-snug text-[#98a2b3]">
+                {importBlocked ? "Disponível apenas com a EAP vazia (carga inicial)" : "Carga inicial de fases, tarefas e marcos por .xlsx ou .csv"}
+              </small>
             </span>
           </DropdownMenuItem>
         </DropdownMenuGroup>

@@ -8,7 +8,7 @@
     "start": "next start --port 3001",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/modules/projects/eap-access.test.ts src/modules/projects/eap-status.test.ts src/modules/projects/eap-history.test.ts src/modules/projects/eap-deadline.test.ts",
+    "test": "node --test src/modules/projects/eap-access.test.ts src/modules/projects/eap-status.test.ts src/modules/projects/eap-history.test.ts src/modules/projects/eap-deadline.test.ts src/modules/projects/eap-import.test.ts",
     "api:generate": "orval"
   },
   "dependencies": {
@@ -17,6 +17,7 @@
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "date-fns": "^4.4.0",
+    "exceljs": "4.4.0",
     "lucide-react": "^1.59.0",
     "next": "16.4.2",
     "next-themes": "^0.4.6",

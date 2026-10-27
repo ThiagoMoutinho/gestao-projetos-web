@@ -104,7 +104,8 @@ async function readMembers(projectId: string) {
   }
 }
 
-async function readPhases(projectId: string, names: Map<string, string> | null) {
+/** Fases com tarefas e marcos; também usado no navegador para atualizar a EAP após a importação. */
+export async function readPhases(projectId: string, names: Map<string, string> | null) {
   try {
     const response = await listEapPhases(projectId);
 
