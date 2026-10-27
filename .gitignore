@@ -56,3 +56,6 @@ backups/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Instruções locais do Claude Code (não versionar)
+.claude/
