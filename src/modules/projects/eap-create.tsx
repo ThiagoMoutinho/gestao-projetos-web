@@ -19,10 +19,10 @@ import type { ListEapMilestones200DataItemType } from "@/lib/api/generated/model
 
 import { canReschedule, type EapAccess } from "./eap-access";
 import { phaseCoverage, spanOf } from "./eap-deadline";
-import { CascadeProposal } from "./eap-schedule";
 import { comboboxControlClass } from "./eap-date-field";
 import { MilestoneFlow } from "./eap-milestone-flow";
 import { civilDateInput, phaseItemRanges, presentMilestone, presentPhase, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
+import { DEFAULT_PRIORITY, PRIORITY_OPTIONS, type TaskPriority } from "./eap-priority";
 import type { EapPerson } from "./eap-panel";
 import { Reveal } from "./eap-reveal";
 import { deriveTaskStatus } from "./eap-status";
@@ -74,14 +74,14 @@ export function EapCreateSheet({
       <SheetContent
         showCloseButton={false}
         overlayClassName="bg-[rgba(13,25,42,0.2)] supports-backdrop-filter:backdrop-blur-[1px]"
-        className="w-full gap-0 overflow-hidden bg-white p-0 shadow-[0_18px_48px_rgba(16,24,40,0.16)] data-[side=right]:w-full data-[side=right]:sm:max-w-[620px]"
+        className="w-full gap-0 overflow-hidden bg-white p-0 shadow-[0_18px_48px_rgba(16,24,40,0.16)] data-[side=right]:w-full data-[side=right]:sm:max-w-[680px]"
       >
         <div className="flex h-full min-h-0 flex-col">
-          <header className="flex min-h-[116px] items-start justify-between gap-[15px] border-b border-[#e4e7ec] px-[22px] pt-6 pb-[18px]">
+          <header className="flex min-h-[124px] items-start justify-between gap-[15px] border-b border-[#e4e7ec] px-[22px] pt-6 pb-[18px]">
             <div className="min-w-0">
-              <span className="mb-[9px] block text-[9px] leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">Novo item da EAP</span>
-              <SheetTitle className="max-w-[470px] truncate text-[17px] leading-[1.35] font-semibold text-[#172033]">{title}</SheetTitle>
-              <span className="mt-[7px] flex items-center gap-1.5 text-[8.5px] font-semibold text-[#8a6116]">
+              <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">Novo item da EAP</span>
+              <SheetTitle className="max-w-[520px] truncate text-[19px] leading-[1.35] font-semibold text-[#172033]">{title}</SheetTitle>
+              <span className="mt-[7px] flex items-center gap-1.5 text-xs font-semibold text-[#8a6116]">
                 <span className="size-1.5 rounded-full bg-[#e0a130]" />
                 {guidance}
               </span>
@@ -101,6 +101,7 @@ export function EapCreateSheet({
                 names={names}
                 phaseId={request.phaseId}
                 correctiveFor={request.correctiveFor ?? null}
+                canExtendPhase={canReschedule(access)}
                 onClose={onClose}
                 onTask={onTask}
               />
@@ -180,7 +181,7 @@ function PhaseForm({
     <FormBody saving={saving} onClose={onClose} onSubmit={() => void save()}>
       <ItemContext kind="phase" />
       <PanelSection title="Informações básicas" subtitle="Identificação e organização do item">
-        <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextControl label="Nome do item *" value={name} placeholder="Informe o nome da fase" onChange={(value) => { setName(value); clear("name"); }} error={errors.name} full />
           <AreaControl label="Descrição" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
           <LockedControl label="Situação" hint="automática" value={phaseStatusLabel("NAO_INICIADA")} />
@@ -203,18 +204,18 @@ function PhaseForm({
       <PanelSection
         title="Configuração da fase"
         subtitle="O andamento é calculado pelos itens subordinados"
-        aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-[#edf4ff] px-2 py-[5px] text-[8.5px] font-semibold text-[#2864bb]"><List className="size-3" aria-hidden="true" />Calculado</span>}
+        aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-[#edf4ff] px-2 py-[5px] text-xs font-semibold text-[#2864bb]"><List className="size-3" aria-hidden="true" />Calculado</span>}
         tone="accent"
       >
         <div className="mb-3.5 rounded-[7px] bg-[#f8fafc] px-[11px] py-[11px]">
-          <div className="mb-2 flex items-center justify-between text-[8.5px] text-[#667085]">
+          <div className="mb-2 flex items-center justify-between text-xs text-[#667085]">
             <span>Andamento consolidado</span>
-            <strong className="text-[12px] text-[#175cd3]">0%</strong>
+            <strong className="text-xs text-[#175cd3]">0%</strong>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-[#e9eef5]">
             <div className="h-full w-0 rounded-full bg-[#2873cf]" />
           </div>
-          <p className="mt-[9px] text-[8.5px] leading-normal text-[#8a94a6]">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</p>
+          <p className="mt-[9px] text-xs leading-normal text-[#8a94a6]">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</p>
         </div>
         <AreaControl label="Critério de conclusão" value={criteria} placeholder="Descreva o que precisa estar pronto para concluir a fase." onChange={setCriteria} rows={2} full />
       </PanelSection>
@@ -231,6 +232,7 @@ function TaskForm({
   names,
   phaseId,
   correctiveFor,
+  canExtendPhase,
   onClose,
   onTask,
 }: {
@@ -241,6 +243,8 @@ function TaskForm({
   phaseId: string;
   /** Tarefa aberta para atender às correções solicitadas na homologação deste marco. */
   correctiveFor: { milestoneId: string; title: string } | null;
+  /** Quem pode reprogramar pode estender a fase na criação (ajuste em cascata). */
+  canExtendPhase: boolean;
   onClose: () => void;
   onTask: (task: ProjectTaskView) => void;
 }) {
@@ -248,17 +252,29 @@ function TaskForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>(DEFAULT_PRIORITY);
   const [progress, setProgress] = useState(0);
   const [blocked, setBlocked] = useState(false);
   const [blocker, setBlocker] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [saving, setSaving] = useState(false);
-  const { errors, validate, clear } = useFieldErrors<"title" | "phase" | "blocker">();
+  const { errors, validate, clear } = useFieldErrors<"title" | "phase" | "blocker" | "startDate" | "endDate">();
+  const phase = phases.find((item) => item.id === selectedPhase);
+  const phaseCurrent = phase ? { start: civilDateInput(phase.schedule.plannedStartAt), end: civilDateInput(phase.schedule.plannedEndAt) } : null;
+  const coverage = phaseCurrent && startDate && endDate && endDate >= startDate ? phaseCoverage(phaseCurrent, spanOf([{ start: startDate, end: endDate }])) : null;
+  // Criar o item fora do período da fase é o caso normal: quem pode reprogramar estende a fase junto, sem pergunta.
+  // O ajuste não é silencioso: a API o registra no histórico da fase com a justificativa automática abaixo.
+  const extending = coverage !== null && canExtendPhase;
 
   async function save() {
     const valid = validate([
       ["title", !title.trim() && "Informe o nome da tarefa."],
       ["phase", !selectedPhase && "Escolha a fase da tarefa."],
       ["blocker", blocked && blocker.trim().length < 10 && "Informe o motivo do impedimento com ao menos 10 caracteres."],
+      ["startDate", !startDate && "Informe o início planejado."],
+      ["endDate", !endDate && "Informe o término planejado."],
+      ["endDate", Boolean(startDate && endDate) && endDate < startDate && "O término planejado não pode ser anterior ao início."],
     ]);
     if (!valid) {
       return;
@@ -269,6 +285,10 @@ function TaskForm({
         title: title.trim(),
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(assigneeId ? { assigneeId } : {}),
+        priority,
+        plannedStartAt: civilToIso(startDate),
+        plannedEndAt: civilToIso(endDate),
+        ...(extending ? { extendPhase: true, justification: `Período da fase ajustado automaticamente na criação da tarefa "${title.trim()}".` } : {}),
         ...(correctiveFor ? { correctiveMilestoneId: correctiveFor.milestoneId } : {}),
       });
       if (response.status !== 201) {
@@ -308,7 +328,7 @@ function TaskForm({
     <FormBody saving={saving} onClose={onClose} onSubmit={() => void save()}>
       <ItemContext kind="task" />
       {correctiveFor ? (
-        <p className="mt-4 flex items-start gap-2 rounded-[7px] border border-[#f6d2ad] bg-[#fff6ec] p-2.5 text-[8.5px] leading-[1.45] text-[#b4570f]">
+        <p className="mt-4 flex items-start gap-2 rounded-[7px] border border-[#f6d2ad] bg-[#fff6ec] p-2.5 text-xs leading-[1.45] text-[#b4570f]">
           <Flag className="mt-px size-[15px] shrink-0" aria-hidden="true" />
           <span>
             Tarefa corretiva do marco <strong>{correctiveFor.title}</strong>. Ela fica vinculada às correções da homologação e
@@ -317,7 +337,7 @@ function TaskForm({
         </p>
       ) : null}
       <PanelSection title="Informações básicas" subtitle="Identificação e organização do item">
-        <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextControl label="Nome do item *" value={title} placeholder="Informe o nome da tarefa" onChange={(value) => { setTitle(value); clear("title"); }} error={errors.title} full />
           <AreaControl label="Descrição" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
           <LockedControl label="Situação" hint="pelo andamento" value={taskStatusLabel(deriveTaskStatus(progress))} />
@@ -347,10 +367,12 @@ function TaskForm({
           ) : (
             <LockedControl label="Responsável" value="Não foi possível consultar os participantes." />
           )}
-          <LockedControl label="Planejamento" hint="nos detalhes da tarefa" value="Início e término definidos após a criação" />
+          <SelectControl label="Prioridade" value={priority} onChange={setPriority} options={PRIORITY_OPTIONS.map((option) => ({ ...option }))} />
+          <CivilDateField label="Início planejado *" value={startDate} onChange={(value) => { setStartDate(value); clear("startDate"); clear("endDate"); }} error={errors.startDate} />
+          <CivilDateField label="Término planejado *" value={endDate} onChange={(value) => { setEndDate(value); clear("endDate"); }} error={errors.endDate} />
         </div>
       </PanelSection>
-      <PanelSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" aside={<strong className="text-[12px] text-[#175cd3]">{progress}%</strong>} tone="accent">
+      <PanelSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" aside={<strong className="text-xs text-[#175cd3]">{progress}%</strong>} tone="accent">
         <div className="h-1.5 overflow-hidden rounded-full bg-[#e9eef5]">
           <div className="h-full rounded-full bg-[#2873cf]" style={{ width: `${progress}%` }} />
         </div>
@@ -359,7 +381,7 @@ function TaskForm({
             <button
               key={value}
               type="button"
-              className={`h-[29px] min-w-0 rounded-[6px] border text-[8.5px] font-semibold ${progress === value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`}
+              className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progress === value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`}
               onClick={() => setProgress(value)}
             >
               {value}%
@@ -368,13 +390,9 @@ function TaskForm({
         </div>
         <div className="mb-3.5 grid grid-cols-[140px_auto] items-end gap-2">
           <TextControl label="Percentual exato de andamento" value={String(progress)} onChange={(value) => setProgress(Math.min(90, clampPercent(value)))} />
-          <span className="flex h-9 items-center text-[8px] text-[#98a2b3]">% concluído</span>
+          <span className="flex h-9 items-center text-xs text-[#98a2b3]">% concluído</span>
         </div>
-        <p className="mb-3.5 text-[8px] leading-normal text-[#98a2b3]">A conclusão é registrada depois, em “Concluir tarefa”, com as datas reais confirmadas.</p>
-        <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-          <LockedControl label="Prioridade" hint="não gravado" value="Indisponível neste cadastro" />
-          <LockedControl label="Dependência" hint="não gravado" value="Indisponível neste cadastro" />
-        </div>
+        <p className="mb-3.5 text-xs leading-normal text-[#98a2b3]">A conclusão é registrada depois, em “Concluir tarefa”, com as datas reais confirmadas.</p>
         <button
           type="button"
           aria-expanded={blocked}
@@ -385,8 +403,8 @@ function TaskForm({
             <AlertTriangle className="size-4" aria-hidden="true" />
           </span>
           <span>
-            <strong className="block text-[9.5px] text-[#344054]">Esta tarefa está impedida</strong>
-            <small className="mt-[3px] block text-[8px] text-[#98a2b3]">Destaque o item na EAP e informe o motivo.</small>
+            <strong className="block text-xs text-[#344054]">Esta tarefa está impedida</strong>
+            <small className="mt-[3px] block text-xs text-[#98a2b3]">Destaque o item na EAP e informe o motivo.</small>
           </span>
         </button>
         <Reveal open={blocked}>
@@ -432,15 +450,14 @@ function MilestoneForm({
   const [dueDate, setDueDate] = useState("");
   const [reviewerId, setReviewerId] = useState("");
   const [presenterId, setPresenterId] = useState("");
-  const [extendPhase, setExtendPhase] = useState(false);
-  const [justification, setJustification] = useState("");
   const [saving, setSaving] = useState(false);
-  const { errors, validate, clear } = useFieldErrors<"title" | "description" | "phase" | "dueDate" | "presenter" | "reviewer" | "justification">();
+  const { errors, validate, clear } = useFieldErrors<"title" | "description" | "phase" | "dueDate" | "presenter" | "reviewer">();
   const phase = phases.find((item) => item.id === selectedPhase);
   const phaseCurrent = phase ? { start: civilDateInput(phase.schedule.plannedStartAt), end: civilDateInput(phase.schedule.plannedEndAt) } : null;
   const coverage = phaseCurrent && dueDate ? phaseCoverage(phaseCurrent, spanOf([{ start: "", end: dueDate }, ...(phase ? phaseItemRanges(phase) : [])])) : null;
-  const cascade = coverage && phaseCurrent ? { current: phaseCurrent, next: coverage, apply: canExtendPhase && extendPhase } : null;
-  const needsJustification = cascade !== null && cascade.apply && (cascade.current.start !== "" || cascade.current.end !== "");
+  // Criar o item fora do período da fase é o caso normal: quem pode reprogramar estende a fase junto, sem pergunta.
+  // O ajuste não é silencioso: a API o registra no histórico da fase com a justificativa automática abaixo.
+  const extending = coverage !== null && canExtendPhase;
 
   async function save() {
     const valid = validate([
@@ -451,7 +468,6 @@ function MilestoneForm({
       ["presenter", !presenterId && "Designe quem vai apresentar o marco ao gestor."],
       ["reviewer", !reviewerId && "Designe o gestor que vai validar o marco."],
       ["reviewer", presenterId !== "" && presenterId === reviewerId && "Quem apresenta o marco não pode ser o gestor que vai validá-lo."],
-      ["justification", needsJustification && justification.trim().length < 10 && "Informe a justificativa com ao menos 10 caracteres."],
     ]);
     if (!valid) {
       return;
@@ -465,7 +481,7 @@ function MilestoneForm({
         description: description.trim(),
         reviewerId,
         presenterId,
-        ...(cascade?.apply ? { extendPhase: true, justification: justification.trim() || null } : {}),
+        ...(extending ? { extendPhase: true, justification: `Período da fase ajustado automaticamente na criação do marco "${title.trim()}".` } : {}),
       });
       if (response.status !== 201) {
         throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível criar o marco.");
@@ -483,7 +499,7 @@ function MilestoneForm({
     <FormBody saving={saving} onClose={onClose} onSubmit={() => void save()}>
       <ItemContext kind="milestone" />
       <PanelSection title="Informações básicas" subtitle="Identificação e organização do item">
-        <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextControl label="Nome do item *" value={title} placeholder="Informe o nome do marco" onChange={(value) => { setTitle(value); clear("title"); }} error={errors.title} full />
           <AreaControl label="Descrição *" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={(value) => { setDescription(value); clear("description"); }} error={errors.description} full />
           <SelectControl
@@ -517,34 +533,19 @@ function MilestoneForm({
             options={MILESTONE_TYPE_OPTIONS.map(([value, label]) => ({ value, label }))}
           />
         </div>
-        {cascade ? (
-          <div className="mt-[13px] flex flex-col gap-[13px]">
-            {canExtendPhase ? (
-              <CascadeProposal cascade={cascade} onApplyChange={setExtendPhase} />
-            ) : (
-              <p role="status" className="flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.45] text-[#865516]">
-                <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-                A data fica fora do período planejado da fase. O ajuste do prazo da fase cabe à gestão do projeto ou ao PMO.
-              </p>
-            )}
-            {needsJustification ? (
-              <AreaControl label="Justificativa do ajuste da fase *" value={justification} placeholder="Por que o prazo da fase precisa ser estendido?" onChange={(value) => { setJustification(value); clear("justification"); }} error={errors.justification} full />
-            ) : null}
-          </div>
-        ) : null}
       </PanelSection>
       <PanelSection title="Fluxo de entrega e aceite" subtitle="Pendente, entregue e aceito pelo gestor" tone="accent">
-        <div className="mb-[13px]">
+        <div className="mb-4">
           <MilestoneFlow status="PENDENTE" />
         </div>
-        <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <LockedControl label="Situação da entrega" value="Pendente" />
           <LockedControl label="Entrega registrada por" value="Apresentador designado ou gestão do projeto" />
           <AreaControl label="Observações da entrega" hint="não gravado" value="" placeholder="As observações formais entram na entrega, depois que o marco existe." onChange={() => undefined} disabled rows={3} full />
         </div>
-        <div className="mt-[15px] border-t border-[#edf0f3] pt-[15px]">
-          <span className="mb-2.5 block text-[8.5px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Aprovação formal</span>
-          <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
+        <div className="mt-5 border-t border-[#edf0f3] pt-5">
+          <span className="mb-3 block text-xs font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Aprovação formal</span>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {reviewers ? (
               <SelectControl
                 label="Gestor validador *"
@@ -563,13 +564,13 @@ function MilestoneForm({
             <LockedControl label="Critérios de aceite" hint="não gravado" value="Evidências validadas e sem pendências críticas" as="text" />
           </div>
         </div>
-        <div className="mt-[13px] flex items-start gap-2 rounded-[7px] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.5] text-[#8a6116]">
-          <AlertTriangle className="mt-0.5 size-[15px] shrink-0" aria-hidden="true" />
+        <div className="mt-4 flex items-start gap-2 rounded-[7px] bg-[#fff8e9] p-3.5 text-xs leading-[1.5] text-[#8a6116]">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <span>O responsável pela entrega pode registrar evidências e enviar para validação, mas o aceite deve ser realizado por outro responsável autorizado.</span>
         </div>
-        <div className="mt-3 flex items-center justify-end gap-[9px]">
-          <small className="mr-auto text-[7.5px] text-[#98a2b3]">Adicione ao menos uma evidência antes de enviar.</small>
-          <Button type="button" variant="outline" className="h-[30px] gap-1.5 rounded-[7px] px-[9px] text-[8.5px]" disabled>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <small className="mr-auto text-xs text-[#98a2b3]">Adicione ao menos uma evidência antes de enviar.</small>
+          <Button type="button" variant="outline" className="h-10 gap-1.5 rounded-[7px] px-4 text-xs" disabled>
             Enviar para validação
           </Button>
         </div>
@@ -594,11 +595,11 @@ function FormBody({
   return (
     <>
       <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-6 pb-6">{children}</div>
-      <footer className="grid shrink-0 grid-cols-2 gap-[7px] border-t border-[#e4e7ec] bg-white px-6 py-3 sm:flex sm:min-h-[74px] sm:items-center sm:justify-end">
-        <Button type="button" variant="outline" className="h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054]" onClick={onClose}>
+      <footer className="grid shrink-0 grid-cols-2 gap-[7px] border-t border-[#e4e7ec] bg-white px-6 py-3 sm:flex sm:min-h-[80px] sm:items-center sm:justify-end">
+        <Button type="button" variant="outline" className="h-10 rounded-[7px] border-[#d7dce3] px-4 text-xs font-semibold text-[#344054]" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="button" className="h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-[13px] text-[11px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]" loading={saving} onClick={onSubmit}>
+        <Button type="button" className="h-10 gap-1.5 rounded-[7px] bg-[#175cd3] px-4 text-xs font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]" loading={saving} onClick={onSubmit}>
           <Check className="size-[15px]" aria-hidden="true" />
           {saving ? "Salvando…" : "Criar item"}
         </Button>
@@ -617,10 +618,10 @@ function ItemContext({ kind }: { kind: "phase" | "task" | "milestone" }) {
         <Icon className="size-4" aria-hidden="true" />
       </span>
       <span>
-        <span className="mb-[3px] block text-[8px] text-[#98a2b3]">Item da EAP</span>
-        <strong className="block text-[10px] text-[#344054]">Código gerado ao salvar · {label}</strong>
+        <span className="mb-[3px] block text-xs text-[#98a2b3]">Item da EAP</span>
+        <strong className="block text-xs text-[#344054]">Código gerado ao salvar · {label}</strong>
       </span>
-      <span className="inline-flex items-center gap-[5px] rounded-full bg-[#f0f2f4] px-[7px] py-1 text-[8.5px] font-semibold text-[#667085]">
+      <span className="inline-flex items-center gap-[5px] rounded-full bg-[#f0f2f4] px-2 py-1 text-xs font-semibold text-[#667085]">
         <span className="size-[5px] rounded-full bg-current" />
         A iniciar
       </span>
@@ -642,11 +643,11 @@ function PanelSection({
   children: ReactNode;
 }) {
   return (
-    <section className={`mt-3 rounded-[9px] border bg-white p-[17px] shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-[#d8e6f8]" : "border-[#e4e7ec]"}`}>
-      <div className="mb-[15px] flex items-start justify-between gap-3">
+    <section className={`mt-3 rounded-[10px] border bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-[#d8e6f8]" : "border-[#e4e7ec]"}`}>
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <strong className="block text-[11px] text-[#253248]">{title}</strong>
-          <span className="mt-1 block text-[8.5px] text-[#98a2b3]">{subtitle}</span>
+          <strong className="block text-[13px] text-[#253248]">{title}</strong>
+          <span className="mt-1 block text-xs text-[#98a2b3]">{subtitle}</span>
         </div>
         {aside}
       </div>
@@ -661,22 +662,22 @@ function EvidenceSection({ warning }: { warning?: string }) {
       title="Evidências vinculadas"
       subtitle="Documentos e registros associados ao item"
       aside={
-        <Button type="button" variant="outline" className="h-[30px] gap-[5px] rounded-[7px] px-[9px] text-[8.5px]" disabled title="Disponível depois que o item for criado.">
+        <Button type="button" variant="outline" className="h-10 gap-1.5 rounded-[7px] px-3 text-xs" disabled title="Disponível depois que o item for criado.">
           <Plus className="size-3.5" aria-hidden="true" />
           Adicionar
         </Button>
       }
     >
       {warning ? (
-        <div className="mb-2.5 flex items-start gap-2 text-[8.5px] text-[#8a6116]">
+        <div className="mb-3 flex items-start gap-2 text-xs text-[#8a6116]">
           <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
           <span>{warning}</span>
         </div>
       ) : null}
-      <p className="mb-2.5 text-[8.5px] leading-normal text-[#667085]">
+      <p className="mb-3 text-xs leading-relaxed text-[#667085]">
         As evidências são vinculadas depois que o item é criado. Ao clicar em Criar item, a edição abre em seguida para você adicionar os documentos.
       </p>
-      <div className="flex min-h-[39px] items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[8.5px] text-[#98a2b3]">
+      <div className="flex min-h-[48px] items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-3 text-xs text-[#98a2b3]">
         Nenhuma evidência vinculada.
       </div>
     </PanelSection>
@@ -694,10 +695,10 @@ function FoldBlock({
 }) {
   const [shown, setShown] = useState(false);
   return (
-    <section className="mt-3 shrink-0 rounded-[9px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+    <section className="mt-3 shrink-0 rounded-[10px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <button
         type="button"
-        className="flex min-h-12 w-full items-center justify-between px-[15px] text-[9.5px] font-semibold text-[#344054]"
+        className="flex min-h-14 w-full items-center justify-between px-5 text-[13px] font-semibold text-[#344054]"
         onClick={() => setShown((current) => !current)}
       >
         <span className="flex items-center gap-2">
@@ -707,7 +708,7 @@ function FoldBlock({
         <ChevronRight className={`size-[15px] text-[#98a2b3] transition-transform duration-300 ease-out motion-reduce:transition-none ${shown ? "rotate-90" : ""}`} aria-hidden="true" />
       </button>
       <Reveal open={shown} bleed={false}>
-        <div className="border-t border-[#edf0f3] px-[15px] pt-[15px] pb-[15px]">{children}</div>
+        <div className="border-t border-[#edf0f3] px-5 py-5">{children}</div>
       </Reveal>
     </section>
   );
@@ -716,22 +717,22 @@ function FoldBlock({
 function HistorySection() {
   return (
     <FoldBlock title="Histórico de alterações" icon={Clock}>
-      <p className="text-[10px] leading-relaxed text-[#667085]">O histórico começa quando o item é criado. Depois disso, cada alteração fica registrada com autor e data.</p>
+      <p className="text-xs leading-relaxed text-[#667085]">O histórico começa quando o item é criado. Depois disso, cada alteração fica registrada com autor e data.</p>
     </FoldBlock>
   );
 }
 
 const fieldClass = cn(
-  "h-9 w-full rounded-[7px] border border-[#d7dce3] bg-white px-2.5 text-[10px] text-[#344054] shadow-none outline-none disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#98a2b3]",
+  "h-10 w-full rounded-[7px] border border-[#d7dce3] bg-white px-3 text-xs text-[#344054] shadow-none outline-none disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#98a2b3]",
   controlTransitionClassName,
   controlFocusClassName,
 );
 
 function FieldLabel({ label, hint }: { label: string; hint?: string }) {
   return (
-    <span className="flex items-baseline justify-between text-[8.5px] font-semibold text-[#475467]">
+    <span className="flex items-baseline justify-between text-xs font-semibold text-[#475467]">
       {label}
-      {hint ? <small className="text-[7.5px] font-normal text-[#98a2b3]">{hint}</small> : null}
+      {hint ? <small className="text-xs font-normal text-[#98a2b3]">{hint}</small> : null}
     </span>
   );
 }
@@ -796,7 +797,7 @@ function AreaControl({
     <label className={`flex min-w-0 flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
       <FieldLabel label={label} hint={hint} />
       <textarea
-        className={`${fieldClass} h-auto min-h-[66px] py-[9px] leading-normal`}
+        className={`${fieldClass} h-auto min-h-[72px] py-2.5 leading-normal`}
         rows={rows}
         value={value}
         placeholder={placeholder}
@@ -895,7 +896,7 @@ function CivilDateField({
               variant="outline"
               aria-invalid={error ? true : undefined}
               aria-describedby={error ? errorId : undefined}
-              className={`${fieldClass} justify-start px-2.5 font-normal shadow-none hover:bg-white ${value ? "text-[#344054]" : "text-[#98a2b3]"}`}
+              className={`${fieldClass} justify-start px-3 font-normal shadow-none hover:bg-white ${value ? "text-[#344054]" : "text-[#98a2b3]"}`}
             />
           }
         >

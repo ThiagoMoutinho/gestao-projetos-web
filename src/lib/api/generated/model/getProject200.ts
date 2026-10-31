@@ -16,6 +16,8 @@ export type GetProject200 = {
   description: string | null;
   /** @nullable */
   glpiTicketId: string | null;
+  /** @nullable */
+  pmoGlpiTicketId: string | null;
   ownerId: string;
   status: GetProject200Status;
   /**

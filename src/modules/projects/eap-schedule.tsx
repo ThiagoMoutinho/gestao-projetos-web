@@ -161,7 +161,7 @@ export function PlanFields({ plan }: { plan: PlanDraft }) {
         <DateField label={plan.single ? "Data prevista" : "Término planejado"} value={plan.end} onChange={plan.setEnd} error={plan.errors.end} />
       </div>
       <label className="flex flex-col gap-1.5">
-        <span className="text-[8.5px] font-semibold text-[#475467]">Justificativa de replanejamento</span>
+        <span className="text-xs font-semibold text-[#475467]">Justificativa de replanejamento</span>
         <Textarea
           className={textareaClass}
           value={plan.justification}
@@ -174,7 +174,7 @@ export function PlanFields({ plan }: { plan: PlanDraft }) {
       </label>
       {plan.cascade ? <CascadeProposal cascade={plan.cascade} onApplyChange={plan.setExtendPhase} /> : null}
       {plan.changed ? (
-        <ul className="flex flex-col gap-1 rounded-[7px] bg-[#f5f9ff] p-2.5 text-[8.5px] leading-[1.45] text-[#475467]">
+        <ul className="flex flex-col gap-1 rounded-[7px] bg-[#f5f9ff] p-3 text-xs leading-[1.5] text-[#475467]">
           {plan.single ? null : <FieldChangeRow change={fieldChange("START", plan.current.start, plan.start)} single={false} />}
           <FieldChangeRow change={fieldChange("END", plan.current.end, plan.end)} single={plan.single} />
         </ul>
@@ -196,10 +196,10 @@ export function CascadeProposal({
     cascade.current.end !== cascade.next.end ? { label: "Término da fase", previous: cascade.current.end, next: cascade.next.end } : null,
   ].filter((change) => change !== null);
   return (
-    <div role="status" className="motion-fade flex flex-col gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.45] text-[#865516]">
+    <div role="status" className="motion-fade flex flex-col gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-3 text-xs leading-[1.5] text-[#865516]">
       <span className="flex items-start gap-2">
         <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-        <strong className="text-[9px]">Os itens da fase passam a ficar fora do período planejado dela.</strong>
+        <strong className="text-xs">Os itens da fase passam a ficar fora do período planejado dela.</strong>
       </span>
       <label className="flex items-start gap-2 text-[#475467]">
         <Checkbox className="mt-px" checked={cascade.apply} onCheckedChange={(checked) => onApplyChange(checked === true)} />
@@ -244,7 +244,7 @@ export function ScheduleHistoryBlock({
   return (
     <div>
       <span className={groupLabel}>Histórico de replanejamentos</span>
-      <Suspense fallback={<Skeleton className="h-[39px] w-full rounded-[7px]" />}>
+      <Suspense fallback={<Skeleton className="h-10 w-full rounded-[7px]" />}>
         <ScheduleHistory request={deferredRequest} />
       </Suspense>
     </div>
@@ -412,7 +412,7 @@ function PlanForm({
 
   return (
     <div className="flex flex-col gap-3">
-      <span className="block text-[9px] font-semibold tracking-[0.04em] text-[#3971ba] uppercase">{title}</span>
+      <span className="block text-xs font-semibold tracking-[0.04em] text-[#3971ba] uppercase">{title}</span>
       <PlanFields plan={plan} />
       <div className="flex flex-wrap justify-end gap-[7px]">
         <Button type="button" variant="outline" className={secondaryButton} disabled={saving} onClick={onCancel}>
@@ -471,13 +471,13 @@ function ConsolidatedNotice({ alert, title, children }: { alert: boolean; title:
     <div
       role={alert ? "status" : undefined}
       className={cn(
-        "flex items-start gap-2 rounded-[7px] border p-2.5 text-[8.5px] leading-[1.45]",
+        "flex items-start gap-2 rounded-[7px] border p-3 text-xs leading-[1.5]",
         alert ? "border-[#f3dcae] bg-[#fff8e9] text-[#865516]" : "border-[#edf0f3] bg-[#f8f9fb] text-[#667085]",
       )}
     >
       {alert ? <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" /> : <Info className="mt-px size-3.5 shrink-0" aria-hidden="true" />}
       <span>
-        <strong className="block text-[9px]">{title}</strong>
+        <strong className="block text-xs">{title}</strong>
         {children}
       </span>
     </div>
@@ -493,10 +493,10 @@ export function SavedNotice({ saved }: { saved: SavedChange }) {
     return null;
   }
   return (
-    <div role="status" className="flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.45] text-[#865516]">
-      <AlertTriangle className="mt-px size-[15px] shrink-0" aria-hidden="true" />
+    <div role="status" className="flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-3 text-xs leading-[1.5] text-[#865516]">
+      <AlertTriangle className="mt-px size-4 shrink-0" aria-hidden="true" />
       <div className="min-w-0">
-        <strong className="block text-[9px]">Impactos sinalizados{saved.sequence ? ` no replanejamento nº ${saved.sequence}` : ""}</strong>
+        <strong className="block text-xs">Impactos sinalizados{saved.sequence ? ` no replanejamento nº ${saved.sequence}` : ""}</strong>
         <ul className="mt-1 list-disc pl-3.5">
           {saved.impacts.map((impact) => (
             <li key={`${impact.code}:${impact.message}`}>{impact.message}</li>
@@ -538,7 +538,7 @@ function ChangeCard({ change }: { change: ScheduleChange }) {
   return (
     <li className="rounded-[8px] border border-[#e4e7ec] bg-white p-3">
       <div className="flex items-start justify-between gap-2">
-        <strong className="text-[10px] text-[#253248]">
+        <strong className="text-xs text-[#253248]">
           {change.kind === "RESCHEDULE" ? `Replanejamento nº ${change.sequence}` : "Planejamento definido"}
         </strong>
         <span className="flex shrink-0 flex-wrap justify-end gap-1">
@@ -546,10 +546,10 @@ function ChangeCard({ change }: { change: ScheduleChange }) {
           {change.escalatedToPmo ? <Tag tone="pmo">Sinalizado ao PMO</Tag> : null}
         </span>
       </div>
-      <p className="mt-[3px] text-[8px] text-[#8a94a6]">
+      <p className="mt-[3px] text-xs text-[#8a94a6]">
         {change.actorName ?? "Não identificado"} · {recordedDate(change.createdAt)}
       </p>
-      <dl className="mt-2 flex flex-col gap-1.5 text-[8.5px] leading-[1.45] text-[#475467]">
+      <dl className="mt-2 flex flex-col gap-1.5 text-xs leading-[1.45] text-[#475467]">
         <Line label="Datas">
           <ul className="flex flex-col gap-1">
             {fields.map((field) => (
@@ -628,8 +628,8 @@ function FieldChangeRow({ change, single }: { change: FieldChange; single: boole
 function DateCell({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[7px] bg-[#f7f9fb] p-2.5">
-      <span className="mb-1 block text-[7.5px] text-[#8a94a6]">{label}</span>
-      <strong className="block text-[8.5px] text-[#344054]">{value ? formatCivilDate(value) : "Não informada"}</strong>
+      <span className="mb-1 block text-xs text-[#8a94a6]">{label}</span>
+      <strong className="block text-xs text-[#344054]">{value ? formatCivilDate(value) : "Não informada"}</strong>
     </div>
   );
 }
@@ -651,10 +651,10 @@ function Line({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-const chip = "rounded-full px-1.5 py-px text-[7.5px] font-semibold";
-const textareaClass = "min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]";
-const secondaryButton = "h-[30px] gap-[5px] rounded-[7px] border-[#d7dce3] px-[11px] text-[9px] font-semibold";
-const primaryButton = "h-[30px] gap-[5px] rounded-[7px] bg-[#175cd3] px-[11px] text-[9px] font-semibold text-white hover:bg-[#144ca8]";
-const groupLabel = "mb-1.5 block text-[8.5px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase";
-const mutedNote = "flex items-start gap-1.5 text-[8.5px] leading-[1.45] text-[#667085]";
-const emptyInline = "flex min-h-[35px] items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[8.5px] text-[#98a2b3]";
+const chip = "rounded-full px-1.5 py-px text-xs font-semibold";
+const textareaClass = "min-h-[72px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2.5 text-xs md:text-xs";
+const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-3.5 text-xs font-semibold";
+const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-3.5 text-xs font-semibold text-white hover:bg-[#144ca8]";
+const groupLabel = "mb-1.5 block text-xs font-semibold text-[#475467]";
+const mutedNote = "flex items-start gap-1.5 text-xs leading-[1.45] text-[#667085]";
+const emptyInline = "flex min-h-[42px] items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-xs text-[#98a2b3]";

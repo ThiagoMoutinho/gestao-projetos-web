@@ -15,6 +15,8 @@ export type ListMyProjects200DataItem = {
   description: string | null;
   /** @nullable */
   glpiTicketId: string | null;
+  /** @nullable */
+  pmoGlpiTicketId: string | null;
   ownerId: string;
   status: ListMyProjects200DataItemStatus;
   /**

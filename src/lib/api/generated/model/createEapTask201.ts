@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { CreateEapTask201CalculatedStatus } from './createEapTask201CalculatedStatus.ts';
+import type { CreateEapTask201Priority } from './createEapTask201Priority.ts';
 import type { CreateEapTask201Status } from './createEapTask201Status.ts';
 
 export type CreateEapTask201 = {
@@ -32,6 +33,7 @@ export type CreateEapTask201 = {
      * @maximum 9007199254740991
      */
   weight: number;
+  priority: CreateEapTask201Priority;
   /** @nullable */
   baselineStartAt: string | null;
   /** @nullable */

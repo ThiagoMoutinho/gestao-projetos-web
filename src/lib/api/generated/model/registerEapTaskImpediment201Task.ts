@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { RegisterEapTaskImpediment201TaskCalculatedStatus } from './registerEapTaskImpediment201TaskCalculatedStatus.ts';
+import type { RegisterEapTaskImpediment201TaskPriority } from './registerEapTaskImpediment201TaskPriority.ts';
 import type { RegisterEapTaskImpediment201TaskStatus } from './registerEapTaskImpediment201TaskStatus.ts';
 
 export type RegisterEapTaskImpediment201Task = {
@@ -32,6 +33,7 @@ export type RegisterEapTaskImpediment201Task = {
      * @maximum 9007199254740991
      */
   weight: number;
+  priority: RegisterEapTaskImpediment201TaskPriority;
   /** @nullable */
   baselineStartAt: string | null;
   /** @nullable */

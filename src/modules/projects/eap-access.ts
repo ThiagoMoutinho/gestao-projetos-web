@@ -88,13 +88,20 @@ export function canRegisterEvidenceOn(
   return access.canRegisterEvidence || canUpdateTaskProgress(access, parent);
 }
 
-/** Espelha a política da API: o homologador designado ou, sem designação, o dono e a gestão vinculada; nunca quem entregou. */
+/**
+ * Espelha a política da API: PMO e COORDENADOR (CTIN) em todos os projetos; os demais, o homologador designado ou, sem
+ * designação, o dono e a gestão vinculada. Nunca quem entregou, o fornecedor ou o ADMIN só por ser administrador.
+ */
 export function canHomologateMilestone(
   access: EapAccess,
   milestone: { reviewerId: string | null; deliveredById: string | null },
 ) {
   if (actsAsSupplier(access) || milestone.deliveredById === access.userId) {
     return false;
+  }
+
+  if (access.globalRole === "PMO" || access.globalRole === "COORDENADOR") {
+    return true;
   }
 
   if (milestone.reviewerId) {

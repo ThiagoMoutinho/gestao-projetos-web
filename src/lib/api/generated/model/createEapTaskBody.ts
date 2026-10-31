@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { CreateEapTaskBodyPriority } from './createEapTaskBodyPriority.ts';
 
 export type CreateEapTaskBody = {
   /**
@@ -27,6 +28,8 @@ export type CreateEapTaskBody = {
      * @maximum 9007199254740991
      */
   weight?: number;
+  /** Padrão: NORMAL. */
+  priority?: CreateEapTaskBodyPriority;
   /**
      * Opcional na criação; o planejamento pode ser definido depois, nos detalhes da tarefa.
      * @minLength 1

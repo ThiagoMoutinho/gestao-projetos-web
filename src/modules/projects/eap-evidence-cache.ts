@@ -1,12 +1,24 @@
 import { ApiError } from "@/lib/api/fetcher";
 import { listEapEvidences } from "@/lib/api/generated/eap/eap";
 
+import type { EvidenceKind } from "./evidence-kinds";
 import { recordedDate } from "./project-records";
 
 export type EvidenceParent = { phaseId: string } | { taskId: string } | { milestoneId: string };
 
 export type EvidenceState =
-  | { status: "ready"; items: { id: string; title: string; url: string; createdAt: string; deliveryId: string | null }[] }
+  | {
+      status: "ready";
+      items: {
+        id: string;
+        title: string;
+        url: string;
+        kind: EvidenceKind | null;
+        ticketNumber: string | null;
+        createdAt: string;
+        deliveryId: string | null;
+      }[];
+    }
   | { status: "error"; message: string };
 
 const requests = new Map<string, Promise<EvidenceState>>();
@@ -48,6 +60,8 @@ async function loadEvidences(projectId: string, parent: EvidenceParent): Promise
         id: item.id,
         title: item.title,
         url: item.url,
+        kind: item.kind,
+        ticketNumber: item.ticketNumber,
         createdAt: recordedDate(item.createdAt),
         deliveryId: item.deliveryId,
       })),

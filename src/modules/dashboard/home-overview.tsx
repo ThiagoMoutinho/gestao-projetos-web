@@ -71,7 +71,7 @@ export function HomeOverview({ name, todayLabel }: { name: string; todayLabel: s
     <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+          <h1 className="text-page-title font-semibold tracking-tight">
             Olá, {givenName(name)}!
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -91,26 +91,22 @@ export function HomeOverview({ name, todayLabel }: { name: string; todayLabel: s
       </div>
 
       <section aria-label="Indicadores">
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {INDICATORS.map((indicator) => {
             const Icon = indicator.icon;
 
             return (
               <li key={indicator.label}>
-                <Card size="sm" className="h-full">
-                  <CardHeader>
-                    <CardDescription className="min-w-0 leading-snug">{indicator.label}</CardDescription>
-                    <CardAction>
-                      <span
-                        className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${TONE_CLASS[indicator.tone]}`}
-                      >
-                        <Icon className="size-4" />
-                      </span>
-                    </CardAction>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-lg font-medium tracking-tight">Sem dados</p>
-                  </CardContent>
+                <Card className="h-full flex-row items-center gap-3.5 px-4 py-4">
+                  <span
+                    className={`flex size-11 shrink-0 items-center justify-center rounded-[10px] ${TONE_CLASS[indicator.tone]}`}
+                  >
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <p className="text-label leading-snug text-muted-foreground">{indicator.label}</p>
+                    <p className="text-[15px] font-bold text-[#344054]">Sem dados</p>
+                  </div>
                 </Card>
               </li>
             );
@@ -118,14 +114,14 @@ export function HomeOverview({ name, todayLabel }: { name: string; todayLabel: s
         </ul>
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-2" aria-label="Gráficos">
+      <section className="grid gap-4 lg:grid-cols-2" aria-label="Gráficos">
         <Card>
           <CardHeader className="border-b">
             <CardTitle>Projetos por área</CardTitle>
             <CardDescription>Sem dados para exibir.</CardDescription>
           </CardHeader>
           <CardContent className="relative">
-            <ChartContainer config={areaConfig} className="aspect-auto h-44 w-full">
+            <ChartContainer config={areaConfig} className="aspect-auto h-36 w-full">
               <BarChart data={[]}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="area" tickLine={false} axisLine={false} />
@@ -145,7 +141,7 @@ export function HomeOverview({ name, todayLabel }: { name: string; todayLabel: s
             <CardDescription>Sem dados para exibir.</CardDescription>
           </CardHeader>
           <CardContent className="relative">
-            <ChartContainer config={statusConfig} className="mx-auto aspect-auto h-44 w-full max-w-xs">
+            <ChartContainer config={statusConfig} className="mx-auto aspect-auto h-36 w-full max-w-xs">
               <PieChart>
                 <Pie data={[]} dataKey="total" nameKey="situacao" innerRadius={48} outerRadius={72} />
               </PieChart>
@@ -159,7 +155,7 @@ export function HomeOverview({ name, todayLabel }: { name: string; todayLabel: s
         </Card>
       </section>
 
-      <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
         <Card className="min-w-0 overflow-visible">
           <CardHeader className="border-b">
             <CardTitle className="min-w-0">Projetos em andamento</CardTitle>
@@ -201,7 +197,7 @@ export function HomeOverview({ name, todayLabel }: { name: string; todayLabel: s
           </CardContent>
         </Card>
 
-        <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-4">
           <Card>
             <CardHeader className="border-b">
               <CardTitle>Próximos marcos</CardTitle>

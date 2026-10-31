@@ -1,8 +1,11 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getScheduleMonitoring } from "@/lib/api/generated/cronograma/cronograma";
 import type { GetScheduleMonitoring200 } from "@/lib/api/generated/model/getScheduleMonitoring200";
 
@@ -58,52 +61,71 @@ export function ProjectSchedule({
       }
     : schedule;
 
+  // Atraso ativo: item ainda aberto após o prazo vigente. Atraso histórico: item já concluído depois do prazo vigente.
+  const activeDelays = data ? data.overdue.phases + data.overdue.tasks + data.overdue.milestones : 0;
+  const historicalDelays = data ? data.items.filter((item) => item.deadlinePerformance === "DONE_LATE").length : 0;
+
   return (
     <Card>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="space-y-1">
-            <h2 className="text-sm font-medium">Planejamento do projeto</h2>
-            <p className="text-xs text-muted-foreground">
-              As datas realizadas são derivadas das fases: início pela primeira fase iniciada e término quando todas estiverem concluídas.
-            </p>
+      <Collapsible>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h2 className="text-sm font-medium">Planejamento do projeto</h2>
+              {data?.project.overdue ? (
+                <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">Prazo vencido</span>
+              ) : null}
+            </div>
+            <CollapsibleTrigger
+              render={
+                <Button type="button" variant="outline" size="sm" className="group/details gap-1.5">
+                  Datas e reprogramações
+                  <ChevronDown className="size-3.5 transition-transform group-data-panel-open/details:rotate-180" aria-hidden="true" />
+                </Button>
+              }
+            />
           </div>
-          {data?.project.overdue ? (
-            <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">Prazo vencido</span>
+          {monitoring.status === "error" ? (
+            <p className="text-xs text-muted-foreground">Não foi possível consultar as datas realizadas e os indicadores de prazo.</p>
           ) : null}
-        </div>
-        {monitoring.status === "error" ? (
-          <p className="text-xs text-muted-foreground">Não foi possível consultar as datas realizadas e os indicadores de prazo.</p>
-        ) : null}
-        {data ? (
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Indicator label="Reprogramações" value={data.reschedules.total} />
-            <Indicator label="Sinalizadas ao PMO" value={data.reschedules.escalated} />
-            <Indicator label="Itens em atraso" value={data.overdue.phases + data.overdue.tasks + data.overdue.milestones} />
-            <Indicator label="Aguardando homologação" value={data.homologation.awaiting} />
-          </dl>
-        ) : null}
-        <EapSchedule
-          projectId={projectId}
-          target={{ entityType: "PROJECT" }}
-          schedule={current}
-          state={closed ? "DONE" : "OPEN"}
-          closed={closed}
-          canReschedule={canReschedule(access)}
-          onSaved={async () => {
-            setRevision((value) => value + 1);
-          }}
-        />
-      </CardContent>
+          {data ? (
+            <dl className="flex flex-wrap gap-x-6 gap-y-1.5">
+              <Indicator label="Reprogramações" value={data.reschedules.total} />
+              <Indicator label="Sinalizadas ao PMO" value={data.reschedules.escalated} />
+              <Indicator label="Em atraso agora" value={activeDelays} tone={activeDelays > 0 ? "alert" : undefined} />
+              <Indicator label="Concluídos com atraso" value={historicalDelays} title="Atrasos históricos: itens já concluídos depois do prazo vigente" />
+              <Indicator label="Aguardando homologação" value={data.homologation.awaiting} />
+            </dl>
+          ) : null}
+          <CollapsibleContent>
+            <div className="border-t pt-4">
+              <p className="mb-3 text-xs text-muted-foreground">
+                As datas realizadas são derivadas das fases: início pela primeira fase iniciada e término quando todas estiverem concluídas.
+              </p>
+              <EapSchedule
+                projectId={projectId}
+                target={{ entityType: "PROJECT" }}
+                schedule={current}
+                state={closed ? "DONE" : "OPEN"}
+                closed={closed}
+                canReschedule={canReschedule(access)}
+                onSaved={async () => {
+                  setRevision((value) => value + 1);
+                }}
+              />
+            </div>
+          </CollapsibleContent>
+        </CardContent>
+      </Collapsible>
     </Card>
   );
 }
 
-function Indicator({ label, value }: { label: string; value: number }) {
+function Indicator({ label, value, tone, title }: { label: string; value: number; tone?: "alert"; title?: string }) {
   return (
-    <div className="min-w-0 rounded-lg border bg-muted/30 p-2.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-lg font-semibold">{value}</dd>
+    <div className="flex min-w-0 items-baseline gap-1.5" title={title}>
+      <dd className={tone === "alert" ? "text-sm font-semibold text-destructive" : "text-sm font-semibold"}>{value}</dd>
+      <dt className="text-[11px] text-muted-foreground">{label}</dt>
     </div>
   );
 }

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { UpdateEapTaskProgress200CalculatedStatus } from './updateEapTaskProgress200CalculatedStatus.ts';
+import type { UpdateEapTaskProgress200Priority } from './updateEapTaskProgress200Priority.ts';
 import type { UpdateEapTaskProgress200Status } from './updateEapTaskProgress200Status.ts';
 
 export type UpdateEapTaskProgress200 = {
@@ -32,6 +33,7 @@ export type UpdateEapTaskProgress200 = {
      * @maximum 9007199254740991
      */
   weight: number;
+  priority: UpdateEapTaskProgress200Priority;
   /** @nullable */
   baselineStartAt: string | null;
   /** @nullable */

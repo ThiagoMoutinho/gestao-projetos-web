@@ -11,6 +11,7 @@ import {
   Folder,
   GripVertical,
   List,
+  ListChecks,
   ListFilter,
   ListPlus,
   MoreHorizontal,
@@ -42,6 +43,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 import type { ProjectMilestoneView, ProjectPhaseView, ProjectTaskView } from "./eap-present";
+import { PRIORITY_OPTIONS, PriorityIndicator } from "./eap-priority";
 import {
   basisToPercent,
   finishedLate,
@@ -62,20 +64,22 @@ import { impedimentTone, overdueTone } from "./eap-tones";
 import { phaseStatusLabel, taskStatusLabel } from "./project-records";
 
 const columns =
-  "grid grid-cols-1 gap-2 md:min-h-[46px] md:grid-cols-[minmax(280px,2.1fr)_minmax(108px,0.85fr)_minmax(110px,0.9fr)_minmax(130px,1fr)_minmax(96px,0.75fr)_minmax(105px,0.8fr)_40px] md:items-center md:gap-x-3.5";
+  "grid grid-cols-1 gap-2 md:min-h-[56px] md:grid-cols-[minmax(280px,2.1fr)_minmax(108px,0.85fr)_minmax(110px,0.9fr)_minmax(130px,1fr)_minmax(84px,0.6fr)_minmax(104px,0.75fr)_minmax(112px,0.8fr)_40px] md:items-center md:gap-x-3.5";
 
-const childRow = "py-1 md:min-h-[44px]";
-const rowMenuItem = "h-[30px] gap-2 rounded-[5px] px-[9px] text-[10px] text-[#344054] [&_svg:not([class*='size-'])]:size-3.5";
+const childRow = "py-1 md:min-h-[54px]";
+const rowMenuItem = "h-9 gap-2 rounded-[5px] px-3 text-xs text-[#344054] [&_svg:not([class*='size-'])]:size-3.5";
 const treeGuide =
-  "relative mr-[7px] -my-1 hidden h-[44px] w-[25px] shrink-0 md:block before:absolute before:top-[-4px] before:bottom-[21px] before:left-[11px] before:w-px before:bg-[#dbe1e8] after:absolute after:top-[22px] after:left-[11px] after:h-px after:w-3 after:bg-[#dbe1e8]";
+  "relative mr-[7px] -my-1 hidden h-[54px] w-[35px] shrink-0 md:block before:absolute before:top-[-4px] before:bottom-[26px] before:left-[11px] before:w-px before:bg-[#dbe1e8] after:absolute after:top-[27px] after:left-[11px] after:h-px after:w-5 after:bg-[#dbe1e8]";
 
 export type EapListFilter = {
   statuses: string[];
   impediment: boolean;
   overdue: boolean;
+  /** Prioridades marcadas; vale só para tarefas (fases e marcos não têm prioridade). */
+  priorities: string[];
 };
 
-export const idleEapFilter: EapListFilter = { statuses: [], impediment: false, overdue: false };
+export const idleEapFilter: EapListFilter = { statuses: [], impediment: false, overdue: false, priorities: [] };
 
 const STATUS_FILTERS = [
   { value: "NAO_INICIADA", label: "Não iniciada" },
@@ -130,14 +134,14 @@ export function EapWorkbench({
   const concluded = phases.filter((phase) => phase.calculatedStatus === "CONCLUIDA").length;
   const active = phases.filter((phase) => phase.calculatedStatus === "EM_ANDAMENTO").length;
   const itemCount = tasks.known && milestones.known ? tasks.value + milestones.value : null;
-  const filterCount = filter.statuses.length + Number(filter.impediment) + Number(filter.overdue);
+  const filterCount = filter.statuses.length + filter.priorities.length + Number(filter.impediment) + Number(filter.overdue);
   const untouched = phases.length === 0 && query.trim() === "" && filterCount === 0;
 
   return (
     <div className="@container flex flex-col gap-[18px]">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="mb-[9px] block text-[9px] leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">Estrutura do projeto</span>
+          <span className="mb-[9px] block text-[11px] leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">Estrutura do projeto</span>
           <h1 className="text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-[#172033]">Estrutura Analítica do Projeto</h1>
           <p className="mt-1.5 text-[11.5px] text-[#667085]">Organize e acompanhe todas as entregas, tarefas e marcos do projeto.</p>
         </div>
@@ -163,27 +167,30 @@ export function EapWorkbench({
               : `${tasks.value} ${tasks.value === 1 ? "tarefa" : "tarefas"} · ${milestones.value} ${milestones.value === 1 ? "marco" : "marcos"}`
           }
         />
-        <article className="relative h-[84px] rounded-[10px] border border-[#e4e7ec] bg-white px-[17px] py-[15px] shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[9.5px] text-[#667085]">Progresso calculado</span>
-            <strong className="text-[16px] leading-none text-[#285da8]">
+        <article className="flex min-h-[104px] items-center gap-3.5 rounded-[10px] border border-[#e4e7ec] bg-white px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-[#eaf2ff] text-[#2864bb]">
+            <ListChecks className="size-4" aria-hidden="true" />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-xs text-[#667085]">Progresso calculado</span>
+            <strong className="text-[15px] leading-tight font-bold text-[#344054]">
               {progress.kind === "value" ? `${formatBasis(progress.basisPoints)}%` : "—"}
             </strong>
-          </div>
-          {progress.kind === "value" ? (
-            <Progress
-              value={basisToPercent(progress.basisPoints)}
-              aria-label="Progresso calculado do projeto"
-              className="mt-[13px] [&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]"
-            />
-          ) : (
-            <p className="mt-[13px] text-[11px] font-medium text-[#667085]">Cálculo indisponível</p>
-          )}
-          <small className="absolute right-[15px] bottom-[17px] text-[8.5px] text-[#98a2b3]">
-            {progress.kind === "unavailable" || progress.coverageBasis === null
-              ? "Fases com andamento calculado: —"
-              : `Fases com andamento calculado: ${formatBasis(progress.coverageBasis)}%`}
-          </small>
+            {progress.kind === "value" ? (
+              <Progress
+                value={basisToPercent(progress.basisPoints)}
+                aria-label="Progresso calculado do projeto"
+                className="mt-1 [&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]"
+              />
+            ) : (
+              <span className="text-xs font-medium text-[#667085]">Cálculo indisponível</span>
+            )}
+            <small className="truncate text-xs text-[#98a2b3]">
+              {progress.kind === "unavailable" || progress.coverageBasis === null
+                ? "Fases com andamento calculado: —"
+                : `Fases com andamento calculado: ${formatBasis(progress.coverageBasis)}%`}
+            </small>
+          </span>
         </article>
         <Stat
           icon={<Clock className="size-4" aria-hidden="true" />}
@@ -199,15 +206,14 @@ export function EapWorkbench({
                 ].join(" · ")
               : "Consulta incompleta"
           }
-          compact
         />
       </div>
 
-      <section className="overflow-x-auto rounded-[10px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <section className="relative overflow-x-auto rounded-[10px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="flex min-h-[73px] flex-col justify-center gap-3 border-b border-[#e4e7ec] px-[17px] py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
           <div>
-            <h3 className="text-[13px] leading-[1.4] font-semibold text-[#172033]">Entregas do projeto</h3>
-            <p className="mt-[3px] text-[9.5px] text-[#98a2b3]">
+            <h3 className="text-base leading-[1.4] font-semibold text-[#172033]">Entregas do projeto</h3>
+            <p className="mt-[3px] text-xs text-[#98a2b3]">
               {itemCount === null
                 ? "A consulta de alguns itens ainda não está disponível."
                 : `${itemCount} ${itemCount === 1 ? "item organizado" : "itens organizados"} em ${phases.length} ${phases.length === 1 ? "fase" : "fases"}`}
@@ -221,7 +227,7 @@ export function EapWorkbench({
                 onChange={(event) => onQueryChange(event.target.value)}
                 placeholder="Buscar na EAP..."
                 aria-label="Buscar na EAP"
-                className="h-7 border-0 bg-transparent px-0 text-[10px] text-[#172033] shadow-none focus-visible:ring-0"
+                className="h-7 border-0 bg-transparent px-0 text-[11.5px] text-[#172033] shadow-none focus-visible:ring-0"
               />
             </label>
             <FilterMenu filter={filter} count={filterCount} onChange={onFilterChange} />
@@ -230,11 +236,12 @@ export function EapWorkbench({
             </Button>
           </div>
         </div>
-        <div className={cn(columns, "hidden h-[37px] min-h-0 border-b border-[#e4e7ec] bg-[#f8f9fb] px-[17px] text-[8px] font-bold tracking-[0.08em] text-[#8a94a6] uppercase md:grid")}>
+        <div className={cn(columns, "hidden h-11 min-h-0 border-b border-[#e4e7ec] bg-[#f8f9fb] px-[17px] text-[11px] font-bold tracking-[0.08em] text-[#8a94a6] uppercase md:grid")}>
           <span>Item da EAP</span>
           <span>Situação</span>
           <span>Andamento</span>
           <span>Responsável</span>
+          <span>Prioridade</span>
           <span>Início planejado</span>
           <span>Término planejado</span>
           <span className="sr-only">Ações</span>
@@ -340,16 +347,16 @@ export function PhaseRow({
         ) : null} */}
         <div className="flex min-w-0 items-center">
           <CollapsibleTrigger
-            render={<Button type="button" variant="ghost" size="icon-sm" className="relative z-30 mr-0.5 text-[#667085]" aria-label={`Expandir ${phase.name}`} />}
+            render={<Button type="button" variant="ghost" size="icon-sm" className="relative z-30 mr-0.5 size-8 text-[#667085]" aria-label={`Expandir ${phase.name}`} />}
           >
             <ChevronRight className="transition-transform duration-200 ease-out group-data-open/collapsible:rotate-90 motion-reduce:transition-none" />
           </CollapsibleTrigger>
           <ItemIcon type="phase">
-            <Folder className="size-3.5" aria-hidden="true" />
+            <Folder className="size-4" aria-hidden="true" />
           </ItemIcon>
           <button type="button" className="min-w-0 rounded-md text-left focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none" onClick={onOpen}>
-            <span className="block truncate text-[10.5px] font-semibold text-[#253248]">{phase.name}</span>
-            <span className="mt-[3px] block text-[8.5px] text-[#98a2b3]">
+            <span className="block truncate text-[13px] font-semibold text-[#253248]">{phase.name}</span>
+            <span className="mt-[3px] block text-xs text-[#98a2b3]">
               {index + 1} · {knownChildren ? `${childCount} ${childCount === 1 ? "entrega" : "entregas"}` : "Consulta incompleta"}
               {showDivergence && phase.statusDiverges ? <DivergenceSignal recorded={phaseStatusLabel(phase.status)} /> : null}
             </span>
@@ -364,6 +371,7 @@ export function PhaseRow({
           done={phase.calculatedStatus === "CONCLUIDA"}
         />
         <Owner name={phase.responsibleName ?? ""} />
+        <span className="text-[13px] text-[#98a2b3]" title="A prioridade é exclusiva das tarefas">—</span>
         <PlannedStart value={inicioText(phase.dates)} />
         <Due value={vigenteText(phase.dates)} overdue={overdue} late={finishedLate(phase) ? "Concluída após o prazo" : null} />
         <RowMenu label={phase.name} onOpen={onOpen} actions={actions} />
@@ -472,13 +480,13 @@ export function TaskRow({
         <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none" onClick={onOpen}>
           <span className={treeGuide} aria-hidden="true" />
           <ItemIcon type="task">
-            <Check className="size-3.5" aria-hidden="true" />
+            <Check className="size-4" aria-hidden="true" />
           </ItemIcon>
           <span className="min-w-0">
-            <span className="block truncate text-[10.5px] font-medium text-[#253248]">{task.title}</span>
-            <span className="mt-[3px] block text-[8.5px] text-[#98a2b3]">
+            <span className="block truncate text-[13px] font-medium text-[#253248]">{task.title}</span>
+            <span className="mt-[3px] block text-xs text-[#98a2b3]">
               {phaseIndex + 1}.{index + 1} · Tarefa
-              {blocked ? <Signal tone="impediment"><AlertTriangle className="size-2.5" aria-hidden="true" /> Impedido</Signal> : null}
+              {blocked ? <Signal tone="impediment"><AlertTriangle className="size-3" aria-hidden="true" /> Impedido</Signal> : null}
               {showDivergence && task.statusDiverges ? <DivergenceSignal recorded={taskStatusLabel(task.status)} /> : null}
             </span>
           </span>
@@ -488,6 +496,7 @@ export function TaskRow({
         </StatusCell>
         <ProgressCell label={`${task.progressPercent}%`} value={task.progressPercent} done={task.calculatedStatus === "CONCLUIDA"} muted={task.calculatedStatus === "CANCELADA"} />
         <Owner name={task.assigneeName} />
+        <PriorityIndicator priority={task.priority} />
         <PlannedStart value={inicioText(task.dates)} />
         <Due value={vigenteText(task.dates)} overdue={overdue} late={finishedLate(task) ? "Concluída após o prazo" : null} />
         <RowMenu label={task.title} onOpen={onOpen} actions={actions} />
@@ -577,11 +586,11 @@ export function MilestoneRow({
       <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none" onClick={onOpen}>
         <span className={treeGuide} aria-hidden="true" />
         <ItemIcon type="milestone">
-          <Flag className="size-3.5" aria-hidden="true" />
+          <Flag className="size-4" aria-hidden="true" />
         </ItemIcon>
         <span className="min-w-0">
-          <span className="block truncate text-[10.5px] font-medium text-[#253248]">{milestone.title}</span>
-          <span className="mt-[3px] block text-[8.5px] text-[#98a2b3]">
+          <span className="block truncate text-[13px] font-medium text-[#253248]">{milestone.title}</span>
+          <span className="mt-[3px] block text-xs text-[#98a2b3]">
             {phaseIndex + 1}.{index + 1} · Marco
           </span>
         </span>
@@ -595,6 +604,7 @@ export function MilestoneRow({
         done={milestone.status === "APROVADO"}
       />
       <Owner name={milestone.presenterName ?? ""} />
+      <span className="text-[13px] text-[#98a2b3]" title="A prioridade é exclusiva das tarefas">—</span>
       <PlannedStart value={null} title="Marco tem data única" />
       <Due value={vigenteText(milestone.dates)} overdue={overdue} reason={milestoneDelayReason(milestone)} late={finishedLate(milestone) ? (milestone.type === "HOMOLOGACAO" ? "Homologado após o prazo" : "Aceito após o prazo") : null} />
       <RowMenu label={milestone.title} onOpen={onOpen} actions={actions} />
@@ -604,7 +614,7 @@ export function MilestoneRow({
 
 export function filterPhases(phases: ProjectPhaseView[], query: string, filter: EapListFilter = idleEapFilter) {
   const term = query.trim().toLocaleLowerCase("pt-BR");
-  const filtering = term.length > 0 || filter.statuses.length > 0 || filter.impediment || filter.overdue;
+  const filtering = term.length > 0 || filter.statuses.length > 0 || filter.priorities.length > 0 || filter.impediment || filter.overdue;
   if (!filtering) {
     return phases.map((phase) => ({ phase, tasks: phase.tasks, milestones: phase.milestones }));
   }
@@ -635,6 +645,9 @@ function matchesFilter(item: ProjectPhaseView | ProjectTaskView | ProjectMilesto
   if (filter.statuses.length > 0 && !filter.statuses.includes(status)) {
     return false;
   }
+  if (filter.priorities.length > 0 && !(kind === "task" && "priority" in item && filter.priorities.includes(item.priority))) {
+    return false;
+  }
   if (filter.impediment && !(kind === "task" && ("hasImpediment" in item) && (item.hasImpediment || item.status === "IMPEDIDA"))) {
     return false;
   }
@@ -653,20 +666,18 @@ function Stat({
   label,
   value,
   note,
-  compact = false,
 }: {
   icon: ReactNode;
   tone: "blue" | "violet" | "amber";
   label: string;
   value: string;
   note: string;
-  compact?: boolean;
 }) {
   return (
-    <article className="relative flex h-[84px] items-center gap-3 rounded-[10px] border border-[#e4e7ec] bg-white px-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+    <article className="flex min-h-[104px] items-center gap-3.5 rounded-[10px] border border-[#e4e7ec] bg-white px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <span
         className={cn(
-          "flex size-[37px] shrink-0 items-center justify-center rounded-lg",
+          "flex size-11 shrink-0 items-center justify-center rounded-[10px]",
           tone === "blue" && "bg-[#eaf2ff] text-[#2864bb]",
           tone === "violet" && "bg-[#f0eafd] text-[#7450bf]",
           tone === "amber" && "bg-[#fff3dc] text-[#b26b15]",
@@ -674,18 +685,18 @@ function Stat({
       >
         {icon}
       </span>
-      <span className="min-w-0">
-        <span className="mb-[5px] block text-[9.5px] text-[#667085]">{label}</span>
-        <strong className={cn("block leading-none text-[#172033]", compact ? "text-[15px]" : "text-[19px]")}>{value}</strong>
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-xs text-[#667085]">{label}</span>
+        <strong className="truncate text-[15px] leading-tight font-bold text-[#344054]">{value}</strong>
+        <small className="truncate text-xs text-[#98a2b3]">{note}</small>
       </span>
-      <small className="absolute right-[15px] bottom-[17px] max-w-[58%] truncate text-right text-[8.5px] text-[#98a2b3]">{note}</small>
     </article>
   );
 }
 
 function ProgressCell({ label, value, done, muted }: { label: string; value: number | null; done?: boolean; muted?: boolean }) {
   if (value === null) {
-    return <span className="text-xs text-[#667085]">{label}</span>;
+    return <span className="text-[13px] text-[#667085]">{label}</span>;
   }
 
   return (
@@ -700,7 +711,7 @@ function ProgressCell({ label, value, done, muted }: { label: string; value: num
           muted && "[&_[data-slot=progress-indicator]]:bg-[#98a2b3]",
         )}
       />
-      <span className="w-10 shrink-0 text-xs font-semibold text-[#475467] tabular-nums">{label}</span>
+      <span className="w-10 shrink-0 text-[13px] font-semibold text-[#475467] tabular-nums">{label}</span>
     </div>
   );
 }
@@ -711,13 +722,13 @@ function StatusCell({ children }: { children: ReactNode }) {
 
 function Owner({ name }: { name: string }) {
   if (!name || name === "Não informado") {
-    return <span className="text-xs text-[#98a2b3]">—</span>;
+    return <span className="text-[13px] text-[#98a2b3]">—</span>;
   }
 
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-xs text-[#475467]">
-      <Avatar size="sm">
-        <AvatarFallback className="bg-[#e8effb] text-[0.65rem] font-bold text-[#285da8]">{initials(name)}</AvatarFallback>
+    <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-[#475467]">
+      <Avatar>
+        <AvatarFallback className="bg-[#e8effb] text-[0.7rem] font-bold text-[#285da8]">{initials(name)}</AvatarFallback>
       </Avatar>
       <span className="truncate">{name}</span>
     </span>
@@ -727,8 +738,8 @@ function Owner({ name }: { name: string }) {
 /** Atraso em aberto em vermelho; atraso histórico só como nota neutra, sem classificar o item como atrasado. */
 function PlannedStart({ value, title }: { value: string | null; title?: string }) {
   return (
-    <span className="flex items-start gap-1.5 text-xs whitespace-nowrap text-[#667085]" title={title}>
-      <Calendar className="mt-px size-3.5 shrink-0 text-[#98a2b3]" aria-hidden="true" />
+    <span className="flex items-start gap-1.5 text-[13px] whitespace-nowrap text-[#667085]" title={title}>
+      <Calendar className="mt-0.5 size-4 shrink-0 text-[#98a2b3]" aria-hidden="true" />
       {value ?? "—"}
     </span>
   );
@@ -736,13 +747,13 @@ function PlannedStart({ value, title }: { value: string | null; title?: string }
 
 function Due({ value, overdue, late = null, reason = null }: { value: string | null; overdue: boolean; late?: string | null; reason?: string | null }) {
   return (
-    <span className={cn("flex items-start gap-1.5 text-xs whitespace-nowrap", overdue ? cn("font-semibold", overdueTone.text) : "text-[#667085]")}>
-      <Calendar className={cn("mt-px size-3.5 shrink-0", overdue ? overdueTone.text : "text-[#98a2b3]")} aria-hidden="true" />
+    <span className={cn("flex items-start gap-1.5 text-[13px] whitespace-nowrap", overdue ? cn("font-semibold", overdueTone.text) : "text-[#667085]")}>
+      <Calendar className={cn("mt-0.5 size-4 shrink-0", overdue ? overdueTone.text : "text-[#98a2b3]")} aria-hidden="true" />
       <span className="flex flex-col">
         {value ?? "—"}
         {overdue ? <span className="sr-only">Atrasado</span> : null}
-        {overdue && reason ? <span className="text-[8px] leading-tight font-normal">{reason}</span> : null}
-        {!overdue && late ? <span className="text-[8px] leading-tight text-[#98a2b3]">{late}</span> : null}
+        {overdue && reason ? <span className="text-xs leading-tight font-normal">{reason}</span> : null}
+        {!overdue && late ? <span className="text-xs leading-tight text-[#98a2b3]">{late}</span> : null}
       </span>
     </span>
   );
@@ -752,7 +763,7 @@ function ItemIcon({ type, children }: { type: "phase" | "task" | "milestone"; ch
   return (
     <span
       className={cn(
-        "mr-2 flex size-7 shrink-0 items-center justify-center rounded-md",
+        "mr-2.5 flex size-8 shrink-0 items-center justify-center rounded-lg",
         type === "phase" && "bg-[#e9f2ff] text-[#2865b9]",
         type === "task" && "bg-[#eef2f6] text-[#52677e]",
         type === "milestone" && "bg-[#f4ecfb] text-[#8b5bbb]",
@@ -858,6 +869,13 @@ function FilterMenu({ filter, count, onChange }: { filter: EapListFilter; count:
     });
   }
 
+  function togglePriority(value: string) {
+    onChange({
+      ...filter,
+      priorities: filter.priorities.includes(value) ? filter.priorities.filter((item) => item !== value) : [...filter.priorities, value],
+    });
+  }
+
   return (
     <Popover>
       <PopoverTrigger render={<Button type="button" variant="outline" className="h-[34px] rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054]" />}>
@@ -871,6 +889,15 @@ function FilterMenu({ filter, count, onChange }: { filter: EapListFilter; count:
           {STATUS_FILTERS.map((option) => (
             <label key={option.value} className="flex items-center gap-2 text-sm text-[#344054]">
               <Checkbox checked={filter.statuses.includes(option.value)} onCheckedChange={() => toggleStatus(option.value)} />
+              {option.label}
+            </label>
+          ))}
+        </div>
+        <p className="px-1 text-xs font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Prioridade da tarefa</p>
+        <div className="flex flex-col gap-2">
+          {PRIORITY_OPTIONS.map((option) => (
+            <label key={option.value} className="flex items-center gap-2 text-sm text-[#344054]">
+              <Checkbox checked={filter.priorities.includes(option.value)} onCheckedChange={() => togglePriority(option.value)} />
               {option.label}
             </label>
           ))}

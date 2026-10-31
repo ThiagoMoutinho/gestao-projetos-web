@@ -23,6 +23,11 @@ export type UpdateProjectBody = {
      * @nullable
      */
   glpiTicketId?: string | null;
+  /**
+     * @maxLength 50
+     * @nullable
+     */
+  pmoGlpiTicketId?: string | null;
   /** @minLength 1 */
   ownerId?: string;
   status?: UpdateProjectBodyStatus;

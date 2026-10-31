@@ -77,20 +77,20 @@ export function EapDeleteDialog({
     >
       <AlertDialogContent className="max-w-[400px]! gap-3 rounded-[10px] p-5">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-[14px] font-semibold text-[#101828]">
+          <AlertDialogTitle className="text-base font-semibold text-[#101828]">
             {`Excluir ${copy?.noun ?? "item"}?`}
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-[11px] leading-relaxed text-[#475467]">
+          <AlertDialogDescription className="text-[13px] leading-relaxed text-[#475467]">
             <strong className="font-semibold text-[#344054]">{request?.label}</strong> será {copy?.removed} da EAP.
             Use a exclusão apenas para itens criados por engano e sem movimentação. A exclusão fica registrada no
             histórico do projeto.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="-mx-5 -mb-5 px-5 py-3">
-          <AlertDialogCancel className="h-8 text-[11px]" disabled={busy}>
+        <AlertDialogFooter className="-mx-5 -mb-5 px-5 py-4">
+          <AlertDialogCancel className="h-10 text-xs" disabled={busy}>
             Cancelar
           </AlertDialogCancel>
-          <Button type="button" variant="destructive" className="h-8 text-[11px]" loading={busy} onClick={() => void confirm()}>
+          <Button type="button" variant="destructive" className="h-10 text-xs" loading={busy} onClick={() => void confirm()}>
             {busy ? "Excluindo…" : "Excluir"}
           </Button>
         </AlertDialogFooter>

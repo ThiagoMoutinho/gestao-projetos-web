@@ -182,14 +182,14 @@ export function ProjectList({
               aria-pressed={active}
               onClick={() => selectIndicator(indicator.key, active)}
               className={cn(
-                "flex min-w-0 items-center gap-2.5 rounded-xl border bg-white px-4 py-3.5 text-left transition-colors duration-200 hover:border-[#bad1f0] focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none motion-reduce:transition-none",
+                "flex min-w-0 min-h-[88px] items-center gap-3 rounded-[10px] border bg-white px-4 py-3.5 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-colors duration-200 hover:border-[#bad1f0] focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none motion-reduce:transition-none",
                 active ? "border-[#84adff] bg-[#f5f9ff]" : "border-[#e4e7ec]",
               )}
             >
               <span className="size-2.5 shrink-0 rounded-full" style={dotStyle(indicator.key === "total" ? "#2865b9" : STATUS_COLOR[indicator.key])} aria-hidden="true" />
               <span className="min-w-0">
-                <span className="block truncate text-[11px] text-[#475467]">{indicator.label}</span>
-                <strong className="mt-0.5 block text-lg leading-tight font-semibold text-[#172033] tabular-nums">{indicator.value}</strong>
+                <span className="block truncate text-xs text-[#475467]">{indicator.label}</span>
+                <strong className="mt-1 block text-xl leading-tight font-bold text-[#172033] tabular-nums">{indicator.value}</strong>
               </span>
             </button>
           );
@@ -203,7 +203,7 @@ export function ProjectList({
         </p>
       ) : null}
 
-      <section aria-label="Lista de projetos" className="min-w-0 overflow-hidden rounded-xl border border-[#e4e7ec] bg-white">
+      <section aria-label="Lista de projetos" className="min-w-0 overflow-hidden rounded-[10px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <Tabs value={view} onValueChange={(next) => changeView(next as PortfolioView)} className="min-w-0 px-4 pt-2">
           <TabsList variant="line" aria-label="Visualização dos projetos" className="h-auto w-full justify-start gap-5 overflow-x-auto rounded-none border-b border-[#edf0f3] p-0">
             {PORTFOLIO_VIEWS.map((item) => (
@@ -289,9 +289,9 @@ export function ProjectList({
             />
           </div>
         ) : (
-          <div className="w-full min-w-0 overflow-x-auto border-t border-[#edf0f3]">
+          <div className="relative w-full min-w-0 overflow-x-auto border-t border-[#edf0f3]">
             <table className="w-full min-w-[640px] text-left">
-              <thead className="text-[10px] font-semibold tracking-[0.06em] text-[#667085] uppercase">
+              <thead className="text-[11px] font-semibold tracking-[0.06em] text-[#667085] uppercase">
                 <tr className="border-b border-[#edf0f3]">
                   <SortHeader label="Nome do projeto" sortKey="name" sort={sort} onSort={toggleSort} className="pl-4" />
                   <th scope="col" className="hidden px-3 py-3 xl:table-cell">Fornecedor</th>
@@ -319,7 +319,7 @@ export function ProjectList({
         )}
 
         {visible.length > 0 ? (
-          <nav aria-label="Paginação dos projetos" className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf0f3] px-4 py-3 text-[11px] text-[#667085]">
+          <nav aria-label="Paginação dos projetos" className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf0f3] px-4 py-3 text-xs text-[#667085]">
             <span>
               Exibindo {firstShown}–{firstShown + paged.items.length - 1} de {visible.length} {visible.length === 1 ? "projeto" : "projetos"}
             </span>
@@ -334,10 +334,10 @@ export function ProjectList({
                   }}
                   options={PAGE_SIZES.map((size) => ({ value: size, label: `${size} por página` }))}
                   compact
-                  className="h-8 rounded-lg border-[#d7dce3] bg-white [&_input]:text-[11px]"
+                  className="h-8 rounded-lg border-[#d7dce3] bg-white [&_input]:text-xs"
                 />
               </div>
-              <Button type="button" variant="outline" className="h-8 rounded-lg px-3 text-[11px]" disabled={paged.current === 1} onClick={() => setPage(paged.current - 1)}>
+              <Button type="button" variant="outline" className="h-8 rounded-lg px-3 text-xs" disabled={paged.current === 1} onClick={() => setPage(paged.current - 1)}>
                 Anterior
               </Button>
               {Array.from({ length: paged.pages }, (_, index) => index + 1).map((number) => (
@@ -348,14 +348,14 @@ export function ProjectList({
                   aria-current={number === paged.current ? "page" : undefined}
                   onClick={() => setPage(number)}
                   className={cn(
-                    "size-8 rounded-lg text-[11px] font-medium focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none",
+                    "size-8 rounded-lg text-xs font-medium focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none",
                     number === paged.current ? "bg-[#e9f2ff] text-[#175cd3]" : "text-[#667085] hover:bg-[#f2f4f7]",
                   )}
                 >
                   {number}
                 </button>
               ))}
-              <Button type="button" variant="outline" className="h-8 rounded-lg px-3 text-[11px]" disabled={paged.current === paged.pages} onClick={() => setPage(paged.current + 1)}>
+              <Button type="button" variant="outline" className="h-8 rounded-lg px-3 text-xs" disabled={paged.current === paged.pages} onClick={() => setPage(paged.current + 1)}>
                 Próxima
               </Button>
             </div>
@@ -394,24 +394,24 @@ function ProjectRow({
       onClick={handleClick}
       style={attention && project.status ? { boxShadow: `inset 3px 0 0 ${STATUS_COLOR[project.status]}` } : undefined}
       className={cn(
-        "cursor-pointer border-b border-[#edf0f3] align-top text-[12px] transition-colors duration-200 last:border-b-0 hover:bg-[#f8fbff] motion-reduce:transition-none",
+        "cursor-pointer border-b border-[#edf0f3] align-top text-[13px] transition-colors duration-200 last:border-b-0 hover:bg-[#f8fbff] motion-reduce:transition-none",
         opening && "bg-[#f5f9ff]",
       )}
     >
-      <td className="max-w-[18rem] py-3.5 pr-3 pl-4">
+      <td className="max-w-[18rem] py-4 pr-3 pl-4">
         <Link href={`/projetos/${project.id}`} className="text-[13px] font-semibold text-[#172033] hover:text-primary focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none">
           {project.name}
         </Link>
-        <span className="mt-1 flex items-center gap-1.5 text-[11px] text-[#98a2b3]">
+        <span className="mt-1 flex items-center gap-1.5 text-xs text-[#98a2b3]">
           {opening ? <Spinner className="size-3" /> : null}
           {project.glpiTicketId ? `GLPI #${project.glpiTicketId}` : `ID ${project.id.slice(0, 8)}`}
           {attention ? <span className="sr-only">Exige atenção.</span> : null}
         </span>
       </td>
-      <td className="hidden px-3 py-3.5 xl:table-cell">
+      <td className="hidden px-3 py-4 xl:table-cell">
         <Muted value={project.suppliers === null ? null : project.suppliers.join(", ") || "Não informado"} />
       </td>
-      <td className="px-3 py-3.5">
+      <td className="px-3 py-4">
         {project.status === null || project.situation === null ? (
           <Muted value={null} />
         ) : (
@@ -420,33 +420,33 @@ function ProjectRow({
               kind={projectStatusKind(project.status)}
               label={projectStatusLabel(project.status)}
               title={`Situação calculada pela EAP. Situação registrada no cadastro: ${projectStatusLabel(project.registeredStatus)}.`}
-              className={cn("px-2 py-[3px] text-[10px] whitespace-nowrap", project.status === "SUSPENSO" && "bg-[#f2f4f7] text-[#667085]")}
+              className={cn("px-2 py-[3px] text-[11px] whitespace-nowrap", project.status === "SUSPENSO" && "bg-[#f2f4f7] text-[#667085]")}
             />
             {attention && delayDays > 0 ? (
-              <span className={cn("flex items-center gap-1.5 text-[11px] font-medium", project.status === "CRITICO" ? "text-destructive" : "text-[#b4570f]")}>
+              <span className={cn("flex items-center gap-1.5 text-xs font-medium", project.status === "CRITICO" ? "text-destructive" : "text-[#b4570f]")}>
                 <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
                 {delayDays === 1 ? "1 dia de atraso" : `${delayDays} dias de atraso`}
               </span>
             ) : null}
             {project.situation.readyForClosure ? (
-              <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#157454]" title="Todas as fases concluídas; o encerramento depende de decisão formal">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-[#157454]" title="Todas as fases concluídas; o encerramento depende de decisão formal">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
                 Apto para encerramento
               </span>
             ) : null}
             {project.situation.closureRequirementsMissing ? (
-              <span className="text-[11px] text-[#98a2b3]" title="Encerramento registrado, mas há fases não concluídas">Encerramento pendente</span>
+              <span className="text-xs text-[#98a2b3]" title="Encerramento registrado, mas há fases não concluídas">Encerramento pendente</span>
             ) : null}
           </span>
         )}
       </td>
-      <td className="min-w-[8.5rem] px-3 py-3.5">
+      <td className="min-w-[8.5rem] px-3 py-4">
         {!project.progressAvailable ? (
           <Muted value={null} />
         ) : project.eapEmpty ? (
-          <span className="text-[11px] text-[#98a2b3]">EAP sem itens cadastrados</span>
+          <span className="text-xs text-[#98a2b3]">EAP sem itens cadastrados</span>
         ) : project.progressBasisPoints === null ? (
-          <span className="text-[11px] text-[#98a2b3]" title="Sem fases com andamento calculável">Sem andamento</span>
+          <span className="text-xs text-[#98a2b3]" title="Sem fases com andamento calculável">Sem andamento</span>
         ) : (
           <span className="flex items-center gap-2.5">
             <Progress
@@ -454,24 +454,24 @@ function ProjectRow({
               aria-label={`Andamento de ${project.name}`}
               className="w-20 [&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]"
             />
-            <span className="text-[11px] font-semibold text-[#344054] tabular-nums">{formatBasis(project.progressBasisPoints)}%</span>
+            <span className="text-xs font-semibold text-[#344054] tabular-nums">{formatBasis(project.progressBasisPoints)}%</span>
           </span>
         )}
       </td>
-      <td className="hidden px-3 py-3.5 md:table-cell">
+      <td className="hidden px-3 py-4 md:table-cell">
         <NextDeliveryCell project={project} />
       </td>
-      <td className="px-3 py-3.5 whitespace-nowrap text-[#344054]">
+      <td className="px-3 py-4 whitespace-nowrap text-[#344054]">
         {project.plannedStartAt || project.plannedEndAt ? (
           <span className="flex flex-col">
             <span>{project.plannedStartAt ? dateText(project.plannedStartAt) : "—"}</span>
             <span>{project.plannedEndAt ? dateText(project.plannedEndAt) : "—"}</span>
           </span>
         ) : (
-          <span className="text-[11px] text-[#98a2b3]">Não definido</span>
+          <span className="text-xs text-[#98a2b3]">Não definido</span>
         )}
       </td>
-      <td className="hidden px-3 py-3.5 whitespace-nowrap text-[#667085] xl:table-cell">{dateText(project.updatedAt)}</td>
+      <td className="hidden px-3 py-4 whitespace-nowrap text-[#667085] xl:table-cell">{dateText(project.updatedAt)}</td>
       <td className="px-3 py-2.5">
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -501,7 +501,7 @@ function ProjectRow({
               title="O arquivamento depende de alteração no banco (campo de arquivamento), ainda não autorizada."
             >
               Arquivar
-              <span className="ml-auto text-[10px] text-[#98a2b3]">Em breve</span>
+              <span className="ml-auto text-[11px] text-[#98a2b3]">Em breve</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -535,7 +535,7 @@ function NextDeliveryCell({ project }: { project: ProjectListRow }) {
           detail={next.corrections ? `${next.title} · ${date}` : date}
           danger={next.overdue}
         />
-        {awaiting ? <span className="pl-8 text-[11px] text-[#7450bf]">Também há marco entregue aguardando homologação</span> : null}
+        {awaiting ? <span className="pl-8 text-xs text-[#7450bf]">Também há marco entregue aguardando homologação</span> : null}
       </span>
     );
   }
@@ -576,11 +576,11 @@ function DeliveryLine({
         {icon}
       </span>
       <span className="min-w-0">
-        <span className={cn("block truncate", muted ? "text-[11px] text-[#98a2b3]" : "text-[12px] text-[#344054]", titleClass)} title={title}>
+        <span className={cn("block truncate", muted ? "text-xs text-[#98a2b3]" : "text-[13px] text-[#344054]", titleClass)} title={title}>
           {title}
         </span>
         {detail ? (
-          <span className={cn("block text-[11px]", danger ? "font-medium text-destructive" : "text-[#98a2b3]")}>{detail}</span>
+          <span className={cn("block text-xs", danger ? "font-medium text-destructive" : "text-[#98a2b3]")}>{detail}</span>
         ) : null}
       </span>
     </span>
@@ -646,9 +646,9 @@ function FilterSelect({
 
 function Muted({ value }: { value: string | null }) {
   return value === null ? (
-    <span className="text-[11px] text-[#98a2b3]" title="Não foi possível consultar este dado">Indisponível</span>
+    <span className="text-xs text-[#98a2b3]" title="Não foi possível consultar este dado">Indisponível</span>
   ) : (
-    <span className="text-[12px] text-[#344054]">{value}</span>
+    <span className="text-[13px] text-[#344054]">{value}</span>
   );
 }
 

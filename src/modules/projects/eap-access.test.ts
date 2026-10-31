@@ -49,9 +49,12 @@ describe("acesso à EAP no frontend", () => {
     assert.equal(canUpdateTaskProgress(access("COLABORADOR", [], "ex-1"), { assigneeId: "ex-1", createdBy: "pmo-1" }), false);
   });
 
-  it("restringe a homologação à gestão vinculada ou ao designado, nunca a quem entregou", () => {
+  it("homologam PMO e COORDENADOR, o designado e a gestão vinculada; nunca ADMIN por perfil nem quem entregou", () => {
     const delivered = { reviewerId: null, deliveredById: "forn-1" };
-    assert.equal(canHomologateMilestone(access("PMO", [], "pmo-1"), delivered), false);
+    assert.equal(canHomologateMilestone(access("PMO", [], "pmo-1"), delivered), true);
+    assert.equal(canHomologateMilestone(access("COORDENADOR", [], "coord-1"), delivered), true);
+    assert.equal(canHomologateMilestone(access("ADMIN", [], "admin-1"), delivered), false);
+    assert.equal(canHomologateMilestone(access("PMO", [], "forn-1"), delivered), false);
     assert.equal(canHomologateMilestone(access("GESTOR", ["GESTOR"], "g-1"), delivered), true);
     assert.equal(canHomologateMilestone(access("COLABORADOR", [], "owner-1"), delivered), true);
     assert.equal(canHomologateMilestone(access("GESTOR", ["GESTOR"], "g-1"), { ...delivered, deliveredById: "g-1" }), false);

@@ -16,6 +16,8 @@ export type CreateProject201 = {
   description: string | null;
   /** @nullable */
   glpiTicketId: string | null;
+  /** @nullable */
+  pmoGlpiTicketId: string | null;
   ownerId: string;
   status: CreateProject201Status;
   /**

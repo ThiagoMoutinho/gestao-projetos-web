@@ -22,11 +22,11 @@ export function MilestoneDecisionFeedback({ milestone, className }: { milestone:
   const detail = [milestone.validatedBy, decidedAt, milestone.validationNote?.trim() || "Decisão formal registrada."].filter(Boolean).join(" · ");
 
   return (
-    <div role="status" className={cn("mb-[14px] flex items-start gap-[9px] rounded-[7px] border p-[11px]", decision.tone, className)}>
+    <div role="status" className={cn("mt-3 mb-[14px] flex items-start gap-[9px] rounded-[7px] border p-[11px]", decision.tone, className)}>
       <Icon className="size-4 shrink-0" aria-hidden="true" />
       <div>
-        <strong className="block text-[9.5px]">{decision.title}</strong>
-        <span className="mt-[3px] block text-[8px]">{detail}</span>
+        <strong className="block text-xs">{decision.title}</strong>
+        <span className="mt-[3px] block text-xs">{detail}</span>
       </div>
     </div>
   );

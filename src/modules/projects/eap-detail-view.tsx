@@ -136,12 +136,12 @@ export function EapDetail({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white">
-      <header className={cn("flex shrink-0 items-start justify-between gap-[15px] border-b border-[#e4e7ec] pt-6", editing ? "min-h-[116px] px-6 pb-4" : "min-h-[93px] px-[22px] pb-[18px]")}>
+      <header className={cn("flex shrink-0 items-start justify-between gap-[15px] border-b border-[#e4e7ec] pt-6", "min-h-[116px] px-6 pb-4")}>
         <div className="min-w-0">
-          <span className="mb-[9px] block text-[9px] leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">{eyebrow}</span>
+          <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">{eyebrow}</span>
           <h2 className="max-w-[470px] truncate text-[17px] leading-[1.35] font-semibold text-[#172033]">{title}</h2>
           {editing && !editorLocked ? (
-            <span className="mt-[7px] flex items-center gap-1.5 text-[8.5px] font-semibold text-[#8a6116]">
+            <span className="mt-[7px] flex items-center gap-1.5 text-xs font-semibold text-[#8a6116]">
               <span className="size-1.5 rounded-full bg-[#e0a130]" />
               Alterações não salvas
             </span>
@@ -167,12 +167,12 @@ export function EapDetail({
           </Button>
         </div>
       </header>
-      <div key={editing ? "edit" : "view"} className={`motion-fade min-h-0 flex-1 overflow-y-auto ${editing ? "bg-[#f8fafc] px-6" : "px-[22px] py-5"}`}>
+      <div key={editing ? "edit" : "view"} className={cn("motion-fade min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-6 pb-6", !editing && "[&_.text-xs]:text-[11.5px]")}>
         {confirmCancel || pending ? (
-          <div role="alert" className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[#865516]">
+          <div role="alert" className="mt-3 mb-3 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[#865516]">
             <AlertTriangle className="mt-0.5 size-[15px] shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="text-[8.5px] leading-[1.45]">Há alterações não salvas neste item.</p>
+              <p className="text-[11.5px] leading-[1.45]">Há alterações não salvas neste item.</p>
               <div className="mt-2 flex flex-wrap justify-end gap-[7px]">
                 <Button
                   type="button"
@@ -208,7 +208,7 @@ export function EapDetail({
           </div>
         ) : null}
         {editing && notice ? (
-          <p role="status" className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#bad1f0] bg-[#f5f9ff] p-2.5 text-[8.5px] leading-[1.45] text-[#285da8]">
+          <p role="status" className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#bad1f0] bg-[#f5f9ff] p-2.5 text-[11.5px] leading-[1.45] text-[#285da8]">
             <Check className="mt-px size-[15px] shrink-0" aria-hidden="true" />
             <span>{notice}</span>
           </p>
@@ -342,20 +342,20 @@ function PhaseDetail({
         <p className={paragraph}>{phase.description?.trim() || "Nenhuma descrição registrada."}</p>
       </Section>
       {progress.kind === "value" ? (
-        <Section label="Andamento consolidado" extra={<strong className="text-[12px] text-[#285da8]">{formatBasis(progress.basisPoints)}%</strong>}>
+        <Section label="Andamento consolidado" extra={<strong className="text-[11.5px] text-[#285da8]">{formatBasis(progress.basisPoints)}%</strong>}>
           <Progress
             value={basisToPercent(progress.basisPoints)}
             aria-label="Andamento consolidado da fase"
             className={progressClass}
           />
-          <span className="mt-[9px] block text-[8.5px] leading-normal text-[#8a94a6]">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</span>
+          <span className="mt-[9px] block text-[11.5px] leading-normal text-[#8a94a6]">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</span>
         </Section>
       ) : (
         <div className="my-4 flex items-start gap-2.5 rounded-lg border border-[#e4e7ec] bg-[#f8f9fb] p-[13px] text-[#475467]">
           <Info className="size-4 shrink-0 text-[#667085]" aria-hidden="true" />
           <span>
-            <strong className="mb-[3px] block text-[10.5px]">{progressLabel(progress)}</strong>
-            <span className="block text-[9px] text-[#667085]">
+            <strong className="mb-[3px] block text-[11.5px]">{progressLabel(progress)}</strong>
+            <span className="block text-[11.5px] text-[#667085]">
               {progress.kind === "empty" ? "Inclua tarefas ou marcos para calcular o andamento." : "O percentual desta fase não está disponível."}
             </span>
           </span>
@@ -364,7 +364,7 @@ function PhaseDetail({
       <div className="grid grid-cols-3 gap-2 border-t border-[#edf0f3] py-[18px]">
         <Metric value={tasks ? String(tasks.length) : "—"} label="Tarefas" />
         <Metric value={milestones ? String(milestones.length) : "—"} label="Marcos" />
-        <Metric value={pending ? String(pending.length) : "—"} label="Pendências" />
+        <Metric value={pending ? String(pending.length) : "—"} label="Pendências" warning={pending !== null && pending.length > 0} />
       </div>
       <Section label="Pendências da fase">
         {pending === null ? (
@@ -377,7 +377,7 @@ function PhaseDetail({
           <ul className="flex flex-col gap-[7px]">
             {pending.map((item) => (
               <li key={item.id}>
-                <button type="button" className="grid min-h-[35px] w-full grid-cols-[12px_minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[9.5px] text-[#475467] hover:bg-[#f8fbff]" onClick={() => onSelect(item.selection)}>
+                <button type="button" className="grid min-h-10 w-full grid-cols-[12px_minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[11.5px] text-[#475467] hover:bg-[#f8fbff]" onClick={() => onSelect(item.selection)}>
                   <PendingSignal blocked={item.blocked} overdue={item.overdue} />
                   <span className="truncate">{item.title}</span>
                   <EapStatusBadge kind={item.kind} label={item.label} size="sm" />
@@ -387,9 +387,9 @@ function PhaseDetail({
           </ul>
         )}
       </Section>
-      <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
+      <div className="mt-3 grid grid-cols-2 gap-3">
         <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={phase.responsibleName ?? "Não informado"} />
-        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(phase.dates) ?? "Não informado"} overdue={phaseIsOverdue(phase)} note={phaseIsOverdue(phase) ? "Em atraso" : null} />
+        <Fact icon={<Calendar className="size-[18px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(phase.dates) ?? "Não informado"} overdue={phaseIsOverdue(phase)} note={phaseIsOverdue(phase) ? "Em atraso" : null} />
       </div>
       <Section label="Critério de conclusão">
         <p className={paragraph}>{phase.completionCriteria?.trim() || "Nenhum critério registrado."}</p>
@@ -556,20 +556,20 @@ function TaskDetail({
             <AlertTriangle className="size-[17px]" aria-hidden="true" />
           </span>
           <span>
-            <strong className={cn("mb-[5px] block text-[10px]", impedimentTone.text)}>Impedimento ativo</strong>
+            <strong className={cn("mb-[5px] block text-[11.5px]", impedimentTone.text)}>Impedimento ativo</strong>
             <Suspense fallback={<SkeletonList rows={1} label="Consultando o motivo" rowClassName="h-4 w-3/4 rounded" />}>
               <ImpedimentNote projectId={projectId} phaseId={phase.id} task={task} />
             </Suspense>
           </span>
         </div>
       ) : null}
-      <section className="border-t border-[#edf0f3] py-[18px]">
-        <div className="mb-2.5 flex items-end justify-between gap-3">
+      <section className="mt-3 rounded-[10px] border border-[#e4e7ec] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <span>
-            <span className={cn(sectionLabel, "mb-[3px]")}>Andamento registrado</span>
-            <small className="block text-[8px] text-[#98a2b3]">Selecione um valor para atualizar rapidamente</small>
+            <strong className="block text-[12.5px] text-[#253248]">Andamento registrado</strong>
+            <small className="mt-1 block text-[11.5px] text-[#98a2b3]">Selecione um valor para atualizar rapidamente</small>
           </span>
-          <strong className="text-[12px] text-[#285da8]">{task.progressPercent}%</strong>
+          <strong className="text-[11.5px] text-[#285da8]">{task.progressPercent}%</strong>
         </div>
         <Progress
           value={task.progressPercent}
@@ -588,7 +588,7 @@ function TaskDetail({
               type="button"
               disabled={!canUpdate || saving || locked || completing || reopenTarget !== null}
               className={cn(
-                "h-[29px] min-w-0 rounded-[6px] border text-[8.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                "h-8 min-w-0 rounded-[6px] border text-[11.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                 draft === value
                   ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]"
                   : "border-[#dce1e7] bg-white text-[#667085] enabled:hover:border-[#8eb4e7] enabled:hover:bg-[#edf4ff] enabled:hover:text-[#175cd3]",
@@ -628,17 +628,17 @@ function TaskDetail({
         {canUpdate && concluded ? (
           <Reveal open={reopenTarget !== null}>
             <div className="mt-3 flex flex-col gap-2.5 rounded-[9px] border border-[#f6d2ad] bg-[#fff8f1] p-3.5">
-              <span className="block text-[9px] font-semibold tracking-[0.04em] text-[#b4570f] uppercase">Reabrir tarefa concluída</span>
-              <p className="text-[8.5px] leading-[1.45] text-[#475467]">
+              <span className="block text-[11.5px] font-semibold tracking-[0.04em] text-[#b4570f] uppercase">Reabrir tarefa concluída</span>
+              <p className="text-[11.5px] leading-[1.45] text-[#475467]">
                 O andamento passa de 100% para {reopenTarget ?? 0}%. O término real registrado é retirado e fica preservado no histórico.
               </p>
               <label className="flex flex-col gap-1.5">
-                <span className="flex items-baseline justify-between text-[8.5px] font-semibold text-[#475467]">
+                <span className="flex items-baseline justify-between text-[11.5px] font-semibold text-[#475467]">
                   Justificativa da reabertura
-                  <small className="text-[7.5px] font-normal text-[#98a2b3]">obrigatória</small>
+                  <small className="text-[11.5px] font-normal text-[#98a2b3]">obrigatória</small>
                 </span>
                 <Textarea
-                  className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]"
+                  className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[11.5px] md:text-[11.5px]"
                   value={reopenText}
                   onChange={(event) => {
                     setReopenText(event.target.value);
@@ -661,13 +661,13 @@ function TaskDetail({
             </div>
           </Reveal>
         ) : null}
-        {!canUpdate ? <p className="mt-2 text-[8.5px] text-[#667085]">Seu acesso não permite atualizar o andamento desta tarefa.</p> : null}
-        {canUpdate && locked ? <p className="mt-2 text-[8.5px] text-[#667085]">Tarefa cancelada. Somente a gestão do projeto pode reativá-la.</p> : null}
-        {feedback ? <p className="mt-2 text-[8.5px] text-[#667085]" role="status">{feedback}</p> : null}
+        {!canUpdate ? <p className="mt-2 text-[11.5px] text-[#667085]">Seu acesso não permite atualizar o andamento desta tarefa.</p> : null}
+        {canUpdate && locked ? <p className="mt-2 text-[11.5px] text-[#667085]">Tarefa cancelada. Somente a gestão do projeto pode reativá-la.</p> : null}
+        {feedback ? <p className="mt-2 text-[11.5px] text-[#667085]" role="status">{feedback}</p> : null}
       </section>
-      <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
+      <div className="mt-3 grid grid-cols-2 gap-3">
         <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={task.assigneeName || "Não informado"} />
-        <Fact icon={<Calendar className="size-[17px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(task.dates) ?? "Não informado"} overdue={overdue} note={overdue ? "Em atraso" : null} />
+        <Fact icon={<Calendar className="size-[18px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(task.dates) ?? "Não informado"} overdue={overdue} note={overdue ? "Em atraso" : null} />
       </div>
       <Section label="Evidências vinculadas">
         <Suspense fallback={<SkeletonList rows={2} label="Consultando evidências" rowClassName="h-[45px]" />}>
@@ -776,22 +776,22 @@ function TaskCompletion({
 
   return (
     <div className="mt-3 flex flex-col gap-2.5 rounded-[9px] border border-[#bfe4d5] bg-[#f6fcf9] p-3.5">
-      <span className="block text-[9px] font-semibold tracking-[0.04em] text-[#157454] uppercase">Concluir tarefa</span>
+      <span className="block text-[11.5px] font-semibold tracking-[0.04em] text-[#157454] uppercase">Concluir tarefa</span>
       <Reveal open={step === "editing"}>
         <div className="flex flex-col gap-2.5">
-          <p className="text-[8.5px] leading-[1.45] text-[#475467]">Confirme as datas reais. A conclusão grava o andamento em 100% e recalcula a fase.</p>
+          <p className="text-[11.5px] leading-[1.45] text-[#475467]">Confirme as datas reais. A conclusão grava o andamento em 100% e recalcula a fase.</p>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <DateField label="Início real" hint={recorded.start ? undefined : "obrigatório"} value={start} onChange={(value) => { setStart(value); clear("start"); }} error={errors.start} />
             <DateField label="Término real" hint={recorded.end ? undefined : "sugestão: hoje"} value={end} onChange={(value) => { setEnd(value); clear("end"); }} error={errors.end} />
           </div>
           <Reveal open={correction}>
             <label className="flex flex-col gap-1.5">
-              <span className="flex items-baseline justify-between text-[8.5px] font-semibold text-[#475467]">
+              <span className="flex items-baseline justify-between text-[11.5px] font-semibold text-[#475467]">
                 Justificativa da correção
-                <small className="text-[7.5px] font-normal text-[#98a2b3]">obrigatória · altera data real já registrada</small>
+                <small className="text-[11.5px] font-normal text-[#98a2b3]">obrigatória · altera data real já registrada</small>
               </span>
               <Textarea
-                className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[10px] md:text-[10px]"
+                className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[11.5px] md:text-[11.5px]"
                 value={justification}
                 onChange={(event) => {
                   setJustification(event.target.value);
@@ -807,7 +807,7 @@ function TaskCompletion({
         </div>
       </Reveal>
       <Reveal open={step === "review"}>
-        <dl className="flex flex-col gap-1 rounded-[7px] border border-[#d5ece2] bg-white p-2.5 text-[8.5px] leading-[1.5] text-[#475467]">
+        <dl className="flex flex-col gap-1 rounded-[7px] border border-[#d5ece2] bg-white p-2.5 text-[11.5px] leading-[1.5] text-[#475467]">
           <ReviewLine label="Andamento">{task.progressPercent}% → 100%</ReviewLine>
           <ReviewLine label="Início real">{reviewDate(recorded.start, start)}</ReviewLine>
           <ReviewLine label="Término real">{reviewDate(recorded.end, end)}</ReviewLine>
@@ -918,16 +918,18 @@ function MilestoneDetail({
       <Section label="Fluxo de entrega e aceite">
         <MilestoneFlow status={milestone.status} />
       </Section>
-      <div className="grid grid-cols-2 gap-2.5 border-t border-[#edf0f3] py-5">
-        <Fact
-          icon={<Calendar className="size-[17px]" aria-hidden="true" />}
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Apresentador" value={milestone.presenterName ?? "Não designado"} />
+        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Gestor validador" value={milestone.reviewerName ?? "Gestão do projeto"} />
+      </div>
+      <div className="mt-3 gap-3 sm:grid-cols-2">
+      <Fact
+          icon={<Calendar className="size-[18px]" aria-hidden="true" />}
           label="Data prevista"
           value={vigenteText(milestone.dates) ?? "Não informado"}
           overdue={overdue}
           note={overdue ? (delayReason ? `Em atraso · ${delayReason.toLowerCase()}` : "Em atraso") : null}
-        />
-        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Apresentador" value={milestone.presenterName ?? "Não designado"} />
-        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Gestor validador" value={milestone.reviewerName ?? "Gestão do projeto"} />
+      />
       </div>
       <Section label="Entrega e homologação">
         <MilestoneHomologation
@@ -952,7 +954,7 @@ function MilestoneDetail({
                 <li key={item.id}>
                   <button
                     type="button"
-                    className="grid min-h-[35px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[9.5px] text-[#475467] hover:bg-[#f8fbff]"
+                    className="grid min-h-10 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[11.5px] text-[#475467] hover:bg-[#f8fbff]"
                     onClick={() => onSelect({ kind: "task", phaseId: phase.id, taskId: item.id })}
                   >
                     <span className="truncate">{item.title}</span>
@@ -1007,7 +1009,7 @@ function ImpedimentNote({ projectId, phaseId, task }: { projectId: string; phase
   return (
     <>
       <p className={cn(impedimentText, "whitespace-pre-wrap")}>{state.open.description}</p>
-      <small className="mt-1.5 block text-[8px] text-[#667085]">
+      <small className="mt-1.5 block text-[11.5px] text-[#667085]">
         Registrado por {state.open.author} em {state.open.openedAt}
       </small>
     </>
@@ -1031,7 +1033,7 @@ function EvidenceList({
     return (
       <>
         {emptyWarning ? (
-          <div className="mb-2.5 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.45] text-[#865516]">
+          <div className="mb-2.5 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[11.5px] leading-[1.45] text-[#865516]">
             <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
             <span>{emptyWarning}</span>
           </div>
@@ -1048,8 +1050,8 @@ function EvidenceList({
             <FileText className="size-[15px]" aria-hidden="true" />
           </span>
           <span className="min-w-0">
-            <strong className="mb-[3px] block truncate text-[9px] font-semibold text-[#344054]">{item.title}</strong>
-            <span className="block text-[7.5px] text-[#98a2b3]">Registrada em {item.createdAt}</span>
+            <strong className="mb-[3px] block truncate text-[11.5px] font-semibold text-[#344054]">{item.title}</strong>
+            <span className="block text-[11.5px] text-[#98a2b3]">Registrada em {item.createdAt}</span>
           </span>
           <a
             href={item.url}
@@ -1066,24 +1068,27 @@ function EvidenceList({
   );
 }
 
-const paragraph = "text-[11px] leading-[1.65] text-[#475467]";
-const sectionLabel = "block text-[9px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase";
-const impedimentText = "text-[9.5px] leading-[1.55] text-[#475467]";
-const emptyInline = "flex min-h-[39px] items-center gap-1.5 rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[8.5px] text-[#98a2b3]";
+const paragraph = "text-[11.5px] leading-[1.65] text-[#475467]";
+const sectionLabel = "block text-[11.5px] font-semibold text-[#475467]";
+const impedimentText = "text-[11.5px] leading-[1.6] text-[#475467]";
+const emptyInline = "flex min-h-11 items-center gap-1.5 rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[11.5px] text-[#98a2b3]";
 const progressClass = "[&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-[7px] [&_[data-slot=progress-track]]:bg-[#e9eef5]";
-const secondaryButton = "h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054] hover:bg-[#f8fafc]";
-const primaryButton = "h-9 rounded-[7px] bg-[#175cd3] px-[13px] text-[11px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]";
-const compactButton = "h-[30px] gap-[5px] rounded-[7px] border-[#d7dce3] px-[9px] text-[8.5px] font-semibold text-[#344054]";
+const secondaryButton = "h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11.5px] font-semibold text-[#344054] hover:bg-[#f8fafc]";
+const primaryButton = "h-9 rounded-[7px] bg-[#175cd3] px-[13px] text-[11.5px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]";
+const compactButton = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-3 text-[11.5px] font-semibold text-[#344054]";
 
 function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milestone"; code: string; label: string; kind: EapStatusKind }) {
   return (
-    <div className="flex items-center gap-[9px] pb-5">
-      <span className={cn("grid size-[30px] place-items-center rounded-[7px]", type === "phase" && "bg-[#e9f2ff] text-[#2865b9]", type === "task" && "bg-[#eef2f6] text-[#52677e]", type === "milestone" && "bg-[#f4ecfb] text-[#8b5bbb]")}>
+    <div className="-mx-6 mb-1 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-[#e4e7ec] bg-white px-6 py-[13px]">
+      <span className={cn("grid size-8 place-items-center rounded-[7px]", type === "phase" && "bg-[#e9f2ff] text-[#2865b9]", type === "task" && "bg-[#eef2f6] text-[#52677e]", type === "milestone" && "bg-[#f4ecfb] text-[#8b5bbb]")}>
         {type === "phase" ? <Folder className="size-4" aria-hidden="true" /> : null}
         {type === "task" ? <Check className="size-4" aria-hidden="true" /> : null}
         {type === "milestone" ? <Flag className="size-4" aria-hidden="true" /> : null}
       </span>
-      <span className="mr-auto text-[10px] text-[#667085]">EAP {code}</span>
+      <span>
+        <span className="mb-[3px] block text-[11.5px] text-[#98a2b3]">Item da EAP</span>
+        <strong className="block text-[11.5px] text-[#344054]">{code} · {type === "phase" ? "Fase" : type === "task" ? "Tarefa" : "Marco"}</strong>
+      </span>
       <EapStatusBadge kind={kind} label={label} />
     </div>
   );
@@ -1091,9 +1096,9 @@ function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milest
 
 function Section({ label, extra, children }: { label: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <section className="border-t border-[#edf0f3] py-[19px]">
-      <div className={cn("flex items-center justify-between gap-3", extra ? "mb-2.5" : "mb-2")}>
-        <span className={sectionLabel}>{label}</span>
+    <section className="mt-3 rounded-[10px] border border-[#e4e7ec] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <strong className="block text-[12.5px] text-[#253248]">{label}</strong>
         {extra}
       </div>
       {children}
@@ -1101,11 +1106,11 @@ function Section({ label, extra, children }: { label: string; extra?: ReactNode;
   );
 }
 
-function Metric({ value, label }: { value: string; label: string }) {
+function Metric({ value, label, warning = false }: { value: string; label: string; warning?: boolean }) {
   return (
-    <div className="rounded-lg border border-[#e4e7ec] bg-[#fafbfc] p-3">
-      <strong className="mb-[3px] block text-[16px] text-[#253248]">{value}</strong>
-      <span className="block text-[8.5px] text-[#8a94a6]">{label}</span>
+    <div className={cn("rounded-lg border p-3", warning ? "border-[#f3dcae] bg-[#fff8e9]" : "border-[#e4e7ec] bg-[#fafbfc]")}>
+      <strong className={cn("mb-[3px] block text-[15px]", warning ? "text-[#865516]" : "text-[#253248]")}>{value}</strong>
+      <span className={cn("block text-[11.5px]", warning ? "text-[#a8782f]" : "text-[#8a94a6]")}>{label}</span>
     </div>
   );
 }
@@ -1132,12 +1137,12 @@ function PendingSignal({ blocked, overdue }: { blocked: boolean; overdue: boolea
 
 function Fact({ icon, label, value, overdue = false, note }: { icon: ReactNode; label: string; value: string; overdue?: boolean; note?: string | null }) {
   return (
-    <div className={cn("flex min-h-[67px] items-center gap-[9px] rounded-lg border p-[11px]", overdue ? overdueTone.surface : "border-[#e4e7ec]")}>
-      <span className={cn("grid size-[29px] shrink-0 place-items-center rounded-[6px]", overdue ? overdueTone.icon : "bg-[#edf4ff] text-[#2864bb]")}>{icon}</span>
+    <div className={cn("flex min-h-[80px] items-center gap-3 rounded-[10px] border p-3.5", overdue ? overdueTone.surface : "border-[#e4e7ec]")}>
+      <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", overdue ? overdueTone.icon : "bg-[#edf4ff] text-[#2864bb]")}>{icon}</span>
       <span className="min-w-0">
-        <span className="mb-1 block text-[7.5px] font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">{label}</span>
-        <strong className="block truncate text-[9.5px] text-[#344054]">{value}</strong>
-        {note ? <em className={cn("mt-[3px] block text-[8px] font-semibold not-italic", overdueTone.text)}>{note}</em> : null}
+        <span className="mb-1 block text-[11.5px] font-medium text-[#8a94a6]">{label}</span>
+        <strong className="block truncate text-[11.5px] text-[#344054]">{value}</strong>
+        {note ? <em className={cn("mt-[3px] block text-[11.5px] font-semibold not-italic", overdueTone.text)}>{note}</em> : null}
       </span>
     </div>
   );

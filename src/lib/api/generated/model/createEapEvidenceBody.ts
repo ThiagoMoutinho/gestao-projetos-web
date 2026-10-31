@@ -5,18 +5,21 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { CreateEapEvidenceBodyKind } from './createEapEvidenceBodyKind.ts';
 
 export type CreateEapEvidenceBody = {
   /**
      * @minLength 1
      * @maxLength 255
      */
-  title: string;
+  title?: string;
   /**
      * @minLength 1
      * @maxLength 2000
      */
   url: string;
+  kind?: CreateEapEvidenceBodyKind;
+  ticketNumber?: string;
   /** @minLength 1 */
   phaseId?: string;
   /** @minLength 1 */
@@ -25,4 +28,5 @@ export type CreateEapEvidenceBody = {
   milestoneId?: string;
   /** @minLength 1 */
   scheduleRequestId?: string;
+  projectLevel?: true;
 };

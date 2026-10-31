@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { ListEapEvidences200DataItemKind } from './listEapEvidences200DataItemKind.ts';
 
 export type ListEapEvidences200DataItem = {
   id: string;
@@ -16,8 +17,16 @@ export type ListEapEvidences200DataItem = {
   milestoneId: string | null;
   /** @nullable */
   scheduleRequestId: string | null;
+  /** @nullable */
+  projectId: string | null;
+  /** @nullable */
+  projectResultId: string | null;
   title: string;
   url: string;
+  /** @nullable */
+  kind: ListEapEvidences200DataItemKind;
+  /** @nullable */
+  ticketNumber: string | null;
   /** @nullable */
   deliveryId: string | null;
   createdBy: string;

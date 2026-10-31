@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ReorderEapTasks200DataItemCalculatedStatus } from './reorderEapTasks200DataItemCalculatedStatus.ts';
+import type { ReorderEapTasks200DataItemPriority } from './reorderEapTasks200DataItemPriority.ts';
 import type { ReorderEapTasks200DataItemStatus } from './reorderEapTasks200DataItemStatus.ts';
 
 export type ReorderEapTasks200DataItem = {
@@ -32,6 +33,7 @@ export type ReorderEapTasks200DataItem = {
      * @maximum 9007199254740991
      */
   weight: number;
+  priority: ReorderEapTasks200DataItemPriority;
   /** @nullable */
   baselineStartAt: string | null;
   /** @nullable */

@@ -1,4 +1,5 @@
 import type { GetProject200RolesItem } from "@/lib/api/generated/model/getProject200RolesItem";
+import type { TaskPriority } from "./eap-priority";
 import type { ListEapMilestones200DataItemStatus } from "@/lib/api/generated/model/listEapMilestones200DataItemStatus";
 import type { ListEapMilestones200DataItemType } from "@/lib/api/generated/model/listEapMilestones200DataItemType";
 import type { ListEapPhases200DataItemStatus } from "@/lib/api/generated/model/listEapPhases200DataItemStatus";
@@ -56,6 +57,7 @@ export type ProjectTaskView = {
   statusTone: RecordTone;
   progressPercent: number;
   weight: number;
+  priority: TaskPriority;
   sortOrder: number;
   hasImpediment: boolean;
   assigneeId: string | null;
@@ -213,6 +215,7 @@ export function presentTask<T extends DatedSpan & {
   calculatedStatus: ListEapTasks200DataItemStatus;
   progressPercent: number;
   weight: number;
+  priority: TaskPriority;
   hasImpediment: boolean;
   correctiveMilestoneId?: string | null;
   createdBy: string;
@@ -229,6 +232,7 @@ export function presentTask<T extends DatedSpan & {
     statusTone: taskStatusTone(task.calculatedStatus),
     progressPercent: task.progressPercent,
     weight: task.weight,
+    priority: task.priority,
     sortOrder: 0,
     hasImpediment: task.hasImpediment,
     assigneeId: task.assigneeId,

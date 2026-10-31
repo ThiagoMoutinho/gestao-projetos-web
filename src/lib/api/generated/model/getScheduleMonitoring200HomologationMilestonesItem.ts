@@ -37,4 +37,11 @@ export type GetScheduleMonitoring200HomologationMilestonesItem = {
   reviewerId: string | null;
   /** @nullable */
   reviewerName: string | null;
+  /** @nullable */
+  deliveredById: string | null;
+  /** @nullable */
+  deliveredByName: string | null;
+  /** @nullable */
+  submittedAt: string | null;
+  canDecide: boolean;
 };

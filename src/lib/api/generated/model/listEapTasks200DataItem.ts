@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ListEapTasks200DataItemCalculatedStatus } from './listEapTasks200DataItemCalculatedStatus.ts';
+import type { ListEapTasks200DataItemPriority } from './listEapTasks200DataItemPriority.ts';
 import type { ListEapTasks200DataItemStatus } from './listEapTasks200DataItemStatus.ts';
 
 export type ListEapTasks200DataItem = {
@@ -32,6 +33,7 @@ export type ListEapTasks200DataItem = {
      * @maximum 9007199254740991
      */
   weight: number;
+  priority: ListEapTasks200DataItemPriority;
   /** @nullable */
   baselineStartAt: string | null;
   /** @nullable */

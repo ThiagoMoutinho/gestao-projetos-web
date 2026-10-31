@@ -104,7 +104,7 @@ export function EapHistory({
               type="button"
               aria-pressed={active === group}
               className={cn(
-                "h-[24px] rounded-full border px-2.5 text-[8.5px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none",
+                "h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none",
                 active === group
                   ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]"
                   : "border-[#dce1e7] bg-white text-[#667085] hover:border-[#8eb4e7] hover:text-[#175cd3]",
@@ -135,24 +135,24 @@ function HistoryItem({ entry }: { entry: HistoryEntry }) {
   return (
     <Collapsible className="min-w-0">
       <div className="flex items-start gap-2">
-        <strong className="min-w-0 flex-1 text-[10px] leading-snug text-[#344054]">{entry.title}</strong>
-        <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[8px] font-semibold", TONE[entry.tone].badge)}>
+        <strong className="min-w-0 flex-1 text-xs leading-snug text-[#344054]">{entry.title}</strong>
+        <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-semibold", TONE[entry.tone].badge)}>
           {entry.tone === "cancel" ? <Ban className="size-2.5" aria-hidden="true" /> : null}
           {entry.tone === "impediment" ? <AlertTriangle className="size-2.5" aria-hidden="true" /> : null}
           {entry.kindLabel}
         </span>
       </div>
-      <p className="mt-0.5 text-[9.5px] text-[#8a94a6]">
+      <p className="mt-0.5 text-xs text-[#8a94a6]">
         {entry.actor} · {entry.createdAt}
       </p>
       {entry.transition ? (
-        <p className="mt-0.5 text-[9px] text-[#667085]">
+        <p className="mt-0.5 text-xs text-[#667085]">
           Situação: {entry.transition.from} → {entry.transition.to}
         </p>
       ) : null}
       {expandable ? (
         <>
-          <CollapsibleTrigger className="group mt-1 inline-flex items-center gap-0.5 rounded-[4px] text-[9px] font-semibold text-[#205eb2] hover:underline focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none">
+          <CollapsibleTrigger className="group mt-1 inline-flex items-center gap-0.5 rounded-[4px] text-xs font-semibold text-[#205eb2] hover:underline focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none">
             {onlyNote ? `Ver ${onlyNote.label.toLowerCase()}` : "Ver detalhes"}
             <ChevronDown className="size-3 transition-transform group-data-[panel-open]:rotate-180" aria-hidden="true" />
           </CollapsibleTrigger>
@@ -160,13 +160,13 @@ function HistoryItem({ entry }: { entry: HistoryEntry }) {
             <div className="mt-1.5 flex flex-col gap-1.5 border-l-2 border-[#e4e7ec] pl-2">
               {entry.notes.map((note) => (
                 <div key={note.label}>
-                  <p className="text-[8.5px] font-semibold text-[#475467]">{note.label}</p>
-                  <p className="text-[9.5px] leading-snug break-words whitespace-pre-wrap text-[#344054]">{note.text}</p>
+                  <p className="text-xs font-semibold text-[#475467]">{note.label}</p>
+                  <p className="text-xs leading-snug break-words whitespace-pre-wrap text-[#344054]">{note.text}</p>
                 </div>
               ))}
-              {entry.cause ? <p className="text-[9px] text-[#667085]">Motivo: {entry.cause}</p> : null}
+              {entry.cause ? <p className="text-xs text-[#667085]">Motivo: {entry.cause}</p> : null}
               {entry.related.map((related) => (
-                <div key={related.id} className="text-[9px] text-[#667085]">
+                <div key={related.id} className="text-xs text-[#667085]">
                   <span className="font-semibold text-[#475467]">{related.kindLabel}:</span> {related.title}
                   {related.transition ? ` (${related.transition.from} → ${related.transition.to})` : null}
                 </div>
@@ -180,4 +180,4 @@ function HistoryItem({ entry }: { entry: HistoryEntry }) {
 }
 
 const emptyInline =
-  "flex min-h-[39px] items-center gap-1.5 rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[8.5px] text-[#98a2b3]";
+  "flex min-h-11 items-center gap-1.5 rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-xs text-[#98a2b3]";

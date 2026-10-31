@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { GetEapEvidence200Kind } from './getEapEvidence200Kind.ts';
 
 export type GetEapEvidence200 = {
   id: string;
@@ -16,8 +17,16 @@ export type GetEapEvidence200 = {
   milestoneId: string | null;
   /** @nullable */
   scheduleRequestId: string | null;
+  /** @nullable */
+  projectId: string | null;
+  /** @nullable */
+  projectResultId: string | null;
   title: string;
   url: string;
+  /** @nullable */
+  kind: GetEapEvidence200Kind;
+  /** @nullable */
+  ticketNumber: string | null;
   /** @nullable */
   deliveryId: string | null;
   createdBy: string;

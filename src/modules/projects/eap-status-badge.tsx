@@ -41,7 +41,7 @@ export function EapStatusBadge({
       title={title}
       className={cn(
         "h-auto gap-[5px] rounded-full font-semibold",
-        size === "sm" ? "px-1.5 py-[3px] text-[7.5px]" : "px-[7px] py-1 text-[8.5px]",
+        size === "sm" ? "px-1.5 py-[3px] text-[11px]" : "px-[7px] py-1 text-[11px]",
         KIND_CLASS[kind],
         className,
       )}

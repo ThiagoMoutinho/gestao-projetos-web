@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { CancelEapTask200CalculatedStatus } from './cancelEapTask200CalculatedStatus.ts';
+import type { CancelEapTask200Priority } from './cancelEapTask200Priority.ts';
 import type { CancelEapTask200Status } from './cancelEapTask200Status.ts';
 
 export type CancelEapTask200 = {
@@ -32,6 +33,7 @@ export type CancelEapTask200 = {
      * @maximum 9007199254740991
      */
   weight: number;
+  priority: CancelEapTask200Priority;
   /** @nullable */
   baselineStartAt: string | null;
   /** @nullable */

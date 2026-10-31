@@ -92,17 +92,17 @@ export function ProjectClosure({ projectId, closed, canClose }: { projectId: str
       >
         <AlertDialogContent className="max-w-[420px]! gap-3 rounded-[10px] p-5">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[14px] font-semibold text-[#101828]">Encerrar o projeto?</AlertDialogTitle>
-            <AlertDialogDescription className="text-[12px] leading-relaxed text-[#475467]">
+            <AlertDialogTitle className="text-base font-semibold text-[#101828]">Encerrar o projeto?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[13px] leading-relaxed text-[#475467]">
               O projeto será formalmente concluído e sairá da lista de ativos, sem ser arquivado. A EAP, as datas, as evidências e as
               homologações são preservadas, e o encerramento fica registrado no histórico com o seu usuário.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="-mx-5 -mb-5 px-5 py-3">
-            <AlertDialogCancel className="h-8 text-[11px]" disabled={busy}>
+          <AlertDialogFooter className="-mx-5 -mb-5 px-5 py-4">
+            <AlertDialogCancel className="h-10 text-xs" disabled={busy}>
               Cancelar
             </AlertDialogCancel>
-            <Button type="button" className="h-8 text-[11px]" loading={busy} onClick={() => void confirm()}>
+            <Button type="button" className="h-10 text-xs" loading={busy} onClick={() => void confirm()}>
               {busy ? "Encerrando…" : "Encerrar projeto"}
             </Button>
           </AlertDialogFooter>

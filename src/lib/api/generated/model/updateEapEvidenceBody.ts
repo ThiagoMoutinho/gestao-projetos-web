@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { UpdateEapEvidenceBodyKind } from './updateEapEvidenceBodyKind.ts';
 
 export type UpdateEapEvidenceBody = {
   /**
@@ -17,4 +18,6 @@ export type UpdateEapEvidenceBody = {
      * @maxLength 2000
      */
   url?: string;
+  kind?: UpdateEapEvidenceBodyKind;
+  ticketNumber?: string;
 };

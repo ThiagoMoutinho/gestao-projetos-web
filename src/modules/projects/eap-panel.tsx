@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Ban, CalendarIcon, Check, ChevronRight, Clock, FileText, Flag, Folder, List, Lock, Plus, RotateCcw } from "lucide-react";
+import { AlertTriangle, Ban, CalendarIcon, Check, ChevronRight, Clock, Flag, Folder, List, Lock, Plus, RotateCcw } from "lucide-react";
 import { Suspense, use, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { FieldError, useFieldErrors } from "@/components/field-error";
@@ -34,6 +34,18 @@ import { comboboxControlClass, DateField, dateControlClass as editControlClass }
 import { actualDatesProblem, correctsActualDate } from "./eap-deadline";
 import { MilestoneDecisionFeedback } from "./eap-decision-feedback";
 import { evidenceRequest, forgetEvidences, type EvidenceParent, type EvidenceState } from "./eap-evidence-cache";
+import { EvidenceFormFields, EvidenceKindIcon, type EvidenceFieldUi } from "./evidence-form";
+import {
+  EMPTY_EVIDENCE_DRAFT,
+  evidenceActionLabel,
+  evidenceDisplayTitle,
+  evidenceDraftChecks,
+  evidenceKindLabel,
+  evidencePayload,
+  type EvidenceDraft,
+  type EvidenceDraftField,
+  type EvidenceKind,
+} from "./evidence-kinds";
 import { EapHistory } from "./eap-history";
 import { MilestoneFlow } from "./eap-milestone-flow";
 import { MilestoneHomologation } from "./eap-milestone-homologation";
@@ -52,6 +64,7 @@ import {
   type ProjectPhaseView,
   type ProjectTaskView,
 } from "./eap-present";
+import { DEFAULT_PRIORITY, PRIORITY_OPTIONS, priorityLabel, type TaskPriority } from "./eap-priority";
 import type { EapSelection } from "./eap-selection";
 import { deriveTaskStatus } from "./eap-status";
 import { taskStatusLabel } from "./project-records";
@@ -318,35 +331,35 @@ function PhaseEditor({
           </div>
         )}
       </EditSection>
-      <EditSection title="Configuração da fase" subtitle="O andamento é calculado pelos itens subordinados" tone="accent" aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-[#edf4ff] px-2 py-[5px] text-[8.5px] font-semibold text-[#2864bb]"><List className="size-3" aria-hidden="true" />Calculado</span>}>
+      <EditSection title="Configuração da fase" subtitle="O andamento é calculado pelos itens subordinados" tone="accent" aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-[#edf4ff] px-2 py-[5px] text-[11px] font-semibold text-[#2864bb]"><List className="size-3" aria-hidden="true" />Calculado</span>}>
         <div className="mb-3.5 rounded-[7px] bg-[#f8fafc] px-[11px] py-[11px]">
-          <div className="mb-2 flex items-center justify-between text-[8.5px] text-[#667085]">
+          <div className="mb-2 flex items-center justify-between text-xs text-[#667085]">
             <span>Andamento consolidado</span>
-            <strong className="text-[12px] text-[#175cd3]">{progress.kind === "value" ? `${formatBasis(progress.basisPoints)}%` : progressLabel(progress)}</strong>
+            <strong className="text-xs text-[#175cd3]">{progress.kind === "value" ? `${formatBasis(progress.basisPoints)}%` : progressLabel(progress)}</strong>
           </div>
           {progress.kind === "value" ? (
             <Progress value={basisToPercent(progress.basisPoints)} aria-label="Andamento consolidado da fase" className="[&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]" />
           ) : (
-            <p className="text-[8.5px] text-[#98a2b3]">{progress.kind === "empty" ? "Esta fase ainda não tem itens subordinados." : "O percentual desta fase não está disponível."}</p>
+            <p className="text-xs text-[#98a2b3]">{progress.kind === "empty" ? "Esta fase ainda não tem itens subordinados." : "O percentual desta fase não está disponível."}</p>
           )}
-          <p className="mt-[9px] text-[8.5px] leading-normal text-[#8a94a6]">
+          <p className="mt-[9px] text-xs leading-normal text-[#8a94a6]">
             A situação muda sozinha conforme as tarefas e os marcos. A fase só fica concluída quando todas as tarefas ativas estão em 100% e todos os marcos foram aceitos.
           </p>
         </div>
         {access.canManageStructure && !concluded ? (
           <div className="mb-3.5 rounded-[7px] border border-[#e4e7ec] px-[11px] py-2.5">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[8.5px] leading-normal text-[#667085]">
+              <span className="text-xs leading-normal text-[#667085]">
                 {phase.status === "SUSPENSA"
                   ? "Fase suspensa pela gestão. Ao retomar, a situação volta a ser calculada pelos itens."
                   : "Suspender interrompe a atualização automática da situação até a fase ser retomada."}
               </span>
               {phase.status === "SUSPENSA" ? (
-                <Button type="button" variant="outline" className="h-[30px] shrink-0 rounded-[7px] px-[9px] text-[8.5px]" loading={suspending} onClick={() => void toggleSuspension()}>
+                <Button type="button" variant="outline" className="h-9 shrink-0 rounded-[7px] px-3 text-xs" loading={suspending} onClick={() => void toggleSuspension()}>
                   {suspending ? "Salvando…" : "Retomar fase"}
                 </Button>
               ) : suspendOpen ? null : (
-                <Button type="button" variant="outline" className="h-[30px] shrink-0 rounded-[7px] px-[9px] text-[8.5px]" onClick={() => setSuspendOpen(true)}>
+                <Button type="button" variant="outline" className="h-9 shrink-0 rounded-[7px] px-3 text-xs" onClick={() => setSuspendOpen(true)}>
                   Suspender fase
                 </Button>
               )}
@@ -363,10 +376,10 @@ function PhaseEditor({
                   full
                 />
                 <div className="flex flex-wrap justify-end gap-[7px]">
-                  <Button type="button" variant="outline" className="h-[30px] rounded-[7px] px-[9px] text-[8.5px]" disabled={suspending} onClick={() => { setSuspendOpen(false); setSuspendText(""); }}>
+                  <Button type="button" variant="outline" className="h-9 rounded-[7px] px-3 text-xs" disabled={suspending} onClick={() => { setSuspendOpen(false); setSuspendText(""); }}>
                     Cancelar
                   </Button>
-                  <Button type="button" className="h-[30px] rounded-[7px] bg-[#c4620f] px-[9px] text-[8.5px] text-white hover:bg-[#b4570f]" loading={suspending} onClick={() => void toggleSuspension()}>
+                  <Button type="button" className="h-9 rounded-[7px] bg-[#c4620f] px-3 text-xs text-white hover:bg-[#b4570f]" loading={suspending} onClick={() => void toggleSuspension()}>
                     {suspending ? "Suspendendo…" : "Confirmar suspensão"}
                   </Button>
                 </div>
@@ -437,6 +450,7 @@ function TaskEditor({
   const [description, setDescription] = useState(task.description ?? "");
   const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? "");
   const [weight, setWeight] = useState(String(task.weight));
+  const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [percent, setPercent] = useState(String(task.progressPercent));
   const [actualStart, setActualStart] = useState(civilDateInput(task.actualStartAt));
   const [actualEnd, setActualEnd] = useState(civilDateInput(task.actualEndAt));
@@ -457,6 +471,7 @@ function TaskEditor({
     (title.trim() !== task.title ||
       emptyToNull(description) !== task.description ||
       emptyToNull(assigneeId) !== task.assigneeId ||
+      priority !== task.priority ||
       weight !== String(task.weight));
   const progressDirty =
     canProgress &&
@@ -475,6 +490,7 @@ function TaskEditor({
     description: string;
     assigneeId: string;
     weight: string;
+    priority: TaskPriority;
     percent: string;
     actualStart: string;
     actualEnd: string;
@@ -487,6 +503,7 @@ function TaskEditor({
       (next.title.trim() !== task.title ||
         emptyToNull(next.description) !== task.description ||
         emptyToNull(next.assigneeId) !== task.assigneeId ||
+        next.priority !== task.priority ||
         next.weight !== String(task.weight));
     const nextProgress =
       canProgress &&
@@ -503,7 +520,7 @@ function TaskEditor({
   }
 
   function draft() {
-    return { title, description, assigneeId, weight, percent, actualStart, actualEnd, evidenceTitle, evidenceUrl, dateJustification };
+    return { title, description, assigneeId, weight, priority, percent, actualStart, actualEnd, evidenceTitle, evidenceUrl, dateJustification };
   }
 
   function choosePercent(value: string) {
@@ -551,6 +568,7 @@ function TaskEditor({
           ...(emptyToNull(description) !== task.description ? { description: emptyToNull(description) } : {}),
           ...(emptyToNull(assigneeId) !== task.assigneeId ? { assigneeId: emptyToNull(assigneeId) } : {}),
           ...(weight !== String(task.weight) ? { weight: parsedWeight } : {}),
+          ...(priority !== task.priority ? { priority } : {}),
         });
         if (response.status !== 200) {
           throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível atualizar a tarefa.");
@@ -639,38 +657,43 @@ function TaskEditor({
           ) : (
             <EditLocked label="Responsável" value={task.assigneeName || "Não informado"} />
           )}
+          {editable ? (
+            <PriorityField value={priority} onChange={(value) => { setPriority(value); publish({ ...draft(), priority: value }); }} />
+          ) : (
+            <EditLocked label="Prioridade" value={priorityLabel(task.priority)} />
+          )}
         </div>
       </EditSection>
-      <EditSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" tone="accent" aside={<strong className="text-[12px] text-[#175cd3]">{progressShown}%</strong>}>
+      <EditSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" tone="accent" aside={<strong className="text-xs text-[#175cd3]">{progressShown}%</strong>}>
         {canProgress && !cancelled ? (
           <>
             <Progress value={progressShown} aria-label="Andamento da tarefa" className="mb-3 [&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]" />
             <div className="mt-[11px] mb-3.5 grid grid-cols-6 gap-1.5">
               {[0, 25, 50, 75, 90, 100].map((value) => (
-                <button key={value} type="button" className={`h-[29px] min-w-0 rounded-[6px] border text-[8.5px] font-semibold ${progressShown === value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`} onClick={() => choosePercent(String(value))}>
+                <button key={value} type="button" className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progressShown === value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`} onClick={() => choosePercent(String(value))}>
                   {value}%
                 </button>
               ))}
             </div>
             <div className="mb-3.5 grid grid-cols-[140px_auto_1fr] items-end gap-2">
               <EditText label="Percentual exato de andamento" value={percent} onChange={(value) => { choosePercent(value); clear("percent"); }} error={errors.percent} />
-              <span className="flex h-9 items-center text-[8px] text-[#98a2b3]">% concluído</span>
-              <Button type="button" variant="outline" className="h-9 justify-self-end gap-1.5 rounded-[7px] px-[11px] text-[9px]" disabled={progressShown === 100} onClick={() => choosePercent("100")}>
+              <span className="flex h-9 items-center text-xs text-[#98a2b3]">% concluído</span>
+              <Button type="button" variant="outline" className="h-9 justify-self-end gap-1.5 rounded-[7px] px-3.5 text-xs" disabled={progressShown === 100} onClick={() => choosePercent("100")}>
                 <Check className="size-3.5" aria-hidden="true" />
                 Concluir
               </Button>
             </div>
             <Reveal open={completing}>
               <div className="mb-3.5 rounded-[9px] border border-[#bfe4d5] bg-[#f6fcf9] p-3">
-                <span className="mb-1 block text-[9px] font-semibold tracking-[0.04em] text-[#157454] uppercase">Concluir tarefa</span>
-                <p className="mb-2.5 text-[8.5px] leading-[1.45] text-[#475467]">Para concluir, confirme o início e o término reais. A conclusão é gravada ao salvar.</p>
+                <span className="mb-1 block text-xs font-semibold tracking-[0.04em] text-[#157454] uppercase">Concluir tarefa</span>
+                <p className="mb-2.5 text-xs leading-[1.45] text-[#475467]">Para concluir, confirme o início e o término reais. A conclusão é gravada ao salvar.</p>
                 <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">{completing ? actualFields : null}</div>
               </div>
             </Reveal>
             <Reveal open={reopeningTask}>
               <div className="mb-3.5 rounded-[9px] border border-[#f6d2ad] bg-[#fff8f1] p-3">
-                <span className="mb-1 block text-[9px] font-semibold tracking-[0.04em] text-[#b4570f] uppercase">Reabrir tarefa concluída</span>
-                <p className="mb-2.5 text-[8.5px] leading-[1.45] text-[#475467]">O término real registrado é retirado e fica preservado no histórico. A reabertura é gravada ao salvar.</p>
+                <span className="mb-1 block text-xs font-semibold tracking-[0.04em] text-[#b4570f] uppercase">Reabrir tarefa concluída</span>
+                <p className="mb-2.5 text-xs leading-[1.45] text-[#475467]">O término real registrado é retirado e fica preservado no histórico. A reabertura é gravada ao salvar.</p>
                 {reopeningTask ? (
                   <EditArea
                     label="Justificativa da reabertura"
@@ -684,16 +707,12 @@ function TaskEditor({
                 ) : null}
               </div>
             </Reveal>
-            <p className="mb-3.5 text-[8px] leading-normal text-[#98a2b3]">
+            <p className="mb-3.5 text-xs leading-normal text-[#98a2b3]">
               A situação acompanha o percentual: 0% não iniciada, de 1% a 99% em andamento e 100% concluída. O início real é registrado ao iniciar o andamento; para concluir, confirme as datas reais. Corrigir uma data já registrada exige justificativa.
             </p>
             {editable ? (
               <EditText label="Peso" value={weight} onChange={(value) => { setWeight(value); clear("weight"); publish({ ...draft(), weight: value }); }} error={errors.weight} />
             ) : null}
-            <div className="mt-3 grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-              <EditLocked label="Prioridade" hint="não gravado" value="Indisponível neste cadastro" />
-              <EditLocked label="Dependência" hint="não gravado" value="Indisponível neste cadastro" />
-            </div>
             <Suspense fallback={<Skeleton className="mt-3.5 h-[54px] w-full rounded-[7px]" />}>
               <TaskImpediment
                 projectId={projectId}
@@ -826,7 +845,7 @@ function TaskStatusDecision({
             <Button
               type="button"
               variant={cancelled ? "default" : "destructive"}
-              className="h-[30px] rounded-[7px] px-[11px] text-[8.5px]"
+              className="h-9 rounded-[7px] px-3.5 text-xs"
               loading={saving}
               onClick={() => void decide()}
             >
@@ -860,8 +879,8 @@ function DecisionCard({
     <>
       <span className={`grid size-8 place-items-center rounded-[6px] transition-colors duration-200 ease-out motion-reduce:transition-none ${active ? tone.icon : "bg-[#f2f4f7] text-[#8a94a6]"}`}>{icon}</span>
       <span className="min-w-0">
-        <strong className="block text-[9.5px] text-[#344054]">{title}</strong>
-        <small className="mt-[3px] block text-[8px] text-[#98a2b3]">{note}</small>
+        <strong className="block text-xs text-[#344054]">{title}</strong>
+        <small className="mt-[3px] block text-xs text-[#98a2b3]">{note}</small>
       </span>
     </>
   );
@@ -987,7 +1006,7 @@ function TaskImpediment({
         <Reveal open={action !== "update"}>
           <div className="pt-3">
             <EditLabel label="Motivo registrado" />
-            <p className="mt-1.5 rounded-[7px] border border-[#e4e7ec] bg-[#f8fafc] px-2.5 py-2 text-[9px] leading-[1.5] whitespace-pre-wrap text-[#475467]">{open.description}</p>
+            <p className="mt-1.5 rounded-[7px] border border-[#e4e7ec] bg-[#f8fafc] px-2.5 py-2 text-xs leading-[1.5] whitespace-pre-wrap text-[#475467]">{open.description}</p>
           </div>
         </Reveal>
       ) : null}
@@ -1000,7 +1019,7 @@ function TaskImpediment({
             </Button>
             <Button
               type="button"
-              className="h-[30px] rounded-[7px] px-[11px] text-[8.5px]"
+              className="h-9 rounded-[7px] px-3.5 text-xs"
               loading={saving}
               onClick={() => void submit(form)}
             >
@@ -1232,6 +1251,26 @@ function MilestoneEditor({
   );
 }
 
+/** Campos de evidência desenhados com os componentes de formulário da EAP (padrão do "Editar tarefa"). */
+const eapEvidenceUi: EvidenceFieldUi = {
+  Text: ({ label, value, onChange, error, placeholder }) => (
+    <EditText label={label} value={value} onChange={onChange} error={error} placeholder={placeholder} />
+  ),
+  Kind: ({ value, onChange, options }) => (
+    <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2">
+      <EditLabel label="Tipo de evidência" />
+      <OptionCombobox
+        label="Tipo de evidência"
+        value={value}
+        onChange={(next) => onChange((next || "DOCUMENT") as EvidenceKind)}
+        options={options}
+        compact
+        className={comboboxControlClass}
+      />
+    </div>
+  ),
+};
+
 function EvidenceSection({
   projectId,
   parent,
@@ -1259,15 +1298,35 @@ function EvidenceSection({
 }) {
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { errors, validate, clear, reset } = useFieldErrors<"title" | "url">();
+  // Título e link ficam no rascunho da tela (para avisar de alterações não salvas); tipo e número do chamado são locais.
+  const [kind, setKind] = useState<EvidenceKind>(EMPTY_EVIDENCE_DRAFT.kind);
+  const [ticketNumber, setTicketNumber] = useState("");
+  const { errors, validate, clear, reset } = useFieldErrors<EvidenceDraftField>();
   const request = evidenceRequest(projectId, parent, revision);
   const formOpen = adding || title !== "" || url !== "";
+  const draft: EvidenceDraft = { kind, title, url, ticketNumber };
+
+  function change(patch: Partial<EvidenceDraft>) {
+    if (patch.kind !== undefined) {
+      setKind(patch.kind);
+      clear("ticketNumber");
+    }
+    if (patch.ticketNumber !== undefined) {
+      setTicketNumber(patch.ticketNumber);
+      clear("ticketNumber");
+    }
+    if (patch.title !== undefined) {
+      onTitle(patch.title);
+      clear("title");
+    }
+    if (patch.url !== undefined) {
+      onUrl(patch.url);
+      clear("url");
+    }
+  }
 
   async function create() {
-    const valid = validate([
-      ["title", !title.trim() && "Informe o título da evidência."],
-      ["url", !isHttpUrl(url) && "Informe um link http ou https."],
-    ]);
+    const valid = validate(evidenceDraftChecks(draft));
     if (!valid) {
       return;
     }
@@ -1275,8 +1334,7 @@ function EvidenceSection({
     setSaving(true);
     try {
       const response = await createEapEvidence(projectId, {
-        title: title.trim(),
-        url: url.trim(),
+        ...evidencePayload(draft),
         ...parent,
       });
       if (response.status !== 201) {
@@ -1286,6 +1344,8 @@ function EvidenceSection({
       notifySuccess("Evidência registrada.");
       onTitle("");
       onUrl("");
+      setKind(EMPTY_EVIDENCE_DRAFT.kind);
+      setTicketNumber("");
       setAdding(false);
       onCreated();
     } catch (caught) {
@@ -1298,6 +1358,8 @@ function EvidenceSection({
   function cancel() {
     onTitle("");
     onUrl("");
+    setKind(EMPTY_EVIDENCE_DRAFT.kind);
+    setTicketNumber("");
     reset();
     setAdding(false);
   }
@@ -1322,8 +1384,7 @@ function EvidenceSection({
         <Reveal open={formOpen}>
         <div className="mt-3 rounded-[7px] border border-[#e4e7ec] bg-[#fafbfc] p-3">
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
-            <EditText label="Título da evidência *" value={title} onChange={(value) => { onTitle(value); clear("title"); }} error={errors.title} />
-            <EditText label="Link *" value={url} onChange={(value) => { onUrl(value); clear("url"); }} error={errors.url} />
+            <EvidenceFormFields draft={draft} onChange={change} errors={errors} ui={eapEvidenceUi} />
           </div>
           <div className="mt-3 flex justify-end gap-[7px]">
             <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={cancel}>
@@ -1338,7 +1399,7 @@ function EvidenceSection({
         </Reveal>
       ) : null}
       {!canRegister ? (
-        <p className="mt-2.5 text-[8.5px] text-[#98a2b3]">{unavailableText}</p>
+        <p className="mt-2.5 text-xs text-[#98a2b3]">{unavailableText}</p>
       ) : null}
     </EditSection>
   );
@@ -1355,7 +1416,7 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
     return (
       <>
         {emptyWarning ? (
-          <div className="mb-2.5 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[8.5px] leading-[1.45] text-[#865516]">
+          <div className="mb-2.5 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-xs leading-[1.45] text-[#865516]">
             <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
             <span>{emptyWarning}</span>
           </div>
@@ -1370,13 +1431,13 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
       {state.items.map((item) => (
         <li key={item.id} className="grid min-h-[45px] grid-cols-[29px_minmax(0,1fr)_26px] items-center gap-[9px] rounded-[7px] border border-[#e4e7ec] px-[7px] py-1.5">
           <span className="grid size-[29px] place-items-center rounded-[6px] bg-[#f0f3f6] text-[#52677e]">
-            <FileText className="size-[15px]" aria-hidden="true" />
+            <EvidenceKindIcon kind={item.kind} className="size-[15px]" />
           </span>
           <span className="min-w-0">
-            <strong className="mb-[3px] block truncate text-[9px] font-semibold text-[#344054]">{item.title}</strong>
-            <span className="flex items-center gap-1 text-[7.5px] text-[#98a2b3]">
+            <strong className="mb-[3px] block truncate text-xs font-semibold text-[#344054]">{evidenceDisplayTitle(item)}</strong>
+            <span className="flex items-center gap-1 text-xs text-[#98a2b3]">
               {item.deliveryId ? <Lock className="size-2.5" aria-hidden="true" /> : null}
-              Registrada em {item.createdAt}
+              {evidenceKindLabel(item.kind)} · Registrada em {item.createdAt}
               {item.deliveryId ? " · enviada para homologação" : ""}
             </span>
           </span>
@@ -1384,7 +1445,7 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
             href={item.url}
             target="_blank"
             rel="noreferrer"
-            aria-label={`Consultar ${item.title}`}
+            aria-label={`${evidenceActionLabel(item.kind)}: ${evidenceDisplayTitle(item)}`}
             className="grid size-[25px] place-items-center rounded-[6px] text-[#667085] hover:bg-[#f2f4f7]"
           >
             <ChevronRight className="size-3.5" aria-hidden="true" />
@@ -1395,8 +1456,8 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
   );
 }
 
-const compactButtonClass = "h-[30px] gap-[5px] rounded-[7px] border-[#d7dce3] px-[9px] text-[8.5px] font-semibold text-[#344054]";
-const emptyInlineClass = "flex min-h-[39px] items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[8.5px] text-[#98a2b3]";
+const compactButtonClass = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-3 text-xs font-semibold text-[#344054]";
+const emptyInlineClass = "flex min-h-11 items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-xs text-[#98a2b3]";
 
 function FoldBlock({
   title,
@@ -1414,7 +1475,7 @@ function FoldBlock({
       <button
         type="button"
         aria-expanded={open}
-        className="flex min-h-12 w-full items-center justify-between px-[15px] text-[9.5px] font-semibold text-[#344054]"
+        className="flex min-h-12 w-full items-center justify-between px-[15px] text-xs font-semibold text-[#344054]"
         onClick={() => {
           setSeen(true);
           setOpen(!open);
@@ -1448,6 +1509,23 @@ function HistoryNote({
     <FoldBlock title="Histórico de alterações" icon={Clock}>
       <EapHistory projectId={projectId} entityType={entityType} entityId={entityId} refreshKey={refreshKey} />
     </FoldBlock>
+  );
+}
+
+function PriorityField({ value, onChange }: { value: TaskPriority; onChange: (value: TaskPriority) => void }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <EditLabel label="Prioridade" />
+      <OptionCombobox
+        label="Prioridade"
+        value={value}
+        onChange={(next) => onChange((next || DEFAULT_PRIORITY) as TaskPriority)}
+        options={PRIORITY_OPTIONS}
+        placeholder="Normal"
+        compact
+        className={comboboxControlClass}
+      />
+    </div>
   );
 }
 
@@ -1495,14 +1573,14 @@ function EditStatus({ feedback }: { feedback: string | null }) {
     return null;
   }
   return (
-    <p role="status" className="mt-3 text-[8.5px] text-[#667085]">
+    <p role="status" className="mt-3 text-xs text-[#667085]">
       {feedback}
     </p>
   );
 }
 
 function EditNotice({ text }: { text: string }) {
-  return <p className="text-[8.5px] leading-[1.5] text-[#98a2b3]">{text}</p>;
+  return <p className="text-xs leading-[1.5] text-[#98a2b3]">{text}</p>;
 }
 
 function historyKey(item: object, revision: number | string) {
@@ -1512,15 +1590,6 @@ function historyKey(item: object, revision: number | string) {
 function emptyToNull(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
-}
-
-function isHttpUrl(value: string) {
-  try {
-    const url = new URL(value.trim());
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 function errorMessage(error: unknown) {
@@ -1552,8 +1621,8 @@ function EditContext({ kind, code, status, statusKind }: { kind: "phase" | "task
         <Icon className="size-4" aria-hidden="true" />
       </span>
       <span>
-        <span className="mb-[3px] block text-[8px] text-[#98a2b3]">Item da EAP</span>
-        <strong className="block text-[10px] text-[#344054]">{code} · {label}</strong>
+        <span className="mb-[3px] block text-xs text-[#98a2b3]">Item da EAP</span>
+        <strong className="block text-xs text-[#344054]">{code} · {label}</strong>
       </span>
       <EapStatusBadge kind={statusKind} label={status} />
     </div>
@@ -1574,11 +1643,11 @@ function EditSection({
   children: ReactNode;
 }) {
   return (
-    <section className={`mt-3 rounded-[9px] border bg-white p-[17px] shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-[#d8e6f8]" : "border-[#e4e7ec]"}`}>
-      <div className="mb-[15px] flex items-start justify-between gap-3">
+    <section className={`mt-3 rounded-[10px] border bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-[#d8e6f8]" : "border-[#e4e7ec]"}`}>
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <strong className="block text-[11px] text-[#253248]">{title}</strong>
-          <span className="mt-1 block text-[8.5px] text-[#98a2b3]">{subtitle}</span>
+          <strong className="block text-[13px] text-[#253248]">{title}</strong>
+          <span className="mt-1 block text-xs text-[#98a2b3]">{subtitle}</span>
         </div>
         {aside}
       </div>
@@ -1589,9 +1658,9 @@ function EditSection({
 
 function EditLabel({ label, hint }: { label: string; hint?: string }) {
   return (
-    <span className="flex items-baseline justify-between text-[8.5px] font-semibold text-[#475467]">
+    <span className="flex items-baseline justify-between text-xs font-semibold text-[#475467]">
       {label}
-      {hint ? <small className="text-[7.5px] font-normal text-[#98a2b3]">{hint}</small> : null}
+      {hint ? <small className="text-xs font-normal text-[#98a2b3]">{hint}</small> : null}
     </span>
   );
 }
@@ -1602,12 +1671,14 @@ function EditText({
   onChange,
   full = false,
   error,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   full?: boolean;
   error?: string | null;
+  placeholder?: string;
 }) {
   const errorId = useId();
   return (
@@ -1616,6 +1687,7 @@ function EditText({
       <input
         className={editControlClass}
         value={value}
+        placeholder={placeholder}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => onChange(event.target.value)}

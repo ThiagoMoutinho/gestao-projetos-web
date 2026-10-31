@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { UpdateEapTaskBodyPriority } from './updateEapTaskBodyPriority.ts';
 
 export type UpdateEapTaskBody = {
   /**
@@ -27,4 +28,5 @@ export type UpdateEapTaskBody = {
      * @maximum 9007199254740991
      */
   weight?: number;
+  priority?: UpdateEapTaskBodyPriority;
 };
