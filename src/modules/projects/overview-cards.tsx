@@ -2,7 +2,6 @@
 
 import {
   ClipboardCheck,
-  FileText,
   Flag,
   History,
   PackageCheck,
@@ -27,7 +26,7 @@ import {
 } from "./eap-milestone-homologation";
 import { ExpandableText } from "./institutional-shared";
 import { civilDateInput, type ProjectDetail } from "./eap-present";
-import { Fact, SectionCard } from "./overview-panel";
+import { SectionCard } from "./overview-panel";
 import { mergeAllMilestones } from "./milestone-order";
 import { milestoneTypeLabel } from "./project-records";
 
@@ -575,94 +574,6 @@ export function ExecutiveHistoryCard({ history }: { history: HistoryState }) {
         <CardMessage>Nenhum evento registrado.</CardMessage>
       ) : (
         <HistoryTimeline entries={entries} clamp={false} />
-      )}
-    </SectionCard>
-  );
-}
-
-/**
- * Resumo executivo: último registro do PMO ou do gestor (texto real, sem geração automática) e as informações-chave do
- * projeto. O texto completo e os registros anteriores abrem no painel lateral.
- */
-export function ExecutiveSummaryCard({
-  history,
-  ownerName,
-  suppliers,
-  updatedAt,
-}: {
-  history: HistoryState;
-  ownerName: string;
-  suppliers: string[] | null;
-  updatedAt: string;
-}) {
-  const records =
-    history.status === "ready"
-      ? history.entries.filter((entry) => entry.notes.length > 0)
-      : [];
-  const latest = records[0] ?? null;
-  const facts = (
-    <dl className="grid gap-2 sm:grid-cols-3">
-      <Fact label="Responsável principal" value={ownerName} />
-      <Fact
-        label="Fornecedor"
-        value={
-          suppliers === null
-            ? "Indisponível"
-            : suppliers.length === 0
-              ? "Não informado"
-              : suppliers.join(", ")
-        }
-      />
-      <Fact label="Última atualização" value={updatedAt} />
-    </dl>
-  );
-  const note = (entry: HistoryEntry) => (
-    <div className="rounded-md border-l-2 border-primary bg-muted/30 px-3 py-2">
-      <p className="text-xs leading-relaxed whitespace-pre-wrap text-foreground/80">
-        {entry.notes[0].text}
-      </p>
-      <p className="mt-1 text-[11px] text-muted-foreground">
-        {entry.title} · {entry.actor} · {entry.createdAt}
-      </p>
-    </div>
-  );
-
-  return (
-    <SectionCard
-      title="Resumo executivo"
-      subtitle="Posição consolidada do projeto"
-      icon={FileText}
-      tone="blue"
-      moreLabel={
-        records.length > 1
-          ? `Ver resumo completo (${records.length} registros)`
-          : "Ver resumo completo"
-      }
-      expansion={
-        records.length === 0 ? (
-          <CardMessage>
-            Nenhum registro executivo do PMO ou do gestor até o momento.
-          </CardMessage>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {records.map((entry) => (
-              <li key={entry.id}>{note(entry)}</li>
-            ))}
-          </ul>
-        )
-      }
-      footer={facts}
-    >
-      {history.status === "loading" ? (
-        <Skeleton className="h-12 w-full" />
-      ) : latest ? (
-        note(latest)
-      ) : (
-        <CardMessage>
-          {history.status === "error"
-            ? "Não foi possível consultar os registros do projeto."
-            : "Nenhum registro executivo do PMO ou do gestor até o momento."}
-        </CardMessage>
       )}
     </SectionCard>
   );

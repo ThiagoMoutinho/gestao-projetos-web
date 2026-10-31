@@ -6,6 +6,12 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
+  GetExecutiveSummary200,
+  GetExecutiveSummary400,
+  GetExecutiveSummary401,
+  GetExecutiveSummary403,
+  GetExecutiveSummary404,
+  GetExecutiveSummary409,
   GetScheduleMonitoring200,
   GetScheduleMonitoring400,
   GetScheduleMonitoring401,
@@ -497,6 +503,68 @@ export const getGetScheduleMonitoringUrl = (id: string,) => {
 export const getScheduleMonitoring = async (id: string, options?: Parameters<typeof apiFetcher>[1]): Promise<getScheduleMonitoringResponse> => {
 
   return apiFetcher<getScheduleMonitoringResponse>(getGetScheduleMonitoringUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+export type getExecutiveSummaryResponse200 = {
+  data: GetExecutiveSummary200
+  status: 200
+}
+
+export type getExecutiveSummaryResponse400 = {
+  data: GetExecutiveSummary400
+  status: 400
+}
+
+export type getExecutiveSummaryResponse401 = {
+  data: GetExecutiveSummary401
+  status: 401
+}
+
+export type getExecutiveSummaryResponse403 = {
+  data: GetExecutiveSummary403
+  status: 403
+}
+
+export type getExecutiveSummaryResponse404 = {
+  data: GetExecutiveSummary404
+  status: 404
+}
+
+export type getExecutiveSummaryResponse409 = {
+  data: GetExecutiveSummary409
+  status: 409
+}
+
+export type getExecutiveSummaryResponseSuccess = (getExecutiveSummaryResponse200) & {
+  headers: Headers;
+};
+export type getExecutiveSummaryResponseError = (getExecutiveSummaryResponse400 | getExecutiveSummaryResponse401 | getExecutiveSummaryResponse403 | getExecutiveSummaryResponse404 | getExecutiveSummaryResponse409) & {
+  headers: Headers;
+};
+
+export type getExecutiveSummaryResponse = (getExecutiveSummaryResponseSuccess | getExecutiveSummaryResponseError)
+
+export const getGetExecutiveSummaryUrl = (id: string,) => {
+
+
+
+
+  return `/projects/${id}/executive-summary`
+}
+
+/**
+ * @summary Resumo executivo automático do projeto (somente leitura, sem snapshot)
+ */
+export const getExecutiveSummary = async (id: string, options?: Parameters<typeof apiFetcher>[1]): Promise<getExecutiveSummaryResponse> => {
+
+  return apiFetcher<getExecutiveSummaryResponse>(getGetExecutiveSummaryUrl(id),
   {
     ...options,
     method: 'GET'

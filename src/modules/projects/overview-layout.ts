@@ -14,7 +14,7 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
   situacao: 360,
   evolucoes: 340,
   marcos: 480,
-  resumo: 340,
+  resumo: 460,
   historico: 400,
 };
 

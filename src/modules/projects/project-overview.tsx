@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 import { canCloseProject, type EapAccess } from "./eap-access";
 import { formatCivilDate } from "./eap-date-field";
 import { presentHistory, type HistoryEntry } from "./eap-history-entries";
-import { ExecutiveHistoryCard, ExecutiveSummaryCard, MilestonesCard } from "./overview-cards";
+import { ExecutiveSummaryCard } from "./executive-summary";
+import { ExecutiveHistoryCard, MilestonesCard } from "./overview-cards";
 import { OVERVIEW_CARD } from "./overview-panel";
 import { projectProgress } from "./eap-progress";
 import { civilDateInput, type ProjectDetail } from "./eap-present";
@@ -211,7 +212,7 @@ export function ProjectOverview({
             />
           ),
           historico: <ExecutiveHistoryCard history={history} />,
-          resumo: <ExecutiveSummaryCard history={history} ownerName={project.ownerName} suppliers={suppliers} updatedAt={project.updatedAt} />,
+          resumo: <ExecutiveSummaryCard projectId={project.id} ownerName={project.ownerName} suppliers={suppliers} updatedAt={project.updatedAt} refreshKey={project.updatedAt} />,
         }}
       />
     </div>
