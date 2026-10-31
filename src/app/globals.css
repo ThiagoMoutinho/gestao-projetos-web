@@ -5,6 +5,18 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Escala tipográfica do design system IGEPPS (referência: Figma). Uso: text-body, text-secondary, text-label, text-card-title, text-page-title. */
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.5;
+  --text-secondary: 0.8125rem;
+  --text-secondary--line-height: 1.45;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.35;
+  --text-card-title: 1rem;
+  --text-card-title--line-height: 1.35;
+  --text-page-title: 1.5rem;
+  --text-page-title--line-height: 1.25;
+  --spacing-card-gap: 1rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -55,8 +67,8 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: #f3f5f8;
+  --foreground: #172033;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -68,7 +80,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: #667085;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -76,7 +88,7 @@
   --success-foreground: oklch(0.3 0.06 152);
   --warning: oklch(0.78 0.13 85);
   --warning-foreground: oklch(0.4 0.08 70);
-  --border: oklch(0.922 0 0);
+  --border: #e4e7ec;
   --input: oklch(0.922 0 0);
   --ring: oklch(0.57 0.19 258);
   --chart-1: oklch(0.57 0.19 258);
@@ -140,7 +152,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-body text-foreground;
   }
   html {
     @apply font-sans;

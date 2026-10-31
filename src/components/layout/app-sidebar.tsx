@@ -1,10 +1,24 @@
 "use client";
 
-import { ChevronRight, ChevronsUpDown, Loader2, LogOut, Network } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  ChevronsUpDown,
+  FileText,
+  Flag,
+  History,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Network,
+  PanelLeftClose,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -34,7 +48,19 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { ComboOption } from "@/components/option-combobox";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/ui/combobox";
+import { listProjects } from "@/lib/api/generated/projetos/projetos";
 import { logout } from "@/modules/auth/client";
 import { roleLabel } from "@/modules/auth/roles";
 
@@ -248,59 +274,182 @@ function SidebarUser({ user }: { user: AppUser }) {
   );
 }
 
-const SELECTED_PROJECT_KEY = "igepps.selectedProjectId";
+/** Projetos que o usuário pode acessar (a API aplica as permissões); null enquanto carrega ou se a consulta falhar. */
+function useAccessibleProjects() {
+  const [projects, setProjects] = useState<ComboOption[] | null>(null);
 
-function EapNavItem({ pathname, eapOpen }: { pathname: string; eapOpen: boolean }) {
+  useEffect(() => {
+    let active = true;
+    listProjects()
+      .then((response) => {
+        if (active && response.status === 200) {
+          setProjects(
+            response.data.data
+              .map((project) => ({ value: project.id, label: project.name }))
+              .sort((left, right) => left.label.localeCompare(right.label, "pt-BR")),
+          );
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return projects;
+}
+
+const PROJECT_NAV_UNAVAILABLE: ReadonlyArray<{ label: string; icon: LucideIcon }> = [
+  { label: "Cronograma", icon: CalendarDays },
+  { label: "Entregas e Homologações", icon: Flag },
+  { label: "Histórico Executivo", icon: History },
+  { label: "Documentos", icon: FileText },
+  { label: "Equipe", icon: Users },
+];
+
+/** Itens do projeto: só habilitados quando a rota aponta para um projeto acessível (`projectId`). */
+function ProjectNav({ projectId, eapOpen }: { projectId: string | undefined; eapOpen: boolean }) {
   const router = useRouter();
-  const currentProject = pathname.match(/^\/projetos\/([^/]+)$/)?.[1];
-  const active = Boolean(currentProject && eapOpen);
+  const eapActive = Boolean(projectId && eapOpen);
+  const overviewActive = Boolean(projectId && !eapOpen);
+  const disabledProps = { "aria-disabled": true } as const;
 
-  function openEap() {
-    const stored = currentProject ?? window.sessionStorage.getItem(SELECTED_PROJECT_KEY);
-    if (stored) {
-      router.push(`/projetos/${stored}?aba=eap`);
-      return;
+  function open(aba?: "eap") {
+    if (projectId) {
+      router.push(`/projetos/${projectId}${aba ? `?aba=${aba}` : ""}`);
     }
-    router.push("/projetos?aviso=eap");
   }
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Projeto</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu className="gap-1">
-          <SidebarMenuItem>
-            <SidebarMenuButton isActive={active} tooltip="Estrutura Analítica do Projeto" onClick={openEap}>
-              <Network className="size-4 shrink-0" />
-              <span>EAP</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Projeto</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu className="gap-1">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className={cn("cursor-pointer", !projectId && "aria-disabled:pointer-events-auto")}
+                isActive={overviewActive}
+                tooltip={projectId ? "Visão Geral" : "Visão Geral, selecione um projeto"}
+                onClick={() => open()}
+                {...(projectId ? {} : disabledProps)}
+              >
+                <LayoutDashboard className="size-4 shrink-0" />
+                <span>Visão Geral</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className={cn("cursor-pointer", !projectId && "aria-disabled:pointer-events-auto")}
+                isActive={eapActive}
+                tooltip={projectId ? "Estrutura Analítica do Projeto" : "EAP, selecione um projeto"}
+                onClick={() => open("eap")}
+                {...(projectId ? {} : disabledProps)}
+              >
+                <Network className="size-4 shrink-0" />
+                <span>EAP</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {PROJECT_NAV_UNAVAILABLE.map(({ label, icon: Icon }) => (
+              <SidebarMenuItem key={label}>
+                <SidebarMenuButton tooltip={`${label}, indisponível`} {...disabledProps}>
+                  <Icon className="size-4 shrink-0" />
+                  <span>
+                    {label}
+                    <span className="sr-only">, indisponível</span>
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
+  );
+}
+
+function ProjectSwitcher({
+  projects,
+  currentProject,
+  eapOpen,
+}: {
+  projects: ComboOption[] | null;
+  currentProject: string | undefined;
+  eapOpen: boolean;
+}) {
+  const router = useRouter();
+  const selected = projects?.find((option) => option.value === currentProject) ?? null;
+
+  function select(id: string) {
+    if (!id || id === currentProject) {
+      return;
+    }
+    router.push(`/projetos/${id}${eapOpen ? "?aba=eap" : ""}`);
+  }
+
+  if (projects === null || projects.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="group-data-[collapsible=icon]:hidden">
+      <Combobox
+        items={projects}
+        value={selected}
+        onValueChange={(next: ComboOption | null) => select(next?.value ?? "")}
+        itemToStringLabel={(option: ComboOption) => option.label}
+        isItemEqualToValue={(item: ComboOption, current: ComboOption) => item.value === current.value}
+      >
+        <ComboboxTrigger
+          aria-label="Selecionar projeto"
+          className="flex w-full items-center gap-2.5 rounded-lg border border-sidebar-border bg-sidebar-accent p-2.5 text-left text-sidebar-accent-foreground transition-colors hover:bg-sidebar-accent/80 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none [&>svg]:ml-auto [&>svg]:shrink-0 [&>svg]:text-sidebar-foreground/80"
+        >
+          <span className="grid min-w-0 flex-1 leading-tight">
+            <span className="truncate text-[10px] text-sidebar-foreground/70">Projeto selecionado</span>
+            <span className="truncate text-xs font-semibold">{selected?.label ?? "Selecione um projeto"}</span>
+          </span>
+        </ComboboxTrigger>
+        <ComboboxContent className="min-w-64">
+          <ComboboxInput placeholder="Buscar projeto..." showTrigger={false} />
+          <ComboboxEmpty>Nenhum projeto encontrado.</ComboboxEmpty>
+          <ComboboxList>
+            {(option: ComboOption) => (
+              <ComboboxItem key={option.value} value={option}>
+                <span className="truncate">{option.label}</span>
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    </div>
   );
 }
 
 export function AppSidebar({ user }: { user: AppUser }) {
   const pathname = usePathname();
   const eapOpen = useSearchParams().get("aba") === "eap";
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
+  const projects = useAccessibleProjects();
+  const routeProject = pathname.match(/^\/projetos\/([^/]+)$/)?.[1];
+  const currentProject = routeProject && projects?.some((project) => project.value === routeProject) ? routeProject : undefined;
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="overflow-hidden group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
-        <div className="flex h-15 items-center group-data-[collapsible=icon]:justify-center">
+        <div className="flex h-15 items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center">
           <Image
             src="/brand/igepps-logo.png"
             alt="IGEPPS — Instituto de Gestão Previdenciária e Proteção Social do Estado do Pará"
             width={218}
             height={85}
-            className="h-13 w-auto max-w-full object-contain object-left group-data-[collapsible=icon]:hidden"
+            className="h-13 w-auto max-w-full min-w-0 object-contain object-left group-data-[collapsible=icon]:hidden"
           />
           <Tooltip>
             <TooltipTrigger
-              className="hidden size-8 items-center justify-center rounded-md group-data-[collapsible=icon]:flex"
-              aria-label="IGEPPS"
+              type="button"
+              onClick={toggleSidebar}
+              className="hidden size-8 items-center justify-center rounded-md transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:flex"
+              aria-label="Expandir menu lateral"
             >
               <Image
                 src="/brand/igepps-mark.png"
@@ -311,21 +460,25 @@ export function AppSidebar({ user }: { user: AppUser }) {
               />
             </TooltipTrigger>
             <TooltipContent side="right" hidden={state !== "collapsed"}>
-              IGEPPS
+              Expandir menu
             </TooltipContent>
           </Tooltip>
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Recolher menu lateral"
+            title="Recolher menu"
+            className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:hidden"
+          >
+            <PanelLeftClose className="size-4" aria-hidden="true" />
+          </button>
         </div>
-        <div className="leading-tight group-data-[collapsible=icon]:hidden">
-          <p className="truncate text-sm font-semibold tracking-wide">CTIN</p>
-          <p className="truncate text-[0.65rem] font-medium tracking-[0.14em] text-sidebar-foreground/75">
-            GESTÃO DE PROJETOS
-          </p>
-        </div>
+        <ProjectSwitcher projects={projects} currentProject={currentProject} eapOpen={eapOpen} />
       </SidebarHeader>
       <SidebarContent>
         {APP_NAV_GROUPS.map((group) => (
           <Fragment key={group.label}>
-          {group.label === "Gestão" ? <EapNavItem pathname={pathname} eapOpen={eapOpen} /> : null}
+          {group.label === "Gestão" ? <ProjectNav projectId={currentProject} eapOpen={eapOpen} /> : null}
           <SidebarGroup>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>

@@ -67,13 +67,13 @@ export function OptionCombobox({
         className={cn("w-full", className)}
       />
       <ComboboxContent className={compact ? "rounded-[7px]" : undefined}>
-        <ComboboxEmpty className={compact ? "text-[10px]" : undefined}>{emptyText}</ComboboxEmpty>
+        <ComboboxEmpty className={compact ? "text-xs" : undefined}>{emptyText}</ComboboxEmpty>
         <ComboboxList>
           {(option: ComboOption) => (
             <ComboboxItem
               key={option.value || "__vazio__"}
               value={option}
-              className={compact ? "min-h-8 rounded-[5px] py-1.5 pl-2 text-[10px] text-[#344054] [&_svg:not([class*=size-])]:size-3.5" : undefined}
+              className={compact ? "min-h-9 rounded-[5px] py-1.5 pl-2 text-xs text-[#344054] [&_svg:not([class*=size-])]:size-3.5" : undefined}
             >
               {option.label}
             </ComboboxItem>
