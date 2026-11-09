@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 import type { ProjectDetail as ProjectDetailData } from "./load-project-detail";
 import { buildEapAccess, type EapAccess } from "./eap-access";
+import { ProjectCronograma } from "./project-cronograma";
 import { ProjectOverview } from "./project-overview";
 import { ProjectEap } from "./project-eap";
 
@@ -23,10 +24,12 @@ export function ProjectDetail({
   project,
   actor,
   openEap = false,
+  openSchedule = false,
 }: {
   project: ProjectDetailData;
   actor: { userId: string; globalRole: string };
   openEap?: boolean;
+  openSchedule?: boolean;
 }) {
   const access: EapAccess = buildEapAccess({
     userId: actor.userId,
@@ -66,6 +69,14 @@ export function ProjectDetail({
       // Sem página anterior registrada.
     }
     router.push("/projetos");
+  }
+
+  if (openSchedule) {
+    return (
+      <div className="motion-enter mx-auto flex w-full max-w-[90rem] flex-col gap-5">
+        <ProjectCronograma key={project.id} project={project} onBack={() => router.push(`/projetos/${project.id}`)} onOpenEap={openEapView} />
+      </div>
+    );
   }
 
   if (openEap) {

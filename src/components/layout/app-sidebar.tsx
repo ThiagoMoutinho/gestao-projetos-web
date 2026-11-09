@@ -300,7 +300,6 @@ function useAccessibleProjects() {
 }
 
 const PROJECT_NAV_UNAVAILABLE: ReadonlyArray<{ label: string; icon: LucideIcon }> = [
-  { label: "Cronograma", icon: CalendarDays },
   { label: "Entregas e Homologações", icon: Flag },
   { label: "Histórico Executivo", icon: History },
   { label: "Documentos", icon: FileText },
@@ -308,13 +307,14 @@ const PROJECT_NAV_UNAVAILABLE: ReadonlyArray<{ label: string; icon: LucideIcon }
 ];
 
 /** Itens do projeto: só habilitados quando a rota aponta para um projeto acessível (`projectId`). */
-function ProjectNav({ projectId, eapOpen }: { projectId: string | undefined; eapOpen: boolean }) {
+function ProjectNav({ projectId, eapOpen, scheduleOpen }: { projectId: string | undefined; eapOpen: boolean; scheduleOpen: boolean }) {
   const router = useRouter();
   const eapActive = Boolean(projectId && eapOpen);
-  const overviewActive = Boolean(projectId && !eapOpen);
+  const scheduleActive = Boolean(projectId && scheduleOpen);
+  const overviewActive = Boolean(projectId && !eapOpen && !scheduleOpen);
   const disabledProps = { "aria-disabled": true } as const;
 
-  function open(aba?: "eap") {
+  function open(aba?: "eap" | "cronograma") {
     if (projectId) {
       router.push(`/projetos/${projectId}${aba ? `?aba=${aba}` : ""}`);
     }
@@ -350,6 +350,18 @@ function ProjectNav({ projectId, eapOpen }: { projectId: string | undefined; eap
                 <span>EAP</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className={cn("cursor-pointer", !projectId && "aria-disabled:pointer-events-auto")}
+                isActive={scheduleActive}
+                tooltip={projectId ? "Cronograma" : "Cronograma, selecione um projeto"}
+                onClick={() => open("cronograma")}
+                {...(projectId ? {} : disabledProps)}
+              >
+                <CalendarDays className="size-4 shrink-0" />
+                <span>Cronograma</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             {PROJECT_NAV_UNAVAILABLE.map(({ label, icon: Icon }) => (
               <SidebarMenuItem key={label}>
                 <SidebarMenuButton tooltip={`${label}, indisponível`} {...disabledProps}>
@@ -372,10 +384,12 @@ function ProjectSwitcher({
   projects,
   currentProject,
   eapOpen,
+  scheduleOpen,
 }: {
   projects: ComboOption[] | null;
   currentProject: string | undefined;
   eapOpen: boolean;
+  scheduleOpen: boolean;
 }) {
   const router = useRouter();
   const selected = projects?.find((option) => option.value === currentProject) ?? null;
@@ -384,7 +398,7 @@ function ProjectSwitcher({
     if (!id || id === currentProject) {
       return;
     }
-    router.push(`/projetos/${id}${eapOpen ? "?aba=eap" : ""}`);
+    router.push(`/projetos/${id}${eapOpen ? "?aba=eap" : scheduleOpen ? "?aba=cronograma" : ""}`);
   }
 
   if (projects === null || projects.length === 0) {
@@ -427,7 +441,9 @@ function ProjectSwitcher({
 
 export function AppSidebar({ user }: { user: AppUser }) {
   const pathname = usePathname();
-  const eapOpen = useSearchParams().get("aba") === "eap";
+  const tab = useSearchParams().get("aba");
+  const eapOpen = tab === "eap";
+  const scheduleOpen = tab === "cronograma";
   const { state, toggleSidebar } = useSidebar();
   const projects = useAccessibleProjects();
   const routeProject = pathname.match(/^\/projetos\/([^/]+)$/)?.[1];
@@ -473,12 +489,12 @@ export function AppSidebar({ user }: { user: AppUser }) {
             <PanelLeftClose className="size-4" aria-hidden="true" />
           </button>
         </div>
-        <ProjectSwitcher projects={projects} currentProject={currentProject} eapOpen={eapOpen} />
+        <ProjectSwitcher projects={projects} currentProject={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} />
       </SidebarHeader>
       <SidebarContent>
         {APP_NAV_GROUPS.map((group) => (
           <Fragment key={group.label}>
-          {group.label === "Gestão" ? <ProjectNav projectId={currentProject} eapOpen={eapOpen} /> : null}
+          {group.label === "Gestão" ? <ProjectNav projectId={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} /> : null}
           <SidebarGroup>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>

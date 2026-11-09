@@ -710,7 +710,7 @@ function ScheduleHistoryBlock({ history, projectId }: { history: History; projec
   );
 }
 
-function ScheduleHistoryList({ items }: { items: HistoryItem[] }) {
+export function ScheduleHistoryList({ items }: { items: HistoryItem[] }) {
   return (
     <ul className="mt-2 flex flex-col divide-y">
       {items.map((item) => (

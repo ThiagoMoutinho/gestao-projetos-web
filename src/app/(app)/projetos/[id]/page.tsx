@@ -58,6 +58,7 @@ export default async function ProjectPage({
     <ProjectDetail
       project={project}
       openEap={aba === "eap"}
+      openSchedule={aba === "cronograma"}
       actor={{
         userId: user.id,
         globalRole: typeof user.role === "string" ? user.role : "",
