@@ -27,6 +27,7 @@ import { EapStatusBadge } from "./eap-status-badge";
 import { nextDeliveryFrom } from "./project-portfolio";
 import { ProjectClosure } from "./project-closure";
 import { DeliveryComplianceCard } from "./delivery-compliance-card";
+import { baselineDeviation, consolidateSchedule } from "./planning-panel";
 import { ProjectOverviewSections } from "./project-institutional";
 
 
@@ -117,7 +118,11 @@ export function ProjectOverview({
   const impediments = (project.phases ?? []).reduce((total, phase) => total + (phase.tasks?.filter((task) => task.hasImpediment).length ?? 0), 0);
   // Situação do prazo: somente o que a API calculou (`deadlineSituation`), a mesma do selo do Planejamento.
   const deadline = deadlineIndicator(monitoring);
-  const baselineDeviation = deviationLabel(project.schedule.baselineEndAt, project.schedule.plannedEndAt);
+  // Mesma referência do Planejamento: prazo consolidado da EAP quando as datas do projeto não foram gravadas.
+  const consolidated = consolidateSchedule(data?.items ?? []);
+  const currentEnd = consolidated.current.end ?? civilDateInput(project.schedule.plannedEndAt);
+  const baselineEnd = consolidated.baseline.end ?? civilDateInput(project.schedule.baselineEndAt);
+  const deviationDays = consolidated.baseline.end && consolidated.current.end ? baselineDeviation(consolidated) : null;
   const nextDelivery = data ? nextDeliveryFrom(data.items) : null;
   const reference = project.glpiTicketId ? `GLPI ${project.glpiTicketId}` : null;
 
@@ -171,13 +176,14 @@ export function ProjectOverview({
           ) : null}
         </Indicator>
         <Indicator icon={CalendarDays} tone="amber" label="Prazo vigente">
-          {project.schedule.plannedEndAt ? (
+          {currentEnd ? (
             <>
-              <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{shortDate(project.schedule.plannedEndAt)}</p>
+              <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{formatCivilDate(currentEnd)}</p>
               <DeadlineStatus indicator={deadline} />
-              {baselineDeviation ? (
+              {baselineEnd ? (
                 <p className="text-xs text-muted-foreground">
-                  Linha de base {shortDate(project.schedule.baselineEndAt)} · {baselineDeviation}
+                  Linha de base {formatCivilDate(baselineEnd)}
+                  {deviationDays !== null ? ` · ${deviationDays === 0 ? "sem desvio" : `${deviationDays > 0 ? "+" : "−"}${Math.abs(deviationDays)} ${Math.abs(deviationDays) === 1 ? "dia" : "dias"}`}` : ""}
                 </p>
               ) : null}
             </>
@@ -328,16 +334,6 @@ function evidenceOrigins(project: ProjectDetail): Record<string, string> {
     }
   }
   return origins;
-}
-
-/** Diferença em dias entre o prazo vigente e a linha de base (só exibição; o cálculo de atraso é da API). */
-function deviationLabel(baseline: string | null, current: string | null) {
-  const a = civilDateInput(baseline);
-  const b = civilDateInput(current);
-  if (!a || !b) return null;
-  const days = Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86_400_000);
-  if (days === 0) return "sem desvio";
-  return `${days > 0 ? "+" : "−"}${Math.abs(days)} ${Math.abs(days) === 1 ? "dia" : "dias"}`;
 }
 
 function PendingChip({ count, one, many, alert = false }: { count: number; one: string; many: string; alert?: boolean }) {
