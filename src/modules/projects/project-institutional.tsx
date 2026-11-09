@@ -18,7 +18,9 @@ import type { Overview } from "./institutional-shared";
 import { OverviewWidgets } from "./overview-widgets";
 import { CardSkeleton } from "./overview-skeleton";
 import { Panel } from "./overview-panel";
-import { PlanningPanel } from "./planning-overview";
+import { Users } from "lucide-react";
+import { Participants, PendingNotice, PlanningPanel } from "./planning-overview";
+import { consolidateSchedule, requiredFields, timelineMilestones } from "./planning-panel";
 import { SituationCard } from "./project-situation";
 
 type State = { status: "loading" } | { status: "ready"; data: Overview } | { status: "error" };
@@ -31,6 +33,7 @@ type ProjectStatus = Parameters<typeof SituationCard>[0]["status"];
  * de edição e validação; a API confere as duas de novo a cada gravação.
  */
 export function ProjectOverviewSections({
+  indicators,
   projectId,
   userId,
   canRegisterEvidence,
@@ -43,6 +46,8 @@ export function ProjectOverviewSections({
   cards,
   planning,
 }: {
+  /** Linha de indicadores do topo (situação, prazo, pendências e próxima entrega). */
+  indicators: React.ReactNode;
   projectId: string;
   userId: string;
   /** Mesma regra da EAP (espelho da API): inclui fornecedor e colaborador vinculados e autorizados. */
@@ -85,9 +90,26 @@ export function ProjectOverviewSections({
   const reload = () => setVersion((current) => current + 1);
   const data = state.status === "ready" ? state.data : null;
   const evolutions = buildEvolutions(data ? data.evolutions : null, []);
+  // Mesmos campos obrigatórios do cartão Planejamento; o aviso fica no topo da página, como na referência.
+  const monitored = monitoring.status === "ready" ? monitoring.data.items : null;
+  const fields = requiredFields({
+    context: data
+      ? {
+          PROBLEM: fieldOf(data, "PROBLEM").published?.value ?? null,
+          PURPOSE: fieldOf(data, "PURPOSE").published?.value ?? null,
+          SCOPE: fieldOf(data, "SCOPE").published?.value ?? null,
+        }
+      : null,
+    schedule: monitored
+      ? { milestonesWithDate: timelineMilestones(monitored).length, hasCurrentEnd: consolidateSchedule(monitored).current.end !== null }
+      : null,
+    members: planning.members,
+  });
 
   return (
     <>
+      <PendingNotice fields={fields} />
+      {indicators}
       <OverviewWidgets
         nodes={{
           sobre:
@@ -169,6 +191,11 @@ export function ProjectOverviewSections({
                 ),
               }}
             />
+          ),
+          equipe: (
+            <Panel title="Equipe" subtitle="Responsáveis pelos compromissos do projeto" icon={Users}>
+              <Participants members={planning.members} />
+            </Panel>
           ),
           evidencias:
             state.status === "loading" ? (

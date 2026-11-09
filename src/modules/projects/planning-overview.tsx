@@ -224,7 +224,6 @@ export function PlanningPanel({
           </div>
         </Presence>
 
-        <PendingNotice fields={fields} />
 
         <Indicators
           monitoring={monitoring}
@@ -247,13 +246,12 @@ export function PlanningPanel({
           <ScheduleHistoryBlock history={history} projectId={projectId} />
         </div>
 
-        <div id="planejamento-contexto" className="grid scroll-mt-6 gap-5 border-t pt-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div id="planejamento-contexto" className="scroll-mt-6 border-t pt-4">
           <section aria-label="Contexto e planejamento" className="min-w-0">
             <h3 className="text-sm font-semibold">Contexto e planejamento</h3>
             <p className="mb-3 text-xs text-muted-foreground">Por que o projeto existe e até onde ele vai.</p>
             {context.node}
           </section>
-          <Participants members={members} />
         </div>
       </div>
     </SectionCard>
@@ -308,7 +306,7 @@ function FillMeter({ fields, fill }: { fields: RequiredField[]; fill: ReturnType
   );
 }
 
-function PendingNotice({ fields }: { fields: RequiredField[] }) {
+export function PendingNotice({ fields }: { fields: RequiredField[] }) {
   const pending = fields.filter((field) => field.state === "pending");
   const structural = fields.filter((field) => field.state === "structural");
   const unknown = fields.some((field) => field.state === "unknown");
@@ -832,11 +830,9 @@ function initialsOf(name: string) {
   return (parts.length === 1 ? parts[0].slice(0, 2) : `${parts[0][0]}${parts[parts.length - 1][0]}`).toUpperCase();
 }
 
-function Participants({ members }: { members: ProjectDetail["members"] }) {
+export function Participants({ members }: { members: ProjectDetail["members"] }) {
   return (
     <section aria-label="Participantes" className="min-w-0">
-      <h3 className="text-sm font-semibold">Participantes</h3>
-      <p className="mb-3 text-xs text-muted-foreground">Responsáveis pelos compromissos do projeto.</p>
       {members === null ? (
         <p role="alert" className="text-xs text-muted-foreground">Não foi possível consultar os participantes.</p>
       ) : (

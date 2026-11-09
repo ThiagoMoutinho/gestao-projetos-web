@@ -6,10 +6,10 @@ import { DEFAULT_WIDGETS, moveWidget, normalizeWidgets, placeWidgets, rowsOf } f
 const ids = (list: { id: string }[]) => list.map((item) => item.id);
 
 describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
-  it("o padrão é: Sobre | Resultados, Situação | Evoluções, Marcos (largura total), Resumo | Histórico, Planejamento (total) e Evidências", () => {
-    assert.deepEqual(ids(DEFAULT_WIDGETS), ["sobre", "resultados", "situacao", "evolucoes", "marcos", "resumo", "historico", "planejamento", "evidencias"]);
+  it("o padrão segue a referência: Resumo | Linha do tempo, Marcos | Evidências, Planejamento (total), Sobre | Equipe e os demais ao final", () => {
+    assert.deepEqual(ids(DEFAULT_WIDGETS), ["resumo", "historico", "marcos", "evidencias", "planejamento", "sobre", "equipe", "resultados", "situacao", "evolucoes"]);
     const placed = placeWidgets(DEFAULT_WIDGETS);
-    assert.deepEqual(placed.map((item) => item.span), [6, 6, 6, 6, 12, 6, 6, 12, 6]);
+    assert.deepEqual(placed.map((item) => item.span), [6, 6, 6, 6, 12, 6, 6, 6, 6, 6]);
       });
 
   it("sem layout salvo usa o padrão; layouts antigos continuam válidos (altura salva é ignorada)", () => {
@@ -33,7 +33,7 @@ describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
 
   it("move um widget sem perder nenhum e ignora índices inválidos", () => {
     const moved = moveWidget(DEFAULT_WIDGETS, 0, 2);
-    assert.deepEqual(ids(moved).slice(0, 3), ["resultados", "situacao", "sobre"]);
+    assert.deepEqual(ids(moved).slice(0, 3), ["historico", "marcos", "resumo"]);
     assert.equal(moved.length, DEFAULT_WIDGETS.length);
     assert.equal(moveWidget(DEFAULT_WIDGETS, 1, 1), DEFAULT_WIDGETS);
     assert.equal(moveWidget(DEFAULT_WIDGETS, -1, 2), DEFAULT_WIDGETS);
@@ -63,7 +63,7 @@ describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
 
   it("calcula a linha de cada widget no grid de 12 colunas", () => {
     const rows = rowsOf(placeWidgets(DEFAULT_WIDGETS));
-    assert.deepEqual([...rows.entries()], [["sobre", 0], ["resultados", 0], ["situacao", 1], ["evolucoes", 1], ["marcos", 2], ["resumo", 3], ["historico", 3], ["planejamento", 4], ["evidencias", 5]]);
+    assert.deepEqual([...rows.entries()], [["resumo", 0], ["historico", 0], ["marcos", 1], ["evidencias", 1], ["planejamento", 2], ["sobre", 3], ["equipe", 3], ["resultados", 4], ["situacao", 4], ["evolucoes", 5]]);
     const shifted = rowsOf(placeWidgets([{ id: "situacao", wide: false }, { id: "sobre", wide: false }, { id: "resultados", wide: false }]));
     assert.notEqual(shifted.get("sobre"), shifted.get("resultados"));
   });

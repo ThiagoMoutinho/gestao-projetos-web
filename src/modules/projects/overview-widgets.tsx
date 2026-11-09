@@ -17,10 +17,11 @@ const TITLES: Record<WidgetId, string> = {
   evolucoes: "Principais evoluções",
   situacao: "Situação atual",
   marcos: "Marcos e Homologações",
-  historico: "Histórico executivo",
+  historico: "Linha do tempo do projeto",
   resumo: "Resumo executivo",
   planejamento: "Planejamento",
   evidencias: "Evidências e Chamados",
+  equipe: "Equipe",
 };
 
 /** Layout pessoal salvo no servidor. Se a consulta falhar, usa o padrão e a Visão Geral continua funcionando. */

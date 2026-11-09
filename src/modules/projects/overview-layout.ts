@@ -1,6 +1,6 @@
 /** Lógica pura do layout da Visão Geral (sem React), testável isoladamente. */
 
-export type WidgetId = "sobre" | "resultados" | "evolucoes" | "situacao" | "marcos" | "historico" | "resumo" | "planejamento" | "evidencias";
+export type WidgetId = "sobre" | "resultados" | "evolucoes" | "situacao" | "marcos" | "historico" | "resumo" | "planejamento" | "evidencias" | "equipe";
 export type WidgetState = { id: WidgetId; wide: boolean };
 
 /**
@@ -19,22 +19,24 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
   // Planejamento cresce com as seções que o usuário abre; Evidências guarda o próprio limite.
   planejamento: 100000,
   evidencias: 480,
+  equipe: 480,
 };
 
 /**
- * Layout padrão, por linhas: Sobre | Resultados, Situação | Evoluções, Marcos (largura total), Resumo | Histórico, Planejamento (largura total) e Evidências e Chamados.
- * Médio ocupa 6 das 12 colunas e Grande ocupa as 12.
+ * Layout padrão (referência visual), por linhas: Resumo executivo | Linha do tempo, Marcos | Evidências, Planejamento (largura
+ * total), Sobre | Equipe e, ao final, Resultados | Situação, Evoluções. Médio ocupa 6 das 12 colunas e Grande ocupa as 12.
  */
 export const DEFAULT_WIDGETS: WidgetState[] = [
+  { id: "resumo", wide: false },
+  { id: "historico", wide: false },
+  { id: "marcos", wide: false },
+  { id: "evidencias", wide: false },
+  { id: "planejamento", wide: true },
   { id: "sobre", wide: false },
+  { id: "equipe", wide: false },
   { id: "resultados", wide: false },
   { id: "situacao", wide: false },
   { id: "evolucoes", wide: false },
-  { id: "marcos", wide: true },
-  { id: "resumo", wide: false },
-  { id: "historico", wide: false },
-  { id: "planejamento", wide: true },
-  { id: "evidencias", wide: false },
 ];
 
 /**

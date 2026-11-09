@@ -563,11 +563,11 @@ export function ExecutiveHistoryCard({ history }: { history: HistoryState }) {
   const entries = history.status === "ready" ? history.entries : [];
   return (
     <SectionCard
-      title="Histórico executivo recente"
-      subtitle="Últimas decisões e atualizações relevantes"
+      title="Linha do tempo do projeto"
+      subtitle="Decisões e atualizações registradas no projeto"
       icon={History}
       tone="purple"
-      moreLabel={`Ver todos (${entries.length})`}
+      moreLabel={`Ver histórico completo (${entries.length})`}
     >
       {history.status === "loading" ? (
         <ListSkeleton />

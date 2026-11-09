@@ -160,78 +160,79 @@ export function ProjectOverview({
         </div>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Indicator icon={ListChecks} tone="primary" label="Situação e progresso">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{progressPercent === null ? "Indisponível" : `${progressPercent}%`}</p>
-            {status ? <EapStatusBadge kind={projectStatusKind(status)} label={projectStatusLabel(status)} /> : null}
-          </div>
-          <Progress
-            value={progressPercent ?? 0}
-            aria-label="Progresso consolidado do projeto"
-            className="mt-1 **:data-[slot=progress-track]:h-1.5"
-          />
-          {data && data.situation.delayDays > 0 ? (
-            <p className="text-xs text-muted-foreground">Maior atraso: {data.situation.delayDays} {data.situation.delayDays === 1 ? "dia" : "dias"}</p>
-          ) : null}
-        </Indicator>
-        <Indicator icon={CalendarDays} tone="amber" label="Prazo vigente">
-          {currentEnd ? (
-            <>
-              <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{formatCivilDate(currentEnd)}</p>
-              <DeadlineStatus indicator={deadline} />
-              {baselineEnd ? (
-                <p className="text-xs text-muted-foreground">
-                  Linha de base {formatCivilDate(baselineEnd)}
-                  {deviationDays !== null ? ` · ${deviationDays === 0 ? "sem desvio" : `${deviationDays > 0 ? "+" : "−"}${Math.abs(deviationDays)} ${Math.abs(deviationDays) === 1 ? "dia" : "dias"}`}` : ""}
-                </p>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <p className="text-[15px] font-bold text-[#344054] dark:text-foreground text-muted-foreground">Prazo não definido</p>
-              <DeadlineStatus indicator={deadline} />
-            </>
-          )}
-        </Indicator>
-        <Indicator icon={AlertCircle} tone="purple" label="Pendências">
-          {data ? (
-            <>
-              <div className="flex flex-wrap gap-1.5">
-                <PendingChip count={data.situation.delayedItems} one="item em atraso" many="itens em atraso" alert />
-                <PendingChip count={data.homologation.awaiting} one="homologação" many="homologações" />
-                <PendingChip count={impediments} one="impedimento" many="impedimentos" />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {data.reschedules.total} {data.reschedules.total === 1 ? "reprogramação registrada" : "reprogramações registradas"}
-              </p>
-            </>
-          ) : monitoring.status === "loading" ? (
-            <Skeleton className="h-4 w-32" />
-          ) : (
-            <p className="text-[15px] font-bold text-muted-foreground">Indisponível</p>
-          )}
-        </Indicator>
-        <Indicator icon={Flag} tone="green" label="Próxima entrega">
-          {monitoring.status === "loading" ? (
-            <Skeleton className="h-4 w-32" />
-          ) : nextDelivery ? (
-            <>
-              <p className="truncate text-[15px] font-bold text-[#344054] dark:text-foreground">{nextDelivery.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {shortDate(nextDelivery.plannedAt)}
-                {nextDelivery.overdue ? " · atrasada" : ""}
-              </p>
-            </>
-          ) : (
-            <p className="text-[15px] font-bold text-[#344054] dark:text-foreground text-muted-foreground">
-              {monitoring.status === "error" ? "Indisponível" : "Nenhuma pendente"}
-            </p>
-          )}
-        </Indicator>
-      </div>
-
       <ProjectOverviewSections
+        indicators={
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Indicator icon={ListChecks} tone="primary" label="Situação e progresso">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{progressPercent === null ? "Indisponível" : `${progressPercent}%`}</p>
+                {status ? <EapStatusBadge kind={projectStatusKind(status)} label={projectStatusLabel(status)} /> : null}
+              </div>
+              <Progress
+                value={progressPercent ?? 0}
+                aria-label="Progresso consolidado do projeto"
+                className="mt-1 **:data-[slot=progress-track]:h-1.5"
+              />
+              {data && data.situation.delayDays > 0 ? (
+                <p className="text-xs text-muted-foreground">Maior atraso: {data.situation.delayDays} {data.situation.delayDays === 1 ? "dia" : "dias"}</p>
+              ) : null}
+            </Indicator>
+            <Indicator icon={CalendarDays} tone="amber" label="Prazo vigente">
+              {currentEnd ? (
+                <>
+                  <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{formatCivilDate(currentEnd)}</p>
+                  <DeadlineStatus indicator={deadline} />
+                  {baselineEnd ? (
+                    <p className="text-xs text-muted-foreground">
+                      Linha de base {formatCivilDate(baselineEnd)}
+                      {deviationDays !== null ? ` · ${deviationDays === 0 ? "sem desvio" : `${deviationDays > 0 ? "+" : "−"}${Math.abs(deviationDays)} ${Math.abs(deviationDays) === 1 ? "dia" : "dias"}`}` : ""}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <p className="text-[15px] font-bold text-[#344054] dark:text-foreground text-muted-foreground">Prazo não definido</p>
+                  <DeadlineStatus indicator={deadline} />
+                </>
+              )}
+            </Indicator>
+            <Indicator icon={AlertCircle} tone="purple" label="Pendências">
+              {data ? (
+                <>
+                  <div className="flex flex-wrap gap-1.5">
+                    <PendingChip count={data.situation.delayedItems} one="item em atraso" many="itens em atraso" alert />
+                    <PendingChip count={data.homologation.awaiting} one="homologação" many="homologações" />
+                    <PendingChip count={impediments} one="impedimento" many="impedimentos" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {data.reschedules.total} {data.reschedules.total === 1 ? "reprogramação registrada" : "reprogramações registradas"}
+                  </p>
+                </>
+              ) : monitoring.status === "loading" ? (
+                <Skeleton className="h-4 w-32" />
+              ) : (
+                <p className="text-[15px] font-bold text-muted-foreground">Indisponível</p>
+              )}
+            </Indicator>
+            <Indicator icon={Flag} tone="green" label="Próxima entrega">
+              {monitoring.status === "loading" ? (
+                <Skeleton className="h-4 w-32" />
+              ) : nextDelivery ? (
+                <>
+                  <p className="truncate text-[15px] font-bold text-[#344054] dark:text-foreground">{nextDelivery.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {shortDate(nextDelivery.plannedAt)}
+                    {nextDelivery.overdue ? " · atrasada" : ""}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[15px] font-bold text-[#344054] dark:text-foreground text-muted-foreground">
+                  {monitoring.status === "error" ? "Indisponível" : "Nenhuma pendente"}
+                </p>
+              )}
+            </Indicator>
+          </div>
+        }
         projectId={project.id}
         userId={access.userId}
         canRegisterEvidence={access.canRegisterEvidence}

@@ -82,11 +82,12 @@ test.describe("Painel de Planejamento", () => {
     await expect(panel.getByRole("heading", { name: /Cronograma/ })).toBeVisible();
     await expect(panel.getByRole("heading", { name: "Reprogramações e solicitações" })).toBeVisible();
     await expect(panel.getByRole("heading", { name: "Contexto e planejamento" })).toBeVisible();
-    await expect(panel.getByRole("heading", { name: "Participantes" })).toBeVisible();
+    // Os participantes e o aviso de cadastro incompleto ficam fora do cartão: card Equipe e faixa no topo da Visão Geral.
+    await expect(page.getByRole("heading", { name: "Equipe" })).toBeVisible();
 
     // Patrocinador: o papel não existe; a limitação aparece e nenhum outro papel o preenche.
-    await expect(panel.getByText(/papel ainda não implementado/).first()).toBeVisible();
-    await expect(panel.getByText(/pendente de implementação estrutural/)).toBeVisible();
+    await expect(page.getByText(/papel ainda não implementado/).first()).toBeVisible();
+    await expect(page.getByText(/pendente de implementação estrutural/)).toBeVisible();
 
     // Os números vêm das mesmas consultas da API (sem valores fictícios).
     const monitoring = monitoringBodies.at(-1) as { reschedules: { total: number }; items: { entityType: string; status: string }[] };
