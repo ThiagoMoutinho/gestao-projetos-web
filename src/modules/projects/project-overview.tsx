@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Flag, History, ListChecks, Network, UserRound } from "lucide-react";
+import { AlertCircle, CalendarDays, Flag, History, ListChecks, Network } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -117,6 +117,7 @@ export function ProjectOverview({
   const impediments = (project.phases ?? []).reduce((total, phase) => total + (phase.tasks?.filter((task) => task.hasImpediment).length ?? 0), 0);
   // Situação do prazo: somente o que a API calculou (`deadlineSituation`), a mesma do selo do Planejamento.
   const deadline = deadlineIndicator(monitoring);
+  const baselineDeviation = deviationLabel(project.schedule.baselineEndAt, project.schedule.plannedEndAt);
   const nextDelivery = data ? nextDeliveryFrom(data.items) : null;
   const reference = project.glpiTicketId ? `GLPI ${project.glpiTicketId}` : null;
 
@@ -134,7 +135,7 @@ export function ProjectOverview({
             <p className="text-[11px] font-semibold tracking-[0.12em] text-primary uppercase">Visão geral do projeto</p>
             <h1 className="truncate text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-[#172033]">{project.name}</h1>
             <p className="truncate text-[11.5px] text-muted-foreground">
-              {[reference, `Responsável: ${project.ownerName}`].filter(Boolean).join(" · ")}
+              {[reference, `Responsável: ${project.ownerName}`, project.managers && project.managers.length > 0 ? `Gestor: ${managers}` : null].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>
@@ -155,29 +156,54 @@ export function ProjectOverview({
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Indicator icon={ListChecks} tone="primary" label="Progresso consolidado">
-          <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{progressPercent === null ? "Indisponível" : `${progressPercent}%`}</p>
+        <Indicator icon={ListChecks} tone="primary" label="Situação e progresso">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{progressPercent === null ? "Indisponível" : `${progressPercent}%`}</p>
+            {status ? <EapStatusBadge kind={projectStatusKind(status)} label={projectStatusLabel(status)} /> : null}
+          </div>
           <Progress
             value={progressPercent ?? 0}
             aria-label="Progresso consolidado do projeto"
             className="mt-1 **:data-[slot=progress-track]:h-1.5"
           />
-        </Indicator>
-        <Indicator icon={UserRound} tone="purple" label="Gestor do projeto">
-          <p className="truncate text-[15px] font-bold text-[#344054] dark:text-foreground">{managers}</p>
-          <p className="truncate text-xs text-muted-foreground">Responsável principal: {project.ownerName}</p>
+          {data && data.situation.delayDays > 0 ? (
+            <p className="text-xs text-muted-foreground">Maior atraso: {data.situation.delayDays} {data.situation.delayDays === 1 ? "dia" : "dias"}</p>
+          ) : null}
         </Indicator>
         <Indicator icon={CalendarDays} tone="amber" label="Prazo vigente">
           {project.schedule.plannedEndAt ? (
             <>
               <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{shortDate(project.schedule.plannedEndAt)}</p>
               <DeadlineStatus indicator={deadline} />
+              {baselineDeviation ? (
+                <p className="text-xs text-muted-foreground">
+                  Linha de base {shortDate(project.schedule.baselineEndAt)} · {baselineDeviation}
+                </p>
+              ) : null}
             </>
           ) : (
             <>
               <p className="text-[15px] font-bold text-[#344054] dark:text-foreground text-muted-foreground">Prazo não definido</p>
               <DeadlineStatus indicator={deadline} />
             </>
+          )}
+        </Indicator>
+        <Indicator icon={AlertCircle} tone="purple" label="Pendências">
+          {data ? (
+            <>
+              <div className="flex flex-wrap gap-1.5">
+                <PendingChip count={data.situation.delayedItems} one="item em atraso" many="itens em atraso" alert />
+                <PendingChip count={data.homologation.awaiting} one="homologação" many="homologações" />
+                <PendingChip count={impediments} one="impedimento" many="impedimentos" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {data.reschedules.total} {data.reschedules.total === 1 ? "reprogramação registrada" : "reprogramações registradas"}
+              </p>
+            </>
+          ) : monitoring.status === "loading" ? (
+            <Skeleton className="h-4 w-32" />
+          ) : (
+            <p className="text-[15px] font-bold text-muted-foreground">Indisponível</p>
           )}
         </Indicator>
         <Indicator icon={Flag} tone="green" label="Próxima entrega">
@@ -302,4 +328,23 @@ function evidenceOrigins(project: ProjectDetail): Record<string, string> {
     }
   }
   return origins;
+}
+
+/** Diferença em dias entre o prazo vigente e a linha de base (só exibição; o cálculo de atraso é da API). */
+function deviationLabel(baseline: string | null, current: string | null) {
+  const a = civilDateInput(baseline);
+  const b = civilDateInput(current);
+  if (!a || !b) return null;
+  const days = Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86_400_000);
+  if (days === 0) return "sem desvio";
+  return `${days > 0 ? "+" : "−"}${Math.abs(days)} ${Math.abs(days) === 1 ? "dia" : "dias"}`;
+}
+
+function PendingChip({ count, one, many, alert = false }: { count: number; one: string; many: string; alert?: boolean }) {
+  if (count === 0) return null;
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", alert ? "bg-destructive/10 text-destructive" : "bg-warning/20 text-warning-foreground")}>
+      {count} {count === 1 ? one : many}
+    </span>
+  );
 }
