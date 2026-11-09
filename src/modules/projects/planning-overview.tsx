@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarRange, Check, ChevronDown, CircleCheck, CircleDot, Circle, OctagonAlert, PencilLine, TriangleAlert } from "lucide-react";
+import { CalendarRange, Check, ChevronDown, Circle, CircleCheck, CircleDot, CircleHelp, Diamond, OctagonAlert, PencilLine, RotateCcw, RotateCw, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -723,6 +723,17 @@ function changeText(change: HistoryItem["changes"][number]) {
   return change.kind === "DEFINED" ? `Definida: ${day(change.next)}` : `${day(change.previous)} → ${day(change.next)}`;
 }
 
+/** Ícone e cor de cada registro: pergunta (pendente), seta circular (reprogramação, vermelha se estendeu e verde se antecipou), X e losango. */
+function historyIcon(item: HistoryItem, delta: number | null) {
+  if (item.status === "PENDENTE") return { Icon: CircleHelp, tone: "bg-warning/20 text-warning-foreground" };
+  if (item.status === "REJEITADA") return { Icon: X, tone: "bg-destructive/10 text-destructive" };
+  if (item.status === "CANCELADA" || item.status === "CANCELADA_CONFLITO") return { Icon: X, tone: "bg-muted text-muted-foreground" };
+  if (item.status === "DEFINIDA") return { Icon: Diamond, tone: "bg-primary/10 text-primary" };
+  if (delta !== null && delta < 0) return { Icon: RotateCcw, tone: "bg-success/15 text-success-foreground" };
+  if (delta !== null && delta > 0) return { Icon: RotateCw, tone: "bg-destructive/10 text-destructive" };
+  return { Icon: RotateCw, tone: "bg-muted text-muted-foreground" };
+}
+
 function ScheduleHistoryRow({ item }: { item: HistoryItem }) {
   const [open, setOpen] = useState(false);
   const status = HISTORY_STATUS[item.status];
@@ -733,37 +744,43 @@ function ScheduleHistoryRow({ item }: { item: HistoryItem }) {
   const registeredLabel = item.source === "REQUEST" ? "Solicitada por" : item.source === "INITIAL_DEFINITION" ? "Definida por" : "Registrada por";
   const actor =
     item.source === "REQUEST" ? personName(item.requestedBy, "solicitante não registrado") : personName(item.registeredBy, "autor não registrado");
+  const rowIcon = historyIcon(item, delta);
   return (
     <li className="py-2.5" data-source={item.source} data-status={item.status}>
       <Collapsible open={open} onOpenChange={setOpen}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">
-              {lead ? `${proposed ? "Proposta: " : ""}${changeText(lead)}` : "Datas alteradas"}
-              {lead && lead.field === "START" ? <span className="ml-1 text-xs font-normal text-muted-foreground">(início)</span> : null}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {type}
-              {item.entityTitle ? ` · ${item.entityTitle}` : ""} · {day(item.occurredAt)} · {registeredLabel} {actor}
-            </p>
-            <span
-              title={status.hint}
-              data-testid="history-status"
-              className={cn("mt-1 inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-medium", DEADLINE_TONE_CLASS[status.tone])}
-            >
-              {status.label}
-            </span>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-0.5">
-            {delta !== null && delta !== 0 ? (
-              <span className={cn("text-xs font-semibold", delta > 0 ? "text-warning-foreground" : "text-success-foreground")}>
-                {delta > 0 ? "+" : "−"}{Math.abs(delta)} d
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" className={cn("mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg", rowIcon.tone)}>
+            <rowIcon.Icon className="size-4" />
+          </span>
+          <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">
+                {lead ? `${proposed ? "Proposta: " : ""}${changeText(lead)}` : "Datas alteradas"}
+                {lead && lead.field === "START" ? <span className="ml-1 text-xs font-normal text-muted-foreground">(início)</span> : null}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {type}
+                {item.entityTitle ? ` · ${item.entityTitle}` : ""} · {day(item.occurredAt)} · {registeredLabel} {actor}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              {delta !== null && delta !== 0 ? (
+                <span className={cn("text-xs font-semibold", delta > 0 ? "text-destructive" : "text-success-foreground")}>
+                  {delta > 0 ? "+" : "−"}{Math.abs(delta)} d
+                </span>
+              ) : null}
+              <span
+                title={status.hint}
+                data-testid="history-status"
+                className={cn("inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-medium", DEADLINE_TONE_CLASS[status.tone])}
+              >
+                {status.label}
               </span>
-            ) : null}
-            <CollapsibleTrigger className="group/detail flex items-center gap-1 rounded text-xs text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-              Detalhes
-              <ChevronDown className="size-3 transition-transform duration-200 group-data-panel-open/detail:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-            </CollapsibleTrigger>
+              <CollapsibleTrigger className="group/detail flex items-center gap-1 rounded text-xs text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                Detalhes
+                <ChevronDown className="size-3 transition-transform duration-200 group-data-panel-open/detail:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+              </CollapsibleTrigger>
+            </div>
           </div>
         </div>
         <CollapsibleContent>

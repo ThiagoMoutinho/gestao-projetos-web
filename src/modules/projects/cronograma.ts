@@ -26,6 +26,8 @@ export type PhaseInput = {
   progressBasisPoints: number | null;
   tasks: number;
   impediments: number;
+  /** Situação da fase como já exibida na EAP (por exemplo, "Concluída"). */
+  statusLabel?: string;
 };
 
 export type DayRange = { start: string | null; end: string | null };
@@ -43,6 +45,7 @@ export type PhaseRow = {
   progressPercent: number | null;
   tasks: number;
   impediments: number;
+  statusLabel: string | null;
   milestones: MilestoneMark[];
   awaitingMilestones: number;
 };
@@ -96,6 +99,7 @@ export function phaseRows(phases: ReadonlyArray<PhaseInput>, items: ReadonlyArra
       progressPercent: phase.progressBasisPoints === null ? null : Math.round(phase.progressBasisPoints / 100),
       tasks: phase.tasks,
       impediments: phase.impediments,
+      statusLabel: phase.statusLabel ?? null,
       milestones,
       awaitingMilestones: milestones.filter((mark) => mark.state === "awaiting").length,
     };

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Presence } from "@/components/ui/presence";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getScheduleMonitoring, listScheduleHistory } from "@/lib/api/generated/cronograma/cronograma";
@@ -24,11 +25,13 @@ import {
   type PhaseRow,
 } from "./cronograma";
 import { DEADLINE_TONE_CLASS, deadlineIndicator } from "./deadline-situation";
+import { canReschedule, type EapAccess } from "./eap-access";
 import { civilDay } from "./eap-deadline";
 import { formatCivilDate } from "./eap-date-field";
 import type { ProjectDetail } from "./eap-present";
 import { EapStatusBadge } from "./eap-status-badge";
-import { baselineDeviation, consolidateSchedule } from "./planning-panel";
+import { baselineDeviation, consolidateSchedule, daysBetween } from "./planning-panel";
+import { EapSchedule } from "./eap-schedule";
 import { ScheduleHistoryList } from "./planning-overview";
 import { OVERVIEW_CARD } from "./overview-panel";
 
@@ -51,7 +54,7 @@ const shortDay = (day: string) => {
  * Página Cronograma do projeto: indicadores de prazo, barras por fase (linha de base, prazo vigente e execução real), histórico
  * de reprogramações e solicitações. Só leitura: datas mudam por reprogramação justificada na EAP; nada aqui altera prazos.
  */
-export function ProjectCronograma({ project, onBack, onOpenEap }: { project: ProjectDetail; onBack: () => void; onOpenEap: () => void }) {
+export function ProjectCronograma({ project, access, onBack, onOpenEap, onSaved }: { project: ProjectDetail; access: EapAccess; onBack: () => void; onOpenEap: () => void; onSaved: () => void }) {
   const [monitoring, setMonitoring] = useState<Monitoring>({ status: "loading" });
   const [history, setHistory] = useState<History>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -91,6 +94,7 @@ export function ProjectCronograma({ project, onBack, onOpenEap }: { project: Pro
           progressBasisPoints: phase.progressBasisPoints,
           tasks: phase.tasks?.length ?? 0,
           impediments: phase.tasks?.filter((task) => task.hasImpediment).length ?? 0,
+          statusLabel: phase.statusLabel,
         })),
         data?.items ?? [],
 
@@ -103,6 +107,9 @@ export function ProjectCronograma({ project, onBack, onOpenEap }: { project: Pro
   const deadline = deadlineIndicator(monitoring);
   const pending = history.status === "ready" ? history.data.data.filter((item) => item.status === "PENDENTE") : [];
   const lastAgo = history.status === "ready" ? daysAgo(history.data.lastRescheduleAt, today) : null;
+  const canEditDates = canReschedule(access);
+  const [planning, setPlanning] = useState(false);
+  const remaining = consolidated.current.end && today ? daysBetween(today, consolidated.current.end) : null;
 
   return (
     <div className="flex flex-col gap-[18px]">
@@ -119,11 +126,40 @@ export function ProjectCronograma({ project, onBack, onOpenEap }: { project: Pro
           <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onBack}>
             <ArrowLeft aria-hidden="true" /> Visão Geral
           </Button>
-          <Button type="button" size="sm" className="gap-1.5" onClick={onOpenEap}>
+          <Button type="button" size="sm" variant={canEditDates ? "outline" : "default"} className="gap-1.5" onClick={onOpenEap}>
             <Network aria-hidden="true" /> Abrir na EAP
           </Button>
+          {canEditDates ? (
+            <Button type="button" size="sm" onClick={() => setPlanning(true)}>
+              Definir planejamento
+            </Button>
+          ) : null}
         </div>
       </header>
+
+      <PlanningDialog
+        open={planning}
+        onClose={() => setPlanning(false)}
+        projectId={project.id}
+        schedule={
+          data
+            ? {
+                single: false,
+                plannedStartAt: data.project.plannedStartAt,
+                plannedEndAt: data.project.plannedEndAt,
+                baselineStartAt: data.project.baselineStartAt,
+                baselineEndAt: data.project.baselineEndAt,
+                actualStartAt: data.project.actualStartAt,
+                actualEndAt: data.project.actualEndAt,
+              }
+            : project.schedule
+        }
+        closed={project.status === "CONCLUIDO"}
+        onSaved={() => {
+          onSaved();
+          retry();
+        }}
+      />
 
       {monitoring.status === "error" ? (
         <Card className={cn(CARD, "p-5")}>
@@ -143,13 +179,14 @@ export function ProjectCronograma({ project, onBack, onOpenEap }: { project: Pro
               loading={!data}
               value={consolidated.current.end ? formatCivilDate(consolidated.current.end) : "—"}
               detail={
-                deadline.kind === "badge" ? (
-                  <span title={deadline.badge.hint} className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", DEADLINE_TONE_CLASS[deadline.badge.tone])}>
-                    {deadline.badge.label}
-                  </span>
-                ) : (
-                  "Situação do prazo indisponível"
-                )
+                <>
+                  {remaining !== null ? <span className="block">{remaining >= 0 ? `Vence em ${plural(remaining, "dia", "dias")}` : `Venceu há ${plural(-remaining, "dia", "dias")}`}</span> : null}
+                  {deadline.kind === "badge" ? (
+                    <span title={deadline.badge.hint} className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", DEADLINE_TONE_CLASS[deadline.badge.tone])}>
+                      {deadline.badge.label}
+                    </span>
+                  ) : null}
+                </>
               }
             />
             <Tile label="Linha de base" loading={!data} value={consolidated.baseline.end ? formatCivilDate(consolidated.baseline.end) : "—"} detail={consolidated.baseline.start ? `Início ${formatCivilDate(consolidated.baseline.start)}` : "Sem linha de base"} />
@@ -181,7 +218,7 @@ export function ProjectCronograma({ project, onBack, onOpenEap }: { project: Pro
             <HistoryCard history={history} onRetry={retry} />
             <div className="flex flex-col gap-[18px]">
               <PendingCard history={history} pending={pending} />
-              <DatesCard loading={!data} consolidated={consolidated} actual={actual} />
+              <DatesCard loading={!data} consolidated={consolidated} actual={actual} recorded={Boolean(data?.project.plannedEndAt)} canDefine={canEditDates} onDefine={() => setPlanning(true)} />
             </div>
           </div>
         </>
@@ -278,7 +315,7 @@ function PhaseChart({ rows, axis, loading, onOpenEap }: { rows: PhaseRow[]; axis
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[640px]">
-            <div className="grid grid-cols-[11rem_minmax(0,1fr)_3.5rem] items-end gap-x-4 pb-1 text-[11px] text-muted-foreground">
+            <div className="grid grid-cols-[13rem_minmax(0,1fr)_3.5rem] items-end gap-x-4 pb-1 text-[11px] text-muted-foreground">
               <span>Fase / marco</span>
               <div className="relative h-5">
                 {axis.ticks.map((tick) => (
@@ -296,11 +333,12 @@ function PhaseChart({ rows, axis, loading, onOpenEap }: { rows: PhaseRow[]; axis
             </div>
             <ul className="divide-y divide-[#EDF0F3] dark:divide-border">
               {rows.map((row) => (
-                <li key={row.id} className="grid grid-cols-[11rem_minmax(0,1fr)_3.5rem] items-center gap-x-4 py-2.5">
+                <li key={row.id} className="grid grid-cols-[13rem_minmax(0,1fr)_3.5rem] items-center gap-x-4 py-2.5">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{row.name}</p>
                     <p className="truncate text-xs text-muted-foreground">
                       {plural(row.tasks, "tarefa", "tarefas")}
+                      {row.statusLabel ? ` · ${row.statusLabel.toLowerCase()}` : ""}
                       {row.impediments > 0 ? ` · ${plural(row.impediments, "impedimento", "impedimentos")}` : ""}
                       {row.awaitingMilestones > 0 ? ` · ${plural(row.awaitingMilestones, "marco aguardando validação", "marcos aguardando validação")}` : ""}
                     </p>
@@ -492,7 +530,7 @@ function PendingCard({ history, pending }: { history: History; pending: ListSche
   );
 }
 
-function DatesCard({ loading, consolidated, actual }: { loading: boolean; consolidated: ReturnType<typeof consolidateSchedule>; actual: ReturnType<typeof actualProjectRange> }) {
+function DatesCard({ loading, consolidated, actual, recorded, canDefine, onDefine }: { loading: boolean; consolidated: ReturnType<typeof consolidateSchedule>; actual: ReturnType<typeof actualProjectRange>; recorded: boolean; canDefine: boolean; onDefine: () => void }) {
   const rows = [
     { label: "Início", baseline: consolidated.baseline.start, current: consolidated.current.start, real: actual.start },
     { label: "Término", baseline: consolidated.baseline.end, current: consolidated.current.end, real: actual.end },
@@ -527,7 +565,56 @@ function DatesCard({ loading, consolidated, actual }: { loading: boolean; consol
           </tbody>
         </table>
       )}
+      {!loading && !recorded ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+          <span>Datas do projeto não gravadas: o consolidado da EAP é a referência.</span>
+          {canDefine ? (
+            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onDefine}>
+              Definir
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       <p className="text-[11px] text-muted-foreground">O término real só aparece quando houver conclusão registrada na EAP.</p>
     </Card>
+  );
+}
+
+/** Definir planejamento: datas gravadas no próprio projeto, com a mesma regra de justificativa e histórico da EAP. */
+function PlanningDialog({
+  open,
+  onClose,
+  projectId,
+  schedule,
+  closed,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  projectId: string;
+  schedule: Parameters<typeof EapSchedule>[0]["schedule"];
+  closed: boolean;
+  onSaved: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(value) => (!value ? onClose() : undefined)}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Definir planejamento do projeto</DialogTitle>
+          <DialogDescription>
+            Datas gravadas no próprio projeto. A linha de base original é preservada e toda alteração de data exige justificativa e fica no histórico.
+          </DialogDescription>
+        </DialogHeader>
+        <EapSchedule
+          projectId={projectId}
+          target={{ entityType: "PROJECT" }}
+          schedule={schedule}
+          state={closed ? "DONE" : "OPEN"}
+          closed={closed}
+          canReschedule
+          onSaved={async () => onSaved()}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }

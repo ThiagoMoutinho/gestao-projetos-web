@@ -74,7 +74,7 @@ export function ProjectDetail({
   if (openSchedule) {
     return (
       <div className="motion-enter mx-auto flex w-full max-w-[90rem] flex-col gap-5">
-        <ProjectCronograma key={project.id} project={project} onBack={() => router.push(`/projetos/${project.id}`)} onOpenEap={openEapView} />
+        <ProjectCronograma key={project.id} project={project} access={access} onBack={() => router.push(`/projetos/${project.id}`)} onOpenEap={openEapView} onSaved={() => router.refresh()} />
       </div>
     );
   }
