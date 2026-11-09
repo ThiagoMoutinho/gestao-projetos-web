@@ -5,15 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Empty,
   EmptyDescription,
@@ -27,7 +18,6 @@ import type { ProjectDetail as ProjectDetailData } from "./load-project-detail";
 import { buildEapAccess, type EapAccess } from "./eap-access";
 import { ProjectOverview } from "./project-overview";
 import { ProjectEap } from "./project-eap";
-import { ProjectSchedule } from "./project-schedule";
 
 export function ProjectDetail({
   project,
@@ -107,67 +97,6 @@ export function ProjectDetail({
   return (
     <div className="motion-enter mx-auto flex w-full max-w-[90rem] flex-col gap-5">
       <ProjectOverview key={project.id} project={project} access={access} onOpenEap={openEapView} />
-      <div id="cronograma" className="scroll-mt-6">
-        <ProjectSchedule projectId={project.id} schedule={project.schedule} closed={project.status === "CONCLUIDO"} access={access} />
-      </div>
-      <ParticipantsSummary project={project} />
-    </div>
-  );
-}
-
-function ParticipantsSummary({ project }: { project: ProjectDetailData }) {
-  const members = project.members;
-  const names = (role: string) => {
-    const found = [...new Set((members ?? []).filter((member) => member.role === role).map((member) => member.name))];
-    return found.length > 0 ? found.join(", ") : "Não informado";
-  };
-
-  return (
-    <Card>
-      <CardContent className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-8 gap-y-2">
-          <h2 className="text-sm font-medium">Participantes</h2>
-          {members === null ? (
-            <p className="text-xs text-muted-foreground">Não foi possível consultar os participantes.</p>
-          ) : (
-            <dl className="flex flex-wrap gap-x-8 gap-y-2">
-              <SummaryFact label="Gestor" value={names("GESTOR")} />
-              <SummaryFact label="Fornecedor" value={names("FORNECEDOR")} />
-              <SummaryFact label="Participantes" value={String(members.length)} />
-            </dl>
-          )}
-        </div>
-        {members !== null && members.length > 0 ? (
-          <Dialog>
-            <DialogTrigger render={<Button type="button" variant="outline" size="sm" />}>Ver equipe completa</DialogTrigger>
-            <DialogContent className="max-h-[80svh] overflow-y-auto sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Equipe do projeto</DialogTitle>
-                <DialogDescription>{members.length} participante(s) vinculados a este projeto.</DialogDescription>
-              </DialogHeader>
-              <ul className="flex flex-col divide-y">
-                {members.map((member) => (
-                  <li key={member.id} className="min-w-0 py-2 first:pt-0 last:pb-0">
-                    <p className="text-sm font-medium">{member.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {member.roleLabel} · {member.email}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </DialogContent>
-          </Dialog>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
-function SummaryFact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="truncate text-xs font-semibold">{value}</dd>
     </div>
   );
 }

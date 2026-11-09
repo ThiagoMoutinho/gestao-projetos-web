@@ -7,6 +7,7 @@ import {
   idlePortfolioFilters,
   isFiltering,
   nextDeliveryFrom,
+  nextDeliveryItem,
   paginate,
   portfolioIndicators,
   sortPortfolio,
@@ -106,6 +107,9 @@ describe("Portfólio de projetos", () => {
     assert.equal(returned?.corrections, true);
     assert.equal(awaitingValidationFrom([]), null);
     assert.equal(nextDeliveryFrom([]), null);
+    // Situação atual e indicador do topo usam o mesmo critério: o marco devolvido para correção ainda é entrega a fazer.
+    assert.equal(nextDeliveryItem([{ entityType: "MILESTONE", title: "Ajustar", status: "AJUSTES_SOLICITADOS", plannedEndAt: "2026-01-10T15:00:00.000Z", overdue: true }])?.title, "Ajustar");
+    assert.equal(nextDeliveryItem([{ entityType: "MILESTONE", title: "Entregue", status: "ENTREGUE", plannedEndAt: "2026-01-10T15:00:00.000Z", overdue: true }]), undefined);
   });
 
   it("visualizações: ativos excluem concluídos; concluídos só os formais; todos mostra tudo; arquivados indisponível", () => {

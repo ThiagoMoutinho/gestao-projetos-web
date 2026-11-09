@@ -1,6 +1,6 @@
 /** Lógica pura do layout da Visão Geral (sem React), testável isoladamente. */
 
-export type WidgetId = "sobre" | "resultados" | "evolucoes" | "situacao" | "marcos" | "historico" | "resumo";
+export type WidgetId = "sobre" | "resultados" | "evolucoes" | "situacao" | "marcos" | "historico" | "resumo" | "planejamento" | "evidencias";
 export type WidgetState = { id: WidgetId; wide: boolean };
 
 /**
@@ -13,13 +13,16 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
   resultados: 480,
   situacao: 360,
   evolucoes: 340,
-  marcos: 480,
-  resumo: 460,
+  marcos: 530,
+  resumo: 580,
   historico: 400,
+  // Planejamento cresce com as seções que o usuário abre; Evidências guarda o próprio limite.
+  planejamento: 100000,
+  evidencias: 480,
 };
 
 /**
- * Layout padrão, por linhas: Sobre | Resultados, Situação | Evoluções, Marcos (largura total) e Resumo | Histórico.
+ * Layout padrão, por linhas: Sobre | Resultados, Situação | Evoluções, Marcos (largura total), Resumo | Histórico, Planejamento (largura total) e Evidências e Chamados.
  * Médio ocupa 6 das 12 colunas e Grande ocupa as 12.
  */
 export const DEFAULT_WIDGETS: WidgetState[] = [
@@ -30,6 +33,8 @@ export const DEFAULT_WIDGETS: WidgetState[] = [
   { id: "marcos", wide: true },
   { id: "resumo", wide: false },
   { id: "historico", wide: false },
+  { id: "planejamento", wide: true },
+  { id: "evidencias", wide: false },
 ];
 
 /**

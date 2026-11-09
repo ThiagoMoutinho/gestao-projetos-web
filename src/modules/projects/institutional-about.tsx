@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, FileText, Pencil } from "lucide-react";
+import { Check, FileText, PencilLine } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ import {
   type FieldData,
   type Overview,
 } from "./institutional-shared";
+import { meaningfulText } from "./field-display";
 import { Panel, SectionCard } from "./overview-panel";
 
 export type ProfileKey =
@@ -65,6 +66,7 @@ const ABOUT_KEYS: Key[] = [
   "BENEFITED_SECTORS",
   "RESPONSIBLE_COMPANY",
 ];
+
 const CONTEXT_KEYS: Key[] = ["PROBLEM", "PURPOSE", "SCOPE"];
 
 export function fieldOf(data: Overview, key: Key): FieldData {
@@ -299,7 +301,7 @@ export function EditToggle({
       aria-pressed={editing}
       onClick={onToggle}
     >
-      {editing ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
+      {editing ? <Check aria-hidden="true" /> : <PencilLine aria-hidden="true" />}
     </Button>
   );
 }
@@ -463,7 +465,7 @@ export function AboutProject({ projectId, data, onChanged }: { projectId: string
             aria-pressed={editing}
             onClick={() => (editing ? setEditing(false) : start())}
           >
-            {editing ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
+            {editing ? <Check aria-hidden="true" /> : <PencilLine aria-hidden="true" />}
           </Button>
         ) : null
       }
@@ -488,17 +490,20 @@ export function AboutProject({ projectId, data, onChanged }: { projectId: string
 }
 
 /**
- * "Contexto e Planejamento" (em Mais informações do projeto): Problema a Resolver, Finalidade e Escopo,
+ * "Contexto e Planejamento": Problema a Resolver, Finalidade e Escopo,
  * preservados com seus valores, permissões e histórico. Editáveis por quem já pode editar o perfil.
  */
 export function ContextPlanning({
   projectId,
   data,
   onChanged,
+  bare = false,
 }: {
   projectId: string;
   data: Overview;
   onChanged: () => void;
+  /** Dentro do cartão Planejamento: sem moldura e sem cabeçalho próprios. */
+  bare?: boolean;
 }) {
   const { canEdit } = data.permissions;
   const {
@@ -516,10 +521,9 @@ export function ContextPlanning({
     keys: CONTEXT_KEYS,
     onChanged,
   });
-  const filled = CONTEXT_KEYS.filter((key) => fieldOf(data, key).published);
-
   return (
     <Panel
+      bare={bare}
       title="Contexto e Planejamento"
       subtitle="Problema a resolver, finalidade e escopo do projeto."
       action={
@@ -556,28 +560,21 @@ export function ContextPlanning({
         </div>
       </Presence>
       <Presence open={!editing}>
-        {filled.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {filled.map((key) => (
+        <div className="flex flex-col gap-3">
+          {CONTEXT_KEYS.map((key) => {
+            const published = meaningfulText(fieldOf(data, key).published?.value);
+            return (
               <div key={key}>
-                <p className="text-xs font-semibold text-[#475467]">
-                  {LABELS[key]}
-                </p>
-                <ExpandableText
-                  text={fieldOf(data, key).published?.value ?? ""}
-                  lines={6}
-                  markdown
-                />
+                <p className="text-xs font-semibold text-[#475467]">{LABELS[key]}</p>
+                {published ? (
+                  <ExpandableText text={published} lines={6} markdown />
+                ) : (
+                  <p className="text-xs text-muted-foreground">Não informado</p>
+                )}
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            {canEdit
-              ? "Nenhuma informação preenchida. Use o lápis para descrever o contexto."
-              : "Nenhuma informação de contexto registrada."}
-          </p>
-        )}
+            );
+          })}
+        </div>
       </Presence>
     </Panel>
   );

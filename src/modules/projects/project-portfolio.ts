@@ -184,12 +184,17 @@ function earliestMilestone<T extends MonitoredMilestone>(items: ReadonlyArray<T>
     .sort((left, right) => (left.plannedEndAt as string).localeCompare(right.plannedEndAt as string))[0];
 }
 
+/** Marco da próxima entrega: o de menor prazo ainda a entregar (pendente ou devolvido). Critério único da Visão Geral. */
+export function nextDeliveryItem<T extends MonitoredMilestone>(items: ReadonlyArray<T>): T | undefined {
+  return earliestMilestone(items, (status) => status !== "APROVADO" && status !== "ENTREGUE");
+}
+
 /**
  * Próxima entrega a partir dos itens do monitoramento de prazos: marcos ainda a entregar (pendentes ou
  * devolvidos). Marco já entregue aguarda validação e aparece à parte, como homologação pendente.
  */
 export function nextDeliveryFrom(items: ReadonlyArray<MonitoredMilestone>): NextDelivery | null {
-  const next = earliestMilestone(items, (status) => status !== "APROVADO" && status !== "ENTREGUE");
+  const next = nextDeliveryItem(items);
   return next
     ? {
         title: next.title,

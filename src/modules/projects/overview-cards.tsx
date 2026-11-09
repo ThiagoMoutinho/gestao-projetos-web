@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronDown,
   ClipboardCheck,
   Flag,
   History,
@@ -154,12 +155,12 @@ function EntryRow({
       <div className="flex items-start gap-3">
         <span
           className={cn(
-            "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg",
+            "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg",
             TONE[entry.tone],
           )}
           aria-hidden="true"
         >
-          <TypeIcon className="size-4" />
+          <TypeIcon className="size-5" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex items-start justify-between gap-2">
@@ -176,14 +177,29 @@ function EntryRow({
                 {entry.dateLabel}
               </p>
             </div>
-            <span
-              className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                TONE[entry.tone],
-              )}
-            >
-              {entry.statusLabel}
-            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                  TONE[entry.tone],
+                )}
+              >
+                {entry.statusLabel}
+              </span>
+              <Button
+                type="button"
+                size="icon-xs"
+                variant="ghost"
+                aria-expanded={expanded}
+                aria-label={expanded ? "Ocultar detalhes" : "Ver detalhes"}
+                title={expanded ? "Ocultar detalhes" : "Ver detalhes"}
+                onClick={onToggle}
+                className="text-muted-foreground"
+                {...prefetch}
+              >
+                <ChevronDown className={cn("size-4 transition-transform duration-200 motion-reduce:transition-none", expanded && "rotate-180")} aria-hidden="true" />
+              </Button>
+            </div>
           </div>
           {entry.meta.length > 0 ? (
             <p className="text-xs text-muted-foreground">
@@ -196,27 +212,17 @@ function EntryRow({
               className="text-xs text-muted-foreground"
             />
           ) : null}
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              aria-expanded={expanded}
-              onClick={onToggle}
-              {...prefetch}
-            >
-              {expanded ? "Ocultar detalhes" : "Ver detalhes"}
-            </Button>
-            {entry.canDecide ? (
-              <Button type="button" size="xs" onClick={onOpen} {...prefetch}>
+          {entry.canDecide ? (
+            <div className="flex flex-wrap justify-end gap-4">
+              <Button type="button" size="sm" onClick={onOpen} {...prefetch}>
                 Analisar entrega
               </Button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
       <Presence open={expanded} expansion>
-        <div ref={detail} className="mt-3 rounded-lg border bg-muted/20 p-3">
+        <div ref={detail} data-cut-end className="mt-4 rounded-lg border bg-muted/20 p-3 pt-1">
           <AnimatedHeight>{children}</AnimatedHeight>
         </div>
       </Presence>
@@ -440,9 +446,6 @@ export function MilestonesCard({
                 className="flex-none gap-1.5 px-2 text-xs"
               >
                 {label}
-                <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                  {String(lists[value].length).padStart(2, "0")}
-                </span>
               </TabsTrigger>
             ))}
           </TabsList>

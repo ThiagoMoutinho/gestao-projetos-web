@@ -6,7 +6,7 @@ import {
   ChevronDown,
   ExternalLink,
   Link2,
-  Pencil,
+  PencilLine,
   Plus,
   Target,
 } from "lucide-react";
@@ -619,7 +619,7 @@ function ResultRow({
                 aria-label="Editar resultado"
                 onClick={() => setEditing(true)}
               >
-                <Pencil aria-hidden="true" />
+                <PencilLine aria-hidden="true" />
               </Button>
               <Button
                 type="button"
@@ -1049,7 +1049,7 @@ export function ResultsCard(props: {
               }
             }}
           >
-            {managing ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
+            {managing ? <Check aria-hidden="true" /> : <PencilLine aria-hidden="true" />}
           </Button>
         ) : null
       }

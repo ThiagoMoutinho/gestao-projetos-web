@@ -19,6 +19,8 @@ const TITLES: Record<WidgetId, string> = {
   marcos: "Marcos e Homologações",
   historico: "Histórico executivo",
   resumo: "Resumo executivo",
+  planejamento: "Planejamento",
+  evidencias: "Evidências e Chamados",
 };
 
 /** Layout pessoal salvo no servidor. Se a consulta falhar, usa o padrão e a Visão Geral continua funcionando. */
@@ -122,6 +124,23 @@ export function OverviewWidgets({ nodes }: Props) {
   const [dragging, setDragging] = useState<WidgetId | null>(null);
   const [over, setOver] = useState<WidgetId | null>(null);
   const board = useRef<HTMLDivElement>(null);
+  const toolbar = useRef<HTMLDivElement>(null);
+  // Clique fora dos cartões (laterais, vãos entre eles ou fundo da página) conclui o layout, sem voltar ao botão.
+  useEffect(() => {
+    if (!customizing) {
+      return;
+    }
+    const conclude = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const inside = target?.closest("[data-widget], [role=dialog], [role=menu], [role=listbox], [data-base-ui-portal]");
+      if (!target || inside || toolbar.current?.contains(target)) {
+        return;
+      }
+      setCustomizing(false);
+    };
+    document.addEventListener("pointerdown", conclude);
+    return () => document.removeEventListener("pointerdown", conclude);
+  }, [customizing]);
   const visible = widgets.filter((item) => nodes[item.id] !== null && nodes[item.id] !== undefined);
   useFlip(board, widgets.map((item) => `${item.id}:${item.wide ? 1 : 0}`).join("|"));
 
@@ -146,7 +165,7 @@ export function OverviewWidgets({ nodes }: Props) {
   const renderWidget = ({ item, span }: { item: WidgetState; span: 6 | 12 }, order: number) => {
     const position = visible.findIndex((entry) => entry.id === item.id);
     return (
-      <div
+      <div 
         key={item.id}
         data-widget={item.id}
         data-span={span}
@@ -155,7 +174,7 @@ export function OverviewWidgets({ nodes }: Props) {
           // Linha do grid: a altura externa acompanha o maior cartão da linha; o cartão preenche e o conteúdo fica no topo.
           "flex min-w-0 flex-col",
           span === 12 ? "lg:col-span-12" : "lg:col-span-6",
-          customizing && "rounded-xl transition-shadow duration-200 motion-reduce:transition-none",
+          customizing && "mb-9 rounded-xl transition-shadow duration-200 motion-reduce:transition-none",
           customizing && over === item.id && dragging !== item.id && "ring-2 ring-primary/50",
           dragging === item.id && "opacity-60",
         )}
@@ -221,9 +240,9 @@ export function OverviewWidgets({ nodes }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div ref={toolbar} className="flex flex-wrap items-center justify-end gap-2">
         <span role="status" aria-live="polite" className="mr-auto text-xs text-muted-foreground">
-          {customizing ? (saving ? "Salvando layout…" : savedAt ? "Layout salvo." : "Arraste os cartões, use as setas ou altere a largura.") : ""}
+          {customizing ? (saving ? "Salvando layout…" : savedAt ? "Layout salvo." : "Arraste os cartões, use as setas ou altere a largura. Clique fora dos cartões para concluir.") : ""}
         </span>
         <Presence open={customizing}>
           <Button type="button" size="sm" variant="ghost" className="gap-1.5" onClick={() => void reset()}>

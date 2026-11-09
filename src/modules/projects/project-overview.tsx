@@ -1,9 +1,10 @@
 "use client";
 
-import { CalendarDays, Flag, History, LayoutGrid, ListChecks, UserRound } from "lucide-react";
+import { CalendarDays, Flag, History, ListChecks, Network, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -21,10 +22,13 @@ import { ExecutiveHistoryCard, MilestonesCard } from "./overview-cards";
 import { OVERVIEW_CARD } from "./overview-panel";
 import { projectProgress } from "./eap-progress";
 import { civilDateInput, type ProjectDetail } from "./eap-present";
+import { DEADLINE_TONE_CLASS, deadlineIndicator, type DeadlineIndicator } from "./deadline-situation";
 import { EapStatusBadge } from "./eap-status-badge";
 import { nextDeliveryFrom } from "./project-portfolio";
 import { ProjectClosure } from "./project-closure";
 import { ProjectOverviewSections } from "./project-institutional";
+
+
 import { recordedDate, recordedStatusLabel } from "./project-records";
 import { projectStatusKind, projectStatusLabel } from "./project-status";
 
@@ -100,7 +104,8 @@ export function ProjectOverview({
 
   const data = monitoring.status === "ready" ? monitoring.data : null;
   const closed = project.status === "CONCLUIDO";
-  const status = data?.situation.status ?? project.status;
+  // Saúde operacional calculada pela API. O status do ciclo de vida do projeto NÃO substitui essa classificação: sem os dados, não há situação.
+  const status = data?.situation.status ?? null;
   const progress = project.phases ? projectProgress(project.phases) : ({ kind: "unavailable" } as const);
   const progressPercent = progress.kind === "value" ? Math.round(progress.basisPoints / 100) : null;
   const managers =
@@ -109,6 +114,8 @@ export function ProjectOverview({
     ? [...new Set(project.members.filter((member) => member.role === "FORNECEDOR").map((member) => member.name))]
     : null;
   const impediments = (project.phases ?? []).reduce((total, phase) => total + (phase.tasks?.filter((task) => task.hasImpediment).length ?? 0), 0);
+  // Situação do prazo: somente o que a API calculou (`deadlineSituation`), a mesma do selo do Planejamento.
+  const deadline = deadlineIndicator(monitoring);
   const nextDelivery = data ? nextDeliveryFrom(data.items) : null;
   const reference = project.glpiTicketId ? `GLPI ${project.glpiTicketId}` : null;
 
@@ -131,10 +138,16 @@ export function ProjectOverview({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <EapStatusBadge kind={projectStatusKind(status)} label={projectStatusLabel(status)} />
+          {status ? (
+            <EapStatusBadge kind={projectStatusKind(status)} label={projectStatusLabel(status)} />
+          ) : monitoring.status === "loading" ? (
+            <Skeleton className="h-6 w-24 rounded-full motion-reduce:animate-none" role="status" aria-label="Carregando a situação do projeto" />
+          ) : (
+            <Badge variant="outline">Situação indisponível</Badge>
+          )}
           <ProjectClosure projectId={project.id} closed={closed} canClose={canCloseProject(access)} />
-          <Button type="button" variant="outline" className="gap-2" onClick={onOpenEap}>
-            <LayoutGrid className="size-4" aria-hidden="true" />
+          <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onOpenEap}>
+            <Network aria-hidden="true" />
             Acessar EAP
           </Button>
         </div>
@@ -157,14 +170,12 @@ export function ProjectOverview({
           {project.schedule.plannedEndAt ? (
             <>
               <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{shortDate(project.schedule.plannedEndAt)}</p>
-              <p className="text-xs text-muted-foreground">
-                {data ? (data.project.overdue ? "Prazo vencido" : "Dentro do planejamento") : "Situação do prazo indisponível"}
-              </p>
+              <DeadlineStatus indicator={deadline} />
             </>
           ) : (
             <>
               <p className="text-[15px] font-bold text-[#344054] dark:text-foreground text-muted-foreground">Prazo não definido</p>
-              <p className="text-xs text-muted-foreground">Sem prazo oficial cadastrado</p>
+              <DeadlineStatus indicator={deadline} />
             </>
           )}
         </Indicator>
@@ -199,6 +210,13 @@ export function ProjectOverview({
         monitoring={monitoring}
         impediments={impediments}
         onOpenEap={onOpenEap}
+        planning={{
+          schedule: project.schedule,
+          members: project.members,
+          access,
+          closed,
+          onScheduleSaved: () => setRefresh((value) => value + 1),
+        }}
         cards={{
           marcos: (
             <MilestonesCard
@@ -216,6 +234,24 @@ export function ProjectOverview({
         }}
       />
     </div>
+  );
+}
+
+/** Linha de situação do prazo do indicador "Prazo vigente": carregando, indisponível ou o selo calculado pela API. */
+function DeadlineStatus({ indicator }: { indicator: DeadlineIndicator }) {
+  if (indicator.kind === "hidden") {
+    return null;
+  }
+  if (indicator.kind === "loading") {
+    return <Skeleton role="status" aria-label="Carregando a situação do prazo" className="mt-0.5 h-4 w-28 rounded-full motion-reduce:animate-none" />;
+  }
+  if (indicator.kind === "unavailable") {
+    return <span className={cn("w-fit rounded-full px-2 py-0.5 text-[10px] font-medium", DEADLINE_TONE_CLASS.neutral)}>Situação do prazo indisponível</span>;
+  }
+  return (
+    <span title={indicator.badge.hint} className={cn("w-fit rounded-full px-2 py-0.5 text-[10px] font-medium", DEADLINE_TONE_CLASS[indicator.badge.tone])}>
+      {indicator.badge.label}
+    </span>
   );
 }
 
