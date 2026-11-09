@@ -1,5 +1,6 @@
 export * from './administração-de-usuários/administração-de-usuários.ts';
 export * from './calendário-institucional/calendário-institucional.ts';
+export * from './conformidade-de-entrega/conformidade-de-entrega.ts';
 export * from './cronograma/cronograma.ts';
 export * from './eap/eap.ts';
 export * from './hello-world/hello-world.ts';

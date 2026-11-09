@@ -12,4 +12,10 @@ export type DeliverEapMilestoneBody = {
      * @nullable
      */
   note?: string | null;
+  /**
+     * Versão de entrega avaliada na rodada. Sem ela, a homologação em projeto com fornecedor usa a versão mais recente.
+     * @minLength 1
+     * @nullable
+     */
+  deliveryVersionId?: string | null;
 };

@@ -44,4 +44,9 @@ export type ListEapMilestoneDeliveries200DataItem = {
   resubmissionAuthorizedAt: string | null;
   /** @nullable */
   resubmissionNote: string | null;
+  /**
+     * Versão de entrega avaliada nesta rodada.
+     * @nullable
+     */
+  deliveryVersionId: string | null;
 };
