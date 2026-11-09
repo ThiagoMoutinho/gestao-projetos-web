@@ -13,18 +13,18 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
   resultados: 480,
   situacao: 360,
   evolucoes: 340,
-  marcos: 530,
+  marcos: 430,
   resumo: 580,
   historico: 400,
   // Planejamento cresce com as seções que o usuário abre; Evidências guarda o próprio limite.
   planejamento: 100000,
-  evidencias: 480,
+  evidencias: 430,
   equipe: 480,
 };
 
 /**
  * Layout padrão (referência visual), por linhas: Resumo executivo | Linha do tempo, Marcos | Evidências, Planejamento (largura
- * total), Sobre | Equipe e, ao final, Resultados | Situação, Evoluções. Médio ocupa 6 das 12 colunas e Grande ocupa as 12.
+ * total) e Sobre | Equipe. Médio ocupa 6 das 12 colunas e Grande ocupa as 12.
  */
 export const DEFAULT_WIDGETS: WidgetState[] = [
   { id: "resumo", wide: false },
@@ -34,23 +34,27 @@ export const DEFAULT_WIDGETS: WidgetState[] = [
   { id: "planejamento", wide: true },
   { id: "sobre", wide: false },
   { id: "equipe", wide: false },
-  { id: "resultados", wide: false },
-  { id: "situacao", wide: false },
-  { id: "evolucoes", wide: false },
 ];
 
 /**
- * Aceita o layout salvo mesmo que widgets tenham sido criados ou removidos depois: ignora desconhecidos e completa
- * os que faltam. Só `id` e `wide` são usados (layouts salvos com outras propriedades continuam válidos).
+ * Widgets que existem, mas não fazem parte do quadro padrão da referência. Ficam disponíveis na área "Informações
+ * complementares" e podem ser adicionados ao quadro por cada usuário. Layouts já salvos que os incluem continuam iguais.
+ */
+export const SECONDARY_WIDGETS: WidgetId[] = ["resultados", "situacao", "evolucoes"];
+
+const KNOWN_WIDGETS = new Set<string>([...DEFAULT_WIDGETS.map((item) => item.id), ...SECONDARY_WIDGETS]);
+
+/**
+ * Aceita o layout salvo mesmo que widgets tenham sido criados ou removidos depois: ignora desconhecidos e repetidos e completa
+ * com os do padrão que faltam. Só `id` e `wide` são usados (layouts salvos com outras propriedades continuam válidos).
  */
 export function normalizeWidgets(saved: { id: string; wide: boolean }[] | null | undefined): WidgetState[] {
   if (!saved) {
     return DEFAULT_WIDGETS;
   }
-  const known = new Set<string>(DEFAULT_WIDGETS.map((item) => item.id));
   const seen = new Set<string>();
   const kept = saved
-    .filter((item) => known.has(item.id) && !seen.has(item.id) && seen.add(item.id))
+    .filter((item) => KNOWN_WIDGETS.has(item.id) && !seen.has(item.id) && seen.add(item.id))
     .map((item) => ({ id: item.id, wide: item.wide })) as WidgetState[];
   return [...kept, ...DEFAULT_WIDGETS.filter((item) => !seen.has(item.id))];
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Check, GripVertical, LayoutDashboard, RotateCcw, Rows2, Columns2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, Columns2, GripVertical, LayoutDashboard, Plus, RotateCcw, Rows2 } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { getMyOverviewLayout, resetMyOverviewLayout, saveMyOverviewLayout } from
 import { reportFailure } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 
-import { DEFAULT_WIDGETS, moveWidget, normalizeWidgets, placeWidgets, WIDGET_MAX_HEIGHT, type WidgetId, type WidgetState } from "./overview-layout";
+import { DEFAULT_WIDGETS, moveWidget, normalizeWidgets, placeWidgets, SECONDARY_WIDGETS, WIDGET_MAX_HEIGHT, type WidgetId, type WidgetState } from "./overview-layout";
 
 const TITLES: Record<WidgetId, string> = {
   sobre: "Sobre o Sistema",
@@ -122,6 +122,7 @@ type Props = {
 export function OverviewWidgets({ nodes }: Props) {
   const { widgets, update, reset, saving, savedAt } = useOverviewLayout();
   const [customizing, setCustomizing] = useState(false);
+  const [extrasOpen, setExtrasOpen] = useState(false);
   const [dragging, setDragging] = useState<WidgetId | null>(null);
   const [over, setOver] = useState<WidgetId | null>(null);
   const board = useRef<HTMLDivElement>(null);
@@ -238,6 +239,8 @@ export function OverviewWidgets({ nodes }: Props) {
   };
 
   const placed = placeWidgets(visible);
+  // Widgets que não estão no quadro (padrão da referência): continuam disponíveis aqui, sem perder recurso.
+  const extras = SECONDARY_WIDGETS.filter((id) => !widgets.some((item) => item.id === id) && nodes[id] !== null && nodes[id] !== undefined);
 
   return (
     <div className="flex flex-col gap-3">
@@ -259,6 +262,33 @@ export function OverviewWidgets({ nodes }: Props) {
       <div ref={board} className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
         {placed.map((entry) => renderWidget(entry, entry.index))}
       </div>
+      {extras.length > 0 ? (
+        <section aria-label="Informações complementares" className="flex flex-col gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-fit gap-1.5 px-2 text-primary"
+            aria-expanded={extrasOpen}
+            onClick={() => setExtrasOpen((value) => !value)}
+          >
+            <ChevronDown aria-hidden="true" className={cn("transition-transform duration-200 motion-reduce:transition-none", extrasOpen && "rotate-180")} />
+            {extrasOpen ? "Ocultar informações complementares" : `Informações complementares (${extras.map((id) => TITLES[id]).join(", ")})`}
+          </Button>
+          <Presence open={extrasOpen}>
+            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
+              {extras.map((id) => (
+                <div key={id} data-extra={id} style={{ "--widget-max": `${WIDGET_MAX_HEIGHT[id]}px` } as React.CSSProperties} className="flex min-w-0 flex-col gap-1.5 lg:col-span-6">
+                  <Button type="button" size="xs" variant="outline" className="w-fit gap-1.5 self-end" onClick={() => update([...widgets, { id, wide: false }])}>
+                    <Plus aria-hidden="true" /> Adicionar ao quadro
+                  </Button>
+                  {nodes[id]}
+                </div>
+              ))}
+            </div>
+          </Presence>
+        </section>
+      ) : null}
     </div>
   );
 }

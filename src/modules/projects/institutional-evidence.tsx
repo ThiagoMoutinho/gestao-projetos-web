@@ -311,9 +311,9 @@ export function EvidencesAndTickets({
                         <p className="text-xs font-semibold break-words">{title}</p>
                         <p className="text-xs text-muted-foreground">
                           {evidenceKindLabel(evidence.kind)} · Registrada em {stamp(evidence.createdAt)}
+                          {origin ? " · Vinculado a: " + origin : ""}
                         </p>
-                        {origin ? <p className="text-xs text-muted-foreground">Vinculado a: {origin}</p> : null}
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <a
                             href={evidence.url}
                             target="_blank"

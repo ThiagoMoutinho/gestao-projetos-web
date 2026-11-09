@@ -151,7 +151,7 @@ function EntryRow({
   };
   const TypeIcon = (entry.type ? TYPE_ICON[entry.type] : null) ?? Flag;
   return (
-    <li className="py-3 first:pt-0 last:pb-0">
+    <li className="py-2.5 first:pt-0 last:pb-0">
       <div className="flex items-start gap-3">
         <span
           className={cn(
@@ -167,6 +167,7 @@ function EntryRow({
             <div className="min-w-0">
               <p className="text-xs font-semibold break-words">{entry.title}</p>
               <p
+                title={[entry.dateLabel, ...entry.meta].join(" · ")}
                 className={cn(
                   "text-xs",
                   entry.overdue
@@ -175,6 +176,7 @@ function EntryRow({
                 )}
               >
                 {entry.dateLabel}
+                {entry.meta.length > 0 ? <span className="font-normal text-muted-foreground"> · {entry.meta.join(" · ")}</span> : null}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
@@ -201,11 +203,6 @@ function EntryRow({
               </Button>
             </div>
           </div>
-          {entry.meta.length > 0 ? (
-            <p className="text-xs text-muted-foreground">
-              {entry.meta.join(" · ")}
-            </p>
-          ) : null}
           {entry.reason ? (
             <ExpandableText
               text={entry.reason}
@@ -445,7 +442,7 @@ export function MilestonesCard({
                 value={value}
                 className="flex-none gap-1.5 px-2 text-xs"
               >
-                {label}
+                {label} ({lists[value].length})
               </TabsTrigger>
             ))}
           </TabsList>

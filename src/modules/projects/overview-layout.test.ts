@@ -1,16 +1,23 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { DEFAULT_WIDGETS, moveWidget, normalizeWidgets, placeWidgets, rowsOf } from "./overview-layout.ts";
+import { DEFAULT_WIDGETS, moveWidget, normalizeWidgets, placeWidgets, rowsOf, SECONDARY_WIDGETS } from "./overview-layout.ts";
 
 const ids = (list: { id: string }[]) => list.map((item) => item.id);
 
 describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
   it("o padrão segue a referência: Resumo | Linha do tempo, Marcos | Evidências, Planejamento (total), Sobre | Equipe e os demais ao final", () => {
-    assert.deepEqual(ids(DEFAULT_WIDGETS), ["resumo", "historico", "marcos", "evidencias", "planejamento", "sobre", "equipe", "resultados", "situacao", "evolucoes"]);
+    assert.deepEqual(ids(DEFAULT_WIDGETS), ["resumo", "historico", "marcos", "evidencias", "planejamento", "sobre", "equipe"]);
     const placed = placeWidgets(DEFAULT_WIDGETS);
-    assert.deepEqual(placed.map((item) => item.span), [6, 6, 6, 6, 12, 6, 6, 6, 6, 6]);
+    assert.deepEqual(placed.map((item) => item.span), [6, 6, 6, 6, 12, 6, 6]);
       });
+
+  it("Resultados, Situação e Evoluções ficam fora do padrão, mas continuam em layouts salvos que os incluem", () => {
+    assert.deepEqual(SECONDARY_WIDGETS, ["resultados", "situacao", "evolucoes"]);
+    assert.equal(DEFAULT_WIDGETS.some((item) => SECONDARY_WIDGETS.includes(item.id)), false);
+    const saved = normalizeWidgets([{ id: "resultados", wide: true }, { id: "sobre", wide: false }]);
+    assert.deepEqual(saved.slice(0, 2), [{ id: "resultados", wide: true }, { id: "sobre", wide: false }]);
+  });
 
   it("sem layout salvo usa o padrão; layouts antigos continuam válidos (altura salva é ignorada)", () => {
     assert.deepEqual(normalizeWidgets(null), DEFAULT_WIDGETS);
@@ -63,7 +70,7 @@ describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
 
   it("calcula a linha de cada widget no grid de 12 colunas", () => {
     const rows = rowsOf(placeWidgets(DEFAULT_WIDGETS));
-    assert.deepEqual([...rows.entries()], [["resumo", 0], ["historico", 0], ["marcos", 1], ["evidencias", 1], ["planejamento", 2], ["sobre", 3], ["equipe", 3], ["resultados", 4], ["situacao", 4], ["evolucoes", 5]]);
+    assert.deepEqual([...rows.entries()], [["resumo", 0], ["historico", 0], ["marcos", 1], ["evidencias", 1], ["planejamento", 2], ["sobre", 3], ["equipe", 3]]);
     const shifted = rowsOf(placeWidgets([{ id: "situacao", wide: false }, { id: "sobre", wide: false }, { id: "resultados", wide: false }]));
     assert.notEqual(shifted.get("sobre"), shifted.get("resultados"));
   });

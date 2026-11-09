@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CalendarDays, Flag, History, ListChecks, Network } from "lucide-react";
+import { AlertCircle, CalendarDays, Flag, ListChecks, Network } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -10,15 +10,14 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getScheduleMonitoring } from "@/lib/api/generated/cronograma/cronograma";
-import { listEapAudit } from "@/lib/api/generated/eap/eap";
 import type { GetScheduleMonitoring200 } from "@/lib/api/generated/model/getScheduleMonitoring200";
 import { cn } from "@/lib/utils";
 
 import { canCloseProject, type EapAccess } from "./eap-access";
 import { formatCivilDate } from "./eap-date-field";
-import { presentHistory, type HistoryEntry } from "./eap-history-entries";
 import { ExecutiveSummaryCard } from "./executive-summary";
-import { ExecutiveHistoryCard, MilestonesCard } from "./overview-cards";
+import { MilestonesCard } from "./overview-cards";
+import { ProjectTimelineCard } from "./project-timeline-card";
 import { OVERVIEW_CARD } from "./overview-panel";
 import { projectProgress } from "./eap-progress";
 import { civilDateInput, type ProjectDetail } from "./eap-present";
@@ -31,11 +30,9 @@ import { baselineDeviation, consolidateSchedule } from "./planning-panel";
 import { ProjectOverviewSections } from "./project-institutional";
 
 
-import { recordedDate, recordedStatusLabel } from "./project-records";
 import { projectStatusKind, projectStatusLabel } from "./project-status";
 
 type Monitoring = { status: "loading" } | { status: "ready"; data: GetScheduleMonitoring200 } | { status: "error" };
-type History = { status: "loading" } | { status: "ready"; entries: HistoryEntry[] } | { status: "error" };
 
 function shortDate(value: string | null) {
   const input = civilDateInput(value);
@@ -66,7 +63,6 @@ export function ProjectOverview({
   onOpenEap: () => void;
 }) {
   const [monitoring, setMonitoring] = useState<Monitoring>({ status: "loading" });
-  const [history, setHistory] = useState<History>({ status: "loading" });
   const router = useRouter();
   /** Muda depois de uma decisão de homologação para recarregar prazos, entregas e histórico. */
   const [refresh, setRefresh] = useState(0);
@@ -80,25 +76,6 @@ export function ProjectOverview({
         }
       })
       .catch(() => active && setMonitoring({ status: "error" }));
-    listEapAudit(project.id, { entityType: "PROJECT", entityId: project.id, limit: 50 })
-      .then((response) => {
-        if (!active) {
-          return;
-        }
-        if (response.status !== 200) {
-          setHistory({ status: "error" });
-          return;
-        }
-        setHistory({
-          status: "ready",
-          entries: presentHistory(response.data.data, {
-            statusLabel: recordedStatusLabel,
-            date: recordedDate,
-            civilDate: (value) => formatCivilDate(civilDateInput(value)),
-          }),
-        });
-      })
-      .catch(() => active && setHistory({ status: "error" }));
     return () => {
       active = false;
     };
@@ -263,7 +240,7 @@ export function ProjectOverview({
               }}
             />
           ),
-          historico: <ExecutiveHistoryCard history={history} />,
+          historico: <ProjectTimelineCard project={project} refreshKey={refresh} />,
           resumo: <ExecutiveSummaryCard projectId={project.id} ownerName={project.ownerName} suppliers={suppliers} updatedAt={project.updatedAt} refreshKey={project.updatedAt} />,
         }}
       />
