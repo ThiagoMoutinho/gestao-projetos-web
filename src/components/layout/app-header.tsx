@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { NotificationBell } from "@/modules/notifications/notification-bell";
 
 export type AppUser = {
   name: string;
@@ -46,6 +47,7 @@ export function AppHeader() {
         </BreadcrumbList>
       </Breadcrumb>
       <div className="ml-auto flex min-w-0 items-center gap-2">
+        <NotificationBell />
         <div className="relative hidden min-w-0 sm:block sm:w-56 lg:w-72">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input

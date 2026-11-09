@@ -40,6 +40,11 @@ export function appPageLabel(pathname: string) {
     return "Projetos";
   }
 
+  // A Central de Notificações não tem item no menu lateral: o acesso é pelo sino do cabeçalho.
+  if (pathname === "/notificacoes" || pathname.startsWith("/notificacoes/")) {
+    return "Notificações";
+  }
+
   return "Início";
 }
 
