@@ -2,6 +2,7 @@
 
 import type { Flag } from "lucide-react";
 import { createContext, useContext, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { Card } from "@/components/ui/card";
 
@@ -28,24 +29,25 @@ export const OVERVIEW_CARD =
 const WIDGET_MAX_HEIGHT = "max-h-(--widget-max)";
 
 /** Dentro de um cartão com abas (por exemplo, "Sobre o projeto"), os SectionCard internos aparecem sem moldura nem cabeçalho. */
-export const EmbeddedCards = createContext(false);
+/** `slot` é o lugar, no cabeçalho do cartão externo, onde a ação (por exemplo, o lápis de editar) de cada seção interna aparece. */
+export const EmbeddedCards = createContext<{ slot: HTMLElement | null } | null>(null);
 
 type SectionCardProps = Parameters<typeof SectionCardFrame>[0];
 
 /** Card de seção da Visão Geral (modelo do Figma): ícone em bloco colorido, título, subtítulo e ação à direita. */
 export function SectionCard(props: SectionCardProps) {
   const embedded = useContext(EmbeddedCards);
-  return embedded ? <EmbeddedSection {...props} /> : <SectionCardFrame {...props} />;
+  return embedded ? <EmbeddedSection {...props} slot={embedded.slot} /> : <SectionCardFrame {...props} />;
 }
 
 /** Mesmo conteúdo do cartão (ação, corpo, expansão e rodapé), sem Card nem cabeçalho. */
-function EmbeddedSection({ action, children, footer, expansion, moreLabel = "Ver mais", expandable = false, expanded: controlled, onExpandedChange }: SectionCardProps) {
+function EmbeddedSection({ action, children, footer, expansion, moreLabel = "Ver mais", expandable = false, expanded: controlled, onExpandedChange, slot }: SectionCardProps & { slot: HTMLElement | null }) {
   const [own, setOwn] = useState(false);
   const expanded = controlled ?? own;
   const hasExpansion = expansion !== undefined && expansion !== null;
   return (
     <div className="flex flex-col gap-3">
-      {action ? <div className="flex justify-end">{action}</div> : null}
+      {action ? (slot ? createPortal(action, slot) : <div className="flex justify-end">{action}</div>) : null}
       <div className="flex flex-col gap-3">{hasExpansion && expanded ? expansion : children}</div>
       {hasExpansion || expandable ? (
         <SeeMore
@@ -228,10 +230,11 @@ export function Panel({
   bare?: boolean;
   children: React.ReactNode;
 }) {
+  const embedded = useContext(EmbeddedCards);
   if (bare) {
     return (
       <div className="flex flex-col gap-3">
-        {action ? <div className="flex justify-end">{action}</div> : null}
+        {action ? (embedded?.slot ? createPortal(action, embedded.slot) : <div className="flex justify-end">{action}</div>) : null}
         {children}
       </div>
     );

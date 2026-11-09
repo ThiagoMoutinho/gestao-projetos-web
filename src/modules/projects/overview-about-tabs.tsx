@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -24,6 +24,9 @@ export const COMPLETE_CONTEXT_EVENT = "overview:complete-context";
  */
 export function AboutTabsCard({ projectId, data, results, onChanged }: { projectId: string; data: Overview; results: ResultsProps; onChanged: () => void }) {
   const [tab, setTab] = useState<Tab>("sistema");
+  // Ação de cada aba (lápis de editar) aparece no cabeçalho do cartão, ao lado do título, como na referência.
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const embedded = useMemo(() => ({ slot }), [slot]);
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,8 +41,8 @@ export function AboutTabsCard({ projectId, data, results, onChanged }: { project
 
   return (
     <div ref={root} id="sobre-projeto" className="flex min-w-0 flex-1 scroll-mt-6 flex-col">
-      <SectionCard title="Sobre o projeto" subtitle="Sistema, problema, finalidade e resultados" icon={Info} tone="blue" unbounded showToggle={false}>
-        <EmbeddedCards.Provider value>
+      <SectionCard title="Sobre o projeto" subtitle="Sistema, problema, finalidade e resultados" icon={Info} tone="blue" unbounded showToggle={false} action={<div ref={setSlot} className="flex items-center gap-2" />}>
+        <EmbeddedCards.Provider value={embedded}>
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
             <TabsList variant="line" className="w-full justify-start">
               {(
