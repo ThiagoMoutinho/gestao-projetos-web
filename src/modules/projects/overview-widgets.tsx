@@ -296,13 +296,17 @@ export function OverviewWidgets({ nodes }: Props) {
             {extrasOpen ? "Ocultar cartões fora do quadro" : `Cartões fora do quadro (${extras.map((id) => TITLES[id]).join(", ")})`}
           </Button>
           <Presence open={extrasOpen}>
-            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
+            <div className="grid grid-cols-1 items-stretch gap-4 pt-1 lg:grid-cols-12">
               {extras.map((id) => (
-                <div key={id} data-extra={id} style={{ "--widget-max": `${WIDGET_MAX_HEIGHT[id]}px` } as React.CSSProperties} className="flex min-w-0 flex-col gap-1.5 lg:col-span-6">
-                  <Button type="button" size="xs" variant="outline" className="w-fit gap-1.5 self-end" onClick={() => update([...widgets, { id, wide: false }])}>
-                    <Plus aria-hidden="true" /> Adicionar ao quadro
-                  </Button>
-                  {nodes[id]}
+                <div key={id} data-extra={id} style={{ "--widget-max": `${WIDGET_MAX_HEIGHT[id]}px` } as React.CSSProperties} className="flex min-w-0 flex-col gap-2 lg:col-span-6">
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-1.5">
+                    <span className="min-w-0 truncate text-xs font-semibold text-primary">{TITLES[id]}</span>
+                    <Button type="button" size="xs" variant="outline" className="shrink-0 gap-1.5" aria-label={`Adicionar ${TITLES[id]} ao quadro`} onClick={() => update([...widgets, { id, wide: false }])}>
+                      <Plus aria-hidden="true" /> Adicionar ao quadro
+                    </Button>
+                  </div>
+                  {/* O cartão preenche o espaço que sobra depois da barra (sem min-h-full, que o fazia passar do contêiner). */}
+                  <div className="flex flex-1 flex-col [&>*]:min-h-0 [&>*]:flex-1">{nodes[id]}</div>
                 </div>
               ))}
             </div>
