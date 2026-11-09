@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { GetExecutiveSummary200Governance } from './getExecutiveSummary200Governance.ts';
 import type { GetExecutiveSummary200Homologation } from './getExecutiveSummary200Homologation.ts';
 import type { GetExecutiveSummary200MovementsItem } from './getExecutiveSummary200MovementsItem.ts';
 import type { GetExecutiveSummary200NarrativeItem } from './getExecutiveSummary200NarrativeItem.ts';
@@ -31,4 +32,5 @@ export type GetExecutiveSummary200 = {
   nextDeliveries: GetExecutiveSummary200NextDeliveriesItem[];
   movements: GetExecutiveSummary200MovementsItem[];
   narrative: GetExecutiveSummary200NarrativeItem[];
+  governance: GetExecutiveSummary200Governance;
 };

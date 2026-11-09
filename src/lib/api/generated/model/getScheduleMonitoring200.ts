@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { GetScheduleMonitoring200DeadlineSituation } from './getScheduleMonitoring200DeadlineSituation.ts';
 import type { GetScheduleMonitoring200Homologation } from './getScheduleMonitoring200Homologation.ts';
 import type { GetScheduleMonitoring200ItemsItem } from './getScheduleMonitoring200ItemsItem.ts';
 import type { GetScheduleMonitoring200Overdue } from './getScheduleMonitoring200Overdue.ts';
@@ -15,6 +16,8 @@ import type { GetScheduleMonitoring200Situation } from './getScheduleMonitoring2
 export type GetScheduleMonitoring200 = {
   /** Situação calculada pela EAP; a situação gravada no cadastro é preservada. */
   situation: GetScheduleMonitoring200Situation;
+  /** Situação do prazo calculada sobre as datas vigentes; reprogramações não entram no cálculo. */
+  deadlineSituation: GetScheduleMonitoring200DeadlineSituation;
   project: GetScheduleMonitoring200Project;
   reschedules: GetScheduleMonitoring200Reschedules;
   overdue: GetScheduleMonitoring200Overdue;

@@ -17,4 +17,6 @@ export const SaveMyOverviewLayout200WidgetsItemId = {
   marcos: 'marcos',
   historico: 'historico',
   resumo: 'resumo',
+  planejamento: 'planejamento',
+  evidencias: 'evidencias',
 } as const;

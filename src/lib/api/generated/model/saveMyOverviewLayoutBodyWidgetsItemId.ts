@@ -17,4 +17,6 @@ export const SaveMyOverviewLayoutBodyWidgetsItemId = {
   marcos: 'marcos',
   historico: 'historico',
   resumo: 'resumo',
+  planejamento: 'planejamento',
+  evidencias: 'evidencias',
 } as const;

@@ -14,4 +14,5 @@ export type GetExecutiveSummary200MovementsItem = {
   kind: string;
   automatic: boolean;
   summary: string;
+  governance: boolean;
 };

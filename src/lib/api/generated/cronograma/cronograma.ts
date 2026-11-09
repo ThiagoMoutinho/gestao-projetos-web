@@ -12,13 +12,30 @@ import type {
   GetExecutiveSummary403,
   GetExecutiveSummary404,
   GetExecutiveSummary409,
+  GetExecutiveSummaryValidation200,
+  GetExecutiveSummaryValidation400,
+  GetExecutiveSummaryValidation401,
+  GetExecutiveSummaryValidation403,
+  GetExecutiveSummaryValidation404,
+  GetExecutiveSummaryValidation409,
   GetScheduleMonitoring200,
   GetScheduleMonitoring400,
   GetScheduleMonitoring401,
   GetScheduleMonitoring403,
   GetScheduleMonitoring404,
   GetScheduleMonitoring409,
+  ListExecutiveSummaryValidations200,
+  ListExecutiveSummaryValidations400,
+  ListExecutiveSummaryValidations401,
+  ListExecutiveSummaryValidations403,
+  ListExecutiveSummaryValidations404,
+  ListExecutiveSummaryValidations409,
+  ListExecutiveSummaryValidationsParams,
+  ListProjectReschedules200,
+  ListProjectReschedulesParams,
   ListScheduleChanges200,
+  ListScheduleHistory200,
+  ListScheduleHistoryParams,
   ListScheduleChanges400,
   ListScheduleChanges401,
   ListScheduleChanges403,
@@ -52,7 +69,14 @@ import type {
   RescheduleProject403,
   RescheduleProject404,
   RescheduleProject409,
-  RescheduleProjectBody
+  RescheduleProjectBody,
+  ValidateExecutiveSummary201,
+  ValidateExecutiveSummary400,
+  ValidateExecutiveSummary401,
+  ValidateExecutiveSummary403,
+  ValidateExecutiveSummary404,
+  ValidateExecutiveSummary409,
+  ValidateExecutiveSummaryBody
 } from '../model';
 
 import { apiFetcher } from '../../fetcher.ts';
@@ -450,6 +474,99 @@ export const listScheduleChanges = async (id: string,
 );}
 
 
+
+
+export type listProjectReschedulesResponse200 = {
+  data: ListProjectReschedules200
+  status: 200
+}
+
+export type listProjectReschedulesResponseError = (listScheduleChangesResponse400 | listScheduleChangesResponse401 | listScheduleChangesResponse403 | listScheduleChangesResponse404 | listScheduleChangesResponse409) & {
+  headers: Headers;
+};
+
+export type listProjectReschedulesResponseSuccess = (listProjectReschedulesResponse200) & {
+  headers: Headers;
+};
+
+export type listProjectReschedulesResponse = (listProjectReschedulesResponseSuccess | listProjectReschedulesResponseError)
+
+export const getListProjectReschedulesUrl = (id: string,
+    params?: ListProjectReschedulesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/projects/${id}/reschedules?${stringifiedParams}` : `/projects/${id}/reschedules`
+}
+
+/**
+ * @summary Reprogramações efetivadas do projeto, da mais recente para a mais antiga
+ */
+export const listProjectReschedules = async (id: string,
+    params?: ListProjectReschedulesParams, options?: Parameters<typeof apiFetcher>[1]): Promise<listProjectReschedulesResponse> => {
+
+  return apiFetcher<listProjectReschedulesResponse>(getListProjectReschedulesUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+export type listScheduleHistoryResponse200 = {
+  data: ListScheduleHistory200
+  status: 200
+}
+
+export type listScheduleHistoryResponseSuccess = (listScheduleHistoryResponse200) & {
+  headers: Headers;
+};
+export type listScheduleHistoryResponseError = (listScheduleChangesResponse400 | listScheduleChangesResponse401 | listScheduleChangesResponse403 | listScheduleChangesResponse404 | listScheduleChangesResponse409) & {
+  headers: Headers;
+};
+
+export type listScheduleHistoryResponse = (listScheduleHistoryResponseSuccess | listScheduleHistoryResponseError)
+
+export const getListScheduleHistoryUrl = (id: string,
+    params?: ListScheduleHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/projects/${id}/schedule-history?${stringifiedParams}` : `/projects/${id}/schedule-history`
+}
+
+/**
+ * @summary Histórico unificado do cronograma: reprogramações, solicitações e definições iniciais
+ */
+export const listScheduleHistory = async (id: string,
+    params?: ListScheduleHistoryParams, options?: Parameters<typeof apiFetcher>[1]): Promise<listScheduleHistoryResponse> => {
+
+  return apiFetcher<listScheduleHistoryResponse>(getListScheduleHistoryUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
 export type getScheduleMonitoringResponse200 = {
   data: GetScheduleMonitoring200
   status: 200
@@ -565,6 +682,218 @@ export const getGetExecutiveSummaryUrl = (id: string,) => {
 export const getExecutiveSummary = async (id: string, options?: Parameters<typeof apiFetcher>[1]): Promise<getExecutiveSummaryResponse> => {
 
   return apiFetcher<getExecutiveSummaryResponse>(getGetExecutiveSummaryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+export type validateExecutiveSummaryResponse201 = {
+  data: ValidateExecutiveSummary201
+  status: 201
+}
+
+export type validateExecutiveSummaryResponse400 = {
+  data: ValidateExecutiveSummary400
+  status: 400
+}
+
+export type validateExecutiveSummaryResponse401 = {
+  data: ValidateExecutiveSummary401
+  status: 401
+}
+
+export type validateExecutiveSummaryResponse403 = {
+  data: ValidateExecutiveSummary403
+  status: 403
+}
+
+export type validateExecutiveSummaryResponse404 = {
+  data: ValidateExecutiveSummary404
+  status: 404
+}
+
+export type validateExecutiveSummaryResponse409 = {
+  data: ValidateExecutiveSummary409
+  status: 409
+}
+
+export type validateExecutiveSummaryResponseSuccess = (validateExecutiveSummaryResponse201) & {
+  headers: Headers;
+};
+export type validateExecutiveSummaryResponseError = (validateExecutiveSummaryResponse400 | validateExecutiveSummaryResponse401 | validateExecutiveSummaryResponse403 | validateExecutiveSummaryResponse404 | validateExecutiveSummaryResponse409) & {
+  headers: Headers;
+};
+
+export type validateExecutiveSummaryResponse = (validateExecutiveSummaryResponseSuccess | validateExecutiveSummaryResponseError)
+
+export const getValidateExecutiveSummaryUrl = (id: string,) => {
+
+
+
+
+  return `/projects/${id}/executive-summary/validations`
+}
+
+/**
+ * @summary Valida o resumo executivo (somente PMO): grava o snapshot, o ciclo e a auditoria
+ */
+export const validateExecutiveSummary = async (id: string,
+    validateExecutiveSummaryBody: ValidateExecutiveSummaryBody, options?: Parameters<typeof apiFetcher>[1]): Promise<validateExecutiveSummaryResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<validateExecutiveSummaryResponse>(getValidateExecutiveSummaryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(validateExecutiveSummaryBody)
+  }
+);}
+
+
+export type listExecutiveSummaryValidationsResponse200 = {
+  data: ListExecutiveSummaryValidations200
+  status: 200
+}
+
+export type listExecutiveSummaryValidationsResponse400 = {
+  data: ListExecutiveSummaryValidations400
+  status: 400
+}
+
+export type listExecutiveSummaryValidationsResponse401 = {
+  data: ListExecutiveSummaryValidations401
+  status: 401
+}
+
+export type listExecutiveSummaryValidationsResponse403 = {
+  data: ListExecutiveSummaryValidations403
+  status: 403
+}
+
+export type listExecutiveSummaryValidationsResponse404 = {
+  data: ListExecutiveSummaryValidations404
+  status: 404
+}
+
+export type listExecutiveSummaryValidationsResponse409 = {
+  data: ListExecutiveSummaryValidations409
+  status: 409
+}
+
+export type listExecutiveSummaryValidationsResponseSuccess = (listExecutiveSummaryValidationsResponse200) & {
+  headers: Headers;
+};
+export type listExecutiveSummaryValidationsResponseError = (listExecutiveSummaryValidationsResponse400 | listExecutiveSummaryValidationsResponse401 | listExecutiveSummaryValidationsResponse403 | listExecutiveSummaryValidationsResponse404 | listExecutiveSummaryValidationsResponse409) & {
+  headers: Headers;
+};
+
+export type listExecutiveSummaryValidationsResponse = (listExecutiveSummaryValidationsResponseSuccess | listExecutiveSummaryValidationsResponseError)
+
+export const getListExecutiveSummaryValidationsUrl = (id: string,
+    params?: ListExecutiveSummaryValidationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/projects/${id}/executive-summary/validations?${stringifiedParams}` : `/projects/${id}/executive-summary/validations`
+}
+
+/**
+ * @summary Histórico de validações do resumo executivo
+ */
+export const listExecutiveSummaryValidations = async (id: string,
+    params?: ListExecutiveSummaryValidationsParams, options?: Parameters<typeof apiFetcher>[1]): Promise<listExecutiveSummaryValidationsResponse> => {
+
+  return apiFetcher<listExecutiveSummaryValidationsResponse>(getListExecutiveSummaryValidationsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+export type getExecutiveSummaryValidationResponse200 = {
+  data: GetExecutiveSummaryValidation200
+  status: 200
+}
+
+export type getExecutiveSummaryValidationResponse400 = {
+  data: GetExecutiveSummaryValidation400
+  status: 400
+}
+
+export type getExecutiveSummaryValidationResponse401 = {
+  data: GetExecutiveSummaryValidation401
+  status: 401
+}
+
+export type getExecutiveSummaryValidationResponse403 = {
+  data: GetExecutiveSummaryValidation403
+  status: 403
+}
+
+export type getExecutiveSummaryValidationResponse404 = {
+  data: GetExecutiveSummaryValidation404
+  status: 404
+}
+
+export type getExecutiveSummaryValidationResponse409 = {
+  data: GetExecutiveSummaryValidation409
+  status: 409
+}
+
+export type getExecutiveSummaryValidationResponseSuccess = (getExecutiveSummaryValidationResponse200) & {
+  headers: Headers;
+};
+export type getExecutiveSummaryValidationResponseError = (getExecutiveSummaryValidationResponse400 | getExecutiveSummaryValidationResponse401 | getExecutiveSummaryValidationResponse403 | getExecutiveSummaryValidationResponse404 | getExecutiveSummaryValidationResponse409) & {
+  headers: Headers;
+};
+
+export type getExecutiveSummaryValidationResponse = (getExecutiveSummaryValidationResponseSuccess | getExecutiveSummaryValidationResponseError)
+
+export const getGetExecutiveSummaryValidationUrl = (id: string,
+    validationId: string,) => {
+
+
+
+
+  return `/projects/${id}/executive-summary/validations/${validationId}`
+}
+
+/**
+ * @summary Snapshot de uma validação do resumo executivo (somente leitura)
+ */
+export const getExecutiveSummaryValidation = async (id: string,
+    validationId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<getExecutiveSummaryValidationResponse> => {
+
+  return apiFetcher<getExecutiveSummaryValidationResponse>(getGetExecutiveSummaryValidationUrl(id,validationId),
   {
     ...options,
     method: 'GET'
