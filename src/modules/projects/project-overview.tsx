@@ -26,6 +26,7 @@ import { DEADLINE_TONE_CLASS, deadlineIndicator, type DeadlineIndicator } from "
 import { EapStatusBadge } from "./eap-status-badge";
 import { nextDeliveryFrom } from "./project-portfolio";
 import { ProjectClosure } from "./project-closure";
+import { DeliveryComplianceCard } from "./delivery-compliance-card";
 import { ProjectOverviewSections } from "./project-institutional";
 
 
@@ -233,6 +234,8 @@ export function ProjectOverview({
           resumo: <ExecutiveSummaryCard projectId={project.id} ownerName={project.ownerName} suppliers={suppliers} updatedAt={project.updatedAt} refreshKey={project.updatedAt} />,
         }}
       />
+
+      {suppliers && suppliers.length > 0 ? <DeliveryComplianceCard projectId={project.id} access={access} closed={closed} /> : null}
     </div>
   );
 }
