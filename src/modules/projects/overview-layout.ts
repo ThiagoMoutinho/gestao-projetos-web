@@ -23,17 +23,18 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
 };
 
 /**
- * Layout padrão (referência visual), por linhas: Resumo executivo | Linha do tempo, Marcos | Evidências, Planejamento (largura
- * total) e Sobre | Equipe. Médio ocupa 6 das 12 colunas e Grande ocupa as 12.
+ * Layout padrão, na ordem de leitura da gestão institucional, por linhas: Sobre o projeto | Equipe (identidade e responsáveis),
+ * Resumo executivo | Linha do tempo (acompanhamento), Marcos | Evidências (entregas) e Prazo e cronograma (planejamento, largura
+ * total). Médio ocupa 6 das 12 colunas e Grande ocupa as 12. Vale para projeto sem layout salvo e para "Restaurar padrão".
  */
 export const DEFAULT_WIDGETS: WidgetState[] = [
+  { id: "sobre", wide: false },
+  { id: "equipe", wide: false },
   { id: "resumo", wide: false },
   { id: "historico", wide: false },
   { id: "marcos", wide: false },
   { id: "evidencias", wide: false },
   { id: "planejamento", wide: true },
-  { id: "sobre", wide: false },
-  { id: "equipe", wide: false },
 ];
 
 /**
