@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Check, ChevronDown, Columns2, GripVertical, LayoutDashboard, Plus, RotateCcw, Rows2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, Columns2, GripVertical, LayoutDashboard, Plus, RotateCcw, Rows2, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { getMyOverviewLayout, resetMyOverviewLayout, saveMyOverviewLayout } from
 import { reportFailure } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 
-import { DEFAULT_WIDGETS, moveWidget, normalizeWidgets, placeWidgets, SECONDARY_WIDGETS, WIDGET_MAX_HEIGHT, type WidgetId, type WidgetState } from "./overview-layout";
+import { BOARD_WIDGETS, DEFAULT_WIDGETS, moveWidget, normalizeWidgets, placeWidgets, WIDGET_MAX_HEIGHT, type WidgetId, type WidgetState } from "./overview-layout";
 
 const TITLES: Record<WidgetId, string> = {
   sobre: "Sobre o Sistema",
@@ -155,6 +155,14 @@ export function OverviewWidgets({ nodes }: Props) {
       update(moveWidget(widgets, indexOf(id), indexOf(target.id)));
     }
   };
+  // Remover tira o widget do quadro (nada é apagado): ele passa para "Informações complementares", de onde pode voltar. O quadro nunca fica vazio.
+  const remove = (id: WidgetId) => {
+    if (widgets.length <= 1) {
+      return;
+    }
+    update(widgets.filter((item) => item.id !== id));
+    setExtrasOpen(true);
+  };
   const toggleWide = (id: WidgetId) => update(widgets.map((item) => (item.id === id ? { ...item, wide: !item.wide } : item)));
   const drop = (target: WidgetId) => {
     if (dragging && dragging !== target) {
@@ -231,6 +239,18 @@ export function OverviewWidgets({ nodes }: Props) {
             >
               {item.wide ? <Columns2 /> : <Rows2 />}
             </Button>
+            <Button
+              type="button"
+              size="icon-xs"
+              variant="ghost"
+              aria-label={`Remover ${TITLES[item.id]} do quadro`}
+              title={widgets.length <= 1 ? "O quadro precisa ter ao menos um cartão" : "Remover do quadro"}
+              disabled={widgets.length <= 1}
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => remove(item.id)}
+            >
+              <X />
+            </Button>
           </div>
         </Presence>
         {nodes[item.id]}
@@ -240,7 +260,7 @@ export function OverviewWidgets({ nodes }: Props) {
 
   const placed = placeWidgets(visible);
   // Widgets que não estão no quadro (padrão da referência): continuam disponíveis aqui, sem perder recurso.
-  const extras = SECONDARY_WIDGETS.filter((id) => !widgets.some((item) => item.id === id) && nodes[id] !== null && nodes[id] !== undefined);
+  const extras = BOARD_WIDGETS.filter((id) => !widgets.some((item) => item.id === id) && nodes[id] !== null && nodes[id] !== undefined);
 
   return (
     <div className="flex flex-col gap-3">
@@ -263,7 +283,7 @@ export function OverviewWidgets({ nodes }: Props) {
         {placed.map((entry) => renderWidget(entry, entry.index))}
       </div>
       {extras.length > 0 ? (
-        <section aria-label="Informações complementares" className="flex flex-col gap-3">
+        <section aria-label="Cartões fora do quadro" className="flex flex-col gap-3">
           <Button
             type="button"
             variant="ghost"
@@ -273,7 +293,7 @@ export function OverviewWidgets({ nodes }: Props) {
             onClick={() => setExtrasOpen((value) => !value)}
           >
             <ChevronDown aria-hidden="true" className={cn("transition-transform duration-200 motion-reduce:transition-none", extrasOpen && "rotate-180")} />
-            {extrasOpen ? "Ocultar informações complementares" : `Informações complementares (${extras.map((id) => TITLES[id]).join(", ")})`}
+            {extrasOpen ? "Ocultar cartões fora do quadro" : `Cartões fora do quadro (${extras.map((id) => TITLES[id]).join(", ")})`}
           </Button>
           <Presence open={extrasOpen}>
             <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">

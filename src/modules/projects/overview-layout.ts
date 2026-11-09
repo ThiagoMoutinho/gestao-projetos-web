@@ -42,12 +42,16 @@ export const DEFAULT_WIDGETS: WidgetState[] = [
  */
 export const SECONDARY_WIDGETS: WidgetId[] = ["situacao", "evolucoes"];
 
+/** Todos os widgets que podem estar no quadro (os que a pessoa remove ou ainda não adicionou ficam em "Informações complementares"). */
+export const BOARD_WIDGETS: WidgetId[] = [...DEFAULT_WIDGETS.map((item) => item.id), ...SECONDARY_WIDGETS];
+
 /** "resultados" virou a aba Resultados de "Sobre o projeto"; o id segue aceito para não invalidar layouts já salvos. */
 const KNOWN_WIDGETS = new Set<string>([...DEFAULT_WIDGETS.map((item) => item.id), ...SECONDARY_WIDGETS, "resultados"]);
 
 /**
- * Aceita o layout salvo mesmo que widgets tenham sido criados ou removidos depois: ignora desconhecidos e repetidos e completa
- * com os do padrão que faltam. Só `id` e `wide` são usados (layouts salvos com outras propriedades continuam válidos).
+ * Aceita o layout salvo mesmo que widgets tenham sido criados ou removidos depois: ignora desconhecidos e repetidos. Um
+ * widget que a pessoa tirou do quadro continua fora (ele fica em "Informações complementares" para ser adicionado de novo).
+ * Sem layout salvo, ou com um layout sem nenhum widget conhecido, usa o padrão. Só `id` e `wide` são usados.
  */
 export function normalizeWidgets(saved: { id: string; wide: boolean }[] | null | undefined): WidgetState[] {
   if (!saved) {
@@ -57,7 +61,7 @@ export function normalizeWidgets(saved: { id: string; wide: boolean }[] | null |
   const kept = saved
     .filter((item) => KNOWN_WIDGETS.has(item.id) && !seen.has(item.id) && seen.add(item.id))
     .map((item) => ({ id: item.id, wide: item.wide })) as WidgetState[];
-  return [...kept, ...DEFAULT_WIDGETS.filter((item) => !seen.has(item.id))];
+  return kept.length > 0 ? kept : DEFAULT_WIDGETS;
 }
 
 /** Move um item para a posição `to` (índice na lista já sem ele). */
