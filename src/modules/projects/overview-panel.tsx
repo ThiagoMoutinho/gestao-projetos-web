@@ -1,7 +1,7 @@
 "use client";
 
 import type { Flag } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState } from "react";
 
 import { Card } from "@/components/ui/card";
 
@@ -27,8 +27,44 @@ export const OVERVIEW_CARD =
  */
 const WIDGET_MAX_HEIGHT = "max-h-(--widget-max)";
 
+/** Dentro de um cartão com abas (por exemplo, "Sobre o projeto"), os SectionCard internos aparecem sem moldura nem cabeçalho. */
+export const EmbeddedCards = createContext(false);
+
+type SectionCardProps = Parameters<typeof SectionCardFrame>[0];
+
 /** Card de seção da Visão Geral (modelo do Figma): ícone em bloco colorido, título, subtítulo e ação à direita. */
-export function SectionCard({
+export function SectionCard(props: SectionCardProps) {
+  const embedded = useContext(EmbeddedCards);
+  return embedded ? <EmbeddedSection {...props} /> : <SectionCardFrame {...props} />;
+}
+
+/** Mesmo conteúdo do cartão (ação, corpo, expansão e rodapé), sem Card nem cabeçalho. */
+function EmbeddedSection({ action, children, footer, expansion, moreLabel = "Ver mais", expandable = false, expanded: controlled, onExpandedChange }: SectionCardProps) {
+  const [own, setOwn] = useState(false);
+  const expanded = controlled ?? own;
+  const hasExpansion = expansion !== undefined && expansion !== null;
+  return (
+    <div className="flex flex-col gap-3">
+      {action ? <div className="flex justify-end">{action}</div> : null}
+      <div className="flex flex-col gap-3">{hasExpansion && expanded ? expansion : children}</div>
+      {hasExpansion || expandable ? (
+        <SeeMore
+          onClick={() => {
+            setOwn(!expanded);
+            onExpandedChange?.(!expanded);
+          }}
+          expanded={expanded}
+          className="mt-0"
+        >
+          {expanded ? "Ver menos" : moreLabel}
+        </SeeMore>
+      ) : null}
+      {footer}
+    </div>
+  );
+}
+
+function SectionCardFrame({
   title,
   subtitle,
   icon: Icon,

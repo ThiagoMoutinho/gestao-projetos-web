@@ -4,22 +4,22 @@ import { useEffect, useState } from "react";
 
 import type { ComboOption } from "@/components/option-combobox";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { GetScheduleMonitoring200 } from "@/lib/api/generated/model/getScheduleMonitoring200";
 import { getProjectOverview } from "@/lib/api/generated/visão-institucional/visão-institucional";
 
 import type { EapAccess } from "./eap-access";
 import type { ProjectDetail, ScheduleView } from "./eap-present";
-import { AboutProject, ContextPlanning, fieldOf } from "./institutional-about";
+import { fieldOf } from "./institutional-about";
 import { EvidencesAndTickets, type EvidenceOrigins } from "./institutional-evidence";
 import { buildEvolutions, EvolutionsCard } from "./institutional-evolutions";
-import { ResultsCard } from "./institutional-results";
 import type { Overview } from "./institutional-shared";
 import { OverviewWidgets } from "./overview-widgets";
 import { CardSkeleton } from "./overview-skeleton";
 import { Panel } from "./overview-panel";
 import { Users } from "lucide-react";
-import { Participants, PendingNotice, PlanningPanel } from "./planning-overview";
+import { AboutTabsCard } from "./overview-about-tabs";
+import { Participants, PendingNotice } from "./planning-overview";
+import { ScheduleSummaryCard } from "./schedule-summary-card";
 import { consolidateSchedule, requiredFields, timelineMilestones } from "./planning-panel";
 import { SituationCard } from "./project-situation";
 
@@ -116,7 +116,22 @@ export function ProjectOverviewSections({
             state.status === "loading" ? (
               <CardSkeleton label="Carregando sobre o projeto" lines={5} />
             ) : data ? (
-              <AboutProject projectId={projectId} data={data} onChanged={reload} />
+              <AboutTabsCard
+                projectId={projectId}
+                data={data}
+                onChanged={reload}
+                results={{
+                  projectId,
+                  summary: data.profile.resultsSummary,
+                  canEditSummary: data.permissions.canEdit,
+                  results: data.results,
+                  permissions: data.permissions,
+                  evidences: data.evidences,
+                  userId,
+                  milestones,
+                  onChanged: reload,
+                }}
+              />
             ) : (
             <Panel title="Informações institucionais" subtitle="Sobre o projeto e resultados para o IGEPPS">
               <div role="alert" className="flex flex-wrap items-center justify-between gap-2">
@@ -135,22 +150,8 @@ export function ProjectOverviewSections({
               </div>
             </Panel>
             ),
-          resultados:
-            state.status === "loading" ? (
-              <CardSkeleton label="Carregando resultados" lines={5} />
-            ) : data ? (
-              <ResultsCard
-              projectId={projectId}
-              summary={data.profile.resultsSummary}
-              canEditSummary={data.permissions.canEdit}
-              results={data.results}
-              permissions={data.permissions}
-              evidences={data.evidences}
-              userId={userId}
-              milestones={milestones}
-              onChanged={reload}
-            />
-            ) : null,
+          // Resultados agora é a terceira aba de "Sobre o projeto"; o widget antigo só existe em layouts já salvos e fica oculto.
+          resultados: null,
           evolucoes: (
             <EvolutionsCard
               projectId={projectId}
@@ -166,30 +167,13 @@ export function ProjectOverviewSections({
           historico: cards.historico,
           resumo: cards.resumo,
           planejamento: (
-            <PlanningPanel
+            <ScheduleSummaryCard
               projectId={projectId}
               monitoring={monitoring}
               schedule={planning.schedule}
-              members={planning.members}
               access={planning.access}
               closed={planning.closed}
               onScheduleSaved={planning.onScheduleSaved}
-              context={{
-                texts: data
-                  ? {
-                      PROBLEM: fieldOf(data, "PROBLEM").published?.value ?? null,
-                      PURPOSE: fieldOf(data, "PURPOSE").published?.value ?? null,
-                      SCOPE: fieldOf(data, "SCOPE").published?.value ?? null,
-                    }
-                  : null,
-                node: data ? (
-                  <ContextPlanning projectId={projectId} data={data} onChanged={reload} bare />
-                ) : state.status === "loading" ? (
-                  <Skeleton className="h-24 rounded-xl" aria-busy="true" aria-label="Carregando contexto e planejamento" />
-                ) : (
-                  <p role="alert" className="text-xs text-muted-foreground">Não foi possível carregar o contexto do projeto.</p>
-                ),
-              }}
             />
           ),
           equipe: (

@@ -40,9 +40,10 @@ export const DEFAULT_WIDGETS: WidgetState[] = [
  * Widgets que existem, mas não fazem parte do quadro padrão da referência. Ficam disponíveis na área "Informações
  * complementares" e podem ser adicionados ao quadro por cada usuário. Layouts já salvos que os incluem continuam iguais.
  */
-export const SECONDARY_WIDGETS: WidgetId[] = ["resultados", "situacao", "evolucoes"];
+export const SECONDARY_WIDGETS: WidgetId[] = ["situacao", "evolucoes"];
 
-const KNOWN_WIDGETS = new Set<string>([...DEFAULT_WIDGETS.map((item) => item.id), ...SECONDARY_WIDGETS]);
+/** "resultados" virou a aba Resultados de "Sobre o projeto"; o id segue aceito para não invalidar layouts já salvos. */
+const KNOWN_WIDGETS = new Set<string>([...DEFAULT_WIDGETS.map((item) => item.id), ...SECONDARY_WIDGETS, "resultados"]);
 
 /**
  * Aceita o layout salvo mesmo que widgets tenham sido criados ou removidos depois: ignora desconhecidos e repetidos e completa

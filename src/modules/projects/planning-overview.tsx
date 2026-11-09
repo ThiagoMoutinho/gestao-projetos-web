@@ -334,7 +334,7 @@ export function PendingNotice({ fields }: { fields: RequiredField[] }) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => document.getElementById("planejamento-contexto")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })}
+          onClick={() => window.dispatchEvent(new CustomEvent("overview:complete-context"))}
         >
           Completar agora →
         </Button>

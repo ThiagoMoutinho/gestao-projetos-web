@@ -13,7 +13,7 @@ describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
       });
 
   it("Resultados, Situação e Evoluções ficam fora do padrão, mas continuam em layouts salvos que os incluem", () => {
-    assert.deepEqual(SECONDARY_WIDGETS, ["resultados", "situacao", "evolucoes"]);
+    assert.deepEqual(SECONDARY_WIDGETS, ["situacao", "evolucoes"]);
     assert.equal(DEFAULT_WIDGETS.some((item) => SECONDARY_WIDGETS.includes(item.id)), false);
     const saved = normalizeWidgets([{ id: "resultados", wide: true }, { id: "sobre", wide: false }]);
     assert.deepEqual(saved.slice(0, 2), [{ id: "resultados", wide: true }, { id: "sobre", wide: false }]);
