@@ -148,6 +148,10 @@
 }
 
 @layer base {
+  /* Ícones em traço fino (mesmo estilo das notificações) em todo o sistema; vale para todos os ícones Lucide. */
+  svg.lucide {
+    stroke-width: 1.75;
+  }
   * {
     @apply border-border outline-ring/50;
   }

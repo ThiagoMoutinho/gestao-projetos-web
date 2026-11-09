@@ -22,6 +22,9 @@ export function useOverflow(element: HTMLElement | null) {
       let cut = 0;
       if (over) {
         let last = element.getBoundingClientRect().top;
+        const controls = [...element.querySelectorAll<HTMLElement>(CONTROLS)].map((control) => control.getBoundingClientRect());
+        // Blocos marcados com `data-cut-end` (ex.: detalhe aberto de uma linha) terminam inteiros: o corte pode parar no fim deles.
+        const blocks = [...element.querySelectorAll<HTMLElement>("[data-cut-end]")].map((block) => block.getBoundingClientRect());
         const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
         const range = document.createRange();
         for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -35,7 +38,25 @@ export function useOverflow(element: HTMLElement | null) {
             }
           }
         }
-        cut = Math.max(0, Math.round(limit - last - 2));
+        // Botão ou link que cabe inteiro também é ponto de corte válido (não some só porque abaixo dele não há texto).
+        for (const rect of [...controls, ...blocks]) {
+          if (rect.height > 0 && rect.bottom <= limit + 0.5) {
+            last = Math.max(last, rect.bottom);
+          }
+        }
+        let clip = limit - Math.max(0, Math.round(limit - last - 2));
+        // Unidades marcadas com `data-cut-unit` (ex.: quadro de um indicador) também não aparecem partidas.
+        const units = [...element.querySelectorAll<HTMLElement>("[data-cut-unit]")].map((unit) => unit.getBoundingClientRect());
+        const atomic = [...controls, ...units];
+        // Mas nunca aparece partido: se o corte passa pelo meio dele, o corte sobe até o topo do controle.
+        for (let pass = 0; pass < atomic.length; pass += 1) {
+          const straddling = atomic.find((rect) => rect.height > 0 && rect.top < clip - 0.5 && rect.bottom > clip + 0.5);
+          if (!straddling) {
+            break;
+          }
+          clip = straddling.top - 2;
+        }
+        cut = Math.max(0, Math.round(limit - clip));
       }
       setState((previous) => (previous.overflowing === over && previous.cut === cut ? previous : { overflowing: over, cut }));
       // O que fica cortado pelo limite não pode ser clicado nem focado (inclusive por teclado): a consulta completa é o painel.

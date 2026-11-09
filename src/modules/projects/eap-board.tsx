@@ -16,7 +16,7 @@ import {
   ListPlus,
   MoreHorizontal,
   PanelRightOpen,
-  Pencil,
+  PencilLine,
   Search,
   Trash2,
 } from "lucide-react";
@@ -807,7 +807,7 @@ function RowMenu({ label, onOpen, actions }: { label: string; onOpen: () => void
       <DropdownMenuContent align="end" className="w-[196px] rounded-[8px] p-[5px] shadow-[0_10px_24px_rgba(16,24,40,0.15)]">
         <DropdownMenuGroup>
           <DropdownMenuItem className={rowMenuItem} disabled={!actions?.onEdit} onClick={actions?.onEdit}>
-            <Pencil aria-hidden="true" /> Editar item
+            <PencilLine aria-hidden="true" /> Editar item
           </DropdownMenuItem>
           <DropdownMenuItem className={rowMenuItem} disabled title="A duplicação ainda não está disponível. A cópia precisa de um endpoint próprio.">
             <Copy aria-hidden="true" /> Duplicar

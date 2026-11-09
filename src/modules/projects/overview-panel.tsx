@@ -36,6 +36,7 @@ export function SectionCard({
   action,
   moreLabel = "Ver mais",
   showToggle = true,
+  expandable = false,
   unbounded = false,
   extraHeight = 0,
   expanded: controlled,
@@ -53,6 +54,8 @@ export function SectionCard({
   moreLabel?: string;
   /** false quando o próprio cartão já traz a ação de expandir (por exemplo, no rodapé). */
   showToggle?: boolean;
+  /** O cartão tem conteúdo complementar que só aparece expandido: "Ver mais" aparece mesmo sem excedente a cortar. */
+  expandable?: boolean;
   /** Sem limite de altura nem corte: o cartão cresce com o conteúdo e cada parte controla a sua própria expansão. */
   unbounded?: boolean;
   /** Altura a somar ao limite do cartão (por exemplo, o detalhe de um item aberto no lugar), sem virar "Ver todos". */
@@ -152,7 +155,7 @@ export function SectionCard({
           children
         )}
       </div>
-      {showToggle && (overflowing || expanded) ? (
+      {showToggle && (overflowing || expandable || expanded) ? (
         <div className="shrink-0">
           <SeeMore
             onClick={() => setExpanded(!expanded)}
@@ -176,6 +179,7 @@ export function Panel({
   count,
   countTone = "primary",
   action,
+  bare = false,
   children,
 }: {
   title: string;
@@ -184,8 +188,18 @@ export function Panel({
   count?: number | null;
   countTone?: "primary" | "amber";
   action?: React.ReactNode;
+  /** Sem moldura de cartão nem cabeçalho (o conteúdo vai dentro de outra seção); a ação fica alinhada à direita. */
+  bare?: boolean;
   children: React.ReactNode;
 }) {
+  if (bare) {
+    return (
+      <div className="flex flex-col gap-3">
+        {action ? <div className="flex justify-end">{action}</div> : null}
+        {children}
+      </div>
+    );
+  }
   return (
     <Card className={`${OVERVIEW_CARD} gap-3 p-5`}>
       <div className="flex shrink-0 items-start justify-between gap-2 border-b border-[#EDF0F3] pb-3 dark:border-border">
@@ -213,7 +227,7 @@ export function Panel({
 /** Informação-chave curta (rótulo e valor) usada nos cartões e nos painéis laterais da Visão Geral. */
 export function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-md bg-muted/50 px-3 py-2">
+    <div data-cut-unit className="min-w-0 rounded-md bg-muted/50 px-3 py-2">
       <dt className="text-[11px] text-muted-foreground">{label}</dt>
       <dd className="truncate text-xs font-semibold">{value}</dd>
     </div>
