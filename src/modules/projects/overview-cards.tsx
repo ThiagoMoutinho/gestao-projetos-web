@@ -210,8 +210,16 @@ function EntryRow({
             />
           ) : null}
           {entry.canDecide ? (
-            <div className="flex flex-wrap justify-end gap-4">
-              <Button type="button" size="sm" onClick={onOpen} {...prefetch}>
+            <div className="flex">
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+                onClick={onOpen}
+                {...prefetch}
+              >
+                <ClipboardCheck aria-hidden="true" />
                 Analisar entrega
               </Button>
             </div>
