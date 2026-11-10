@@ -10,6 +10,7 @@ import { civilDateInput } from "./eap-present";
 import {
   awaitingValidationFrom,
   nextDeliveryFrom,
+  buildTeam,
   type PortfolioMilestone,
   type ProjectListRow,
   type ProjectMonitoringSignals,
@@ -70,6 +71,7 @@ async function loadProjectRow(
     ownerId: project.ownerId,
     ownerName,
     managers: people?.managers ?? null,
+    team: people?.team ?? null,
     suppliers: people?.suppliers ?? null,
     progressBasisPoints: progress?.basisPoints ?? null,
     progressAvailable: progress !== null,
@@ -120,7 +122,11 @@ async function readPeople(projectId: string) {
       return [...names.values()].sort((left, right) => left.localeCompare(right, "pt-BR"));
     };
 
-    return { managers: byRole("GESTOR"), suppliers: byRole("FORNECEDOR") };
+    return {
+      managers: byRole("GESTOR"),
+      suppliers: byRole("FORNECEDOR"),
+      team: buildTeam(members.data.data.map((member) => ({ userId: member.userId, role: member.role, name: member.user.name }))),
+    };
   } catch {
     return null;
   }

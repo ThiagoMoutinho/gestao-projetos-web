@@ -12,6 +12,55 @@ export type ProjectSituation = {
   readyForClosure: boolean;
 };
 
+/** Participante do projeto: uma pessoa com um ou mais papéis. */
+export type TeamMember = { id: string; name: string; roles: string[] };
+
+export const TEAM_ROLE_LABEL: Record<string, string> = {
+  DONO_PROJETO: "Dono do projeto",
+  GESTOR: "Gestor",
+  PO: "PO",
+  RESPONSAVEL_TECNICO: "Responsável técnico",
+  DESENVOLVEDOR: "Desenvolvedor",
+  FORNECEDOR: "Fornecedor",
+  OBSERVADOR: "Observador",
+};
+
+const TEAM_ROLE_ORDER = Object.keys(TEAM_ROLE_LABEL);
+
+/** Agrupa os vínculos por pessoa (papéis na ordem institucional) e ordena a equipe por papel principal e nome. */
+export function buildTeam(members: ReadonlyArray<{ userId: string; role: string; name: string }>): TeamMember[] {
+  const byUser = new Map<string, TeamMember>();
+  for (const member of members) {
+    const name = member.name.trim();
+    if (!name) {
+      continue;
+    }
+    const current = byUser.get(member.userId) ?? { id: member.userId, name, roles: [] };
+    if (!current.roles.includes(member.role)) {
+      current.roles.push(member.role);
+    }
+    byUser.set(member.userId, current);
+  }
+  const rank = (role: string) => (TEAM_ROLE_ORDER.indexOf(role) === -1 ? TEAM_ROLE_ORDER.length : TEAM_ROLE_ORDER.indexOf(role));
+  const people = [...byUser.values()].map((person) => ({ ...person, roles: [...person.roles].sort((a, b) => rank(a) - rank(b)) }));
+  return people.sort((a, b) => rank(a.roles[0]) - rank(b.roles[0]) || a.name.localeCompare(b.name, "pt-BR"));
+}
+
+/** Índice (0 a total-1) da cor do avatar: hash FNV-1a do ID da pessoa, estável entre projetos e renderizações; não depende de papel. */
+export function avatarColorIndex(id: string, total = 8) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < id.length; index += 1) {
+    hash ^= id.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash % total;
+}
+
+/** Até `max` avatares visíveis e a quantidade restante (+N). */
+export function teamPreview(team: ReadonlyArray<TeamMember>, max = 3) {
+  return { visible: team.slice(0, max), extra: Math.max(0, team.length - max) };
+}
+
 /** Próxima entrega: o marco ainda a entregar com a data prevista mais próxima; `corrections` quando foi devolvido. */
 export type NextDelivery = { title: string; plannedAt: string; overdue: boolean; corrections: boolean };
 
@@ -38,6 +87,8 @@ export type ProjectListRow = {
   ownerId: string;
   ownerName: string | null;
   managers: string[] | null;
+  /** Todos os participantes vinculados ao projeto (uma entrada por pessoa, com seus papéis); null quando a consulta falhou. */
+  team: TeamMember[] | null;
   suppliers: string[] | null;
   /** Andamento consolidado pela regra da API (média das fases com valor), em pontos-base. */
   progressBasisPoints: number | null;
@@ -114,6 +165,51 @@ export function portfolioIndicators(rows: ReadonlyArray<Pick<ProjectListRow, "st
   }
   return INDICATORS.map((indicator) => ({ ...indicator, value: counts[indicator.key] ?? 0 }));
 }
+
+/** Chips de situação da listagem: Todos + as seis situações do protótipo, com a contagem de cada uma. */
+export const STATUS_CHIPS: ReadonlyArray<{ key: "total" | ProjectStatus; label: string }> = [
+  { key: "total", label: "Todos" },
+  { key: "CRITICO", label: "Crítico" },
+  { key: "EM_ATENCAO", label: "Em atenção" },
+  { key: "EM_EXECUCAO", label: "Em execução" },
+  { key: "EM_VALIDACAO", label: "Em validação" },
+  { key: "NAO_INICIADO", label: "Não iniciado" },
+  { key: "CONCLUIDO", label: "Concluído" },
+];
+
+export function statusChips(rows: ReadonlyArray<Pick<ProjectListRow, "status">>) {
+  const counts: Record<string, number> = { total: rows.length };
+  for (const row of rows) {
+    if (row.status) {
+      counts[row.status] = (counts[row.status] ?? 0) + 1;
+    }
+  }
+  return STATUS_CHIPS.map((chip) => ({ ...chip, value: counts[chip.key] ?? 0 }));
+}
+
+/** Iniciais do gestor para o avatar (primeira e última palavra do nome). */
+export function ownerInitials(name: string | null) {
+  const words = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return "?";
+  }
+  const letters = words.length === 1 ? words[0].slice(0, 2) : `${words[0][0]}${words[words.length - 1][0]}`;
+  return letters.toLocaleUpperCase("pt-BR");
+}
+
+/** Coluna Atraso: dias de atraso, risco (em atenção sem atraso), no prazo ou indisponível (situação não calculada). */
+export function delayCell(row: Pick<ProjectListRow, "status" | "situation">): { kind: "delay" | "risk" | "ontime" | "unavailable"; text: string } {
+  if (row.status === null || row.situation === null) {
+    return { kind: "unavailable", text: "Indisponível" };
+  }
+  const days = row.situation.delayDays;
+  if (days > 0) {
+    return { kind: "delay", text: days === 1 ? "1 dia" : `${days} dias` };
+  }
+  return row.status === "EM_ATENCAO" ? { kind: "risk", text: "Risco" } : { kind: "ontime", text: "No prazo" };
+}
+
+export const SORT_LABEL: Record<PortfolioSort["key"], string> = { name: "nome", deadline: "previsão", updated: "última atualização" };
 
 /** Projetos cuja situação não pôde ser calculada: os indicadores por situação não os incluem. */
 export function unavailableSituations(rows: ReadonlyArray<Pick<ProjectListRow, "status">>) {

@@ -13,7 +13,13 @@ import {
   sortPortfolio,
   unavailableSituations,
   awaitingValidationFrom,
+  avatarColorIndex,
+  buildTeam,
+  teamPreview,
   canEditProject,
+  delayCell,
+  ownerInitials,
+  statusChips,
   matchesView,
   PORTFOLIO_VIEWS,
   type ProjectListRow,
@@ -32,6 +38,7 @@ function project(overrides: Partial<ProjectListRow> & Pick<ProjectListRow, "id" 
     ownerId: "owner",
     ownerName: "Ana",
     managers: [],
+    team: [],
     suppliers: [],
     progressBasisPoints: null,
     progressAvailable: true,
@@ -141,5 +148,54 @@ describe("Portfólio de projetos", () => {
     assert.deepEqual([paginate(many, 1, 15).pages, paginate(many, 3, 15).items.length], [3, 2]);
     assert.equal(paginate(many, 9, 15).current, 3);
     assert.deepEqual(paginate([], 1, 15), { pages: 1, current: 1, items: [] });
+  });
+
+  it("monta os chips de situação com Todos e a contagem de cada situação", () => {
+    const rows = [{ status: "CRITICO" as const }, { status: "CRITICO" as const }, { status: "CONCLUIDO" as const }, { status: null }];
+    const chips = statusChips(rows);
+    assert.deepEqual(chips.map((chip) => chip.label), ["Todos", "Crítico", "Em atenção", "Em execução", "Em validação", "Não iniciado", "Concluído"]);
+    assert.deepEqual(chips.map((chip) => chip.value), [4, 2, 0, 0, 0, 0, 1]);
+  });
+
+  it("gera iniciais do gestor", () => {
+    assert.equal(ownerInitials("Juliana Souza"), "JS");
+    assert.equal(ownerInitials("Ana Carolina de Lima"), "AL");
+    assert.equal(ownerInitials("paulo"), "PA");
+    assert.equal(ownerInitials(null), "?");
+  });
+
+  it("classifica a coluna Atraso", () => {
+    const situation = (delayDays: number) => ({ status: "EM_EXECUCAO" as const, delayDays, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false });
+    assert.deepEqual(delayCell({ status: "CRITICO", situation: { ...situation(12), status: "CRITICO" } }), { kind: "delay", text: "12 dias" });
+    assert.deepEqual(delayCell({ status: "CRITICO", situation: { ...situation(1), status: "CRITICO" } }), { kind: "delay", text: "1 dia" });
+    assert.deepEqual(delayCell({ status: "EM_ATENCAO", situation: { ...situation(0), status: "EM_ATENCAO" } }), { kind: "risk", text: "Risco" });
+    assert.deepEqual(delayCell({ status: "EM_EXECUCAO", situation: situation(0) }), { kind: "ontime", text: "No prazo" });
+    assert.deepEqual(delayCell({ status: null, situation: null }), { kind: "unavailable", text: "Indisponível" });
+  });
+
+  it("agrupa a equipe por pessoa, ordena por papel e limita a prévia", () => {
+    const team = buildTeam([
+      { userId: "u2", role: "FORNECEDOR", name: "Bia Lima" },
+      { userId: "u1", role: "FORNECEDOR", name: "Ana Souza" },
+      { userId: "u1", role: "GESTOR", name: "Ana Souza" },
+      { userId: "u3", role: "OBSERVADOR", name: "Caio Reis" },
+      { userId: "u4", role: "DESENVOLVEDOR", name: "  " },
+    ]);
+    assert.deepEqual(team.map((person) => [person.name, person.roles]), [
+      ["Ana Souza", ["GESTOR", "FORNECEDOR"]],
+      ["Bia Lima", ["FORNECEDOR"]],
+      ["Caio Reis", ["OBSERVADOR"]],
+    ]);
+    assert.deepEqual([teamPreview(team, 2).visible.length, teamPreview(team, 2).extra, teamPreview(team).extra], [2, 1, 0]);
+  });
+
+  it("define a cor do avatar de forma determinística a partir do ID", () => {
+    const ids = Array.from({ length: 200 }, (_, index) => `user-${index}-${index * 7919}`);
+    for (const id of ids) {
+      const index = avatarColorIndex(id);
+      assert.equal(index, avatarColorIndex(id));
+      assert.ok(Number.isInteger(index) && index >= 0 && index < 8);
+    }
+    assert.equal(new Set(ids.map((id) => avatarColorIndex(id))).size, 8);
   });
 });
