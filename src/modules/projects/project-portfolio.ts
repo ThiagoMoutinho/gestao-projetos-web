@@ -216,3 +216,23 @@ export function paginate<T>(rows: ReadonlyArray<T>, page: number, size: number) 
   const current = Math.min(Math.max(1, page), pages);
   return { pages, current, items: rows.slice((current - 1) * size, current * size) };
 }
+
+/** Marco ainda a entregar (pendente ou devolvido), vindo do monitoramento de prazos. */
+export type PortfolioMilestone = {
+  id: string;
+  title: string;
+  status: string;
+  /** Data prevista vigente em dia civil (AAAA-MM-DD). */
+  plannedOn: string;
+  overdue: boolean;
+  responsibleName: string | null;
+};
+
+/** Sinais do monitoramento de prazos de um projeto, usados nos painéis (contagens calculadas pela API). */
+export type ProjectMonitoringSignals = {
+  openMilestones: PortfolioMilestone[];
+  overdueTasks: number;
+  overdueMilestones: number;
+  awaitingHomologation: number;
+  inCorrections: number;
+};

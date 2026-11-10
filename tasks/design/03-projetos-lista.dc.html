@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Projetos · Portfólio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2865b9}a:hover{color:#174f9e}
+.row-link{transition:background-color 150ms ease-out}
+.row-link:hover{background:#f7f9fc}
+.nav-link{transition:background-color 150ms ease-out}
+.nav-link:hover{background:rgba(255,255,255,0.08)}
+.chip{transition:border-color 150ms ease-out, background-color 150ms ease-out}
+.chip:hover{border-color:#bad1f0}
+@media (prefers-reduced-motion: reduce){.row-link,.nav-link,.chip{transition:none}}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 100vh; display: flex; flex-wrap: wrap; background: #f3f5f8; font-family: Geist, ui-sans-serif, system-ui, sans-serif; color: #172033; font-size: 14px">
+
+  <aside style="flex: 1 1 240px; max-width: 100%; box-sizing: border-box; background: #13294f; color: #e9eef6; padding: 20px 14px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 6px">
+      <span style="width: 34px; height: 34px; border-radius: 9px; background: #2865b9; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #ffffff">IG</span>
+      <span style="display: flex; flex-direction: column"><strong style="font-size: 15px; font-weight: 600; color: #ffffff">IGEPPS</strong><span style="font-size: 12px; color: #a9b8d0">Gestão de Projetos</span></span>
+    </div>
+    <nav aria-label="Menu principal" style="display: flex; flex-direction: column; gap: 2px">
+      <span style="padding: 0 10px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8fa2c1">Principal</span>
+      <a href="Dashboard.dc.html" class="nav-link" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 10px; border-radius: 8px; color: #dbe3ef; text-decoration: none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Início</a>
+      <a href="#" aria-current="page" class="nav-link" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 10px; border-radius: 8px; background: rgba(255,255,255,0.14); color: #ffffff; font-weight: 500; text-decoration: none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10v4"></path><path d="M12 10v2"></path><path d="M16 10v6"></path><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>Projetos</a>
+      <span style="display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 10px; color: #8fa2c1"><span>Minhas Tarefas</span><span style="font-size: 11px">Em breve</span></span>
+      <span style="display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 10px; color: #8fa2c1"><span>Entregas</span><span style="font-size: 11px">Em breve</span></span>
+    </nav>
+  </aside>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="display: flex; align-items: center; min-height: 60px; padding: 10px 28px; box-sizing: border-box; background: #ffffff; border-bottom: 1px solid #e4e7ec">
+      <nav aria-label="Trilha" style="font-size: 13px; color: #475467"><a href="Dashboard.dc.html" style="color: #475467; text-decoration: none">Início</a> <span aria-hidden="true" style="margin: 0 6px; color: #98a2b3">/</span> <span style="color: #172033; font-weight: 500">Projetos</span></nav>
+    </header>
+
+    <main style="width: 100%; max-width: 1360px; margin: 0 auto; box-sizing: border-box; padding: 28px 28px 48px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+        <div>
+          <span style="display: flex; align-items: center; gap: 10px">
+            <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: #2865b9; text-transform: uppercase">Portfólio institucional</span>
+            <span style="padding: 2px 8px; border-radius: 99px; background: #fff4e5; color: #8a4a0b; font-size: 11px; font-weight: 600">Dados demonstrativos</span>
+          </span>
+          <h1 style="margin: 6px 0 0; font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -0.015em">Projetos</h1>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #475467">Situação, prazo e responsáveis de cada projeto da CTIN.</p>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 1px solid #d0d5dd; border-radius: 8px; background: #ffffff; color: #172033; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>Exportar</button>
+          <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: #2865b9; color: #ffffff; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Novo projeto</button>
+        </div>
+      </div>
+
+      <!-- Chips de situação: filtram a lista -->
+      <div role="group" aria-label="Filtrar por situação" style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+          <button type="button" class="chip" onClick="{{c.pick}}" aria-pressed="{{c.active}}" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 99px; font: inherit; font-size: 13px; cursor: pointer; {{c.style}}">
+            <span style="width: 8px; height: 8px; border-radius: 99px; background: {{c.color}}"></span>{{c.label}}<strong style="font-weight: 600; font-variant-numeric: tabular-nums">{{c.count}}</strong>
+          </button>
+        </sc-for>
+      </div>
+
+      <section style="min-width: 0; background: #ffffff; border: 1px solid #e4e7ec; border-radius: 12px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #edf0f3">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; flex: 1 1 520px; min-width: 0">
+            <label style="position: relative; display: flex; align-items: center; flex: 1 1 260px; max-width: 380px">
+              <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Pesquisar por nome, código ou fornecedor</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; left: 12px"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg>
+              <input type="search" value="{{query}}" onChange="{{onQuery}}" placeholder="Pesquisar por nome, código ou fornecedor…" style="width: 100%; height: 38px; box-sizing: border-box; padding: 0 12px 0 36px; border: 1px solid #d0d5dd; border-radius: 8px; font: inherit; font-size: 13px; color: #172033; background: #ffffff">
+            </label>
+            <button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #344054; cursor: pointer">Fornecedor<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+            <button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #344054; cursor: pointer">Gestor<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+            <sc-if value="{{filtering}}" hint-placeholder-val="{{false}}">
+              <button type="button" onClick="{{clear}}" style="height: 38px; padding: 0 8px; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 500; color: #2865b9; cursor: pointer">Limpar filtros</button>
+            </sc-if>
+          </div>
+          <div role="group" aria-label="Visualização" style="display: flex; padding: 3px; border-radius: 8px; background: #f2f4f7">
+            <button type="button" onClick="{{showList}}" aria-pressed="{{isList}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; {{listBtn}}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M3 5h.01"></path><path d="M3 12h.01"></path><path d="M3 19h.01"></path><path d="M8 5h13"></path><path d="M8 12h13"></path><path d="M8 19h13"></path></svg>Lista</button>
+            <button type="button" onClick="{{showBoard}}" aria-pressed="{{isBoard}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; {{boardBtn}}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path><path d="M15 3v18"></path></svg>Quadro</button>
+          </div>
+        </div>
+
+        <div style="padding: 10px 18px; font-size: 12px; color: #667085; border-bottom: 1px solid #edf0f3" aria-live="polite">{{countLabel}}</div>
+
+        <sc-if value="{{isList}}" hint-placeholder-val="{{true}}">
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 13px">
+              <thead>
+                <tr style="text-align: left; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #667085; background: #fafbfc">
+                  <th scope="col" style="padding: 10px 18px; font-weight: 600">Projeto ↑</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600">Fornecedor</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600">Gestor</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600">Situação</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600">Progresso</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600">Início</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600">Previsão</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600">Atraso</th>
+                  <th scope="col" style="padding: 10px 18px; width: 40px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Ações</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="p" hint-placeholder-count="8">
+                  <tr class="row-link" style="border-top: 1px solid #edf0f3">
+                    <td style="padding: 13px 18px; box-shadow: {{p.edge}}">
+                      <a href="#" style="display: block; font-weight: 600; color: #172033; text-decoration: none">{{p.name}}</a>
+                      <span style="display: block; margin-top: 2px; font-size: 12px; color: #667085">{{p.code}}</span>
+                    </td>
+                    <td style="padding: 13px 12px; color: #344054">{{p.supplier}}</td>
+                    <td style="padding: 13px 12px">
+                      <span style="display: flex; align-items: center; gap: 8px; color: #344054"><span style="width: 26px; height: 26px; border-radius: 99px; background: #e7eefb; color: #2865b9; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{p.ownerInitials}}</span>{{p.owner}}</span>
+                    </td>
+                    <td style="padding: 13px 12px">
+                      <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 99px; background: {{p.bg}}; color: {{p.fg}}; font-size: 12px; font-weight: 600; white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 99px; background: {{p.color}}"></span>{{p.statusLabel}}</span>
+                    </td>
+                    <td style="padding: 13px 12px">
+                      <span style="display: flex; align-items: center; gap: 8px">
+                        <span style="width: 72px; height: 6px; border-radius: 99px; background: #eef1f5; overflow: hidden"><span style="display: block; height: 100%; width: {{p.progress}}%; background: {{p.bar}}"></span></span>
+                        <span style="font-size: 12px; font-weight: 600; color: #344054; font-variant-numeric: tabular-nums">{{p.progress}}%</span>
+                      </span>
+                    </td>
+                    <td style="padding: 13px 12px; color: #475467; font-variant-numeric: tabular-nums; white-space: nowrap">{{p.start}}</td>
+                    <td style="padding: 13px 12px; color: #172033; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap">{{p.end}}</td>
+                    <td style="padding: 13px 12px; white-space: nowrap; font-size: 12px; font-weight: 600; color: {{p.delayColor}}">{{p.delay}}</td>
+                    <td style="padding: 13px 18px">
+                      <button type="button" aria-label="Ações do projeto {{p.name}}" style="width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: #667085; display: flex; align-items: center; justify-content: center; cursor: pointer">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                      </button>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isBoard}}" hint-placeholder-val="{{false}}">
+          <div style="overflow-x: auto; padding: 16px 18px">
+            <div style="display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 14px">
+              <sc-for list="{{columns}}" as="col" hint-placeholder-count="4">
+                <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 10px; background: #f7f9fc">
+                  <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 99px; background: {{col.color}}"></span>{{col.label}}<span style="margin-left: auto; font-size: 12px; font-weight: 500; color: #667085">{{col.count}}</span></span>
+                  <sc-for list="{{col.items}}" as="p" hint-placeholder-count="2">
+                    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #e4e7ec; border-radius: 8px; background: #ffffff; text-decoration: none; color: #172033">
+                      <strong style="font-size: 13px; font-weight: 600">{{p.name}}</strong>
+                      <span style="font-size: 12px; color: #667085">{{p.code}} · {{p.supplier}}</span>
+                      <span style="display: flex; align-items: center; gap: 8px"><span style="flex: 1; height: 6px; border-radius: 99px; background: #eef1f5; overflow: hidden"><span style="display: block; height: 100%; width: {{p.progress}}%; background: {{p.bar}}"></span></span><span style="font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums">{{p.progress}}%</span></span>
+                      <span style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #475467">Prev. {{p.end}}</span><span style="font-weight: 600; color: {{p.delayColor}}">{{p.delay}}</span></span>
+                    </a>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <nav aria-label="Paginação" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; border-top: 1px solid #edf0f3; font-size: 12px; color: #667085">
+          <span>Exibindo 1–{{shown}} de {{shown}}</span>
+          <span style="display: flex; gap: 6px">
+            <button type="button" disabled style="height: 32px; padding: 0 12px; border: 1px solid #e4e7ec; border-radius: 8px; background: #f9fafb; font: inherit; font-size: 12px; color: #98a2b3">Anterior</button>
+            <button type="button" aria-current="page" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: #e9f2ff; font: inherit; font-size: 12px; font-weight: 600; color: #175cd3">1</button>
+            <button type="button" disabled style="height: 32px; padding: 0 12px; border: 1px solid #e4e7ec; border-radius: 8px; background: #f9fafb; font: inherit; font-size: 12px; color: #98a2b3">Próxima</button>
+          </span>
+        </nav>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { status: '', view: 'list', query: '' };
+  }
+  renderVals() {
+    const S = {
+      CRITICO: { label: 'Crítico', color: '#d92d20', bg: '#fdecea', fg: '#b42318' },
+      EM_ATENCAO: { label: 'Em atenção', color: '#e0a130', bg: '#fff4e0', fg: '#8a4a0b' },
+      EM_EXECUCAO: { label: 'Em execução', color: '#2873cf', bg: '#e8f1fc', fg: '#174f9e' },
+      EM_VALIDACAO: { label: 'Em validação', color: '#7450bf', bg: '#f1ebfb', fg: '#5b3aa3' },
+      NAO_INICIADO: { label: 'Não iniciado', color: '#9fb3c8', bg: '#f2f4f7', fg: '#475467' },
+      CONCLUIDO: { label: 'Concluído', color: '#12a46e', bg: '#e6f6ef', fg: '#067647' }
+    };
+    const data = [
+      ['Portal de Benefícios 2.0', 'GLPI #48213', 'Fornecedor Alfa', 'Juliana Souza', 'CRITICO', 54, '03/02/2026', '28/10/2026', 12],
+      ['Migração do Data Center', 'GLPI #47790', 'Beta Infra', 'Paulo Lima', 'CRITICO', 71, '12/01/2026', '31/10/2026', 9],
+      ['Recadastramento digital', 'GLPI #48544', 'Fornecedor Alfa', 'Renata Teles', 'CRITICO', 38, '10/03/2026', '04/11/2026', 5],
+      ['BI de Arrecadação', 'GLPI #46902', 'Gama Dados', 'Ana Carolina', 'EM_ATENCAO', 62, '20/02/2026', '15/12/2026', 3],
+      ['Assinatura eletrônica de processos', 'GLPI #48011', 'Delta Sistemas', 'Marcos Ribeiro', 'EM_ATENCAO', 45, '05/05/2026', '30/01/2027', 0],
+      ['Gestão de Contratos', 'GLPI #47120', 'Épsilon Consultoria', 'Juliana Souza', 'EM_EXECUCAO', 68, '14/04/2026', '20/12/2026', 0],
+      ['ERP Previdenciário', 'GLPI #45877', 'Fornecedor Alfa', 'Paulo Lima', 'EM_EXECUCAO', 49, '02/03/2026', '28/02/2027', 0],
+      ['Atendimento omnicanal', 'GLPI #47355', 'Beta Infra', 'Renata Teles', 'EM_ATENCAO', 29, '01/06/2026', '31/03/2027', 0],
+      ['Portal da Transparência', 'GLPI #46310', 'Gama Dados', 'Ana Carolina', 'EM_VALIDACAO', 96, '09/01/2026', '14/11/2026', 0],
+      ['Prova de vida por biometria', 'GLPI #48890', 'Delta Sistemas', 'Marcos Ribeiro', 'NAO_INICIADO', 0, '01/12/2026', '30/06/2027', 0],
+      ['Intranet institucional', 'GLPI #44102', 'Épsilon Consultoria', 'Juliana Souza', 'CONCLUIDO', 100, '10/08/2025', '30/09/2026', 0]
+    ];
+    const all = data.map((d) => {
+      const s = S[d[4]];
+      const late = d[8] > 0;
+      const risky = d[4] === 'CRITICO' || d[4] === 'EM_ATENCAO';
+      return {
+        name: d[0], code: d[1], supplier: d[2], owner: d[3],
+        ownerInitials: d[3].split(' ').map((w) => w[0]).slice(0, 2).join(''),
+        status: d[4], statusLabel: s.label, color: s.color, bg: s.bg, fg: s.fg,
+        progress: d[5], start: d[6], end: d[7],
+        bar: d[4] === 'CONCLUIDO' ? '#12a46e' : '#2873cf',
+        delay: late ? d[8] + (d[8] === 1 ? ' dia' : ' dias') : (d[4] === 'EM_ATENCAO' ? 'Risco' : 'No prazo'),
+        delayColor: late ? '#b42318' : (d[4] === 'EM_ATENCAO' ? '#8a4a0b' : '#067647'),
+        edge: risky ? 'inset 3px 0 0 ' + s.color : 'none'
+      };
+    });
+    const q = this.state.query.trim().toLowerCase();
+    const rows = all.filter((r) =>
+      (!this.state.status || r.status === this.state.status) &&
+      (!q || (r.name + ' ' + r.code + ' ' + r.supplier).toLowerCase().indexOf(q) !== -1)
+    );
+    const on = 'border: 1px solid #84adff; background: #f0f6ff; color: #174f9e';
+    const off = 'border: 1px solid #e4e7ec; background: #ffffff; color: #344054';
+    const chipKeys = ['', 'CRITICO', 'EM_ATENCAO', 'EM_EXECUCAO', 'EM_VALIDACAO', 'NAO_INICIADO', 'CONCLUIDO'];
+    const chips = chipKeys.map((k) => {
+      const active = this.state.status === k;
+      return {
+        label: k ? S[k].label : 'Todos',
+        color: k ? S[k].color : '#2865b9',
+        count: k ? all.filter((r) => r.status === k).length : all.length,
+        active,
+        style: active ? on : off,
+        pick: () => this.setState({ status: active && k ? '' : k })
+      };
+    });
+    const colKeys = ['CRITICO', 'EM_ATENCAO', 'EM_EXECUCAO', 'EM_VALIDACAO'];
+    const columns = colKeys.map((k) => {
+      const items = rows.filter((r) => r.status === k);
+      return { label: S[k].label, color: S[k].color, count: items.length, items };
+    });
+    const segOn = 'background: #ffffff; color: #172033; box-shadow: 0 1px 2px rgba(16,24,40,0.08)';
+    const segOff = 'background: transparent; color: #475467';
+    const isList = this.state.view === 'list';
+    return {
+      rows, chips, columns,
+      query: this.state.query,
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      filtering: !!(this.state.status || q),
+      clear: () => this.setState({ status: '', query: '' }),
+      countLabel: (rows.length === 1 ? '1 projeto encontrado' : rows.length + ' projetos encontrados') + ' · ordenados por nome',
+      shown: rows.length,
+      isList, isBoard: !isList,
+      listBtn: isList ? segOn : segOff, boardBtn: isList ? segOff : segOn,
+      showList: () => this.setState({ view: 'list' }),
+      showBoard: () => this.setState({ view: 'board' })
+    };
+  }
+}
+</script>
+</body>
+</html>

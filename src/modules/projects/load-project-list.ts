@@ -1,13 +1,27 @@
 import { ApiError } from "@/lib/api/fetcher";
 import { getScheduleMonitoring } from "@/lib/api/generated/cronograma/cronograma";
 import { listEapPhases } from "@/lib/api/generated/eap/eap";
+import type { GetScheduleMonitoring200ItemsItem } from "@/lib/api/generated/model/getScheduleMonitoring200ItemsItem";
 import type { ListProjects200DataItem } from "@/lib/api/generated/model/listProjects200DataItem";
 import { listProjectMembers } from "@/lib/api/generated/participantes/participantes";
 import { getProject, listProjects } from "@/lib/api/generated/projetos/projetos";
 
-import { awaitingValidationFrom, nextDeliveryFrom, type ProjectListRow } from "./project-portfolio";
+import { civilDateInput } from "./eap-present";
+import {
+  awaitingValidationFrom,
+  nextDeliveryFrom,
+  type PortfolioMilestone,
+  type ProjectListRow,
+  type ProjectMonitoringSignals,
+} from "./project-portfolio";
 
 export type { ProjectListRow } from "./project-portfolio";
+
+/** Linhas do portfólio e, por projeto, os sinais do monitoramento de prazos (null quando a consulta falhou). */
+export type PortfolioSnapshot = {
+  rows: ProjectListRow[];
+  signals: Record<string, ProjectMonitoringSignals | null>;
+};
 
 /**
  * Projetos acessíveis ao usuário (a API já aplica as permissões) com os dados da listagem.
@@ -15,18 +29,26 @@ export type { ProjectListRow } from "./project-portfolio";
  * indisponível, sem valores inventados.
  */
 export async function loadProjectList(): Promise<ProjectListRow[]> {
+  return (await loadPortfolioSnapshot()).rows;
+}
+
+/** Mesmas consultas da listagem, preservando também os sinais de monitoramento usados no Início. */
+export async function loadPortfolioSnapshot(): Promise<PortfolioSnapshot> {
   const listed = await listProjects();
 
   if (listed.status !== 200) {
     throw new ApiError(listed.status, "HTTP_ERROR", "Não foi possível consultar os projetos.");
   }
 
-  const rows = await Promise.all(listed.data.data.map(loadProjectRow));
+  const loaded = await Promise.all(listed.data.data.map(loadProjectRow));
+  const rows = loaded.map((item) => item.row).sort((left, right) => left.name.localeCompare(right.name, "pt-BR"));
 
-  return rows.sort((left, right) => left.name.localeCompare(right.name, "pt-BR"));
+  return { rows, signals: Object.fromEntries(loaded.map((item) => [item.row.id, item.signals])) };
 }
 
-async function loadProjectRow(project: ListProjects200DataItem): Promise<ProjectListRow> {
+async function loadProjectRow(
+  project: ListProjects200DataItem,
+): Promise<{ row: ProjectListRow; signals: ProjectMonitoringSignals | null }> {
   const [ownerName, people, progress, monitoring] = await Promise.all([
     readOwnerName(project.id),
     readPeople(project.id),
@@ -34,7 +56,7 @@ async function loadProjectRow(project: ListProjects200DataItem): Promise<Project
     readMonitoring(project.id),
   ]);
 
-  return {
+  const row: ProjectListRow = {
     id: project.id,
     name: project.name,
     description: project.description,
@@ -58,6 +80,8 @@ async function loadProjectRow(project: ListProjects200DataItem): Promise<Project
     viewerIsOwner: project.isOwner,
     viewerRoles: [...project.roles],
   };
+
+  return { row, signals: monitoring?.signals ?? null };
 }
 
 async function readOwnerName(projectId: string) {
@@ -126,8 +150,35 @@ async function readMonitoring(projectId: string) {
       situation: { status, delayDays, pendingValidation, closureRequirementsMissing, readyForClosure },
       nextDelivery: nextDeliveryFrom(monitoring.data.items),
       awaitingValidation: awaitingValidationFrom(monitoring.data.items),
+      signals: {
+        openMilestones: openMilestonesFrom(monitoring.data.items),
+        overdueTasks: monitoring.data.overdue.tasks,
+        overdueMilestones: monitoring.data.overdue.milestones,
+        awaitingHomologation: monitoring.data.homologation.awaiting,
+        inCorrections: monitoring.data.homologation.inCorrections,
+      } satisfies ProjectMonitoringSignals,
     };
   } catch {
     return null;
   }
+}
+
+/** Marcos ainda a entregar (pendentes ou devolvidos) com data prevista, no mesmo critério da próxima entrega. */
+function openMilestonesFrom(items: ReadonlyArray<GetScheduleMonitoring200ItemsItem>): PortfolioMilestone[] {
+  return items.flatMap((item) => {
+    const plannedOn = civilDateInput(item.plannedEndAt);
+    if (item.entityType !== "MILESTONE" || !plannedOn || item.status === "APROVADO" || item.status === "ENTREGUE") {
+      return [];
+    }
+    return [
+      {
+        id: item.entityId,
+        title: item.title,
+        status: item.status,
+        plannedOn,
+        overdue: item.overdue,
+        responsibleName: item.responsibleName?.trim() || null,
+      },
+    ];
+  });
 }

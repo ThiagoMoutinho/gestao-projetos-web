@@ -61,7 +61,7 @@ import {
   type ProjectListRow,
   type ProjectStatus,
 } from "./project-portfolio";
-import { projectStatusKind, projectStatusLabel } from "./project-status";
+import { PROJECT_STATUS_COLOR as STATUS_COLOR, projectStatusKind, projectStatusLabel } from "./project-status";
 
 const PAGE_SIZES = ["10", "15", "25", "50"];
 
@@ -73,17 +73,6 @@ const TAB_LABEL: Record<PortfolioView, string> = { active: "Ativos", concluded: 
 function dotStyle(color: string) {
   return { backgroundColor: color, boxShadow: `0 0 0 4px ${color}26` };
 }
-
-/** Cor do ponto de cada indicador e da borda lateral da linha, pela situação calculada. */
-const STATUS_COLOR: Record<ProjectStatus, string> = {
-  NAO_INICIADO: "#9fb3c8",
-  EM_EXECUCAO: "#2873cf",
-  EM_ATENCAO: "#e0a130",
-  CRITICO: "#d92d20",
-  EM_VALIDACAO: "#7450bf",
-  CONCLUIDO: "#12a46e",
-  SUSPENSO: "#98a2b3",
-};
 
 export function ProjectList({
   projects,
