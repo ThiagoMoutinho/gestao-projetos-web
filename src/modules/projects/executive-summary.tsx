@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, FileText, Layers, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -380,7 +380,7 @@ function History({ projectId, open, refreshKey }: { projectId: string; open: boo
  *
  * O cartão tem altura limitada como os demais: síntese, indicadores e o estado da validação ficam sempre visíveis (a
  * validação no rodapé) e o restante (próximas entregas, movimentações, responsável e fornecedor) aparece em "Ver mais",
- * que expande o próprio cartão. Abrir o histórico de validações também expande o cartão; "Ver menos" recolhe tudo.
+ * que expande o próprio cartão. Abrir o histórico de validações não altera o "Ver mais": o cartão só abre espaço para o histórico.
  */
 export function ExecutiveSummaryCard({
   projectId,
@@ -401,7 +401,23 @@ export function ExecutiveSummaryCard({
   const [dialog, setDialog] = useState<Mode | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyHeight, setHistoryHeight] = useState(0);
+  const historyBox = useRef<HTMLDivElement>(null);
   const reload = useCallback(() => setVersion((value) => value + 1), []);
+
+  // Altura do histórico aberto: o cartão abre espaço só para ele, sem virar "Ver menos" nem mostrar os blocos extras.
+  useEffect(() => {
+    const element = historyBox.current;
+    if (!historyOpen || !element) {
+      return;
+    }
+    const observer = new ResizeObserver(() => setHistoryHeight(element.offsetHeight + 12));
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      setHistoryHeight(0);
+    };
+  }, [historyOpen]);
 
   useEffect(() => {
     let active = true;
@@ -460,12 +476,8 @@ export function ExecutiveSummaryCard({
           type="button"
           aria-expanded={historyOpen}
           onClick={() => {
-            const next = !historyOpen;
-            setHistoryOpen(next);
-            if (next) {
-              // O histórico precisa de espaço: o cartão sai do limite de altura.
-              setExpanded(true);
-            }
+            // Abrir o histórico não muda o estado do cartão ("Ver mais"/"Ver menos"): ele só ganha a altura do histórico (extraHeight).
+            setHistoryOpen(!historyOpen);
           }}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
@@ -474,7 +486,7 @@ export function ExecutiveSummaryCard({
         </button>
       </div>
       <Presence open={historyOpen}>
-        <div className="pt-1">
+        <div ref={historyBox} className="pt-1">
           <History projectId={projectId} open={historyOpen} refreshKey={`${refreshKey}:${version}`} />
         </div>
       </Presence>
@@ -488,6 +500,7 @@ export function ExecutiveSummaryCard({
       icon={FileText}
       tone="blue"
       expanded={expanded}
+      extraHeight={historyHeight}
       expandable={data !== null}
       onExpandedChange={(next) => {
         setExpanded(next);
