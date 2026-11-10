@@ -203,7 +203,7 @@ export function ScheduleSummaryCard({
               <span />
               <div className="relative h-4 text-[11px] text-muted-foreground">
                 <span className="absolute left-0">{shortDay(timeline.from)}</span>
-                {consolidated.baseline.end ? (
+                {consolidated.baseline.end && timeline.position(consolidated.baseline.end) < 68 ? (
                   <span className="absolute -translate-x-full whitespace-nowrap" style={{ left: `${timeline.position(consolidated.baseline.end)}%` }}>
                     {shortDay(consolidated.baseline.end)} · linha de base
                   </span>

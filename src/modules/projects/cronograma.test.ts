@@ -61,6 +61,12 @@ describe("Cronograma: linhas por fase", () => {
     assert.deepEqual(rows[0].current, { start: "2026-10-10", end: "2026-10-30" });
   });
 
+  it("fase atrasada é a que a API classifica como em aberto e fora do prazo (OPEN_OVERDUE), mesmo com overdue falso", () => {
+    const rows = phaseRows([phase], [item({ entityType: "PHASE", entityId: "p1", status: "EM_ANDAMENTO", overdue: false, deadlinePerformance: "OPEN_OVERDUE" })]);
+    assert.equal(rows[0].tone, "overdue");
+    assert.equal(phaseRows([phase], [item({ entityType: "PHASE", entityId: "p1", status: "EM_ANDAMENTO", deadlinePerformance: "OPEN_ON_TIME" })])[0].tone, "progress");
+  });
+
   it("marcos: estados e contagem aguardando validação; fase atrasada vem da API", () => {
     const rows = phaseRows(
       [phase],

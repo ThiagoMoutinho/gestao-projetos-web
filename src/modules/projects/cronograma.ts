@@ -17,6 +17,8 @@ export type ScheduleItem = {
   actualEndAt: string | null;
   overdue: boolean;
   rescheduleCount: number;
+  /** Cumprimento de prazo calculado pela API (OPEN_OVERDUE = em aberto e fora do prazo vigente). */
+  deadlinePerformance?: string | null;
 };
 
 export type PhaseInput = {
@@ -87,7 +89,7 @@ export function phaseRows(phases: ReadonlyArray<PhaseInput>, items: ReadonlyArra
       })
       .sort((a, b) => a.day.localeCompare(b.day));
 
-    const tone: PhaseRow["tone"] = own?.status === "CONCLUIDA" ? "done" : own?.overdue ? "overdue" : own?.status === "EM_ANDAMENTO" ? "progress" : "idle";
+    const tone: PhaseRow["tone"] = own?.status === "CONCLUIDA" ? "done" : own?.overdue || own?.deadlinePerformance === "OPEN_OVERDUE" ? "overdue" : own?.status === "EM_ANDAMENTO" ? "progress" : "idle";
 
     return {
       id: phase.id,
