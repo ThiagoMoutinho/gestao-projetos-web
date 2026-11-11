@@ -232,14 +232,14 @@ function HomologationBody({
   return (
     <div className="flex flex-col gap-3">
       {canDecide ? (
-        <section id="eap-milestone-decision" className="rounded-[9px] border border-[#bad1f0] bg-[#f5f9ff] p-3.5">
-          <span className="mb-[5px] block text-xs font-semibold tracking-[0.04em] text-[#3971ba] uppercase">Decisão de homologação</span>
-          <strong className="block text-xs text-[#253d60]">
+        <section id="eap-milestone-decision" className="rounded-[9px] border border-primary/25 bg-primary/5 p-3.5">
+          <span className="mb-[5px] block text-xs font-semibold tracking-[0.04em] text-primary uppercase">Decisão de homologação</span>
+          <strong className="block text-xs text-foreground">
             {delivery
               ? `${homologation ? "Tentativa" : "Entrega"} ${latest?.status === "EM_ANALISE" ? latest.round : (latest?.round ?? 0) + 1} aguardando ${homologation ? "homologação" : "análise"}`
               : "Marco aguardando aprovação"}
           </strong>
-          <p className="mt-[5px] text-xs text-[#667b98]">
+          <p className="mt-[5px] text-xs text-muted-foreground">
             {delivery
               ? "Confira as evidências antes de decidir. Correções e rejeição exigem justificativa; o prazo previsto não muda."
               : "Marcos de aprovação admitem aceite ou rejeição. A rejeição exige justificativa."}
@@ -287,7 +287,7 @@ function HomologationBody({
                 <Button
                   type="button"
                   variant={mode === "reject" ? "destructive" : "default"}
-                  className={cn(secondaryButton, mode === "adjust" && "border-transparent bg-[#c4620f] text-white hover:bg-[#a9530b]")}
+                  className={cn(secondaryButton, mode === "adjust" && "border-transparent bg-status-adjust text-primary-foreground hover:bg-status-adjust")}
                   loading={saving}
                   onClick={() => decide(mode === "adjust" ? "AJUSTES_SOLICITADOS" : "REJEITADO")}
                 >
@@ -296,11 +296,11 @@ function HomologationBody({
               </>
             ) : (
               <>
-                <Button type="button" variant="outline" className={cn(secondaryButton, "text-[#9f2219]")} disabled={saving} onClick={() => open("reject")}>
+                <Button type="button" variant="outline" className={cn(secondaryButton, "text-status-critical-ink")} disabled={saving} onClick={() => open("reject")}>
                   Rejeitar
                 </Button>
                 {delivery ? (
-                  <Button type="button" variant="outline" className={cn(secondaryButton, "text-[#b4570f]")} disabled={saving} onClick={() => open("adjust")}>
+                  <Button type="button" variant="outline" className={cn(secondaryButton, "text-status-adjust-ink")} disabled={saving} onClick={() => open("adjust")}>
                     <RotateCcw aria-hidden="true" /> Solicitar correções
                   </Button>
                 ) : null}
@@ -316,9 +316,9 @@ function HomologationBody({
       {blockedReason ? <Notice tone="warning" text={blockedReason} /> : null}
 
       {awaitingAuthorization ? (
-        <section className="rounded-[9px] border border-[#efc3bf] bg-[#fff7f6] p-3.5">
-          <strong className="block text-xs text-[#9f2219]">Nova submissão aguardando autorização</strong>
-          <p className="mt-[5px] text-xs leading-[1.45] text-[#8a3b33]">
+        <section className="rounded-[9px] border border-status-critical/40 bg-status-critical-soft p-3.5">
+          <strong className="block text-xs text-status-critical-ink">Nova submissão aguardando autorização</strong>
+          <p className="mt-[5px] text-xs leading-[1.45] text-status-critical-ink">
             Após a rejeição, o reenvio depende de autorização do PMO, do ADMIN ou da gestão do projeto. O prazo planejado não foi alterado.
           </p>
           {canAuthorize ? (
@@ -363,11 +363,11 @@ function HomologationBody({
       ) : null}
 
       {canDeliver ? (
-        <section className="rounded-[9px] border border-[#e4e7ec] bg-white p-3.5">
-          <strong className="block text-xs text-[#344054]">
+        <section className="rounded-[9px] border border-border bg-card p-3.5">
+          <strong className="block text-xs text-foreground">
             {milestone.status === "PENDENTE" ? "Enviar para homologação" : homologation ? "Reenviar para homologação" : "Reenviar entrega corrigida"}
           </strong>
-          <p className="mt-[5px] text-xs leading-[1.45] text-[#667085]">
+          <p className="mt-[5px] text-xs leading-[1.45] text-muted-foreground">
             {homologation
               ? "Cada envio abre uma nova tentativa no mesmo marco. As evidências ainda não enviadas acompanham a tentativa e ficam bloqueadas após o envio."
               : "As evidências ainda não enviadas acompanham esta entrega e ficam bloqueadas para edição após o envio."}
@@ -421,9 +421,9 @@ function DecisionEvidenceLinks({ links, onChange }: { links: EvidenceLink[]; onC
     onChange(links.map((link, position) => (position === index ? { ...link, ...patch } : link)));
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="flex items-baseline justify-between text-xs font-semibold text-[#475467]">
+      <span className="flex items-baseline justify-between text-xs font-semibold text-foreground/80">
         Evidências da decisão
-        <small className="text-xs font-normal text-[#98a2b3]">opcional</small>
+        <small className="text-xs font-normal text-muted-foreground">opcional</small>
       </span>
       {links.map((link, index) => (
         <div key={index} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] gap-1.5">
@@ -504,17 +504,17 @@ function RoundCard({ round, evidences, homologation }: { round: DeliveryRound; e
   const status = ROUND_STATUS[round.status];
   const submitted = round.submittedAt ? recordedDate(round.submittedAt) : "data não registrada";
   return (
-    <article className="rounded-[8px] border border-[#e4e7ec] bg-white p-3">
+    <article className="rounded-[8px] border border-border bg-card p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <strong className="block text-xs text-[#253248]">
+          <strong className="block text-xs text-foreground">
             {homologation ? "Tentativa" : "Entrega"} {round.round}
           </strong>
-          {round.legacy ? <span className="mt-[3px] block text-xs text-[#98a2b3]">Registro anterior ao controle de rodadas</span> : null}
+          {round.legacy ? <span className="mt-[3px] block text-xs text-muted-foreground">Registro anterior ao controle de rodadas</span> : null}
         </div>
         <EapStatusBadge kind={status.kind} label={status.label} size="sm" />
       </div>
-      <dl className="mt-2.5 flex flex-col gap-1.5 text-xs leading-[1.45] text-[#475467]">
+      <dl className="mt-2.5 flex flex-col gap-1.5 text-xs leading-[1.45] text-foreground/80">
         <Line label="Enviada">
           {round.submittedByName ?? "Não identificado"} · {submitted}
         </Line>
@@ -536,7 +536,7 @@ function RoundCard({ round, evidences, homologation }: { round: DeliveryRound; e
       </dl>
       {evidences ? (
         <div className="mt-2.5">
-          {evidences.length > 0 ? <EvidenceLinks items={evidences} locked /> : <p className="text-xs text-[#98a2b3]">Nenhuma evidência vinculada a esta rodada.</p>}
+          {evidences.length > 0 ? <EvidenceLinks items={evidences} locked /> : <p className="text-xs text-muted-foreground">Nenhuma evidência vinculada a esta rodada.</p>}
         </div>
       ) : null}
     </article>
@@ -547,20 +547,20 @@ function EvidenceLinks({ items, locked = false }: { items: EvidenceItem[]; locke
   return (
     <ul className="flex flex-col gap-1.5">
       {items.map((item) => (
-        <li key={item.id} className="grid min-h-11 grid-cols-[25px_minmax(0,1fr)_25px] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-1.5 py-1">
-          <span className="grid size-[25px] place-items-center rounded-[6px] bg-[#f0f3f6] text-[#52677e]">
+        <li key={item.id} className="grid min-h-11 grid-cols-[25px_minmax(0,1fr)_25px] items-center gap-2 rounded-[7px] border border-border/60 px-1.5 py-1">
+          <span className="grid size-[25px] place-items-center rounded-[6px] bg-muted text-muted-foreground">
             {locked ? <Lock className="size-3" aria-label="Bloqueada após o envio" /> : <FileText className="size-3.5" aria-hidden="true" />}
           </span>
           <span className="min-w-0">
-            <strong className="block truncate text-xs font-semibold text-[#344054]">{item.title}</strong>
-            <span className="block text-xs text-[#98a2b3]">Registrada em {item.createdAt}</span>
+            <strong className="block truncate text-xs font-semibold text-foreground">{item.title}</strong>
+            <span className="block text-xs text-muted-foreground">Registrada em {item.createdAt}</span>
           </span>
           <a
             href={item.url}
             target="_blank"
             rel="noreferrer"
             aria-label={`Consultar ${item.title}`}
-            className="grid size-[25px] place-items-center rounded-[6px] text-[#667085] hover:bg-[#f2f4f7]"
+            className="grid size-[25px] place-items-center rounded-[6px] text-muted-foreground hover:bg-muted"
           >
             <ChevronRight className="size-3.5" aria-hidden="true" />
           </a>
@@ -573,7 +573,7 @@ function EvidenceLinks({ items, locked = false }: { items: EvidenceItem[]; locke
 function Line({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[92px_minmax(0,1fr)] gap-2">
-      <dt className="text-[#98a2b3]">{label}</dt>
+      <dt className="text-muted-foreground">{label}</dt>
       <dd className="break-words whitespace-pre-wrap">{children}</dd>
     </div>
   );
@@ -582,9 +582,9 @@ function Line({ label, children }: { label: string; children: ReactNode }) {
 function Field({ label, hint, children }: { label: string; hint: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="flex items-baseline justify-between text-xs font-semibold text-[#475467]">
+      <span className="flex items-baseline justify-between text-xs font-semibold text-foreground/80">
         {label}
-        <small className="text-xs font-normal text-[#98a2b3]">{hint}</small>
+        <small className="text-xs font-normal text-muted-foreground">{hint}</small>
       </span>
       {children}
     </label>
@@ -596,7 +596,7 @@ function Notice({ tone, text }: { tone: "warning" | "muted"; text: string }) {
     <p
       className={cn(
         "flex items-start gap-2 rounded-[7px] p-2.5 text-xs leading-[1.45]",
-        tone === "warning" ? "bg-[#fff8e9] text-[#865516]" : "bg-[#f8f9fb] text-[#667085]",
+        tone === "warning" ? "bg-status-attention-soft text-status-attention-ink" : "bg-muted/50 text-muted-foreground",
       )}
     >
       <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
@@ -605,9 +605,9 @@ function Notice({ tone, text }: { tone: "warning" | "muted"; text: string }) {
   );
 }
 
-const inputClass = "h-10 min-w-0 rounded-[7px] border border-[#d7dce3] bg-white px-3 text-xs text-[#344054] outline-none focus-visible:border-[#8ab4eb] focus-visible:ring-2 focus-visible:ring-[#8ab4eb]/40";
-const textareaClass = "min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-xs md:text-xs";
-const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-3.5 text-xs font-semibold";
-const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-3.5 text-xs font-semibold text-white hover:bg-[#144ca8]";
-const groupLabel = "mb-1.5 block text-xs font-semibold text-[#475467]";
-const emptyInline = "flex min-h-10 items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-xs text-[#98a2b3]";
+const inputClass = "h-10 min-w-0 rounded-[7px] border border-input bg-card px-3 text-xs text-foreground outline-none focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40";
+const textareaClass = "min-h-[66px] rounded-[7px] border-input bg-card px-2.5 py-2 text-xs md:text-xs";
+const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-input px-3.5 text-xs font-semibold";
+const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-primary px-3.5 text-xs font-semibold text-primary-foreground hover:bg-primary";
+const groupLabel = "mb-1.5 block text-xs font-semibold text-foreground/80";
+const emptyInline = "flex min-h-10 items-center rounded-[7px] border border-dashed border-input bg-muted/50 px-2.5 text-xs text-muted-foreground";

@@ -287,7 +287,7 @@ export function EvidencesAndTickets({
                   "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none motion-reduce:transition-none",
                   filter === value
                     ? "border-primary bg-primary text-primary-foreground"
-                    : "border-[#E4E7EC] bg-background text-muted-foreground hover:bg-muted dark:border-border",
+                    : "border-border bg-background text-muted-foreground hover:bg-muted dark:border-border",
                 )}
               >
                 {label}

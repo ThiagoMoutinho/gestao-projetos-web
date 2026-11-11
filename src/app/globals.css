@@ -22,6 +22,31 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-heading: var(--font-sans);
+  --color-status-critical: var(--status-critical);
+  --color-status-critical-soft: var(--status-critical-soft);
+  --color-status-critical-ink: var(--status-critical-ink);
+  --color-status-attention: var(--status-attention);
+  --color-status-attention-soft: var(--status-attention-soft);
+  --color-status-attention-ink: var(--status-attention-ink);
+  --color-status-running: var(--status-running);
+  --color-status-running-soft: var(--status-running-soft);
+  --color-status-running-ink: var(--status-running-ink);
+  --color-status-validation: var(--status-validation);
+  --color-status-validation-soft: var(--status-validation-soft);
+  --color-status-validation-ink: var(--status-validation-ink);
+  --color-status-done: var(--status-done);
+  --color-status-done-soft: var(--status-done-soft);
+  --color-status-done-ink: var(--status-done-ink);
+  --color-status-idle: var(--status-idle);
+  --color-status-idle-soft: var(--status-idle-soft);
+  --color-status-idle-ink: var(--status-idle-ink);
+  --color-status-adjust: var(--status-adjust);
+  --color-status-adjust-soft: var(--status-adjust-soft);
+  --color-status-adjust-ink: var(--status-adjust-ink);
+  --color-bar: var(--bar);
+  --color-bar-foreground: var(--bar-foreground);
+  --color-bar-muted: var(--bar-muted);
+  --color-bar-border: var(--bar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -66,85 +91,221 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Fundação de tokens do IGEPPS. Três aparências independentes (classe no <html>):
+ *   .igepps  Padrão IGEPPS: menu e barra azul-marinho, fundo azul muito claro, cards brancos (valores de :root).
+ *   .light   Tema claro neutro: menu branco.
+ *   .dark    Tema escuro: azul-marinho e grafite azulado.
+ * - Destaque (--brand, --brand-deep, --primary, --ring) muda só com a paleta ([data-palette]).
+ * - Situação (--status-*) é semântica: o mesmo significado em qualquer aparência e paleta.
+ */
 :root {
-  --background: #f3f5f8;
+  /* Superfícies e textos (Padrão IGEPPS) */
+  --background: #edf2fa;
   --foreground: #172033;
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --brand: oklch(0.29 0.09 258);
-  --brand-foreground: oklch(0.98 0.005 250);
-  --primary: oklch(0.57 0.19 258);
-  --primary-foreground: oklch(0.99 0.002 250);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: #667085;
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --card: #ffffff;
+  --card-foreground: #172033;
+  --popover: #ffffff;
+  --popover-foreground: #172033;
+  --secondary: #e6edf8;
+  --secondary-foreground: #172033;
+  --muted: #f0f4fa;
+  --muted-foreground: #5d6a80;
+  --accent: #e4edf9;
+  --accent-foreground: #172033;
+  --border: #dde4ee;
+  --input: #cfd8e6;
+  --radius: 0.625rem;
+
+  /* Estados */
+  --destructive: oklch(0.53 0.23 27.3);
   --success: oklch(0.62 0.14 152);
   --success-foreground: oklch(0.3 0.06 152);
   --warning: oklch(0.78 0.13 85);
   --warning-foreground: oklch(0.4 0.08 70);
-  --border: #e4e7ec;
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.57 0.19 258);
-  --chart-1: oklch(0.57 0.19 258);
-  --chart-2: oklch(0.48 0.12 258);
-  --chart-3: oklch(0.38 0.08 258);
-  --chart-4: oklch(0.7 0.1 258);
-  --chart-5: oklch(0.29 0.09 258);
-  --radius: 0.625rem;
-  --sidebar: var(--brand);
-  --sidebar-foreground: var(--brand-foreground);
+
+  /* Destaque da paleta padrão (azul institucional) */
+  --brand: #244873;
+  --brand-deep: #13294f;
+  --brand-foreground: #ffffff;
+  --primary: #2760b3;
+  --primary-foreground: #ffffff;
+  --ring: #2760b3;
+
+  /* Gráficos derivados do destaque */
+  --chart-1: var(--primary);
+  --chart-2: color-mix(in oklch, var(--primary) 72%, var(--foreground));
+  --chart-3: color-mix(in oklch, var(--primary) 50%, var(--foreground));
+  --chart-4: color-mix(in oklch, var(--primary) 60%, white);
+  --chart-5: var(--brand);
+
+  /* Menu lateral azul-marinho (acompanha a paleta) */
+  --sidebar: var(--brand-deep);
+  --sidebar-foreground: #f4f8ff;
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: oklch(1 0 0 / 18%);
-  --sidebar-accent-foreground: var(--brand-foreground);
-  --sidebar-border: oklch(1 0 0 / 16%);
+  --sidebar-accent: rgb(255 255 255 / 16%);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 14%);
+  --sidebar-ring: color-mix(in oklch, var(--primary) 55%, white);
+  --sidebar-marker: color-mix(in oklch, var(--primary) 55%, white);
+
+  /* Barra superior */
+  --bar: color-mix(in oklch, var(--brand-deep) 78%, black);
+  --bar-foreground: #ffffff;
+  --bar-muted: #bccbe3;
+  --bar-border: rgb(255 255 255 / 14%);
+
+  /* Situações (semânticas; ponto, fundo suave e texto) */
+  --status-critical: #d92d20;
+  --status-critical-soft: #fdecea;
+  --status-critical-ink: #b42318;
+  --status-attention: #e0a130;
+  --status-attention-soft: #fff4e0;
+  --status-attention-ink: #8a4a0b;
+  --status-running: #2873cf;
+  --status-running-soft: #e8f1fc;
+  --status-running-ink: #174f9e;
+  --status-validation: #7450bf;
+  --status-validation-soft: #f1ebfb;
+  --status-validation-ink: #5b3aa3;
+  --status-done: #12a46e;
+  --status-done-soft: #e6f6ef;
+  --status-done-ink: #067647;
+  --status-idle: #9fb3c8;
+  --status-idle-soft: #f1f4f8;
+  --status-idle-ink: #475467;
+  --status-adjust: #e0782a;
+  --status-adjust-soft: #fdeedd;
+  --status-adjust-ink: #9a4a0c;
+}
+
+/* Paletas (valem em qualquer aparência). O seletor sem :root permite pré-visualizar a paleta em qualquer elemento. */
+[data-palette="institucional"] {
+  --brand: #244873;
+  --brand-deep: #13294f;
+  --primary: #2760b3;
+  --ring: #2760b3;
+}
+[data-palette="petroleo"] {
+  --brand: #24565e;
+  --brand-deep: #12393f;
+  --primary: #287279;
+  --ring: #287279;
+}
+[data-palette="violeta"] {
+  --brand: #4a3b7a;
+  --brand-deep: #2a2057;
+  --primary: #6b4fc2;
+  --ring: #6b4fc2;
+}
+[data-palette="esmeralda"] {
+  --brand: #2f5b45;
+  --brand-deep: #123a29;
+  --primary: #1d7550;
+  --ring: #1d7550;
+}
+
+/* Tema claro neutro: menu branco, fundo cinza-azulado suave. */
+.light {
+  --background: #eaf0f8;
+  --foreground: #1e293b;
+  --card-foreground: #1e293b;
+  --popover-foreground: #1e293b;
+  --secondary: #e3ebf6;
+  --secondary-foreground: #1e293b;
+  --muted: #e8eef7;
+  --muted-foreground: #5b6b80;
+  --accent: #e1eaf7;
+  --accent-foreground: #1e293b;
+  --border: #d3ddea;
+  --input: #c9d5e5;
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-accent: color-mix(in oklch, var(--primary) 10%, transparent);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
   --sidebar-ring: var(--primary);
+  --sidebar-marker: var(--primary);
+  --bar: #17263a;
+  --bar-muted: #b8c5da;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --brand: oklch(0.24 0.06 258);
-  --brand-foreground: oklch(0.98 0.005 250);
-  --primary: oklch(0.72 0.14 258);
-  --primary-foreground: oklch(0.2 0.04 258);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Azul-marinho e grafite azulado: sem preto absoluto */
+  --background: #111c2e;
+  --foreground: #e6edf7;
+  --card: #18263c;
+  --card-foreground: #e6edf7;
+  --popover: #1b2a42;
+  --popover-foreground: #e6edf7;
+  --secondary: #22344f;
+  --secondary-foreground: #e6edf7;
+  --muted: #1f3049;
+  --muted-foreground: #9db0c9;
+  --accent: #243753;
+  --accent-foreground: #e6edf7;
+  --border: #2b3d58;
+  --input: #34486a;
   --destructive: oklch(0.704 0.191 22.216);
   --success: oklch(0.72 0.14 152);
   --success-foreground: oklch(0.92 0.04 152);
   --warning: oklch(0.78 0.12 85);
   --warning-foreground: oklch(0.95 0.03 85);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.08 250);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.7 0.09 250);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+
+  --primary: #6fa3f2;
+  --primary-foreground: #0b1626;
+  --ring: #6fa3f2;
+
+  --sidebar: #14233a;
+  --sidebar-marker: var(--primary);
+  --sidebar-accent: color-mix(in oklch, var(--primary) 16%, transparent);
+  --bar: #0e1827;
+  --bar-border: #22324a;
+
+  --status-critical: #f2645c;
+  --status-critical-soft: color-mix(in oklch, var(--status-critical) 18%, transparent);
+  --status-critical-ink: #ffb4ae;
+  --status-attention: #ebb04a;
+  --status-attention-soft: color-mix(in oklch, var(--status-attention) 18%, transparent);
+  --status-attention-ink: #f6d08a;
+  --status-running: #5b9bf0;
+  --status-running-soft: color-mix(in oklch, var(--status-running) 18%, transparent);
+  --status-running-ink: #a9c8f7;
+  --status-validation: #a28bf0;
+  --status-validation-soft: color-mix(in oklch, var(--status-validation) 18%, transparent);
+  --status-validation-ink: #cdbff7;
+  --status-done: #3dc48f;
+  --status-done-soft: color-mix(in oklch, var(--status-done) 18%, transparent);
+  --status-done-ink: #9be3c3;
+  --status-idle: #8ea2bc;
+  --status-idle-soft: color-mix(in oklch, var(--status-idle) 18%, transparent);
+  --status-idle-ink: #b5c3d6;
+  --status-adjust: #f08a45;
+  --status-adjust-soft: color-mix(in oklch, var(--status-adjust) 18%, transparent);
+  --status-adjust-ink: #f8c49a;
+}
+
+/* Paletas (tema escuro): destaque mais claro para manter a legibilidade sobre o azul-marinho. */
+.dark [data-palette="institucional"],
+.dark[data-palette="institucional"] {
+  --primary: #6fa3f2;
+  --ring: #6fa3f2;
+}
+.dark [data-palette="petroleo"],
+.dark[data-palette="petroleo"] {
+  --primary: #5fb5bd;
+  --ring: #5fb5bd;
+}
+.dark [data-palette="violeta"],
+.dark[data-palette="violeta"] {
+  --primary: #a28bf0;
+  --ring: #a28bf0;
+}
+.dark [data-palette="esmeralda"],
+.dark[data-palette="esmeralda"] {
+  --primary: #5fc48e;
+  --ring: #5fc48e;
 }
 
 @layer base {
@@ -199,4 +360,48 @@
   .motion-fade {
     animation: none;
   }
+}
+
+/* Menu lateral: item ativo em negrito com marcador de 3 px na cor primária (fora de @layer para vencer as utilidades do componente). */
+[data-sidebar="menu-button"] {
+  position: relative;
+}
+[data-sidebar="menu-button"][data-active] {
+  font-weight: 700;
+}
+[data-sidebar="menu-button"][data-active]::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.375rem;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sidebar-marker, var(--primary));
+}
+
+/* Troca suave de aparência e paleta (a classe é aplicada só durante a troca; respeita movimento reduzido). */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 220ms ease-out,
+    color 220ms ease-out,
+    border-color 220ms ease-out,
+    fill 220ms ease-out,
+    stroke 220ms ease-out,
+    box-shadow 220ms ease-out !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: none !important;
+  }
+}
+
+/* Abas inativas: o padrão do shadcn (60% de opacidade) fica abaixo de 4,5:1; esta regra garante o contraste AA. */
+[data-slot="tabs-trigger"]:not([data-active]) {
+  color: color-mix(in oklch, var(--foreground) 74%, transparent);
 }

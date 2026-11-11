@@ -73,7 +73,7 @@ export function ProjectClosure({ projectId, closed, canClose }: { projectId: str
 
   return (
     <div className="motion-fade flex flex-wrap items-center gap-2">
-      <span className="flex items-center gap-1.5 text-xs font-medium text-[#157454]" title="Todas as fases concluídas; o encerramento depende de decisão formal">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-status-done-ink" title="Todas as fases concluídas; o encerramento depende de decisão formal">
         <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
         Apto para encerramento
       </span>
@@ -92,8 +92,8 @@ export function ProjectClosure({ projectId, closed, canClose }: { projectId: str
       >
         <AlertDialogContent className="max-w-[420px]! gap-3 rounded-[10px] p-5">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base font-semibold text-[#101828]">Encerrar o projeto?</AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] leading-relaxed text-[#475467]">
+            <AlertDialogTitle className="text-base font-semibold text-foreground">Encerrar o projeto?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[13px] leading-relaxed text-foreground/80">
               O projeto será formalmente concluído e sairá da lista de ativos, sem ser arquivado. A EAP, as datas, as evidências e as
               homologações são preservadas, e o encerramento fica registrado no histórico com o seu usuário.
             </AlertDialogDescription>

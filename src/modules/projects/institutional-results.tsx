@@ -362,7 +362,7 @@ function StatusBadge({ item }: { item: ResultItem }) {
     ],
     CORRECTIONS_REQUESTED: [
       "Correções solicitadas",
-      "border-destructive/40 bg-destructive/10 text-destructive",
+      "border-destructive/40 bg-status-critical-soft text-status-critical-ink",
     ],
     EMPTY: null,
   } as const;
@@ -1077,7 +1077,7 @@ export function ResultsCard(props: {
       <Presence open={!summaryEditing.editing} className="min-h-0 flex-1">
         {summary.published ? (
           <div className="flex h-full min-h-0 flex-col">
-            <p className="text-xs font-semibold text-[#475467]">
+            <p className="text-xs font-semibold text-foreground/80">
               Síntese dos Resultados Institucionais
             </p>
             <ExpandableText

@@ -3,34 +3,20 @@
 import {
   CalendarDays,
   ChevronRight,
-  ChevronsUpDown,
   FileText,
   Flag,
   History,
   LayoutDashboard,
-  Loader2,
-  LogOut,
   Network,
   PanelLeftClose,
   Users,
   type LucideIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useMemo } from "react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -49,7 +35,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ComboOption } from "@/components/option-combobox";
 import {
   Combobox,
@@ -60,26 +45,8 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { listProjects } from "@/lib/api/generated/projetos/projetos";
-import { logout } from "@/modules/auth/client";
-import { roleLabel } from "@/modules/auth/roles";
-
-import type { AppUser } from "./app-header";
+import { useAccessibleProjects } from "./accessible-projects";
 import { APP_NAV_GROUPS, type AppNavChild, type AppNavItem } from "./app-nav";
-
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) {
-    return "U";
-  }
-
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
 
 function itemTooltip(label: string, enabled: boolean) {
   return enabled ? label : `${label}, indisponível`;
@@ -169,134 +136,6 @@ function NavItem({ item, pathname }: { item: AppNavItem; pathname: string }) {
       )}
     </SidebarMenuItem>
   );
-}
-
-function UserIdentity({
-  user,
-  tone,
-  role,
-}: {
-  user: AppUser;
-  tone: "sidebar" | "menu";
-  role?: string;
-}) {
-  return (
-    <>
-      <Avatar className="size-8 rounded-lg after:rounded-lg">
-        <AvatarFallback className="rounded-lg bg-primary text-xs font-medium text-primary-foreground">
-          {initials(user.name)}
-        </AvatarFallback>
-      </Avatar>
-      <span
-        className={
-          tone === "sidebar"
-            ? "grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden"
-            : "grid min-w-0 flex-1 text-left text-sm leading-tight"
-        }
-      >
-        <span className={tone === "menu" ? "truncate font-medium text-foreground" : "truncate font-medium"}>
-          {user.name}
-        </span>
-        <span
-          className={
-            tone === "sidebar"
-              ? "truncate text-xs text-sidebar-foreground/75"
-              : "truncate text-xs text-muted-foreground"
-          }
-        >
-          {user.email}
-        </span>
-        {role ? <span className="truncate text-xs text-muted-foreground">{role}</span> : null}
-      </span>
-    </>
-  );
-}
-
-function SidebarUser({ user }: { user: AppUser }) {
-  const router = useRouter();
-  const { isMobile } = useSidebar();
-  const [pending, setPending] = useState(false);
-  const profile = roleLabel(user.role);
-
-  async function onLogout() {
-    if (pending) {
-      return;
-    }
-
-    setPending(true);
-    try {
-      await logout();
-      router.replace("/login");
-      router.refresh();
-    } finally {
-      setPending(false);
-    }
-  }
-
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                size="lg"
-                tooltip={user.name}
-                className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-0!"
-              />
-            }
-          >
-            <UserIdentity user={user} tone="sidebar" />
-            <ChevronsUpDown className="ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="min-w-56 rounded-lg"
-            side={isMobile ? "top" : "right"}
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="p-0 font-normal">
-                <span className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <UserIdentity user={user} tone="menu" role={profile} />
-                </span>
-              </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={pending} onClick={() => void onLogout()}>
-              {pending ? <Loader2 className="animate-spin" /> : <LogOut />}
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
-}
-
-/** Projetos que o usuário pode acessar (a API aplica as permissões); null enquanto carrega ou se a consulta falhar. */
-function useAccessibleProjects() {
-  const [projects, setProjects] = useState<ComboOption[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    listProjects()
-      .then((response) => {
-        if (active && response.status === 200) {
-          setProjects(
-            response.data.data
-              .map((project) => ({ value: project.id, label: project.name }))
-              .sort((left, right) => left.label.localeCompare(right.label, "pt-BR")),
-          );
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return projects;
 }
 
 const PROJECT_NAV_UNAVAILABLE: ReadonlyArray<{ label: string; icon: LucideIcon }> = [
@@ -439,77 +278,55 @@ function ProjectSwitcher({
   );
 }
 
-export function AppSidebar({ user }: { user: AppUser }) {
+export function AppSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const tab = useSearchParams().get("aba");
   const eapOpen = tab === "eap";
   const scheduleOpen = tab === "cronograma";
   const { state, toggleSidebar } = useSidebar();
-  const projects = useAccessibleProjects();
+  const { projects: accessible } = useAccessibleProjects();
+  const projects: ComboOption[] | null = useMemo(
+    () => accessible?.map((project) => ({ value: project.id, label: project.name })) ?? null,
+    [accessible],
+  );
   const routeProject = pathname.match(/^\/projetos\/([^/]+)$/)?.[1];
   const currentProject = routeProject && projects?.some((project) => project.value === routeProject) ? routeProject : undefined;
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="overflow-hidden group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
-        <div className="flex h-15 items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center">
-          <Image
-            src="/brand/igepps-logo.png"
-            alt="IGEPPS — Instituto de Gestão Previdenciária e Proteção Social do Estado do Pará"
-            width={218}
-            height={85}
-            className="h-13 w-auto max-w-full min-w-0 object-contain object-left group-data-[collapsible=icon]:hidden"
-          />
-          <Tooltip>
-            <TooltipTrigger
-              type="button"
-              onClick={toggleSidebar}
-              className="hidden size-8 items-center justify-center rounded-md transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:flex"
-              aria-label="Expandir menu lateral"
-            >
-              <Image
-                src="/brand/igepps-mark.png"
-                alt=""
-                width={70}
-                height={66}
-                className="size-7 object-contain"
-              />
-            </TooltipTrigger>
-            <TooltipContent side="right" hidden={state !== "collapsed"}>
-              Expandir menu
-            </TooltipContent>
-          </Tooltip>
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-label="Recolher menu lateral"
-            title="Recolher menu"
-            className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:hidden"
-          >
-            <PanelLeftClose className="size-4" aria-hidden="true" />
-          </button>
-        </div>
+    <Sidebar collapsible="icon" className={className}>
+      <SidebarHeader className="overflow-hidden group-data-[collapsible=icon]:hidden">
         <ProjectSwitcher projects={projects} currentProject={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} />
       </SidebarHeader>
       <SidebarContent>
         {APP_NAV_GROUPS.map((group) => (
           <Fragment key={group.label}>
-          {group.label === "Gestão" ? <ProjectNav projectId={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} /> : null}
-          <SidebarGroup>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-1">
-                {group.items.map((item) => (
-                  <NavItem key={item.label} item={item} pathname={pathname} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+            {group.label === "Gestão" ? <ProjectNav projectId={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} /> : null}
+            <SidebarGroup>
+              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1">
+                  {group.items.map((item) => (
+                    <NavItem key={item.label} item={item} pathname={pathname} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           </Fragment>
         ))}
       </SidebarContent>
       <SidebarFooter className="shrink-0">
-        <SidebarUser user={user} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip={state === "collapsed" ? "Expandir menu" : "Recolher menu"}
+              onClick={toggleSidebar}
+              aria-label={state === "collapsed" ? "Expandir menu lateral" : "Recolher menu lateral"}
+            >
+              <PanelLeftClose className="size-4 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:rotate-180 motion-reduce:transition-none" />
+              <span>Recolher menu</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

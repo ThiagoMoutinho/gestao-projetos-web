@@ -134,7 +134,7 @@ export default function RichTextEditor({ label, value, maxLength, onChange, onCo
         }
       }}
     >
-      <span className="text-xs font-semibold text-[#475467]">{label}</span>
+      <span className="text-xs font-semibold text-foreground/80">{label}</span>
       <div
         className={cn(
           "overflow-hidden rounded-lg border bg-card transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/20 motion-reduce:transition-none",

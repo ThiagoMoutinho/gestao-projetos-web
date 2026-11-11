@@ -10,8 +10,8 @@ export default function NotificationsLoading() {
         <Skeleton className="h-8 w-72 motion-reduce:animate-none" />
         <Skeleton className="h-4 w-full max-w-md motion-reduce:animate-none" />
       </div>
-      <div className="overflow-hidden rounded-[10px] border border-[#e4e7ec] bg-white">
-        <div className="flex gap-5 border-b border-[#edf0f3] px-4 pt-3 pb-2.5">
+      <div className="overflow-hidden rounded-[10px] border border-border bg-card">
+        <div className="flex gap-5 border-b border-border/60 px-4 pt-3 pb-2.5">
           <Skeleton className="h-4 w-36 motion-reduce:animate-none" />
           <Skeleton className="h-4 w-36 motion-reduce:animate-none" />
         </div>
@@ -20,7 +20,7 @@ export default function NotificationsLoading() {
             <Skeleton key={index} className="h-9 rounded-lg motion-reduce:animate-none" />
           ))}
         </div>
-        <div className="flex flex-col gap-2.5 border-t border-[#edf0f3] bg-[#f9fafb] p-4">
+        <div className="flex flex-col gap-2.5 border-t border-border/60 bg-muted/50 p-4">
           {Array.from({ length: 3 }, (_, index) => (
             <Skeleton key={index} className="h-[112px] w-full rounded-[10px] motion-reduce:animate-none" />
           ))}

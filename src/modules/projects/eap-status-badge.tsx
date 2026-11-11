@@ -8,15 +8,15 @@ import type { EapStatusKind } from "./eap-status";
 export { milestoneStatusKind, phaseStatusKind, taskStatusKind, type EapStatusKind } from "./eap-status";
 
 const KIND_CLASS: Record<EapStatusKind, string> = {
-  "not-started": "border-[#c7d4e5] bg-[#f3f7fc] text-[#45627f]",
-  "in-progress": "bg-primary/10 text-primary",
-  done: "bg-success/15 text-success-foreground",
-  delivered: "bg-[#f4ecfb] text-[#7450bf]",
-  adjustments: "bg-[#fdeedd] text-[#b4570f]",
-  rejected: "bg-destructive/10 text-destructive",
-  suspended: "bg-warning/20 text-warning-foreground",
-  cancelled: "border-[#d0d5dd] bg-[#f2f4f7] text-[#98a2b3] line-through decoration-[#98a2b3]",
-  attention: "bg-warning/20 text-warning-foreground",
+  "not-started": "border-status-idle/50 bg-status-idle-soft text-status-idle-ink",
+  "in-progress": "bg-status-running-soft text-status-running-ink",
+  done: "bg-status-done-soft text-status-done-ink",
+  delivered: "bg-status-validation-soft text-status-validation-ink",
+  adjustments: "bg-status-adjust-soft text-status-adjust-ink",
+  rejected: "bg-status-critical-soft text-status-critical-ink",
+  suspended: "bg-status-attention-soft text-status-attention-ink",
+  cancelled: "border-border bg-muted text-muted-foreground line-through decoration-muted-foreground",
+  attention: "bg-status-attention-soft text-status-attention-ink",
 };
 
 /**

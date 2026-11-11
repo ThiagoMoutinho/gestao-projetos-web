@@ -62,7 +62,7 @@ function Stat({
   const active = value !== null && value > 0;
   const color = !active ? "text-muted-foreground" : tone === "danger" ? "text-destructive" : tone === "warning" ? "text-warning-foreground" : "text-foreground";
   return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-[#E4E7EC] px-3 py-2.5 dark:border-border" title={hint}>
+    <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-border px-3 py-2.5 dark:border-border" title={hint}>
       <div className="flex items-start justify-between gap-2">
         <p className={cn("text-xl leading-none font-semibold", active ? color : "text-foreground")}>
           {value === null ? "—" : String(value).padStart(2, "0")}

@@ -85,9 +85,9 @@ const AVATAR_PALETTE = [
 
 const focusRing = "focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none";
 
-/** Ponto colorido com halo suave, na cor da situação (PROJECT_STATUS_COLOR até existirem os tokens --status-*). */
+/** Ponto colorido com halo suave, na cor da situação (token --status-*). */
 function dotStyle(color: string) {
-  return { backgroundColor: color, boxShadow: `0 0 0 3px ${color}26` };
+  return { backgroundColor: color, boxShadow: `0 0 0 3px color-mix(in oklch, ${color} 15%, transparent)` };
 }
 
 function PageHeader({ eapPrompt = false, actions }: { eapPrompt?: boolean; actions?: ReactNode }) {

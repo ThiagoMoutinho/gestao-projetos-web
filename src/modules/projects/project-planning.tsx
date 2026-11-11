@@ -23,7 +23,7 @@ export function PlanningCard({ children }: { children: React.ReactNode }) {
       unbounded
       showToggle={false}
     >
-      <div className="flex flex-col divide-y divide-[#EDF0F3] dark:divide-border">{children}</div>
+      <div className="flex flex-col divide-y divide-border/60 dark:divide-border">{children}</div>
     </SectionCard>
   );
 }

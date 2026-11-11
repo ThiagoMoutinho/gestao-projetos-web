@@ -64,7 +64,7 @@ const TONE_CLASS: Record<Tone, string> = {
   neutral: "border-border bg-muted text-muted-foreground",
   success: "border-success/40 bg-success/10 text-success-foreground",
   warning: "border-warning/50 bg-warning/10 text-warning-foreground",
-  danger: "border-destructive/40 bg-destructive/10 text-destructive",
+  danger: "border-destructive/40 bg-status-critical-soft text-status-critical-ink",
   info: "border-primary/30 bg-primary/10 text-primary",
 };
 

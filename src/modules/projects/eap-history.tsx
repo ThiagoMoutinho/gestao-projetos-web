@@ -24,15 +24,15 @@ const TONE: Record<HistoryTone, { dot: string; badge: string }> = {
   cancel: { dot: "bg-muted-foreground ring-4 ring-muted", badge: "bg-muted text-muted-foreground" },
   reactivate: { dot: "bg-primary ring-4 ring-primary/10", badge: "bg-primary/10 text-primary" },
   progress: { dot: "bg-primary ring-4 ring-primary/10", badge: "bg-primary/10 text-primary" },
-  delivery: { dot: "bg-[#8b5bbb] ring-4 ring-[#f4ecfb]", badge: "bg-[#f4ecfb] text-[#7450bf]" },
+  delivery: { dot: "bg-status-validation ring-4 ring-status-validation/30", badge: "bg-status-validation-soft text-status-validation-ink" },
   accept: { dot: "bg-success ring-4 ring-success/15", badge: "bg-success/15 text-success-foreground" },
-  adjustments: { dot: "bg-[#c4620f] ring-4 ring-[#fdeedd]", badge: "bg-[#fdeedd] text-[#b4570f]" },
-  reject: { dot: "bg-destructive ring-4 ring-destructive/10", badge: "bg-destructive/10 text-destructive" },
+  adjustments: { dot: "bg-status-adjust ring-4 ring-status-adjust/30", badge: "bg-status-adjust-soft text-status-adjust-ink" },
+  reject: { dot: "bg-destructive ring-4 ring-destructive/10", badge: "bg-status-critical-soft text-status-critical-ink" },
   automatic: { dot: "bg-muted-foreground/60 ring-4 ring-muted", badge: "bg-muted text-muted-foreground" },
-  evidence: { dot: "bg-[#8b5bbb] ring-4 ring-[#f4ecfb]", badge: "bg-[#f4ecfb] text-[#7450bf]" },
+  evidence: { dot: "bg-status-validation ring-4 ring-status-validation/30", badge: "bg-status-validation-soft text-status-validation-ink" },
   impediment: { dot: "bg-warning ring-4 ring-warning/20", badge: "bg-warning/20 text-warning-foreground" },
-  reschedule: { dot: "bg-[#3871bf] ring-4 ring-[#e9f2ff]", badge: "bg-[#e9f2ff] text-[#285da8]" },
-  dates: { dot: "bg-[#0e7c86] ring-4 ring-[#e3f6f5]", badge: "bg-[#e3f6f5] text-[#0b6a72]" },
+  reschedule: { dot: "bg-primary ring-4 ring-primary/25", badge: "bg-primary/10 text-primary" },
+  dates: { dot: "bg-primary ring-4 ring-primary/25", badge: "bg-primary/10 text-primary" },
   neutral: { dot: "bg-primary ring-4 ring-primary/10", badge: "bg-muted text-muted-foreground" },
 };
 
@@ -104,10 +104,10 @@ export function EapHistory({
               type="button"
               aria-pressed={active === group}
               className={cn(
-                "h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none",
+                "h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none",
                 active === group
-                  ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]"
-                  : "border-[#dce1e7] bg-white text-[#667085] hover:border-[#8eb4e7] hover:text-[#175cd3]",
+                  ? "border-primary/50 bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-primary",
               )}
               onClick={() => setFilter(group)}
             >
@@ -135,39 +135,39 @@ function HistoryItem({ entry }: { entry: HistoryEntry }) {
   return (
     <Collapsible className="min-w-0">
       <div className="flex items-start gap-2">
-        <strong className="min-w-0 flex-1 text-xs leading-snug text-[#344054]">{entry.title}</strong>
+        <strong className="min-w-0 flex-1 text-xs leading-snug text-foreground">{entry.title}</strong>
         <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-semibold", TONE[entry.tone].badge)}>
           {entry.tone === "cancel" ? <Ban className="size-2.5" aria-hidden="true" /> : null}
           {entry.tone === "impediment" ? <AlertTriangle className="size-2.5" aria-hidden="true" /> : null}
           {entry.kindLabel}
         </span>
       </div>
-      <p className="mt-0.5 text-xs text-[#8a94a6]">
+      <p className="mt-0.5 text-xs text-muted-foreground">
         {entry.actor} · {entry.createdAt}
       </p>
       {entry.transition ? (
-        <p className="mt-0.5 text-xs text-[#667085]">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Situação: {entry.transition.from} → {entry.transition.to}
         </p>
       ) : null}
       {expandable ? (
         <>
-          <CollapsibleTrigger className="group mt-1 inline-flex items-center gap-0.5 rounded-[4px] text-xs font-semibold text-[#205eb2] hover:underline focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none">
+          <CollapsibleTrigger className="group mt-1 inline-flex items-center gap-0.5 rounded-[4px] text-xs font-semibold text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none">
             {onlyNote ? `Ver ${onlyNote.label.toLowerCase()}` : "Ver detalhes"}
             <ChevronDown className="size-3 transition-transform group-data-[panel-open]:rotate-180" aria-hidden="true" />
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="mt-1.5 flex flex-col gap-1.5 border-l-2 border-[#e4e7ec] pl-2">
+            <div className="mt-1.5 flex flex-col gap-1.5 border-l-2 border-border pl-2">
               {entry.notes.map((note) => (
                 <div key={note.label}>
-                  <p className="text-xs font-semibold text-[#475467]">{note.label}</p>
-                  <p className="text-xs leading-snug break-words whitespace-pre-wrap text-[#344054]">{note.text}</p>
+                  <p className="text-xs font-semibold text-foreground/80">{note.label}</p>
+                  <p className="text-xs leading-snug break-words whitespace-pre-wrap text-foreground">{note.text}</p>
                 </div>
               ))}
-              {entry.cause ? <p className="text-xs text-[#667085]">Motivo: {entry.cause}</p> : null}
+              {entry.cause ? <p className="text-xs text-muted-foreground">Motivo: {entry.cause}</p> : null}
               {entry.related.map((related) => (
-                <div key={related.id} className="text-xs text-[#667085]">
-                  <span className="font-semibold text-[#475467]">{related.kindLabel}:</span> {related.title}
+                <div key={related.id} className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground/80">{related.kindLabel}:</span> {related.title}
                   {related.transition ? ` (${related.transition.from} → ${related.transition.to})` : null}
                 </div>
               ))}
@@ -180,4 +180,4 @@ function HistoryItem({ entry }: { entry: HistoryEntry }) {
 }
 
 const emptyInline =
-  "flex min-h-11 items-center gap-1.5 rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-xs text-[#98a2b3]";
+  "flex min-h-11 items-center gap-1.5 rounded-[7px] border border-dashed border-input bg-muted/50 px-2.5 text-xs text-muted-foreground";

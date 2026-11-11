@@ -116,7 +116,7 @@ export function ProjectCronograma({ project, access, onBack, onOpenEap, onSaved 
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold tracking-[0.12em] text-primary uppercase">Cronograma do projeto</p>
-          <h1 className="truncate text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-[#172033]">{project.name}</h1>
+          <h1 className="truncate text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">{project.name}</h1>
           <p className="text-[11.5px] text-muted-foreground">
             Planejamento consolidado da EAP · linha de base preservada · toda alteração de prazo exige justificativa
           </p>
@@ -234,7 +234,7 @@ function Tile({ label, value, detail, loading, valueClass }: { label: string; va
       {loading ? (
         <Skeleton className="h-7 w-28 motion-reduce:animate-none" role="status" aria-label={`Carregando ${label.toLowerCase()}`} />
       ) : (
-        <p className={cn("text-xl font-bold tracking-[-0.01em] text-[#344054] dark:text-foreground", valueClass)}>{value}</p>
+        <p className={cn("text-xl font-bold tracking-[-0.01em] text-foreground dark:text-foreground", valueClass)}>{value}</p>
       )}
       <div className="min-h-4 text-xs text-muted-foreground">{loading ? null : detail}</div>
     </Card>
@@ -242,16 +242,16 @@ function Tile({ label, value, detail, loading, valueClass }: { label: string; va
 }
 
 const BAR_TONE: Record<PhaseRow["tone"], string> = {
-  done: "bg-success",
-  overdue: "bg-destructive",
-  progress: "bg-primary",
-  idle: "bg-primary/45",
+  done: "bg-status-done",
+  overdue: "bg-status-critical",
+  progress: "bg-status-running",
+  idle: "bg-status-idle",
 };
 
 const MARK_TONE: Record<PhaseRow["milestones"][number]["state"], string> = {
-  done: "bg-success",
-  awaiting: "bg-warning",
-  overdue: "bg-destructive",
+  done: "bg-status-done",
+  awaiting: "bg-status-validation",
+  overdue: "bg-status-critical",
   pending: "bg-muted-foreground/60",
 };
 
@@ -276,9 +276,9 @@ function Lane({ axis, range, className, label }: { axis: Axis; range: { start: s
 function PhaseChart({ rows, axis, loading, onOpenEap }: { rows: PhaseRow[]; axis: Axis | null; loading: boolean; projectName: string; onOpenEap: () => void }) {
   return (
     <Card className={cn(CARD, "gap-3 p-5")}>
-      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[#EDF0F3] pb-3 dark:border-border">
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border/60 pb-3 dark:border-border">
         <div className="flex items-start gap-3">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-[#f4ecfb] text-[#7450bf]" aria-hidden="true">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-status-validation-soft text-status-validation-ink" aria-hidden="true">
             <CalendarRange className="size-4" />
           </span>
           <div>
@@ -289,10 +289,10 @@ function PhaseChart({ rows, axis, loading, onOpenEap }: { rows: PhaseRow[]; axis
         <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground" aria-label="Legenda do cronograma">
           {[
             ["bg-muted-foreground/35", "Linha de base"],
-            ["bg-primary", "Em andamento"],
-            ["bg-success", "Concluído"],
-            ["bg-destructive", "Atrasado"],
-            ["bg-warning", "Em validação"],
+            ["bg-status-running", "Em andamento"],
+            ["bg-status-done", "Concluído"],
+            ["bg-status-critical", "Atrasado"],
+            ["bg-status-validation", "Em validação"],
           ].map(([color, text]) => (
             <li key={text} className="flex items-center gap-1">
               <span className={cn("size-2.5 rounded-sm", color)} aria-hidden="true" />
@@ -331,7 +331,7 @@ function PhaseChart({ rows, axis, loading, onOpenEap }: { rows: PhaseRow[]; axis
               </div>
               <span className="text-right">Progresso</span>
             </div>
-            <ul className="divide-y divide-[#EDF0F3] dark:divide-border">
+            <ul className="divide-y divide-border/60 dark:divide-border">
               {rows.map((row) => (
                 <li key={row.id} className="grid grid-cols-[13rem_minmax(0,1fr)_3.5rem] items-center gap-x-4 py-2.5">
                   <div className="min-w-0">
@@ -371,7 +371,7 @@ function PhaseChart({ rows, axis, loading, onOpenEap }: { rows: PhaseRow[]; axis
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#EDF0F3] pt-3 text-xs dark:border-border">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs dark:border-border">
         <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onOpenEap}>
           Abrir na EAP →
         </Button>
@@ -406,7 +406,7 @@ function HistoryCard({ history, onRetry }: { history: History; onRetry: () => vo
   const visible = matching.slice(0, PREVIEW);
   return (
     <Card className={cn(CARD, "gap-3 p-5")}>
-      <div className="flex items-start justify-between gap-2 border-b border-[#EDF0F3] pb-3 dark:border-border">
+      <div className="flex items-start justify-between gap-2 border-b border-border/60 pb-3 dark:border-border">
         <div className="flex items-start gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-warning/20 text-warning-foreground" aria-hidden="true">
             <HistoryIcon className="size-4" />
@@ -478,7 +478,7 @@ function HistoryCard({ history, onRetry }: { history: History; onRetry: () => vo
 function PendingCard({ history, pending }: { history: History; pending: ListScheduleHistory200["data"] }) {
   return (
     <Card className={cn(CARD, "gap-3 p-5")}>
-      <div className="flex items-start justify-between gap-2 border-b border-[#EDF0F3] pb-3 dark:border-border">
+      <div className="flex items-start justify-between gap-2 border-b border-border/60 pb-3 dark:border-border">
         <div className="flex items-start gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-warning/20 text-warning-foreground" aria-hidden="true">
             <Hourglass className="size-4" />
@@ -537,7 +537,7 @@ function DatesCard({ loading, consolidated, actual, recorded, canDefine, onDefin
   ];
   return (
     <Card className={cn(CARD, "gap-3 p-5")}>
-      <div className="border-b border-[#EDF0F3] pb-3 dark:border-border">
+      <div className="border-b border-border/60 pb-3 dark:border-border">
         <h2 className="text-base font-medium">Datas do projeto</h2>
         <p className="text-xs text-muted-foreground">Planejado, linha de base e real, consolidados da EAP</p>
       </div>
@@ -555,7 +555,7 @@ function DatesCard({ loading, consolidated, actual, recorded, canDefine, onDefin
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-t border-[#EDF0F3] dark:border-border">
+              <tr key={row.label} className="border-t border-border/60 dark:border-border">
                 <th scope="row" className="py-2 pr-2 text-left font-normal text-muted-foreground">{row.label}</th>
                 <td className="py-2">{row.baseline ? formatCivilDate(row.baseline) : "—"}</td>
                 <td className="py-2">{row.current ? formatCivilDate(row.current) : "—"}</td>

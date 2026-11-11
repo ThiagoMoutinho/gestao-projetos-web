@@ -27,6 +27,7 @@ import { nextDeliveryFrom } from "./project-portfolio";
 import { ProjectClosure } from "./project-closure";
 import { DeliveryComplianceCard } from "./delivery-compliance-card";
 import { baselineDeviation, consolidateSchedule } from "./planning-panel";
+import { OverviewActionsSlotContext } from "./overview-widgets";
 import { ProjectOverviewSections } from "./project-institutional";
 
 
@@ -66,6 +67,8 @@ export function ProjectOverview({
   const router = useRouter();
   /** Muda depois de uma decisão de homologação para recarregar prazos, entregas e histórico. */
   const [refresh, setRefresh] = useState(0);
+  // Ponto do cabeçalho onde o botão Personalizar layout (da grade de cartões) é exibido, ao lado de Acessar EAP.
+  const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -104,6 +107,7 @@ export function ProjectOverview({
   const reference = project.glpiTicketId ? `GLPI ${project.glpiTicketId}` : null;
 
   return (
+    <OverviewActionsSlotContext.Provider value={actionsSlot}>
     <div className="flex flex-col gap-[18px]">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -115,7 +119,7 @@ export function ProjectOverview({
           </div>
           <div className="min-w-0">
             <p className="text-[11px] font-semibold tracking-[0.12em] text-primary uppercase">Visão geral do projeto</p>
-            <h1 className="truncate text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-[#172033]">{project.name}</h1>
+            <h1 className="truncate text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">{project.name}</h1>
             <p className="truncate text-[11.5px] text-muted-foreground">
               {[reference, `Responsável: ${project.ownerName}`, project.managers && project.managers.length > 0 ? `Gestor: ${managers}` : null].filter(Boolean).join(" · ")}
             </p>
@@ -130,10 +134,11 @@ export function ProjectOverview({
             <Badge variant="outline">Situação indisponível</Badge>
           )}
           <ProjectClosure projectId={project.id} closed={closed} canClose={canCloseProject(access)} />
-          <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onOpenEap}>
+          <Button type="button" size="sm" className="gap-1.5" onClick={onOpenEap}>
             <Network aria-hidden="true" />
             Acessar EAP
           </Button>
+          <span ref={setActionsSlot} className="contents" />
         </div>
       </header>
 
@@ -142,7 +147,7 @@ export function ProjectOverview({
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Indicator icon={ListChecks} tone="primary" label="Situação e progresso">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{progressPercent === null ? "Indisponível" : `${progressPercent}%`}</p>
+                <p className="text-[15px] font-bold text-foreground dark:text-foreground">{progressPercent === null ? "Indisponível" : `${progressPercent}%`}</p>
                 {status ? <EapStatusBadge kind={projectStatusKind(status)} label={projectStatusLabel(status)} /> : null}
               </div>
               <Progress
@@ -157,7 +162,7 @@ export function ProjectOverview({
             <Indicator icon={CalendarDays} tone="amber" label="Prazo vigente">
               {currentEnd ? (
                 <>
-                  <p className="text-[15px] font-bold text-[#344054] dark:text-foreground">{formatCivilDate(currentEnd)}</p>
+                  <p className="text-[15px] font-bold text-foreground dark:text-foreground">{formatCivilDate(currentEnd)}</p>
                   <DeadlineStatus indicator={deadline} />
                   {baselineEnd ? (
                     <p className="text-xs text-muted-foreground">
@@ -168,7 +173,7 @@ export function ProjectOverview({
                 </>
               ) : (
                 <>
-                  <p className="text-[15px] font-bold text-[#344054] dark:text-foreground text-muted-foreground">Prazo não definido</p>
+                  <p className="text-[15px] font-bold text-foreground dark:text-foreground text-muted-foreground">Prazo não definido</p>
                   <DeadlineStatus indicator={deadline} />
                 </>
               )}
@@ -196,14 +201,14 @@ export function ProjectOverview({
                 <Skeleton className="h-4 w-32" />
               ) : nextDelivery ? (
                 <>
-                  <p className="truncate text-[15px] font-bold text-[#344054] dark:text-foreground">{nextDelivery.title}</p>
+                  <p className="truncate text-[15px] font-bold text-foreground dark:text-foreground">{nextDelivery.title}</p>
                   <p className="text-xs text-muted-foreground">
                     {shortDate(nextDelivery.plannedAt)}
                     {nextDelivery.overdue ? " · atrasada" : ""}
                   </p>
                 </>
               ) : (
-                <p className="text-[15px] font-bold text-[#344054] dark:text-foreground text-muted-foreground">
+                <p className="text-[15px] font-bold text-foreground dark:text-foreground text-muted-foreground">
                   {monitoring.status === "error" ? "Indisponível" : "Nenhuma pendente"}
                 </p>
               )}
@@ -247,6 +252,7 @@ export function ProjectOverview({
 
       {suppliers && suppliers.length > 0 ? <DeliveryComplianceCard projectId={project.id} access={access} closed={closed} /> : null}
     </div>
+    </OverviewActionsSlotContext.Provider>
   );
 }
 
@@ -270,7 +276,7 @@ function DeadlineStatus({ indicator }: { indicator: DeadlineIndicator }) {
 
 const INDICATOR_TONE = {
   primary: "bg-primary/10 text-primary",
-  purple: "bg-[#f4ecfb] text-[#7450bf]",
+  purple: "bg-status-validation-soft text-status-validation-ink",
   amber: "bg-warning/20 text-warning-foreground",
   green: "bg-success/15 text-success-foreground",
 } as const;
@@ -317,7 +323,7 @@ function evidenceOrigins(project: ProjectDetail): Record<string, string> {
 function PendingChip({ count, one, many, alert = false }: { count: number; one: string; many: string; alert?: boolean }) {
   if (count === 0) return null;
   return (
-    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", alert ? "bg-destructive/10 text-destructive" : "bg-warning/20 text-warning-foreground")}>
+    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", alert ? "bg-status-critical-soft text-status-critical-ink" : "bg-warning/20 text-warning-foreground")}>
       {count} {count === 1 ? one : many}
     </span>
   );

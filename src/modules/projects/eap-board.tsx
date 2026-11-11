@@ -67,9 +67,9 @@ const columns =
   "grid grid-cols-1 gap-2 md:min-h-[56px] md:grid-cols-[minmax(280px,2.1fr)_minmax(108px,0.85fr)_minmax(110px,0.9fr)_minmax(130px,1fr)_minmax(84px,0.6fr)_minmax(104px,0.75fr)_minmax(112px,0.8fr)_40px] md:items-center md:gap-x-3.5";
 
 const childRow = "py-1 md:min-h-[54px]";
-const rowMenuItem = "h-9 gap-2 rounded-[5px] px-3 text-xs text-[#344054] [&_svg:not([class*='size-'])]:size-3.5";
+const rowMenuItem = "h-9 gap-2 rounded-[5px] px-3 text-xs text-foreground [&_svg:not([class*='size-'])]:size-3.5";
 const treeGuide =
-  "relative mr-[7px] -my-1 hidden h-[54px] w-[35px] shrink-0 md:block before:absolute before:top-[-4px] before:bottom-[26px] before:left-[11px] before:w-px before:bg-[#dbe1e8] after:absolute after:top-[27px] after:left-[11px] after:h-px after:w-5 after:bg-[#dbe1e8]";
+  "relative mr-[7px] -my-1 hidden h-[54px] w-[35px] shrink-0 md:block before:absolute before:top-[-4px] before:bottom-[26px] before:left-[11px] before:w-px before:bg-muted after:absolute after:top-[27px] after:left-[11px] after:h-px after:w-5 after:bg-muted";
 
 export type EapListFilter = {
   statuses: string[];
@@ -141,9 +141,9 @@ export function EapWorkbench({
     <div className="@container flex flex-col gap-[18px]">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="mb-[9px] block text-[11px] leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">Estrutura do projeto</span>
-          <h1 className="text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-[#172033]">Estrutura Analítica do Projeto</h1>
-          <p className="mt-1.5 text-[11.5px] text-[#667085]">Organize e acompanhe todas as entregas, tarefas e marcos do projeto.</p>
+          <span className="mb-[9px] block text-[11px] leading-none font-bold tracking-[0.12em] text-primary uppercase">Estrutura do projeto</span>
+          <h1 className="text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">Estrutura Analítica do Projeto</h1>
+          <p className="mt-1.5 text-[11.5px] text-muted-foreground">Organize e acompanhe todas as entregas, tarefas e marcos do projeto.</p>
         </div>
         {headingAction}
       </div>
@@ -167,25 +167,25 @@ export function EapWorkbench({
               : `${tasks.value} ${tasks.value === 1 ? "tarefa" : "tarefas"} · ${milestones.value} ${milestones.value === 1 ? "marco" : "marcos"}`
           }
         />
-        <article className="flex min-h-[104px] items-center gap-3.5 rounded-[10px] border border-[#e4e7ec] bg-white px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-[#eaf2ff] text-[#2864bb]">
+        <article className="flex min-h-[104px] items-center gap-3.5 rounded-[10px] border border-border bg-card px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-primary/10 text-primary">
             <ListChecks className="size-4" aria-hidden="true" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="text-xs text-[#667085]">Progresso calculado</span>
-            <strong className="text-[15px] leading-tight font-bold text-[#344054]">
+            <span className="text-xs text-muted-foreground">Progresso calculado</span>
+            <strong className="text-[15px] leading-tight font-bold text-foreground">
               {progress.kind === "value" ? `${formatBasis(progress.basisPoints)}%` : "—"}
             </strong>
             {progress.kind === "value" ? (
               <Progress
                 value={basisToPercent(progress.basisPoints)}
                 aria-label="Progresso calculado do projeto"
-                className="mt-1 [&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]"
+                className="mt-1 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted"
               />
             ) : (
-              <span className="text-xs font-medium text-[#667085]">Cálculo indisponível</span>
+              <span className="text-xs font-medium text-muted-foreground">Cálculo indisponível</span>
             )}
-            <small className="truncate text-xs text-[#98a2b3]">
+            <small className="truncate text-xs text-muted-foreground">
               {progress.kind === "unavailable" || progress.coverageBasis === null
                 ? "Fases com andamento calculado: —"
                 : `Fases com andamento calculado: ${formatBasis(progress.coverageBasis)}%`}
@@ -209,34 +209,34 @@ export function EapWorkbench({
         />
       </div>
 
-      <section className="relative overflow-x-auto rounded-[10px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-        <div className="flex min-h-[73px] flex-col justify-center gap-3 border-b border-[#e4e7ec] px-[17px] py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+      <section className="relative overflow-x-auto rounded-[10px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+        <div className="flex min-h-[73px] flex-col justify-center gap-3 border-b border-border px-[17px] py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
           <div>
-            <h3 className="text-base leading-[1.4] font-semibold text-[#172033]">Entregas do projeto</h3>
-            <p className="mt-[3px] text-xs text-[#98a2b3]">
+            <h3 className="text-base leading-[1.4] font-semibold text-foreground">Entregas do projeto</h3>
+            <p className="mt-[3px] text-xs text-muted-foreground">
               {itemCount === null
                 ? "A consulta de alguns itens ainda não está disponível."
                 : `${itemCount} ${itemCount === 1 ? "item organizado" : "itens organizados"} em ${phases.length} ${phases.length === 1 ? "fase" : "fases"}`}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <label className="flex h-[34px] w-full items-center gap-[7px] rounded-[7px] border border-[#d7dce3] bg-white px-2.5 text-[#98a2b3] focus-within:border-[#8ab4eb] focus-within:shadow-[0_0_0_3px_#edf4ff] sm:w-[210px]">
+            <label className="flex h-[34px] w-full items-center gap-[7px] rounded-[7px] border border-input bg-card px-2.5 text-muted-foreground focus-within:border-primary/50 focus-within:shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_10%,transparent)] sm:w-[210px]">
               <Search className="size-4 shrink-0" aria-hidden="true" />
               <Input
                 value={query}
                 onChange={(event) => onQueryChange(event.target.value)}
                 placeholder="Buscar na EAP..."
                 aria-label="Buscar na EAP"
-                className="h-7 border-0 bg-transparent px-0 text-[11.5px] text-[#172033] shadow-none focus-visible:ring-0"
+                className="h-7 border-0 bg-transparent px-0 text-[11.5px] text-foreground shadow-none focus-visible:ring-0"
               />
             </label>
             <FilterMenu filter={filter} count={filterCount} onChange={onFilterChange} />
-            <Button type="button" variant="outline" size="icon" className="size-[34px] rounded-[7px] border-[#d7dce3] text-[#667085] hover:bg-[#f2f4f7] hover:text-[#344054]" aria-label="Mais opções">
+            <Button type="button" variant="outline" size="icon" className="size-[34px] rounded-[7px] border-input text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Mais opções">
               <MoreHorizontal />
             </Button>
           </div>
         </div>
-        <div className={cn(columns, "hidden h-11 min-h-0 border-b border-[#e4e7ec] bg-[#f8f9fb] px-[17px] text-[11px] font-bold tracking-[0.08em] text-[#8a94a6] uppercase md:grid")}>
+        <div className={cn(columns, "hidden h-11 min-h-0 border-b border-border bg-muted/50 px-[17px] text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase md:grid")}>
           <span>Item da EAP</span>
           <span>Situação</span>
           <span>Andamento</span>
@@ -247,9 +247,9 @@ export function EapWorkbench({
           <span className="sr-only">Ações</span>
         </div>
         {empty ? (
-          <div className="flex h-44 flex-col items-center justify-center gap-1 text-[#98a2b3]">
+          <div className="flex h-44 flex-col items-center justify-center gap-1 text-muted-foreground">
             <Search className="size-5" aria-hidden="true" />
-            <strong className="text-sm text-[#475467]">{untouched ? "Nenhuma fase registrada" : "Nenhum item encontrado"}</strong>
+            <strong className="text-sm text-foreground/80">{untouched ? "Nenhuma fase registrada" : "Nenhum item encontrado"}</strong>
             <span className="text-xs">{untouched ? "Cadastre a primeira fase para montar a EAP." : "Tente buscar ou filtrar por outro critério."}</span>
           </div>
         ) : (
@@ -304,7 +304,7 @@ export function PhaseRow({
   return (
     <Collapsible
       defaultOpen
-      className={cn("group/collapsible border-b border-[#edf0f3] last:border-b-0", dragging && "opacity-60", dragOver && "shadow-[inset_0_2px_0_#175cd3]")}
+      className={cn("group/collapsible border-b border-border/60 last:border-b-0", dragging && "opacity-60", dragOver && "shadow-[inset_0_2px_0_var(--primary)]")}
       onDragOver={(event) => {
         if (!reorderable) {
           return;
@@ -323,8 +323,8 @@ export function PhaseRow({
       <div
         className={cn(
           columns,
-          "group/eap relative bg-[#fbfcfd] px-3 py-1.5 transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none",
-          selected && "bg-[#f8fbff]",
+          "group/eap relative bg-muted/50 px-3 py-1.5 transition-colors duration-200 ease-out hover:bg-primary/5 motion-reduce:transition-none",
+          selected && "bg-primary/5",
         )}
       >
         <StateRail overdue={overdue} />
@@ -334,7 +334,7 @@ export function PhaseRow({
               draggable
               aria-label={`Arrastar ${phase.name}`}
               title="Arraste para mudar a ordem da fase"
-              className="pointer-events-none absolute top-1/2 left-[42px] z-20 flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-[#98a2b3] opacity-0 group-hover/eap:pointer-events-auto group-hover/eap:opacity-100 hover:bg-[#eef2f6] hover:text-[#52677e] focus-visible:pointer-events-auto focus-visible:opacity-100 active:cursor-grabbing"
+              className="pointer-events-none absolute top-1/2 left-[42px] z-20 flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover/eap:pointer-events-auto group-hover/eap:opacity-100 hover:bg-muted hover:text-muted-foreground focus-visible:pointer-events-auto focus-visible:opacity-100 active:cursor-grabbing"
               onDragStart={(event) => {
                 event.dataTransfer.effectAllowed = "move";
                 event.dataTransfer.setData("text/plain", phase.id);
@@ -347,16 +347,16 @@ export function PhaseRow({
         ) : null} */}
         <div className="flex min-w-0 items-center">
           <CollapsibleTrigger
-            render={<Button type="button" variant="ghost" size="icon-sm" className="relative z-30 mr-0.5 size-8 text-[#667085]" aria-label={`Expandir ${phase.name}`} />}
+            render={<Button type="button" variant="ghost" size="icon-sm" className="relative z-30 mr-0.5 size-8 text-muted-foreground" aria-label={`Expandir ${phase.name}`} />}
           >
             <ChevronRight className="transition-transform duration-200 ease-out group-data-open/collapsible:rotate-90 motion-reduce:transition-none" />
           </CollapsibleTrigger>
           <ItemIcon type="phase">
             <Folder className="size-4" aria-hidden="true" />
           </ItemIcon>
-          <button type="button" className="min-w-0 rounded-md text-left focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none" onClick={onOpen}>
-            <span className="block truncate text-[13px] font-semibold text-[#253248]">{phase.name}</span>
-            <span className="mt-[3px] block text-xs text-[#98a2b3]">
+          <button type="button" className="min-w-0 rounded-md text-left focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none" onClick={onOpen}>
+            <span className="block truncate text-[13px] font-semibold text-foreground">{phase.name}</span>
+            <span className="mt-[3px] block text-xs text-muted-foreground">
               {index + 1} · {knownChildren ? `${childCount} ${childCount === 1 ? "entrega" : "entregas"}` : "Consulta incompleta"}
               {showDivergence && phase.statusDiverges ? <DivergenceSignal recorded={phaseStatusLabel(phase.status)} /> : null}
             </span>
@@ -371,7 +371,7 @@ export function PhaseRow({
           done={phase.calculatedStatus === "CONCLUIDA"}
         />
         <Owner name={phase.responsibleName ?? ""} />
-        <span className="text-[13px] text-[#98a2b3]" title="A prioridade é exclusiva das tarefas">—</span>
+        <span className="text-[13px] text-muted-foreground" title="A prioridade é exclusiva das tarefas">—</span>
         <PlannedStart value={inicioText(phase.dates)} />
         <Due value={vigenteText(phase.dates)} overdue={overdue} late={finishedLate(phase) ? "Concluída após o prazo" : null} />
         <RowMenu label={phase.name} onOpen={onOpen} actions={actions} />
@@ -436,10 +436,10 @@ export function TaskRow({
   return (
     <div
       className={cn(
-        "group/eap relative border-t border-[#edf0f3] px-3",
-        selected && "bg-[#f8fbff]",
+        "group/eap relative border-t border-border/60 px-3",
+        selected && "bg-primary/5",
         dragging && "opacity-60",
-        dragOver && "shadow-[inset_0_2px_0_#175cd3]",
+        dragOver && "shadow-[inset_0_2px_0_var(--primary)]",
       )}
       onDragOver={(event) => {
         if (!reorderable) {
@@ -465,7 +465,7 @@ export function TaskRow({
           draggable
           aria-label={`Arrastar ${task.title}`}
           title="Arraste para mudar a ordem da tarefa"
-          className="pointer-events-none absolute top-1/2 left-0.5 z-20 flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-[#98a2b3] opacity-0 group-hover/eap:pointer-events-auto group-hover/eap:opacity-100 hover:bg-[#eef2f6] hover:text-[#52677e] focus-visible:pointer-events-auto focus-visible:opacity-100 active:cursor-grabbing"
+          className="pointer-events-none absolute top-1/2 left-0.5 z-20 flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover/eap:pointer-events-auto group-hover/eap:opacity-100 hover:bg-muted hover:text-muted-foreground focus-visible:pointer-events-auto focus-visible:opacity-100 active:cursor-grabbing"
           onDragStart={(event) => {
             event.dataTransfer.effectAllowed = "move";
             event.dataTransfer.setData("text/plain", `task:${task.id}`);
@@ -476,15 +476,15 @@ export function TaskRow({
           <GripVertical className="size-4" aria-hidden="true" />
         </button>
       ) : null}
-      <div className={cn(columns, childRow, "transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none")}>
-        <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none" onClick={onOpen}>
+      <div className={cn(columns, childRow, "transition-colors duration-200 ease-out hover:bg-primary/5 motion-reduce:transition-none")}>
+        <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none" onClick={onOpen}>
           <span className={treeGuide} aria-hidden="true" />
           <ItemIcon type="task">
             <Check className="size-4" aria-hidden="true" />
           </ItemIcon>
           <span className="min-w-0">
-            <span className="block truncate text-[13px] font-medium text-[#253248]">{task.title}</span>
-            <span className="mt-[3px] block text-xs text-[#98a2b3]">
+            <span className="block truncate text-[13px] font-medium text-foreground">{task.title}</span>
+            <span className="mt-[3px] block text-xs text-muted-foreground">
               {phaseIndex + 1}.{index + 1} · Tarefa
               {blocked ? <Signal tone="impediment"><AlertTriangle className="size-3" aria-hidden="true" /> Impedido</Signal> : null}
               {showDivergence && task.statusDiverges ? <DivergenceSignal recorded={taskStatusLabel(task.status)} /> : null}
@@ -543,10 +543,10 @@ export function MilestoneRow({
       className={cn(
         columns,
         childRow,
-        "group/eap relative border-t border-[#edf0f3] px-3 transition-colors duration-200 ease-out hover:bg-[#f8fbff] motion-reduce:transition-none",
-        selected && "bg-[#f8fbff]",
+        "group/eap relative border-t border-border/60 px-3 transition-colors duration-200 ease-out hover:bg-primary/5 motion-reduce:transition-none",
+        selected && "bg-primary/5",
         dragging && "opacity-60",
-        dragOver && "shadow-[inset_0_2px_0_#175cd3]",
+        dragOver && "shadow-[inset_0_2px_0_var(--primary)]",
       )}
       onDragOver={(event) => {
         if (!reorderable) {
@@ -572,7 +572,7 @@ export function MilestoneRow({
           draggable
           aria-label={`Arrastar ${milestone.title}`}
           title="Arraste para mudar a ordem do marco"
-          className="pointer-events-none absolute top-1/2 left-0.5 z-20 flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-[#98a2b3] opacity-0 group-hover/eap:pointer-events-auto group-hover/eap:opacity-100 hover:bg-[#eef2f6] hover:text-[#52677e] focus-visible:pointer-events-auto focus-visible:opacity-100 active:cursor-grabbing"
+          className="pointer-events-none absolute top-1/2 left-0.5 z-20 flex size-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover/eap:pointer-events-auto group-hover/eap:opacity-100 hover:bg-muted hover:text-muted-foreground focus-visible:pointer-events-auto focus-visible:opacity-100 active:cursor-grabbing"
           onDragStart={(event) => {
             event.dataTransfer.effectAllowed = "move";
             event.dataTransfer.setData("text/plain", `milestone:${milestone.id}`);
@@ -583,14 +583,14 @@ export function MilestoneRow({
           <GripVertical className="size-4" aria-hidden="true" />
         </button>
       ) : null}
-      <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-[#8ab4eb] focus-visible:outline-none" onClick={onOpen}>
+      <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none" onClick={onOpen}>
         <span className={treeGuide} aria-hidden="true" />
         <ItemIcon type="milestone">
           <Flag className="size-4" aria-hidden="true" />
         </ItemIcon>
         <span className="min-w-0">
-          <span className="block truncate text-[13px] font-medium text-[#253248]">{milestone.title}</span>
-          <span className="mt-[3px] block text-xs text-[#98a2b3]">
+          <span className="block truncate text-[13px] font-medium text-foreground">{milestone.title}</span>
+          <span className="mt-[3px] block text-xs text-muted-foreground">
             {phaseIndex + 1}.{index + 1} · Marco
           </span>
         </span>
@@ -604,7 +604,7 @@ export function MilestoneRow({
         done={milestone.status === "APROVADO"}
       />
       <Owner name={milestone.presenterName ?? ""} />
-      <span className="text-[13px] text-[#98a2b3]" title="A prioridade é exclusiva das tarefas">—</span>
+      <span className="text-[13px] text-muted-foreground" title="A prioridade é exclusiva das tarefas">—</span>
       <PlannedStart value={null} title="Marco tem data única" />
       <Due value={vigenteText(milestone.dates)} overdue={overdue} reason={milestoneDelayReason(milestone)} late={finishedLate(milestone) ? (milestone.type === "HOMOLOGACAO" ? "Homologado após o prazo" : "Aceito após o prazo") : null} />
       <RowMenu label={milestone.title} onOpen={onOpen} actions={actions} />
@@ -674,21 +674,21 @@ function Stat({
   note: string;
 }) {
   return (
-    <article className="flex min-h-[104px] items-center gap-3.5 rounded-[10px] border border-[#e4e7ec] bg-white px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+    <article className="flex min-h-[104px] items-center gap-3.5 rounded-[10px] border border-border bg-card px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <span
         className={cn(
           "flex size-11 shrink-0 items-center justify-center rounded-[10px]",
-          tone === "blue" && "bg-[#eaf2ff] text-[#2864bb]",
-          tone === "violet" && "bg-[#f0eafd] text-[#7450bf]",
-          tone === "amber" && "bg-[#fff3dc] text-[#b26b15]",
+          tone === "blue" && "bg-primary/10 text-primary",
+          tone === "violet" && "bg-status-validation-soft text-status-validation-ink",
+          tone === "amber" && "bg-status-attention-soft text-status-adjust-ink",
         )}
       >
         {icon}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-xs text-[#667085]">{label}</span>
-        <strong className="truncate text-[15px] leading-tight font-bold text-[#344054]">{value}</strong>
-        <small className="truncate text-xs text-[#98a2b3]">{note}</small>
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <strong className="truncate text-[15px] leading-tight font-bold text-foreground">{value}</strong>
+        <small className="truncate text-xs text-muted-foreground">{note}</small>
       </span>
     </article>
   );
@@ -696,7 +696,7 @@ function Stat({
 
 function ProgressCell({ label, value, done, muted }: { label: string; value: number | null; done?: boolean; muted?: boolean }) {
   if (value === null) {
-    return <span className="text-[13px] text-[#667085]">{label}</span>;
+    return <span className="text-[13px] text-muted-foreground">{label}</span>;
   }
 
   return (
@@ -705,13 +705,13 @@ function ProgressCell({ label, value, done, muted }: { label: string; value: num
         value={value}
         aria-label={label}
         className={cn(
-          "min-w-16 flex-1 [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]",
-          done && "[&_[data-slot=progress-indicator]]:bg-[#1c8b65]",
-          !done && !muted && "[&_[data-slot=progress-indicator]]:bg-[#2873cf]",
-          muted && "[&_[data-slot=progress-indicator]]:bg-[#98a2b3]",
+          "min-w-16 flex-1 [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted",
+          done && "[&_[data-slot=progress-indicator]]:bg-status-done",
+          !done && !muted && "[&_[data-slot=progress-indicator]]:bg-primary",
+          muted && "[&_[data-slot=progress-indicator]]:bg-muted-foreground/60",
         )}
       />
-      <span className="w-10 shrink-0 text-[13px] font-semibold text-[#475467] tabular-nums">{label}</span>
+      <span className="w-10 shrink-0 text-[13px] font-semibold text-foreground/80 tabular-nums">{label}</span>
     </div>
   );
 }
@@ -722,13 +722,13 @@ function StatusCell({ children }: { children: ReactNode }) {
 
 function Owner({ name }: { name: string }) {
   if (!name || name === "Não informado") {
-    return <span className="text-[13px] text-[#98a2b3]">—</span>;
+    return <span className="text-[13px] text-muted-foreground">—</span>;
   }
 
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-[#475467]">
+    <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-foreground/80">
       <Avatar>
-        <AvatarFallback className="bg-[#e8effb] text-[0.7rem] font-bold text-[#285da8]">{initials(name)}</AvatarFallback>
+        <AvatarFallback className="bg-primary/10 text-[0.7rem] font-bold text-primary">{initials(name)}</AvatarFallback>
       </Avatar>
       <span className="truncate">{name}</span>
     </span>
@@ -738,8 +738,8 @@ function Owner({ name }: { name: string }) {
 /** Atraso em aberto em vermelho; atraso histórico só como nota neutra, sem classificar o item como atrasado. */
 function PlannedStart({ value, title }: { value: string | null; title?: string }) {
   return (
-    <span className="flex items-start gap-1.5 text-[13px] whitespace-nowrap text-[#667085]" title={title}>
-      <Calendar className="mt-0.5 size-4 shrink-0 text-[#98a2b3]" aria-hidden="true" />
+    <span className="flex items-start gap-1.5 text-[13px] whitespace-nowrap text-muted-foreground" title={title}>
+      <Calendar className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       {value ?? "—"}
     </span>
   );
@@ -747,13 +747,13 @@ function PlannedStart({ value, title }: { value: string | null; title?: string }
 
 function Due({ value, overdue, late = null, reason = null }: { value: string | null; overdue: boolean; late?: string | null; reason?: string | null }) {
   return (
-    <span className={cn("flex items-start gap-1.5 text-[13px] whitespace-nowrap", overdue ? cn("font-semibold", overdueTone.text) : "text-[#667085]")}>
-      <Calendar className={cn("mt-0.5 size-4 shrink-0", overdue ? overdueTone.text : "text-[#98a2b3]")} aria-hidden="true" />
+    <span className={cn("flex items-start gap-1.5 text-[13px] whitespace-nowrap", overdue ? cn("font-semibold", overdueTone.text) : "text-muted-foreground")}>
+      <Calendar className={cn("mt-0.5 size-4 shrink-0", overdue ? overdueTone.text : "text-muted-foreground")} aria-hidden="true" />
       <span className="flex flex-col">
         {value ?? "—"}
         {overdue ? <span className="sr-only">Atrasado</span> : null}
         {overdue && reason ? <span className="text-xs leading-tight font-normal">{reason}</span> : null}
-        {!overdue && late ? <span className="text-xs leading-tight text-[#98a2b3]">{late}</span> : null}
+        {!overdue && late ? <span className="text-xs leading-tight text-muted-foreground">{late}</span> : null}
       </span>
     </span>
   );
@@ -764,9 +764,9 @@ function ItemIcon({ type, children }: { type: "phase" | "task" | "milestone"; ch
     <span
       className={cn(
         "mr-2.5 flex size-8 shrink-0 items-center justify-center rounded-lg",
-        type === "phase" && "bg-[#e9f2ff] text-[#2865b9]",
-        type === "task" && "bg-[#eef2f6] text-[#52677e]",
-        type === "milestone" && "bg-[#f4ecfb] text-[#8b5bbb]",
+        type === "phase" && "bg-primary/10 text-primary",
+        type === "task" && "bg-muted text-muted-foreground",
+        type === "milestone" && "bg-status-validation-soft text-status-validation-ink",
       )}
     >
       {children}
@@ -779,7 +779,7 @@ function Signal({ tone, title, children }: { tone: "impediment" | "notice"; titl
     <span
       title={title}
       className={cn(
-        "ml-1.5 inline-flex items-center gap-1 border-l border-[#dce1e7] pl-1.5 font-semibold",
+        "ml-1.5 inline-flex items-center gap-1 border-l border-border pl-1.5 font-semibold",
         tone === "impediment" ? impedimentTone.text : "text-muted-foreground",
       )}
     >
@@ -801,7 +801,7 @@ function DivergenceSignal({ recorded }: { recorded: string }) {
 function RowMenu({ label, onOpen, actions }: { label: string; onOpen: () => void; actions?: RowActions }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" className="text-[#667085]" aria-label={`Ações de ${label}`} />}>
+      <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={`Ações de ${label}`} />}>
         <MoreHorizontal />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[196px] rounded-[8px] p-[5px] shadow-[0_10px_24px_rgba(16,24,40,0.15)]">
@@ -847,7 +847,7 @@ function RowMenu({ label, onOpen, actions }: { label: string; onOpen: () => void
           ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className={cn(rowMenuItem, "text-[#b42318] focus:text-[#b42318]")}
+            className={cn(rowMenuItem, "text-status-critical-ink focus:text-status-critical-ink")}
             variant="destructive"
             disabled={!actions?.onDelete || Boolean(actions.deleteBlockedReason)}
             title={!actions?.onDelete ? "Somente a gestão do projeto pode excluir itens da EAP." : actions.deleteBlockedReason}
@@ -878,36 +878,36 @@ function FilterMenu({ filter, count, onChange }: { filter: EapListFilter; count:
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button type="button" variant="outline" className="h-[34px] rounded-[7px] border-[#d7dce3] px-[13px] text-[11px] font-semibold text-[#344054]" />}>
+      <PopoverTrigger render={<Button type="button" variant="outline" className="h-[34px] rounded-[7px] border-input px-[13px] text-[11px] font-semibold text-foreground" />}>
         <ListFilter aria-hidden="true" />
         Filtrar
-        {count > 0 ? <span className="rounded-full bg-[#e8f1ff] px-1.5 text-[11px] text-[#205eb2]">{count}</span> : null}
+        {count > 0 ? <span className="rounded-full bg-primary/10 px-1.5 text-[11px] text-primary">{count}</span> : null}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64">
-        <p className="px-1 text-xs font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Situação</p>
+        <p className="px-1 text-xs font-semibold tracking-[0.04em] text-muted-foreground uppercase">Situação</p>
         <div className="flex max-h-52 flex-col gap-2 overflow-y-auto">
           {STATUS_FILTERS.map((option) => (
-            <label key={option.value} className="flex items-center gap-2 text-sm text-[#344054]">
+            <label key={option.value} className="flex items-center gap-2 text-sm text-foreground">
               <Checkbox checked={filter.statuses.includes(option.value)} onCheckedChange={() => toggleStatus(option.value)} />
               {option.label}
             </label>
           ))}
         </div>
-        <p className="px-1 text-xs font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Prioridade da tarefa</p>
+        <p className="px-1 text-xs font-semibold tracking-[0.04em] text-muted-foreground uppercase">Prioridade da tarefa</p>
         <div className="flex flex-col gap-2">
           {PRIORITY_OPTIONS.map((option) => (
-            <label key={option.value} className="flex items-center gap-2 text-sm text-[#344054]">
+            <label key={option.value} className="flex items-center gap-2 text-sm text-foreground">
               <Checkbox checked={filter.priorities.includes(option.value)} onCheckedChange={() => togglePriority(option.value)} />
               {option.label}
             </label>
           ))}
         </div>
-        <p className="px-1 text-xs font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Sinais</p>
-        <label className="flex items-center gap-2 text-sm text-[#344054]">
+        <p className="px-1 text-xs font-semibold tracking-[0.04em] text-muted-foreground uppercase">Sinais</p>
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <Checkbox checked={filter.impediment} onCheckedChange={(checked) => onChange({ ...filter, impediment: checked === true })} />
           Impedido
         </label>
-        <label className="flex items-center gap-2 text-sm text-[#344054]">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <Checkbox checked={filter.overdue} onCheckedChange={(checked) => onChange({ ...filter, overdue: checked === true })} />
           Atrasado
         </label>

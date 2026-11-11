@@ -49,13 +49,13 @@ export function projectStatusVariant(
   return "default";
 }
 
-/** Cor de cada situação calculada: ponto dos indicadores, borda lateral das linhas e segmentos do Início. */
+/** Cor (token --status-*, igual em qualquer paleta) de cada situação calculada: ponto dos indicadores, borda lateral das linhas e segmentos do Início. */
 export const PROJECT_STATUS_COLOR: Record<ListProjects200DataItemStatus, string> = {
-  NAO_INICIADO: "#9fb3c8",
-  EM_EXECUCAO: "#2873cf",
-  EM_ATENCAO: "#e0a130",
-  CRITICO: "#d92d20",
-  EM_VALIDACAO: "#7450bf",
-  CONCLUIDO: "#12a46e",
-  SUSPENSO: "#98a2b3",
+  NAO_INICIADO: "var(--status-idle)",
+  EM_EXECUCAO: "var(--status-running)",
+  EM_ATENCAO: "var(--status-attention)",
+  CRITICO: "var(--status-critical)",
+  EM_VALIDACAO: "var(--status-validation)",
+  CONCLUIDO: "var(--status-done)",
+  SUSPENSO: "var(--status-idle)",
 };

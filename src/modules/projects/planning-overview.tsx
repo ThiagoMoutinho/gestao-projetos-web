@@ -726,11 +726,11 @@ function changeText(change: HistoryItem["changes"][number]) {
 /** Ícone e cor de cada registro: pergunta (pendente), seta circular (reprogramação, vermelha se estendeu e verde se antecipou), X e losango. */
 function historyIcon(item: HistoryItem, delta: number | null) {
   if (item.status === "PENDENTE") return { Icon: CircleHelp, tone: "bg-warning/20 text-warning-foreground" };
-  if (item.status === "REJEITADA") return { Icon: X, tone: "bg-destructive/10 text-destructive" };
+  if (item.status === "REJEITADA") return { Icon: X, tone: "bg-status-critical-soft text-status-critical-ink" };
   if (item.status === "CANCELADA" || item.status === "CANCELADA_CONFLITO") return { Icon: X, tone: "bg-muted text-muted-foreground" };
   if (item.status === "DEFINIDA") return { Icon: Diamond, tone: "bg-primary/10 text-primary" };
   if (delta !== null && delta < 0) return { Icon: RotateCcw, tone: "bg-success/15 text-success-foreground" };
-  if (delta !== null && delta > 0) return { Icon: RotateCw, tone: "bg-destructive/10 text-destructive" };
+  if (delta !== null && delta > 0) return { Icon: RotateCw, tone: "bg-status-critical-soft text-status-critical-ink" };
   return { Icon: RotateCw, tone: "bg-muted text-muted-foreground" };
 }
 
@@ -863,7 +863,7 @@ export function Participants({ members }: { members: ProjectDetail["members"] })
                   aria-hidden="true"
                   className={cn(
                     "flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                    found.length > 0 ? "bg-[#f4ecfb] text-[#7450bf]" : "border border-dashed text-muted-foreground",
+                    found.length > 0 ? "bg-status-validation-soft text-status-validation-ink" : "border border-dashed text-muted-foreground",
                   )}
                 >
                   {found.length > 0 ? initialsOf(found[0].name) : "?"}

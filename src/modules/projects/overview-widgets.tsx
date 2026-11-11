@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowDown, ArrowUp, Check, ChevronDown, Columns2, GripVertical, LayoutDashboard, Plus, RotateCcw, Rows2, X } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 import { Presence } from "@/components/ui/presence";
@@ -114,6 +115,9 @@ function useFlip(container: React.RefObject<HTMLElement | null>, signature: stri
   }, [container, signature]);
 }
 
+/** Ponto do cabeçalho da Visão Geral onde o botão Personalizar layout é exibido (null: botão fica na própria barra). */
+export const OverviewActionsSlotContext = createContext<HTMLElement | null>(null);
+
 type Props = {
   /** Conteúdo de cada widget; `null` oculta o widget (ex.: dados ainda indisponíveis). */
   nodes: Record<WidgetId, React.ReactNode>;
@@ -122,6 +126,7 @@ type Props = {
 export function OverviewWidgets({ nodes }: Props) {
   const { widgets, update, reset, saving, savedAt } = useOverviewLayout();
   const [customizing, setCustomizing] = useState(false);
+  const actionsSlot = useContext(OverviewActionsSlotContext);
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [dragging, setDragging] = useState<WidgetId | null>(null);
   const [over, setOver] = useState<WidgetId | null>(null);
@@ -135,7 +140,7 @@ export function OverviewWidgets({ nodes }: Props) {
     const conclude = (event: PointerEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       const inside = target?.closest("[data-widget], [role=dialog], [role=menu], [role=listbox], [data-base-ui-portal]");
-      if (!target || inside || toolbar.current?.contains(target)) {
+      if (!target || inside || toolbar.current?.contains(target) || target.closest("[data-layout-toggle]")) {
         return;
       }
       setCustomizing(false);
@@ -262,22 +267,31 @@ export function OverviewWidgets({ nodes }: Props) {
   // Widgets que não estão no quadro (padrão da referência): continuam disponíveis aqui, sem perder recurso.
   const extras = BOARD_WIDGETS.filter((id) => !widgets.some((item) => item.id === id) && nodes[id] !== null && nodes[id] !== undefined);
 
+  const layoutToggle = (
+    <Button type="button" data-layout-toggle="" size="sm" variant={customizing ? "default" : "outline"} className={cn("gap-1.5", !customizing && "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:bg-primary/15 dark:hover:bg-primary/20")} aria-pressed={customizing} onClick={() => setCustomizing((current) => !current)}>
+      {customizing ? <Check aria-hidden="true" /> : <LayoutDashboard aria-hidden="true" />}
+      {customizing ? "Concluir layout" : "Personalizar layout"}
+    </Button>
+  );
+
+  const toolbarRow = (
+    <div ref={toolbar} className="flex flex-wrap items-center justify-end gap-2">
+      <span role="status" aria-live="polite" className="mr-auto text-xs text-muted-foreground">
+        {customizing ? (saving ? "Salvando layout…" : savedAt ? "Layout salvo." : "Arraste os cartões, use as setas ou altere a largura. Clique fora dos cartões para concluir.") : ""}
+      </span>
+      <Presence open={customizing}>
+        <Button type="button" size="sm" variant="ghost" className="gap-1.5" onClick={() => void reset()}>
+          <RotateCcw aria-hidden="true" /> Restaurar padrão
+        </Button>
+      </Presence>
+      {actionsSlot ? null : layoutToggle}
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-3">
-      <div ref={toolbar} className="flex flex-wrap items-center justify-end gap-2">
-        <span role="status" aria-live="polite" className="mr-auto text-xs text-muted-foreground">
-          {customizing ? (saving ? "Salvando layout…" : savedAt ? "Layout salvo." : "Arraste os cartões, use as setas ou altere a largura. Clique fora dos cartões para concluir.") : ""}
-        </span>
-        <Presence open={customizing}>
-          <Button type="button" size="sm" variant="ghost" className="gap-1.5" onClick={() => void reset()}>
-            <RotateCcw aria-hidden="true" /> Restaurar padrão
-          </Button>
-        </Presence>
-        <Button type="button" size="sm" variant={customizing ? "default" : "outline"} className="gap-1.5" aria-pressed={customizing} onClick={() => setCustomizing((current) => !current)}>
-          {customizing ? <Check aria-hidden="true" /> : <LayoutDashboard aria-hidden="true" />}
-          {customizing ? "Concluir layout" : "Personalizar layout"}
-        </Button>
-      </div>
+      {actionsSlot ? createPortal(layoutToggle, actionsSlot) : null}
+      {actionsSlot ? <Presence open={customizing}>{toolbarRow}</Presence> : toolbarRow}
       {/* Grid único de 12 colunas, por linhas: sem colunas independentes. */}
       <div ref={board} className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
         {placed.map((entry) => renderWidget(entry, entry.index))}
@@ -288,7 +302,7 @@ export function OverviewWidgets({ nodes }: Props) {
             type="button"
             variant="ghost"
             size="sm"
-            className="w-fit gap-1.5 px-2 text-primary"
+            className="h-auto min-h-8 w-fit max-w-full justify-start gap-1.5 px-2 py-1.5 text-left whitespace-normal text-primary [&>svg]:shrink-0"
             aria-expanded={extrasOpen}
             onClick={() => setExtrasOpen((value) => !value)}
           >

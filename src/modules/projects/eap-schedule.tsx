@@ -161,7 +161,7 @@ export function PlanFields({ plan }: { plan: PlanDraft }) {
         <DateField label={plan.single ? "Data prevista" : "Término planejado"} value={plan.end} onChange={plan.setEnd} error={plan.errors.end} />
       </div>
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold text-[#475467]">Justificativa de replanejamento</span>
+        <span className="text-xs font-semibold text-foreground/80">Justificativa de replanejamento</span>
         <Textarea
           className={textareaClass}
           value={plan.justification}
@@ -174,7 +174,7 @@ export function PlanFields({ plan }: { plan: PlanDraft }) {
       </label>
       {plan.cascade ? <CascadeProposal cascade={plan.cascade} onApplyChange={plan.setExtendPhase} /> : null}
       {plan.changed ? (
-        <ul className="flex flex-col gap-1 rounded-[7px] bg-[#f5f9ff] p-3 text-xs leading-[1.5] text-[#475467]">
+        <ul className="flex flex-col gap-1 rounded-[7px] bg-primary/5 p-3 text-xs leading-[1.5] text-foreground/80">
           {plan.single ? null : <FieldChangeRow change={fieldChange("START", plan.current.start, plan.start)} single={false} />}
           <FieldChangeRow change={fieldChange("END", plan.current.end, plan.end)} single={plan.single} />
         </ul>
@@ -196,22 +196,22 @@ export function CascadeProposal({
     cascade.current.end !== cascade.next.end ? { label: "Término da fase", previous: cascade.current.end, next: cascade.next.end } : null,
   ].filter((change) => change !== null);
   return (
-    <div role="status" className="motion-fade flex flex-col gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-3 text-xs leading-[1.5] text-[#865516]">
+    <div role="status" className="motion-fade flex flex-col gap-2 rounded-[7px] border border-status-attention/40 bg-status-attention-soft p-3 text-xs leading-[1.5] text-status-attention-ink">
       <span className="flex items-start gap-2">
         <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
         <strong className="text-xs">Os itens da fase passam a ficar fora do período planejado dela.</strong>
       </span>
-      <label className="flex items-start gap-2 text-[#475467]">
+      <label className="flex items-start gap-2 text-foreground/80">
         <Checkbox className="mt-px" checked={cascade.apply} onCheckedChange={(checked) => onApplyChange(checked === true)} />
         <span>
           Estender também o planejamento da fase, com a mesma justificativa (fica no histórico da fase).
           <span className="mt-1 flex flex-col gap-0.5">
             {changes.map((change) => (
               <span key={change.label} className="flex flex-wrap items-center gap-1.5">
-                <strong className="font-semibold text-[#344054]">{change.label}:</strong>
-                <span className="text-[#8a94a6] line-through">{change.previous ? formatCivilDate(change.previous) : "sem data"}</span>
-                <ArrowRight className="size-3 text-[#3971ba]" aria-hidden="true" />
-                <span className="font-semibold text-[#175cd3]">{formatCivilDate(change.next)}</span>
+                <strong className="font-semibold text-foreground">{change.label}:</strong>
+                <span className="text-muted-foreground line-through">{change.previous ? formatCivilDate(change.previous) : "sem data"}</span>
+                <ArrowRight className="size-3 text-primary" aria-hidden="true" />
+                <span className="font-semibold text-primary">{formatCivilDate(change.next)}</span>
               </span>
             ))}
           </span>
@@ -321,7 +321,7 @@ export function EapSchedule({
           O planejamento e o replanejamento cabem ao PMO, ao ADMIN e à gestão do projeto.
         </p>
       ) : (
-        <section className={cn("rounded-[9px] border transition-colors duration-300 motion-reduce:transition-none", open ? "border-[#bad1f0] bg-[#f5f9ff] p-3.5" : "border-transparent")}>
+        <section className={cn("rounded-[9px] border transition-colors duration-300 motion-reduce:transition-none", open ? "border-primary/25 bg-primary/5 p-3.5" : "border-transparent")}>
           <Reveal open={open}>
             <PlanForm
               key={formKey}
@@ -412,7 +412,7 @@ function PlanForm({
 
   return (
     <div className="flex flex-col gap-3">
-      <span className="block text-xs font-semibold tracking-[0.04em] text-[#3971ba] uppercase">{title}</span>
+      <span className="block text-xs font-semibold tracking-[0.04em] text-primary uppercase">{title}</span>
       <PlanFields plan={plan} />
       <div className="flex flex-wrap justify-end gap-[7px]">
         <Button type="button" variant="outline" className={secondaryButton} disabled={saving} onClick={onCancel}>
@@ -472,7 +472,7 @@ function ConsolidatedNotice({ alert, title, children }: { alert: boolean; title:
       role={alert ? "status" : undefined}
       className={cn(
         "flex items-start gap-2 rounded-[7px] border p-3 text-xs leading-[1.5]",
-        alert ? "border-[#f3dcae] bg-[#fff8e9] text-[#865516]" : "border-[#edf0f3] bg-[#f8f9fb] text-[#667085]",
+        alert ? "border-status-attention/40 bg-status-attention-soft text-status-attention-ink" : "border-border/60 bg-muted/50 text-muted-foreground",
       )}
     >
       {alert ? <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" /> : <Info className="mt-px size-3.5 shrink-0" aria-hidden="true" />}
@@ -493,7 +493,7 @@ export function SavedNotice({ saved }: { saved: SavedChange }) {
     return null;
   }
   return (
-    <div role="status" className="flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-3 text-xs leading-[1.5] text-[#865516]">
+    <div role="status" className="flex items-start gap-2 rounded-[7px] border border-status-attention/40 bg-status-attention-soft p-3 text-xs leading-[1.5] text-status-attention-ink">
       <AlertTriangle className="mt-px size-4 shrink-0" aria-hidden="true" />
       <div className="min-w-0">
         <strong className="block text-xs">Impactos sinalizados{saved.sequence ? ` no replanejamento nº ${saved.sequence}` : ""}</strong>
@@ -536,9 +536,9 @@ function ChangeCard({ change }: { change: ScheduleChange }) {
     next: civilDateInput(item.next),
   }));
   return (
-    <li className="rounded-[8px] border border-[#e4e7ec] bg-white p-3">
+    <li className="rounded-[8px] border border-border bg-card p-3">
       <div className="flex items-start justify-between gap-2">
-        <strong className="text-xs text-[#253248]">
+        <strong className="text-xs text-foreground">
           {change.kind === "RESCHEDULE" ? `Replanejamento nº ${change.sequence}` : "Planejamento definido"}
         </strong>
         <span className="flex shrink-0 flex-wrap justify-end gap-1">
@@ -546,10 +546,10 @@ function ChangeCard({ change }: { change: ScheduleChange }) {
           {change.escalatedToPmo ? <Tag tone="pmo">Sinalizado ao PMO</Tag> : null}
         </span>
       </div>
-      <p className="mt-[3px] text-xs text-[#8a94a6]">
+      <p className="mt-[3px] text-xs text-muted-foreground">
         {change.actorName ?? "Não identificado"} · {recordedDate(change.createdAt)}
       </p>
-      <dl className="mt-2 flex flex-col gap-1.5 text-xs leading-[1.45] text-[#475467]">
+      <dl className="mt-2 flex flex-col gap-1.5 text-xs leading-[1.45] text-foreground/80">
         <Line label="Datas">
           <ul className="flex flex-col gap-1">
             {fields.map((field) => (
@@ -602,23 +602,23 @@ function FieldChangeRow({ change, single }: { change: FieldChange; single: boole
   const next = change.next ? formatCivilDate(change.next) : "não informada";
   return (
     <li className="flex flex-wrap items-center gap-1.5">
-      <span className="min-w-[52px] text-[#667085]">{label}</span>
+      <span className="min-w-[52px] text-muted-foreground">{label}</span>
       {change.kind === "UNCHANGED" ? (
         <>
-          <span className="text-[#475467]">{next}</span>
-          <span className={cn(chip, "bg-[#f2f4f7] text-[#667085]")}>Sem alteração</span>
+          <span className="text-foreground/80">{next}</span>
+          <span className={cn(chip, "bg-muted text-muted-foreground")}>Sem alteração</span>
         </>
       ) : change.kind === "DEFINED" ? (
         <>
-          <strong className="text-[#253248]">{next}</strong>
-          <span className={cn(chip, "bg-[#ecfdf3] text-[#067647]")}>Definição inicial</span>
+          <strong className="text-foreground">{next}</strong>
+          <span className={cn(chip, "bg-status-done-soft text-status-done-ink")}>Definição inicial</span>
         </>
       ) : (
         <>
-          <span className="text-[#475467]">{formatCivilDate(change.previous)}</span>
-          <ArrowRight className="size-3 text-[#3871bf]" aria-hidden="true" />
-          <strong className="text-[#253248]">{next}</strong>
-          <span className={cn(chip, "bg-[#fff4e5] text-[#b54708]")}>Replanejamento</span>
+          <span className="text-foreground/80">{formatCivilDate(change.previous)}</span>
+          <ArrowRight className="size-3 text-primary" aria-hidden="true" />
+          <strong className="text-foreground">{next}</strong>
+          <span className={cn(chip, "bg-status-attention-soft text-status-adjust-ink")}>Replanejamento</span>
         </>
       )}
     </li>
@@ -627,16 +627,16 @@ function FieldChangeRow({ change, single }: { change: FieldChange; single: boole
 
 function DateCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[7px] bg-[#f7f9fb] p-2.5">
-      <span className="mb-1 block text-xs text-[#8a94a6]">{label}</span>
-      <strong className="block text-xs text-[#344054]">{value ? formatCivilDate(value) : "Não informada"}</strong>
+    <div className="rounded-[7px] bg-muted/50 p-2.5">
+      <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
+      <strong className="block text-xs text-foreground">{value ? formatCivilDate(value) : "Não informada"}</strong>
     </div>
   );
 }
 
 function Tag({ tone, children }: { tone: "overdue" | "pmo"; children: ReactNode }) {
   return (
-    <span className={cn(chip, tone === "overdue" ? "bg-[#fef0ef] text-[#b42318]" : "bg-[#e9f2ff] text-[#285da8]")}>
+    <span className={cn(chip, tone === "overdue" ? "bg-status-critical-soft text-status-critical-ink" : "bg-primary/10 text-primary")}>
       {children}
     </span>
   );
@@ -645,16 +645,16 @@ function Tag({ tone, children }: { tone: "overdue" | "pmo"; children: ReactNode 
 function Line({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[80px_minmax(0,1fr)] gap-2">
-      <dt className="text-[#98a2b3]">{label}</dt>
+      <dt className="text-muted-foreground">{label}</dt>
       <dd className="break-words whitespace-pre-wrap">{children}</dd>
     </div>
   );
 }
 
 const chip = "rounded-full px-1.5 py-px text-xs font-semibold";
-const textareaClass = "min-h-[72px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2.5 text-xs md:text-xs";
-const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-3.5 text-xs font-semibold";
-const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-3.5 text-xs font-semibold text-white hover:bg-[#144ca8]";
-const groupLabel = "mb-1.5 block text-xs font-semibold text-[#475467]";
-const mutedNote = "flex items-start gap-1.5 text-xs leading-[1.45] text-[#667085]";
-const emptyInline = "flex min-h-[42px] items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-xs text-[#98a2b3]";
+const textareaClass = "min-h-[72px] rounded-[7px] border-input bg-card px-2.5 py-2.5 text-xs md:text-xs";
+const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-input px-3.5 text-xs font-semibold";
+const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-primary px-3.5 text-xs font-semibold text-primary-foreground hover:bg-primary";
+const groupLabel = "mb-1.5 block text-xs font-semibold text-foreground/80";
+const mutedNote = "flex items-start gap-1.5 text-xs leading-[1.45] text-muted-foreground";
+const emptyInline = "flex min-h-[42px] items-center rounded-[7px] border border-dashed border-input bg-muted/50 px-2.5 text-xs text-muted-foreground";

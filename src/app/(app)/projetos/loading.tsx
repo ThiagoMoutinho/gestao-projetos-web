@@ -14,7 +14,7 @@ export default function ProjectsLoading() {
           <Skeleton key={index} className="h-[62px] rounded-xl" />
         ))}
       </div>
-      <div className="flex flex-col gap-3 rounded-xl border border-[#e4e7ec] bg-white p-4">
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
         <Skeleton className="h-6 w-72 max-w-full" />
         <Skeleton className="h-9 w-full" />
         {Array.from({ length: 6 }, (_, index) => (

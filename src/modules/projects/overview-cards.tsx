@@ -105,7 +105,7 @@ const TYPE_ICON: Record<string, typeof Flag> = {
 
 const TONE: Record<Entry["tone"], string> = {
   warning: "bg-warning/20 text-warning-foreground",
-  danger: "bg-destructive/10 text-destructive",
+  danger: "bg-status-critical-soft text-status-critical-ink",
   info: "bg-primary/10 text-primary",
   success: "bg-success/15 text-success-foreground",
   neutral: "bg-muted text-muted-foreground",

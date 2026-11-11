@@ -126,7 +126,7 @@ export function ScheduleSummaryCard({
         </div>
       }
       footer={
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#EDF0F3] pt-3 text-xs dark:border-border">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs dark:border-border">
           {pending > 0 ? (
             <span className="flex items-center gap-1.5 font-medium text-warning-foreground">
               <TriangleAlert className="size-3.5" aria-hidden="true" />
@@ -224,7 +224,7 @@ function Tile({ label, value, detail, valueClass }: { label: string; value: stri
   return (
     <div className="flex min-w-0 flex-col gap-0.5 rounded-lg border bg-card px-3.5 py-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cn("text-lg leading-tight font-bold tracking-[-0.01em] text-[#344054] dark:text-foreground", valueClass)}>{value}</p>
+      <p className={cn("text-lg leading-tight font-bold tracking-[-0.01em] text-foreground dark:text-foreground", valueClass)}>{value}</p>
       {detail ? <p className="text-xs text-muted-foreground">{detail}</p> : null}
     </div>
   );

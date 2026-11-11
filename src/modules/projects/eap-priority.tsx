@@ -29,7 +29,7 @@ export function PriorityIndicator({ priority, className }: { priority: TaskPrior
     <span
       className={cn(
         "flex min-w-0 items-center gap-1.5 text-xs",
-        priority === "CRITICA" ? "font-semibold text-destructive" : priority === "ALTA" ? "font-medium text-warning-foreground" : "text-[#667085]",
+        priority === "CRITICA" ? "font-semibold text-destructive" : priority === "ALTA" ? "font-medium text-warning-foreground" : "text-muted-foreground",
         className,
       )}
     >

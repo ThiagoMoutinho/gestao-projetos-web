@@ -137,13 +137,13 @@ export function EapImportSheet({
       <SheetContent
         showCloseButton={false}
         overlayClassName="bg-[rgba(13,25,42,0.2)] supports-backdrop-filter:backdrop-blur-[1px]"
-        className="w-full gap-0 overflow-hidden bg-white p-0 shadow-[0_18px_48px_rgba(16,24,40,0.16)] data-[side=right]:w-full data-[side=right]:sm:max-w-[min(920px,94vw)]"
+        className="w-full gap-0 overflow-hidden bg-card p-0 shadow-[0_18px_48px_rgba(16,24,40,0.16)] data-[side=right]:w-full data-[side=right]:sm:max-w-[min(920px,94vw)]"
       >
         <div className="flex h-full min-h-0 flex-col">
-          <header className="flex items-start justify-between gap-[15px] border-b border-[#e4e7ec] px-[22px] pt-6 pb-[18px]">
+          <header className="flex items-start justify-between gap-[15px] border-b border-border px-[22px] pt-6 pb-[18px]">
             <div className="min-w-0">
-              <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">Importação da EAP</span>
-              <SheetTitle className="text-[17px] leading-[1.35] font-semibold text-[#172033]">Importar EAP por planilha</SheetTitle>
+              <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-primary uppercase">Importação da EAP</span>
+              <SheetTitle className="text-[17px] leading-[1.35] font-semibold text-foreground">Importar EAP por planilha</SheetTitle>
               <ol className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold" aria-label="Etapas da importação">
                 {STEPS.map((item, index) => {
                   const current = STEPS.findIndex((entry) => entry.id === step);
@@ -152,13 +152,13 @@ export function EapImportSheet({
                       <span
                         className={cn(
                           "flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors duration-300",
-                          index === current ? "bg-[#175cd3] text-white" : index < current ? "bg-[#e9f2ff] text-[#285da8]" : "bg-[#f2f4f7] text-[#98a2b3]",
+                          index === current ? "bg-primary text-primary-foreground" : index < current ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
                         )}
                       >
                         {index < current ? <Check className="size-3" aria-hidden="true" /> : <span>{index + 1}</span>}
                         {item.label}
                       </span>
-                      {index < STEPS.length - 1 ? <ArrowRight className="size-3 text-[#d0d5dd]" aria-hidden="true" /> : null}
+                      {index < STEPS.length - 1 ? <ArrowRight className="size-3 text-input" aria-hidden="true" /> : null}
                     </li>
                   );
                 })}
@@ -169,13 +169,13 @@ export function EapImportSheet({
             </Button>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-6 py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/50 px-6 py-5">
 
             {step === "upload" ? (
               <div key="upload" className="motion-fade flex flex-col gap-4">
                 {busy === "reading" ? (
-                  <div className="flex flex-col gap-3 rounded-[10px] border border-[#e4e7ec] bg-white p-5" role="status">
-                    <span className="flex items-center gap-2 text-xs font-semibold text-[#344054]">
+                  <div className="flex flex-col gap-3 rounded-[10px] border border-border bg-card p-5" role="status">
+                    <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
                       <Spinner className="size-4" /> Lendo e validando {fileName}…
                     </span>
                     <Skeleton className="h-8 w-full rounded-[7px]" />
@@ -191,15 +191,15 @@ export function EapImportSheet({
                     onDragLeave={() => setDragging(false)}
                     onDrop={onDrop}
                     className={cn(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-[10px] border-2 border-dashed bg-white px-6 py-10 text-center transition-colors duration-200",
-                      dragging ? "border-[#175cd3] bg-[#f5f9ff]" : "border-[#d0d5dd] hover:border-[#84adff]",
+                      "flex cursor-pointer flex-col items-center gap-2 rounded-[10px] border-2 border-dashed bg-card px-6 py-10 text-center transition-colors duration-200",
+                      dragging ? "border-primary bg-primary/5" : "border-input hover:border-primary/50",
                     )}
                   >
-                    <span className="flex size-11 items-center justify-center rounded-full bg-[#e9f2ff] text-[#175cd3]">
+                    <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <Upload className="size-5" aria-hidden="true" />
                     </span>
-                    <strong className="text-xs text-[#172033]">Arraste a planilha ou clique para escolher</strong>
-                    <span className="text-xs text-[#667085]">Arquivos .xlsx ou .csv, até 5 MB e 500 linhas</span>
+                    <strong className="text-xs text-foreground">Arraste a planilha ou clique para escolher</strong>
+                    <span className="text-xs text-muted-foreground">Arquivos .xlsx ou .csv, até 5 MB e 500 linhas</span>
                     <input
                       ref={inputRef}
                       type="file"
@@ -209,11 +209,11 @@ export function EapImportSheet({
                     />
                   </label>
                 )}
-                <section className="rounded-[10px] border border-[#e4e7ec] bg-white p-4">
-                  <h3 className="flex items-center gap-2 text-xs font-semibold text-[#172033]">
-                    <FileSpreadsheet className="size-4 text-[#157454]" aria-hidden="true" /> Modelo padrão
+                <section className="rounded-[10px] border border-border bg-card p-4">
+                  <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                    <FileSpreadsheet className="size-4 text-status-done-ink" aria-hidden="true" /> Modelo padrão
                   </h3>
-                  <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-xs leading-relaxed text-[#475467]">
+                  <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-xs leading-relaxed text-foreground/80">
                     <li>Uma linha por item: fase com código 1, 2…; tarefas e marcos da fase com 1.1, 1.2…</li>
                     {IMPORT_RULES.slice(0, 4).map((rule) => (
                       <li key={rule}>{rule}</li>
@@ -235,12 +235,12 @@ export function EapImportSheet({
               <div key="preview" className="motion-fade flex flex-col gap-4">
                 <Summary result={result} fileName={fileName} />
                 {result.errors.length > 0 ? (
-                  <section role="alert" className="rounded-[10px] border border-[#efc3bf] bg-[#fff4f1] p-4">
-                    <h3 className="flex items-center gap-2 text-xs font-semibold text-[#9f2219]">
+                  <section role="alert" className="rounded-[10px] border border-status-critical/40 bg-status-critical-soft p-4">
+                    <h3 className="flex items-center gap-2 text-xs font-semibold text-status-critical-ink">
                       <AlertTriangle className="size-4" aria-hidden="true" />
                       {result.errors.length} erro(s) encontrados. Corrija a planilha e envie novamente; nada será gravado.
                     </h3>
-                    <ul className="mt-2 flex max-h-[220px] flex-col gap-1 overflow-y-auto text-xs leading-snug text-[#7a271a]">
+                    <ul className="mt-2 flex max-h-[220px] flex-col gap-1 overflow-y-auto text-xs leading-snug text-status-critical-ink">
                       {result.errors.map((error, index) => (
                         <li key={`${error.line}-${index}`}>
                           <strong>Linha {error.line}</strong>
@@ -250,17 +250,17 @@ export function EapImportSheet({
                     </ul>
                   </section>
                 ) : (
-                  <p className="flex items-center gap-2 rounded-[10px] border border-[#bfe4d5] bg-[#f0faf6] px-4 py-3 text-xs text-[#157454]">
+                  <p className="flex items-center gap-2 rounded-[10px] border border-status-done/40 bg-status-done-soft px-4 py-3 text-xs text-status-done-ink">
                     <Check className="size-4" aria-hidden="true" /> Nenhum erro encontrado. Revise os itens e continue para confirmar.
                   </p>
                 )}
                 {result.warnings.length > 0 ? (
-                  <section role="status" className="rounded-[10px] border border-[#f3dcae] bg-[#fff8e9] p-4">
-                    <h3 className="flex items-center gap-2 text-xs font-semibold text-[#865516]">
+                  <section role="status" className="rounded-[10px] border border-status-attention/40 bg-status-attention-soft p-4">
+                    <h3 className="flex items-center gap-2 text-xs font-semibold text-status-attention-ink">
                       <AlertTriangle className="size-4" aria-hidden="true" />
                       {result.warnings.length} aviso(s): não impedem a importação.
                     </h3>
-                    <ul className="mt-2 flex flex-col gap-1 text-xs leading-snug text-[#865516]">
+                    <ul className="mt-2 flex flex-col gap-1 text-xs leading-snug text-status-attention-ink">
                       {result.warnings.map((warning, index) => (
                         <li key={`${warning.line}-${index}`}>
                           <strong>Linha {warning.line}</strong>: {warning.message}
@@ -276,8 +276,8 @@ export function EapImportSheet({
             {step === "confirm" && result ? (
               <div key="confirm" className="motion-fade flex flex-col gap-4">
                 <Summary result={result} fileName={fileName} />
-                <section className="rounded-[10px] border border-[#e4e7ec] bg-white p-4 text-xs leading-relaxed text-[#475467]">
-                  <h3 className="mb-2 text-xs font-semibold text-[#172033]">Confirme a importação</h3>
+                <section className="rounded-[10px] border border-border bg-card p-4 text-xs leading-relaxed text-foreground/80">
+                  <h3 className="mb-2 text-xs font-semibold text-foreground">Confirme a importação</h3>
                   <ul className="flex list-disc flex-col gap-1 pl-5">
                     <li>
                       Serão criadas {result.summary.phases} fase(s), {result.summary.tasks} tarefa(s) e {result.summary.milestones} marco(s) nesta EAP, que está vazia.
@@ -291,7 +291,7 @@ export function EapImportSheet({
             ) : null}
           </div>
 
-          <footer className="flex shrink-0 flex-wrap items-center justify-end gap-[7px] border-t border-[#e4e7ec] bg-white px-6 py-3 sm:min-h-[66px]">
+          <footer className="flex shrink-0 flex-wrap items-center justify-end gap-[7px] border-t border-border bg-card px-6 py-3 sm:min-h-[66px]">
             {step === "upload" ? (
               <Button type="button" variant="outline" className={secondaryButton} disabled={busy !== null} onClick={close}>
                 Cancelar
@@ -328,20 +328,20 @@ export function EapImportSheet({
 
 function Summary({ result, fileName }: { result: ImportEap200; fileName: string | null }) {
   const cards = [
-    { label: "Fases", value: result.summary.phases, icon: <Folder className="size-4" aria-hidden="true" />, tone: "bg-[#e9f2ff] text-[#2865b9]" },
-    { label: "Tarefas", value: result.summary.tasks, icon: <ListTodo className="size-4" aria-hidden="true" />, tone: "bg-[#eef2f6] text-[#52677e]" },
-    { label: "Marcos", value: result.summary.milestones, icon: <Flag className="size-4" aria-hidden="true" />, tone: "bg-[#f4ecfb] text-[#8b5bbb]" },
+    { label: "Fases", value: result.summary.phases, icon: <Folder className="size-4" aria-hidden="true" />, tone: "bg-primary/10 text-primary" },
+    { label: "Tarefas", value: result.summary.tasks, icon: <ListTodo className="size-4" aria-hidden="true" />, tone: "bg-muted text-muted-foreground" },
+    { label: "Marcos", value: result.summary.milestones, icon: <Flag className="size-4" aria-hidden="true" />, tone: "bg-status-validation-soft text-status-validation-ink" },
   ];
   return (
     <div className="flex flex-col gap-2">
-      {fileName ? <span className="truncate text-xs text-[#667085]">Arquivo: <strong className="text-[#344054]">{fileName}</strong></span> : null}
+      {fileName ? <span className="truncate text-xs text-muted-foreground">Arquivo: <strong className="text-foreground">{fileName}</strong></span> : null}
       <div className="grid grid-cols-3 gap-2">
         {cards.map((card) => (
-          <div key={card.label} className="flex items-center gap-2.5 rounded-[10px] border border-[#e4e7ec] bg-white p-3">
+          <div key={card.label} className="flex items-center gap-2.5 rounded-[10px] border border-border bg-card p-3">
             <span className={cn("flex size-8 items-center justify-center rounded-[7px]", card.tone)}>{card.icon}</span>
             <span>
-              <strong className="block text-[15px] leading-none text-[#172033]">{card.value}</strong>
-              <span className="text-xs text-[#667085]">{card.label}</span>
+              <strong className="block text-[15px] leading-none text-foreground">{card.value}</strong>
+              <span className="text-xs text-muted-foreground">{card.label}</span>
             </span>
           </div>
         ))}
@@ -353,9 +353,9 @@ function Summary({ result, fileName }: { result: ImportEap200; fileName: string 
 function PreviewTable({ result, errorLines }: { result: ImportEap200; errorLines: Set<number> }) {
   const date = (value: string | null) => (value ? formatCivilDate(civilDateInput(value)) : "—");
   return (
-    <div className="relative overflow-x-auto rounded-[10px] border border-[#e4e7ec] bg-white">
+    <div className="relative overflow-x-auto rounded-[10px] border border-border bg-card">
       <table className="w-full min-w-[680px] text-left text-xs">
-        <thead className="bg-[#f8f9fb] text-xs font-semibold tracking-[0.04em] text-[#667085] uppercase">
+        <thead className="bg-muted/50 text-xs font-semibold tracking-[0.04em] text-muted-foreground uppercase">
           <tr>
             <th className="px-3 py-2">Linha</th>
             <th className="px-3 py-2">Código</th>
@@ -368,23 +368,23 @@ function PreviewTable({ result, errorLines }: { result: ImportEap200; errorLines
         </thead>
         <tbody>
           {result.items.map((item) => (
-            <tr key={`${item.line}-${item.code}`} className={cn("border-t border-[#edf0f3]", errorLines.has(item.line) ? "bg-[#fff4f1]" : item.kind === "PHASE" ? "bg-[#fbfcfe]" : "")}>
-              <td className="px-3 py-2 text-[#98a2b3]">{item.line}</td>
+            <tr key={`${item.line}-${item.code}`} className={cn("border-t border-border/60", errorLines.has(item.line) ? "bg-status-critical-soft" : item.kind === "PHASE" ? "bg-muted/50" : "")}>
+              <td className="px-3 py-2 text-muted-foreground">{item.line}</td>
               <td className="px-3 py-2 whitespace-nowrap">
-                <span className="font-semibold text-[#344054]">{item.finalCode}</span>
-                {item.finalCode !== item.code ? <span className="ml-1 text-[#98a2b3]">(planilha {item.code})</span> : null}
+                <span className="font-semibold text-foreground">{item.finalCode}</span>
+                {item.finalCode !== item.code ? <span className="ml-1 text-muted-foreground">(planilha {item.code})</span> : null}
               </td>
               <td className="px-3 py-2">{KIND_LABEL[item.kind]}</td>
-              <td className={cn("px-3 py-2 text-[#172033]", item.kind === "PHASE" ? "font-semibold" : "pl-6")}>{item.name}</td>
-              <td className="px-3 py-2 text-[#475467]">
+              <td className={cn("px-3 py-2 text-foreground", item.kind === "PHASE" ? "font-semibold" : "pl-6")}>{item.name}</td>
+              <td className="px-3 py-2 text-foreground/80">
                 {item.responsibleName ?? "—"}
-                {item.reviewerName ? <span className="block text-xs text-[#98a2b3]">Valida: {item.reviewerName}</span> : null}
+                {item.reviewerName ? <span className="block text-xs text-muted-foreground">Valida: {item.reviewerName}</span> : null}
               </td>
               <td className="px-3 py-2 whitespace-nowrap">{date(item.plannedStartAt)}</td>
               <td className="px-3 py-2 whitespace-nowrap">
                 {date(item.plannedEndAt)}
                 {item.kind === "PHASE" && (item.consolidatedStartAt || item.consolidatedEndAt) ? (
-                  <span className="block text-xs text-[#98a2b3]">
+                  <span className="block text-xs text-muted-foreground">
                     Itens: {date(item.consolidatedStartAt)} a {date(item.consolidatedEndAt)}
                   </span>
                 ) : null}
@@ -393,10 +393,10 @@ function PreviewTable({ result, errorLines }: { result: ImportEap200; errorLines
           ))}
         </tbody>
       </table>
-      {result.items.length === 0 ? <p className="px-3 py-4 text-xs text-[#667085]">Nenhum item reconhecido na planilha.</p> : null}
+      {result.items.length === 0 ? <p className="px-3 py-4 text-xs text-muted-foreground">Nenhum item reconhecido na planilha.</p> : null}
     </div>
   );
 }
 
-const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-[13px] text-xs font-semibold text-[#344054]";
-const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-[#175cd3] px-[13px] text-xs font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]";
+const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-input px-[13px] text-xs font-semibold text-foreground";
+const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-primary px-[13px] text-xs font-semibold text-primary-foreground shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-primary";

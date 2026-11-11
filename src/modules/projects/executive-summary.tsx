@@ -56,7 +56,7 @@ function percent(basisPoints: number | null) {
 
 const METRIC_TONE = {
   blue: "bg-primary/10 text-primary",
-  red: "bg-destructive/10 text-destructive",
+  red: "bg-status-critical-soft text-status-critical-ink",
 } as const;
 
 /** Indicador do cartão: ícone em bloco colorido, número em destaque e rótulo. */
@@ -77,7 +77,7 @@ function Metric({ icon: Icon, tone, label, value }: { icon: typeof Layers; tone:
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-1.5">
-      <h3 className="text-xs font-semibold text-[#475467]">{title}</h3>
+      <h3 className="text-xs font-semibold text-foreground/80">{title}</h3>
       {children}
     </section>
   );
@@ -510,7 +510,7 @@ export function ExecutiveSummaryCard({
       }}
       action={
         data ? (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#E4E7EC] px-2.5 py-1 text-[11px] font-medium dark:border-border">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium dark:border-border">
             <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
             {projectStatusLabel(data.situation.status)}
           </span>

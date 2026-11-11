@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * duas colunas), para o carregamento não deslocar o layout. Sem "use client": também serve ao loading.tsx da rota.
  * O acabamento do cartão repete OVERVIEW_CARD (overview-panel.tsx), que é um módulo de cliente.
  */
-const CARD = "rounded-[10px] border border-[#E4E7EC] bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] ring-0 dark:border-border dark:shadow-none";
+const CARD = "rounded-[10px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] ring-0 dark:border-border dark:shadow-none";
 const PULSE = "motion-reduce:animate-none";
 
 /** Cartão de seção em carregamento: bloco do ícone, título, subtítulo e linhas de conteúdo. */

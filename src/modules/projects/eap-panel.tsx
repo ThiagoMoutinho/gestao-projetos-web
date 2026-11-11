@@ -331,25 +331,25 @@ function PhaseEditor({
           </div>
         )}
       </EditSection>
-      <EditSection title="Configuração da fase" subtitle="O andamento é calculado pelos itens subordinados" tone="accent" aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-[#edf4ff] px-2 py-[5px] text-[11px] font-semibold text-[#2864bb]"><List className="size-3" aria-hidden="true" />Calculado</span>}>
-        <div className="mb-3.5 rounded-[7px] bg-[#f8fafc] px-[11px] py-[11px]">
-          <div className="mb-2 flex items-center justify-between text-xs text-[#667085]">
+      <EditSection title="Configuração da fase" subtitle="O andamento é calculado pelos itens subordinados" tone="accent" aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-primary/10 px-2 py-[5px] text-[11px] font-semibold text-primary"><List className="size-3" aria-hidden="true" />Calculado</span>}>
+        <div className="mb-3.5 rounded-[7px] bg-muted/50 px-[11px] py-[11px]">
+          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>Andamento consolidado</span>
-            <strong className="text-xs text-[#175cd3]">{progress.kind === "value" ? `${formatBasis(progress.basisPoints)}%` : progressLabel(progress)}</strong>
+            <strong className="text-xs text-primary">{progress.kind === "value" ? `${formatBasis(progress.basisPoints)}%` : progressLabel(progress)}</strong>
           </div>
           {progress.kind === "value" ? (
-            <Progress value={basisToPercent(progress.basisPoints)} aria-label="Andamento consolidado da fase" className="[&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]" />
+            <Progress value={basisToPercent(progress.basisPoints)} aria-label="Andamento consolidado da fase" className="[&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted" />
           ) : (
-            <p className="text-xs text-[#98a2b3]">{progress.kind === "empty" ? "Esta fase ainda não tem itens subordinados." : "O percentual desta fase não está disponível."}</p>
+            <p className="text-xs text-muted-foreground">{progress.kind === "empty" ? "Esta fase ainda não tem itens subordinados." : "O percentual desta fase não está disponível."}</p>
           )}
-          <p className="mt-[9px] text-xs leading-normal text-[#8a94a6]">
+          <p className="mt-[9px] text-xs leading-normal text-muted-foreground">
             A situação muda sozinha conforme as tarefas e os marcos. A fase só fica concluída quando todas as tarefas ativas estão em 100% e todos os marcos foram aceitos.
           </p>
         </div>
         {access.canManageStructure && !concluded ? (
-          <div className="mb-3.5 rounded-[7px] border border-[#e4e7ec] px-[11px] py-2.5">
+          <div className="mb-3.5 rounded-[7px] border border-border px-[11px] py-2.5">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs leading-normal text-[#667085]">
+              <span className="text-xs leading-normal text-muted-foreground">
                 {phase.status === "SUSPENSA"
                   ? "Fase suspensa pela gestão. Ao retomar, a situação volta a ser calculada pelos itens."
                   : "Suspender interrompe a atualização automática da situação até a fase ser retomada."}
@@ -379,7 +379,7 @@ function PhaseEditor({
                   <Button type="button" variant="outline" className="h-9 rounded-[7px] px-3 text-xs" disabled={suspending} onClick={() => { setSuspendOpen(false); setSuspendText(""); }}>
                     Cancelar
                   </Button>
-                  <Button type="button" className="h-9 rounded-[7px] bg-[#c4620f] px-3 text-xs text-white hover:bg-[#b4570f]" loading={suspending} onClick={() => void toggleSuspension()}>
+                  <Button type="button" className="h-9 rounded-[7px] bg-status-adjust px-3 text-xs text-primary-foreground hover:bg-status-adjust" loading={suspending} onClick={() => void toggleSuspension()}>
                     {suspending ? "Suspendendo…" : "Confirmar suspensão"}
                   </Button>
                 </div>
@@ -664,36 +664,36 @@ function TaskEditor({
           )}
         </div>
       </EditSection>
-      <EditSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" tone="accent" aside={<strong className="text-xs text-[#175cd3]">{progressShown}%</strong>}>
+      <EditSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" tone="accent" aside={<strong className="text-xs text-primary">{progressShown}%</strong>}>
         {canProgress && !cancelled ? (
           <>
-            <Progress value={progressShown} aria-label="Andamento da tarefa" className="mb-3 [&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-[#e9eef5]" />
+            <Progress value={progressShown} aria-label="Andamento da tarefa" className="mb-3 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted" />
             <div className="mt-[11px] mb-3.5 grid grid-cols-6 gap-1.5">
               {[0, 25, 50, 75, 90, 100].map((value) => (
-                <button key={value} type="button" className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progressShown === value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`} onClick={() => choosePercent(String(value))}>
+                <button key={value} type="button" className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progressShown === value ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`} onClick={() => choosePercent(String(value))}>
                   {value}%
                 </button>
               ))}
             </div>
             <div className="mb-3.5 grid grid-cols-[140px_auto_1fr] items-end gap-2">
               <EditText label="Percentual exato de andamento" value={percent} onChange={(value) => { choosePercent(value); clear("percent"); }} error={errors.percent} />
-              <span className="flex h-9 items-center text-xs text-[#98a2b3]">% concluído</span>
+              <span className="flex h-9 items-center text-xs text-muted-foreground">% concluído</span>
               <Button type="button" variant="outline" className="h-9 justify-self-end gap-1.5 rounded-[7px] px-3.5 text-xs" disabled={progressShown === 100} onClick={() => choosePercent("100")}>
                 <Check className="size-3.5" aria-hidden="true" />
                 Concluir
               </Button>
             </div>
             <Reveal open={completing}>
-              <div className="mb-3.5 rounded-[9px] border border-[#bfe4d5] bg-[#f6fcf9] p-3">
-                <span className="mb-1 block text-xs font-semibold tracking-[0.04em] text-[#157454] uppercase">Concluir tarefa</span>
-                <p className="mb-2.5 text-xs leading-[1.45] text-[#475467]">Para concluir, confirme o início e o término reais. A conclusão é gravada ao salvar.</p>
+              <div className="mb-3.5 rounded-[9px] border border-status-done/40 bg-status-done-soft p-3">
+                <span className="mb-1 block text-xs font-semibold tracking-[0.04em] text-status-done-ink uppercase">Concluir tarefa</span>
+                <p className="mb-2.5 text-xs leading-[1.45] text-foreground/80">Para concluir, confirme o início e o término reais. A conclusão é gravada ao salvar.</p>
                 <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">{completing ? actualFields : null}</div>
               </div>
             </Reveal>
             <Reveal open={reopeningTask}>
-              <div className="mb-3.5 rounded-[9px] border border-[#f6d2ad] bg-[#fff8f1] p-3">
-                <span className="mb-1 block text-xs font-semibold tracking-[0.04em] text-[#b4570f] uppercase">Reabrir tarefa concluída</span>
-                <p className="mb-2.5 text-xs leading-[1.45] text-[#475467]">O término real registrado é retirado e fica preservado no histórico. A reabertura é gravada ao salvar.</p>
+              <div className="mb-3.5 rounded-[9px] border border-status-adjust/40 bg-status-adjust-soft p-3">
+                <span className="mb-1 block text-xs font-semibold tracking-[0.04em] text-status-adjust-ink uppercase">Reabrir tarefa concluída</span>
+                <p className="mb-2.5 text-xs leading-[1.45] text-foreground/80">O término real registrado é retirado e fica preservado no histórico. A reabertura é gravada ao salvar.</p>
                 {reopeningTask ? (
                   <EditArea
                     label="Justificativa da reabertura"
@@ -707,7 +707,7 @@ function TaskEditor({
                 ) : null}
               </div>
             </Reveal>
-            <p className="mb-3.5 text-xs leading-normal text-[#98a2b3]">
+            <p className="mb-3.5 text-xs leading-normal text-muted-foreground">
               A situação acompanha o percentual: 0% não iniciada, de 1% a 99% em andamento e 100% concluída. O início real é registrado ao iniciar o andamento; para concluir, confirme as datas reais. Corrigir uma data já registrada exige justificativa.
             </p>
             {editable ? (
@@ -874,13 +874,13 @@ function DecisionCard({
   tone: { surface: string; icon: string };
   onClick?: () => void;
 }) {
-  const className = `grid w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-[9px] rounded-[7px] border px-2.5 py-2.5 text-left ${controlTransitionClassName} ${active ? tone.surface : "border-[#e4e7ec] bg-white"}`;
+  const className = `grid w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-[9px] rounded-[7px] border px-2.5 py-2.5 text-left ${controlTransitionClassName} ${active ? tone.surface : "border-border bg-card"}`;
   const content = (
     <>
-      <span className={`grid size-8 place-items-center rounded-[6px] transition-colors duration-200 ease-out motion-reduce:transition-none ${active ? tone.icon : "bg-[#f2f4f7] text-[#8a94a6]"}`}>{icon}</span>
+      <span className={`grid size-8 place-items-center rounded-[6px] transition-colors duration-200 ease-out motion-reduce:transition-none ${active ? tone.icon : "bg-muted text-muted-foreground"}`}>{icon}</span>
       <span className="min-w-0">
-        <strong className="block text-xs text-[#344054]">{title}</strong>
-        <small className="mt-[3px] block text-xs text-[#98a2b3]">{note}</small>
+        <strong className="block text-xs text-foreground">{title}</strong>
+        <small className="mt-[3px] block text-xs text-muted-foreground">{note}</small>
       </span>
     </>
   );
@@ -1006,7 +1006,7 @@ function TaskImpediment({
         <Reveal open={action !== "update"}>
           <div className="pt-3">
             <EditLabel label="Motivo registrado" />
-            <p className="mt-1.5 rounded-[7px] border border-[#e4e7ec] bg-[#f8fafc] px-2.5 py-2 text-xs leading-[1.5] whitespace-pre-wrap text-[#475467]">{open.description}</p>
+            <p className="mt-1.5 rounded-[7px] border border-border bg-muted/50 px-2.5 py-2 text-xs leading-[1.5] whitespace-pre-wrap text-foreground/80">{open.description}</p>
           </div>
         </Reveal>
       ) : null}
@@ -1382,7 +1382,7 @@ function EvidenceSection({
       </Suspense>
       {canRegister ? (
         <Reveal open={formOpen}>
-        <div className="mt-3 rounded-[7px] border border-[#e4e7ec] bg-[#fafbfc] p-3">
+        <div className="mt-3 rounded-[7px] border border-border bg-muted/50 p-3">
           <div className="grid grid-cols-1 gap-[13px] sm:grid-cols-2">
             <EvidenceFormFields draft={draft} onChange={change} errors={errors} ui={eapEvidenceUi} />
           </div>
@@ -1390,7 +1390,7 @@ function EvidenceSection({
             <Button type="button" variant="outline" className={compactButtonClass} disabled={saving} onClick={cancel}>
               Cancelar
             </Button>
-            <Button type="button" className={`${compactButtonClass} border-transparent bg-[#175cd3] text-white hover:bg-[#144ca8]`} loading={saving} onClick={() => void create()}>
+            <Button type="button" className={`${compactButtonClass} border-transparent bg-primary text-primary-foreground hover:bg-primary`} loading={saving} onClick={() => void create()}>
               <Check className="size-3.5" aria-hidden="true" />
               {saving ? "Registrando…" : "Vincular evidência"}
             </Button>
@@ -1399,7 +1399,7 @@ function EvidenceSection({
         </Reveal>
       ) : null}
       {!canRegister ? (
-        <p className="mt-2.5 text-xs text-[#98a2b3]">{unavailableText}</p>
+        <p className="mt-2.5 text-xs text-muted-foreground">{unavailableText}</p>
       ) : null}
     </EditSection>
   );
@@ -1416,7 +1416,7 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
     return (
       <>
         {emptyWarning ? (
-          <div className="mb-2.5 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-xs leading-[1.45] text-[#865516]">
+          <div className="mb-2.5 flex items-start gap-2 rounded-[7px] border border-status-attention/40 bg-status-attention-soft p-2.5 text-xs leading-[1.45] text-status-attention-ink">
             <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
             <span>{emptyWarning}</span>
           </div>
@@ -1429,13 +1429,13 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
   return (
     <ul className="flex flex-col gap-[7px]">
       {state.items.map((item) => (
-        <li key={item.id} className="grid min-h-[45px] grid-cols-[29px_minmax(0,1fr)_26px] items-center gap-[9px] rounded-[7px] border border-[#e4e7ec] px-[7px] py-1.5">
-          <span className="grid size-[29px] place-items-center rounded-[6px] bg-[#f0f3f6] text-[#52677e]">
+        <li key={item.id} className="grid min-h-[45px] grid-cols-[29px_minmax(0,1fr)_26px] items-center gap-[9px] rounded-[7px] border border-border px-[7px] py-1.5">
+          <span className="grid size-[29px] place-items-center rounded-[6px] bg-muted text-muted-foreground">
             <EvidenceKindIcon kind={item.kind} className="size-[15px]" />
           </span>
           <span className="min-w-0">
-            <strong className="mb-[3px] block truncate text-xs font-semibold text-[#344054]">{evidenceDisplayTitle(item)}</strong>
-            <span className="flex items-center gap-1 text-xs text-[#98a2b3]">
+            <strong className="mb-[3px] block truncate text-xs font-semibold text-foreground">{evidenceDisplayTitle(item)}</strong>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
               {item.deliveryId ? <Lock className="size-2.5" aria-hidden="true" /> : null}
               {evidenceKindLabel(item.kind)} · Registrada em {item.createdAt}
               {item.deliveryId ? " · enviada para homologação" : ""}
@@ -1446,7 +1446,7 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
             target="_blank"
             rel="noreferrer"
             aria-label={`${evidenceActionLabel(item.kind)}: ${evidenceDisplayTitle(item)}`}
-            className="grid size-[25px] place-items-center rounded-[6px] text-[#667085] hover:bg-[#f2f4f7]"
+            className="grid size-[25px] place-items-center rounded-[6px] text-muted-foreground hover:bg-muted"
           >
             <ChevronRight className="size-3.5" aria-hidden="true" />
           </a>
@@ -1456,8 +1456,8 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
   );
 }
 
-const compactButtonClass = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-3 text-xs font-semibold text-[#344054]";
-const emptyInlineClass = "flex min-h-11 items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-xs text-[#98a2b3]";
+const compactButtonClass = "h-9 gap-1.5 rounded-[7px] border-input px-3 text-xs font-semibold text-foreground";
+const emptyInlineClass = "flex min-h-11 items-center rounded-[7px] border border-dashed border-input bg-muted/50 px-2.5 text-xs text-muted-foreground";
 
 function FoldBlock({
   title,
@@ -1471,11 +1471,11 @@ function FoldBlock({
   const [open, setOpen] = useState(false);
   const [seen, setSeen] = useState(false);
   return (
-    <section className="mt-3 shrink-0 rounded-[9px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+    <section className="mt-3 shrink-0 rounded-[9px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <button
         type="button"
         aria-expanded={open}
-        className="flex min-h-12 w-full items-center justify-between px-[15px] text-xs font-semibold text-[#344054]"
+        className="flex min-h-12 w-full items-center justify-between px-[15px] text-xs font-semibold text-foreground"
         onClick={() => {
           setSeen(true);
           setOpen(!open);
@@ -1485,10 +1485,10 @@ function FoldBlock({
           <Icon className="size-4" aria-hidden="true" />
           {title}
         </span>
-        <ChevronRight className={`size-[15px] text-[#98a2b3] transition-transform duration-300 ease-out motion-reduce:transition-none ${open ? "-rotate-90" : "rotate-90"}`} aria-hidden="true" />
+        <ChevronRight className={`size-[15px] text-muted-foreground transition-transform duration-300 ease-out motion-reduce:transition-none ${open ? "-rotate-90" : "rotate-90"}`} aria-hidden="true" />
       </button>
       <Reveal open={open} bleed={false}>
-        {seen ? <div className="border-t border-[#edf0f3] px-[15px] pt-[15px] pb-[15px]">{children}</div> : null}
+        {seen ? <div className="border-t border-border/60 px-[15px] pt-[15px] pb-[15px]">{children}</div> : null}
       </Reveal>
     </section>
   );
@@ -1573,14 +1573,14 @@ function EditStatus({ feedback }: { feedback: string | null }) {
     return null;
   }
   return (
-    <p role="status" className="mt-3 text-xs text-[#667085]">
+    <p role="status" className="mt-3 text-xs text-muted-foreground">
       {feedback}
     </p>
   );
 }
 
 function EditNotice({ text }: { text: string }) {
-  return <p className="text-xs leading-[1.5] text-[#98a2b3]">{text}</p>;
+  return <p className="text-xs leading-[1.5] text-muted-foreground">{text}</p>;
 }
 
 function historyKey(item: object, revision: number | string) {
@@ -1614,15 +1614,15 @@ function useSaveController(
 function EditContext({ kind, code, status, statusKind }: { kind: "phase" | "task" | "milestone"; code: string; status: string; statusKind: EapStatusKind }) {
   const label = kind === "phase" ? "Fase" : kind === "task" ? "Tarefa" : "Marco";
   const Icon = kind === "phase" ? Folder : kind === "task" ? Check : Flag;
-  const tone = kind === "phase" ? "bg-[#e9f2ff] text-[#2865b9]" : kind === "task" ? "bg-[#eef2f6] text-[#52677e]" : "bg-[#f4ecfb] text-[#8b5bbb]";
+  const tone = kind === "phase" ? "bg-primary/10 text-primary" : kind === "task" ? "bg-muted text-muted-foreground" : "bg-status-validation-soft text-status-validation-ink";
   return (
-    <div className="-mx-6 mb-4 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-[#e4e7ec] bg-white px-6 py-[13px]">
+    <div className="-mx-6 mb-4 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-border bg-card px-6 py-[13px]">
       <span className={`grid size-8 place-items-center rounded-[7px] ${tone}`}>
         <Icon className="size-4" aria-hidden="true" />
       </span>
       <span>
-        <span className="mb-[3px] block text-xs text-[#98a2b3]">Item da EAP</span>
-        <strong className="block text-xs text-[#344054]">{code} · {label}</strong>
+        <span className="mb-[3px] block text-xs text-muted-foreground">Item da EAP</span>
+        <strong className="block text-xs text-foreground">{code} · {label}</strong>
       </span>
       <EapStatusBadge kind={statusKind} label={status} />
     </div>
@@ -1643,11 +1643,11 @@ function EditSection({
   children: ReactNode;
 }) {
   return (
-    <section className={`mt-3 rounded-[10px] border bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-[#d8e6f8]" : "border-[#e4e7ec]"}`}>
+    <section className={`mt-3 rounded-[10px] border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-primary/25" : "border-border"}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <strong className="block text-[13px] text-[#253248]">{title}</strong>
-          <span className="mt-1 block text-xs text-[#98a2b3]">{subtitle}</span>
+          <strong className="block text-[13px] text-foreground">{title}</strong>
+          <span className="mt-1 block text-xs text-muted-foreground">{subtitle}</span>
         </div>
         {aside}
       </div>
@@ -1658,9 +1658,9 @@ function EditSection({
 
 function EditLabel({ label, hint }: { label: string; hint?: string }) {
   return (
-    <span className="flex items-baseline justify-between text-xs font-semibold text-[#475467]">
+    <span className="flex items-baseline justify-between text-xs font-semibold text-foreground/80">
       {label}
-      {hint ? <small className="text-xs font-normal text-[#98a2b3]">{hint}</small> : null}
+      {hint ? <small className="text-xs font-normal text-muted-foreground">{hint}</small> : null}
     </span>
   );
 }

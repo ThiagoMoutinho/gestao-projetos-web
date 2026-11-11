@@ -5,7 +5,7 @@ import { OptionCombobox, type ComboOption } from "@/components/option-combobox";
 import type { FeedFilters } from "./notification-feed";
 import { KIND_LABEL, NOTIFICATION_KINDS, isNotificationKind } from "./notification-state";
 
-const FIELD = "h-9 rounded-lg border-[#d7dce3] bg-white [&_input]:text-[13px]";
+const FIELD = "h-9 rounded-lg border-input bg-card [&_input]:text-[13px]";
 
 /** Filtros por tipo, projeto e pendência. A leitura (Todas / Não lidas / Lidas) fica nas abas da Central. */
 export function NotificationFilters({

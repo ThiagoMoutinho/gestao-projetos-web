@@ -10,16 +10,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { controlFocusClassName, controlTransitionClassName } from "@/components/ui/control-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-export const dateControlClass = `h-10 w-full rounded-[7px] border border-[#d7dce3] bg-white px-3 text-xs text-[#344054] outline-none disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#98a2b3] ${controlTransitionClassName} ${controlFocusClassName}`;
+export const dateControlClass = `h-10 w-full rounded-[7px] border border-input bg-card px-3 text-xs text-foreground outline-none disabled:cursor-not-allowed disabled:bg-muted/50 disabled:text-muted-foreground ${controlTransitionClassName} ${controlFocusClassName}`;
 
 /**
  * Combobox (shadcn/ui) com a mesma altura, borda, fonte, ícone e foco dos demais campos da EAP.
  * Use junto com `compact` no OptionCombobox para a lista aberta seguir o mesmo tamanho.
  */
 export const comboboxControlClass = [
-  "h-10 rounded-[7px] border-[#d7dce3] bg-white has-disabled:bg-[#f8fafc] has-disabled:opacity-100",
-  "[&_input]:px-3 [&_input]:text-xs [&_input]:text-[#344054] [&_input]:placeholder:text-[#98a2b3] [&_input:disabled]:text-[#98a2b3]",
-  "[&_[data-slot=input-group-button]_svg]:size-3.5 [&_[data-slot=input-group-button]_svg]:text-[#667085]",
+  "h-10 rounded-[7px] border-input bg-card has-disabled:bg-muted/50 has-disabled:opacity-100",
+  "[&_input]:px-3 [&_input]:text-xs [&_input]:text-foreground [&_input]:placeholder:text-muted-foreground [&_input:disabled]:text-muted-foreground",
+  "[&_[data-slot=input-group-button]_svg]:size-3.5 [&_[data-slot=input-group-button]_svg]:text-muted-foreground",
   "has-[[data-slot=input-group-control]:focus-visible]:border-primary has-[[data-slot=input-group-control]:focus-visible]:ring-4 has-[[data-slot=input-group-control]:focus-visible]:ring-primary/20",
   controlTransitionClassName,
 ].join(" ");
@@ -43,9 +43,9 @@ export function DateField({
   const errorId = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <span className="flex items-baseline justify-between text-xs font-semibold text-[#475467]">
+      <span className="flex items-baseline justify-between text-xs font-semibold text-foreground/80">
         {label}
-        {hint ? <small className="text-xs font-normal text-[#98a2b3]">{hint}</small> : null}
+        {hint ? <small className="text-xs font-normal text-muted-foreground">{hint}</small> : null}
       </span>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
@@ -56,7 +56,7 @@ export function DateField({
               aria-label={label}
               aria-invalid={error ? true : undefined}
               aria-describedby={error ? errorId : undefined}
-              className={`${dateControlClass} justify-start px-3 font-normal shadow-none hover:bg-white ${value ? "text-[#344054]" : "text-[#98a2b3]"}`}
+              className={`${dateControlClass} justify-start px-3 font-normal shadow-none hover:bg-card ${value ? "text-foreground" : "text-muted-foreground"}`}
             />
           }
         >

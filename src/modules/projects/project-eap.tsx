@@ -468,7 +468,7 @@ export function ProjectEap({
         <SheetContent
           showCloseButton={false}
           overlayClassName="bg-[rgba(13,25,42,0.2)] supports-backdrop-filter:backdrop-blur-[1px]"
-          className={`w-full gap-0 overflow-hidden bg-white p-0 ease-out motion-reduce:transition-none data-[side=right]:w-full ${panelResizing ? "transition-[translate,opacity,max-width] duration-300" : "transition-[translate,opacity] duration-200"} ${panelWide ? "data-[side=right]:sm:max-w-[min(860px,92vw)]" : panelEditing ? "data-[side=right]:sm:max-w-[620px]" : "data-[side=right]:sm:max-w-[620px]"}`}
+          className={`w-full gap-0 overflow-hidden bg-card p-0 ease-out motion-reduce:transition-none data-[side=right]:w-full ${panelResizing ? "transition-[translate,opacity,max-width] duration-300" : "transition-[translate,opacity] duration-200"} ${panelWide ? "data-[side=right]:sm:max-w-[min(860px,92vw)]" : panelEditing ? "data-[side=right]:sm:max-w-[620px]" : "data-[side=right]:sm:max-w-[620px]"}`}
         >
           {selection ? (
             <EapDetail
@@ -580,43 +580,43 @@ function CreateMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button type="button" className="h-10 gap-2 rounded-[7px] bg-[#175cd3] px-4 text-xs font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#1248a8]" />}>
+      <DropdownMenuTrigger render={<Button type="button" className="h-10 gap-2 rounded-[7px] bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-primary" />}>
         <Plus className="size-[17px]" aria-hidden="true" />
         Novo item
         <ChevronDown className="size-3.5 opacity-80" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[286px] p-2">
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="px-[9px] text-[11px] font-bold tracking-[0.1em] text-[#98a2b3]">
+          <DropdownMenuLabel className="px-[9px] text-[11px] font-bold tracking-[0.1em] text-muted-foreground">
             {enabled ? "Adicionar à EAP" : "Seu acesso não permite cadastrar itens"}
           </DropdownMenuLabel>
           <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled} onClick={() => onCreate({ kind: "phase" })}>
-            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-[#e9f2ff] text-[#2865b9]"><Folder className="size-4" aria-hidden="true" /></span>
+            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-primary/10 text-primary"><Folder className="size-4" aria-hidden="true" /></span>
             <span>
               <strong className="block text-xs">Nova fase</strong>
-              <small className="mt-1 block text-[11px] leading-snug text-[#98a2b3]">Organize uma grande etapa do projeto</small>
+              <small className="mt-1 block text-[11px] leading-snug text-muted-foreground">Organize uma grande etapa do projeto</small>
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || !firstPhase} onClick={() => firstPhase && onCreate({ kind: "task", phaseId: "" })}>
-            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-[#eef2f6] text-[#52677e]"><Check className="size-4" aria-hidden="true" /></span>
+            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-muted text-muted-foreground"><Check className="size-4" aria-hidden="true" /></span>
             <span>
               <strong className="block text-xs">Nova tarefa</strong>
-              <small className="mt-1 block text-[11px] leading-snug text-[#98a2b3]">Crie uma atividade com responsável e prazo</small>
+              <small className="mt-1 block text-[11px] leading-snug text-muted-foreground">Crie uma atividade com responsável e prazo</small>
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || !firstPhase} onClick={() => firstPhase && onCreate({ kind: "milestone", phaseId: "" })}>
-            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-[#f4ecfb] text-[#8b5bbb]"><Flag className="size-4" aria-hidden="true" /></span>
+            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-status-validation-soft text-status-validation-ink"><Flag className="size-4" aria-hidden="true" /></span>
             <span>
               <strong className="block text-xs">Novo marco</strong>
-              <small className="mt-1 block text-[11px] leading-snug text-[#98a2b3]">Registre uma entrega ou decisão importante</small>
+              <small className="mt-1 block text-[11px] leading-snug text-muted-foreground">Registre uma entrega ou decisão importante</small>
             </span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="my-1.5" />
           <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || importBlocked} onClick={onImport}>
-            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-[#e8f6ef] text-[#157454]"><FileSpreadsheet className="size-4" aria-hidden="true" /></span>
+            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-status-done-soft text-status-done-ink"><FileSpreadsheet className="size-4" aria-hidden="true" /></span>
             <span>
               <strong className="block text-xs">Importar EAP</strong>
-              <small className="mt-1 block text-[11px] leading-snug text-[#98a2b3]">
+              <small className="mt-1 block text-[11px] leading-snug text-muted-foreground">
                 {importBlocked ? "Disponível apenas com a EAP vazia (carga inicial)" : "Carga inicial de fases, tarefas e marcos por .xlsx ou .csv"}
               </small>
             </span>

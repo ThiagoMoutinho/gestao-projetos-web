@@ -1,8 +1,13 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
+import { AccessibleProjectsProvider } from "./accessible-projects";
+import { AppBreadcrumb } from "./app-breadcrumb";
 import { AppHeader, type AppUser } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AppearanceProvider } from "@/modules/appearance/appearance-provider";
 
 export function AppShell({
   user,
@@ -14,15 +19,23 @@ export function AppShell({
   defaultOpen: boolean;
 }) {
   return (
-    <SidebarProvider
-      defaultOpen={defaultOpen}
-      className="min-h-svh flex-1 bg-[color-mix(in_oklch,var(--background),var(--primary)_4%)]"
-    >
-      <AppSidebar user={user} />
-      <SidebarInset className="min-w-0 bg-transparent">
-        <AppHeader />
-        <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <AppearanceProvider userId={user.id}>
+    <AccessibleProjectsProvider>
+      <SidebarProvider
+        defaultOpen={defaultOpen}
+        style={{ "--header-height": "4.25rem" } as CSSProperties}
+        className="min-h-svh flex-1 flex-col bg-background"
+      >
+        <AppHeader user={user} />
+        <div className="flex min-w-0 flex-1">
+          <AppSidebar className="top-(--header-height) h-[calc(100svh-var(--header-height))]!" />
+          <SidebarInset className="min-w-0 bg-transparent">
+            <AppBreadcrumb />
+            <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 pt-2 md:p-6 md:pt-2">{children}</div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </AccessibleProjectsProvider>
+    </AppearanceProvider>
   );
 }

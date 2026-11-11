@@ -73,7 +73,7 @@ export function OptionCombobox({
             <ComboboxItem
               key={option.value || "__vazio__"}
               value={option}
-              className={compact ? "min-h-9 rounded-[5px] py-1.5 pl-2 text-xs text-[#344054] [&_svg:not([class*=size-])]:size-3.5" : undefined}
+              className={compact ? "min-h-9 rounded-[5px] py-1.5 pl-2 text-xs text-foreground [&_svg:not([class*=size-])]:size-3.5" : undefined}
             >
               {option.label}
             </ComboboxItem>

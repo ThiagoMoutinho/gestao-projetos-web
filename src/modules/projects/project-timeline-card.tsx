@@ -34,7 +34,7 @@ const RING: Record<TimelineTone, string> = {
 };
 
 const PILL: Record<TimelineTone, string> = {
-  danger: "bg-destructive/10 text-destructive",
+  danger: "bg-status-critical-soft text-status-critical-ink",
   success: "bg-success/15 text-success-foreground",
   warning: "bg-warning/20 text-warning-foreground",
   info: "bg-primary/10 text-primary",

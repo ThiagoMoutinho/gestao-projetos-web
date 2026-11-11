@@ -32,7 +32,7 @@ function StateBadges({ item, tab }: { item: FeedItem; tab: FeedTab }) {
   const unread = read === "UNREAD" || allRead === false;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <Badge variant="outline" className={cn("h-6 gap-1 px-2 py-[3px] text-[11px]", unread ? "border-[#84adff] bg-[#eff4ff] text-[#175cd3]" : "border-[#e4e7ec] bg-white text-[#667085]")}>
+      <Badge variant="outline" className={cn("h-6 gap-1 px-2 py-[3px] text-[11px]", unread ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground")}>
         {unread ? <BellRing data-icon="inline-start" aria-hidden /> : <MailOpen data-icon="inline-start" aria-hidden />}
         {tab === "mine" && read ? READ_LABEL[read] : unreadSummary(item.unread ?? 0, item.recipients ?? 0)}
       </Badge>
@@ -78,9 +78,9 @@ export function NotificationCard({
         data-state={unread ? "unread" : "read"}
         data-attention={attention || undefined}
         className={cn(
-          "relative overflow-hidden rounded-[10px] border bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-colors duration-200 motion-reduce:transition-none",
-          unread ? "border-[#bad1f0] bg-[#f8fbff]" : "border-[#e4e7ec]",
-          !unread && resolved && "bg-[#fcfcfd]",
+          "relative overflow-hidden rounded-[10px] border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-colors duration-200 motion-reduce:transition-none",
+          unread ? "border-primary/25 bg-primary/5" : "border-border",
+          !unread && resolved && "bg-muted/50",
         )}
       >
         {/* Faixa lateral só nas que pedem atenção: o resto da lista fica sóbrio. */}
@@ -93,29 +93,29 @@ export function NotificationCard({
             aria-busy={opening || undefined}
             aria-label={`${unread ? "Não lida. " : ""}${item.title}. Abrir o projeto ${item.projectName}.`}
             className={cn(
-              "-m-1.5 flex items-start gap-3 rounded-lg p-1.5 outline-none transition-colors duration-200 hover:bg-[#eef4ff] focus-visible:ring-2 focus-visible:ring-[#175cd3]/40 motion-reduce:transition-none",
+              "-m-1.5 flex items-start gap-3 rounded-lg p-1.5 outline-none transition-colors duration-200 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none",
               opening && "opacity-70",
             )}
           >
             <KindIcon kind={item.kind} muted={!unread} />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                {unread ? <span aria-hidden className="size-2 shrink-0 rounded-full bg-[#175cd3]" /> : null}
+                {unread ? <span aria-hidden className="size-2 shrink-0 rounded-full bg-primary" /> : null}
                 <Badge variant="outline" className={cn("h-5 px-2 py-0 text-[11px]", TONE_CLASS[tone].badge)}>
                   {KIND_LABEL[item.kind]}
                 </Badge>
-                <span className="ml-auto shrink-0 text-[11px] text-[#667085]">
+                <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
                   <span className="sr-only">Recebida em </span>
                   {formatMoment(item.deliveredAt ?? item.createdAt)}
                 </span>
               </div>
-              <h3 className={cn("text-[13px] leading-snug text-[#172033]", unread ? "font-semibold" : "font-medium")}>
+              <h3 className={cn("text-[13px] leading-snug text-foreground", unread ? "font-semibold" : "font-medium")}>
                 {unread ? <span className="sr-only">Não lida. </span> : null}
                 {item.title}
               </h3>
               {/* Conteúdo congelado pelo backend, exibido como foi gerado (sem reescrita). */}
-              <p className="text-xs leading-relaxed whitespace-pre-line text-[#667085]">{item.body}</p>
-              <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-[#667085]">
+              <p className="text-xs leading-relaxed whitespace-pre-line text-muted-foreground">{item.body}</p>
+              <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
                 <span className="flex min-w-0 max-w-full items-center gap-1.5">
                   <FolderKanban className="size-3.5 shrink-0" aria-hidden />
                   <span className="truncate" title={item.projectName}>
@@ -131,7 +131,7 @@ export function NotificationCard({
           <div className="flex flex-wrap items-center gap-2 pl-12">
             <StateBadges item={item} tab={tab} />
             {canMarkRead ? (
-              <Button type="button" variant="ghost" size="xs" loading={marking} onClick={() => onMarkRead(item)} className="ml-auto text-[#175cd3] hover:bg-[#eff4ff] hover:text-[#175cd3]">
+              <Button type="button" variant="ghost" size="xs" loading={marking} onClick={() => onMarkRead(item)} className="ml-auto text-primary hover:bg-primary/10 hover:text-primary">
                 <MailOpen data-icon="inline-start" aria-hidden />
                 Marcar como lida
               </Button>

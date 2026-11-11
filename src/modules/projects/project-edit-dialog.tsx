@@ -74,8 +74,8 @@ export function ProjectEditDialog({ project, open, onOpenChange }: { project: Ed
     <Dialog open={open} onOpenChange={reset}>
       <DialogContent className="w-[95vw] sm:max-w-[550px] max-h-[90vh] gap-4 p-5">
         <DialogHeader>
-          <DialogTitle className="text-base font-semibold text-[#101828]">Editar projeto</DialogTitle>
-          <DialogDescription className="text-[13px] text-[#475467]">
+          <DialogTitle className="text-base font-semibold text-foreground">Editar projeto</DialogTitle>
+          <DialogDescription className="text-[13px] text-foreground/80">
             Dados cadastrais do projeto. A situação é calculada pela EAP e o encerramento tem fluxo próprio.
           </DialogDescription>
         </DialogHeader>
@@ -87,7 +87,7 @@ export function ProjectEditDialog({ project, open, onOpenChange }: { project: Ed
           }}
         >
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-[#475467]">Nome *</span>
+            <span className="text-xs font-semibold text-foreground/80">Nome *</span>
             <Input
               value={name}
               maxLength={255}
@@ -102,11 +102,11 @@ export function ProjectEditDialog({ project, open, onOpenChange }: { project: Ed
             <FieldError id="project-name-error" message={nameError} />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-[#475467]">Descrição</span>
+            <span className="text-xs font-semibold text-foreground/80">Descrição</span>
             <Textarea value={description} maxLength={4000} onChange={(event) => setDescription(event.target.value)} className="min-h-24 text-xs" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-[#475467]">Chamado GLPI</span>
+            <span className="text-xs font-semibold text-foreground/80">Chamado GLPI</span>
             <Input value={glpi} maxLength={50} onChange={(event) => setGlpi(event.target.value)} placeholder="Ex.: 351998" className="h-10 text-xs" />
           </label>
           <DialogFooter className="-mx-5 -mb-5 mt-1 px-5 py-4">

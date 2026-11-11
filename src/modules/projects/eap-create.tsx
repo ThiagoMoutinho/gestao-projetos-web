@@ -74,15 +74,15 @@ export function EapCreateSheet({
       <SheetContent
         showCloseButton={false}
         overlayClassName="bg-[rgba(13,25,42,0.2)] supports-backdrop-filter:backdrop-blur-[1px]"
-        className="w-full gap-0 overflow-hidden bg-white p-0 shadow-[0_18px_48px_rgba(16,24,40,0.16)] data-[side=right]:w-full data-[side=right]:sm:max-w-[680px]"
+        className="w-full gap-0 overflow-hidden bg-card p-0 shadow-[0_18px_48px_rgba(16,24,40,0.16)] data-[side=right]:w-full data-[side=right]:sm:max-w-[680px]"
       >
         <div className="flex h-full min-h-0 flex-col">
-          <header className="flex min-h-[124px] items-start justify-between gap-[15px] border-b border-[#e4e7ec] px-[22px] pt-6 pb-[18px]">
+          <header className="flex min-h-[124px] items-start justify-between gap-[15px] border-b border-border px-[22px] pt-6 pb-[18px]">
             <div className="min-w-0">
-              <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">Novo item da EAP</span>
-              <SheetTitle className="max-w-[520px] truncate text-[19px] leading-[1.35] font-semibold text-[#172033]">{title}</SheetTitle>
-              <span className="mt-[7px] flex items-center gap-1.5 text-xs font-semibold text-[#8a6116]">
-                <span className="size-1.5 rounded-full bg-[#e0a130]" />
+              <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-primary uppercase">Novo item da EAP</span>
+              <SheetTitle className="max-w-[520px] truncate text-[19px] leading-[1.35] font-semibold text-foreground">{title}</SheetTitle>
+              <span className="mt-[7px] flex items-center gap-1.5 text-xs font-semibold text-status-attention-ink">
+                <span className="size-1.5 rounded-full bg-status-attention" />
                 {guidance}
               </span>
             </div>
@@ -119,7 +119,7 @@ export function EapCreateSheet({
               />
             )
           ) : (
-            <p className="px-5 py-5 text-sm text-[#667085]">Seu acesso não permite cadastrar itens da EAP.</p>
+            <p className="px-5 py-5 text-sm text-muted-foreground">Seu acesso não permite cadastrar itens da EAP.</p>
           )}
         </div>
       </SheetContent>
@@ -204,18 +204,18 @@ function PhaseForm({
       <PanelSection
         title="Configuração da fase"
         subtitle="O andamento é calculado pelos itens subordinados"
-        aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-[#edf4ff] px-2 py-[5px] text-xs font-semibold text-[#2864bb]"><List className="size-3" aria-hidden="true" />Calculado</span>}
+        aside={<span className="inline-flex items-center gap-[5px] rounded-full bg-primary/10 px-2 py-[5px] text-xs font-semibold text-primary"><List className="size-3" aria-hidden="true" />Calculado</span>}
         tone="accent"
       >
-        <div className="mb-3.5 rounded-[7px] bg-[#f8fafc] px-[11px] py-[11px]">
-          <div className="mb-2 flex items-center justify-between text-xs text-[#667085]">
+        <div className="mb-3.5 rounded-[7px] bg-muted/50 px-[11px] py-[11px]">
+          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>Andamento consolidado</span>
-            <strong className="text-xs text-[#175cd3]">0%</strong>
+            <strong className="text-xs text-primary">0%</strong>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[#e9eef5]">
-            <div className="h-full w-0 rounded-full bg-[#2873cf]" />
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-full w-0 rounded-full bg-primary" />
           </div>
-          <p className="mt-[9px] text-xs leading-normal text-[#8a94a6]">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</p>
+          <p className="mt-[9px] text-xs leading-normal text-muted-foreground">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</p>
         </div>
         <AreaControl label="Critério de conclusão" value={criteria} placeholder="Descreva o que precisa estar pronto para concluir a fase." onChange={setCriteria} rows={2} full />
       </PanelSection>
@@ -328,7 +328,7 @@ function TaskForm({
     <FormBody saving={saving} onClose={onClose} onSubmit={() => void save()}>
       <ItemContext kind="task" />
       {correctiveFor ? (
-        <p className="mt-4 flex items-start gap-2 rounded-[7px] border border-[#f6d2ad] bg-[#fff6ec] p-2.5 text-xs leading-[1.45] text-[#b4570f]">
+        <p className="mt-4 flex items-start gap-2 rounded-[7px] border border-status-adjust/40 bg-status-adjust-soft p-2.5 text-xs leading-[1.45] text-status-adjust-ink">
           <Flag className="mt-px size-[15px] shrink-0" aria-hidden="true" />
           <span>
             Tarefa corretiva do marco <strong>{correctiveFor.title}</strong>. Ela fica vinculada às correções da homologação e
@@ -372,16 +372,16 @@ function TaskForm({
           <CivilDateField label="Término planejado *" value={endDate} onChange={(value) => { setEndDate(value); clear("endDate"); }} error={errors.endDate} />
         </div>
       </PanelSection>
-      <PanelSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" aside={<strong className="text-xs text-[#175cd3]">{progress}%</strong>} tone="accent">
-        <div className="h-1.5 overflow-hidden rounded-full bg-[#e9eef5]">
-          <div className="h-full rounded-full bg-[#2873cf]" style={{ width: `${progress}%` }} />
+      <PanelSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" aside={<strong className="text-xs text-primary">{progress}%</strong>} tone="accent">
+        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
         </div>
         <div className="mt-[11px] mb-3.5 grid grid-cols-5 gap-1.5">
           {[0, 25, 50, 75, 90].map((value) => (
             <button
               key={value}
               type="button"
-              className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progress === value ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]" : "border-[#dce1e7] bg-white text-[#667085]"}`}
+              className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progress === value ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}
               onClick={() => setProgress(value)}
             >
               {value}%
@@ -390,21 +390,21 @@ function TaskForm({
         </div>
         <div className="mb-3.5 grid grid-cols-[140px_auto] items-end gap-2">
           <TextControl label="Percentual exato de andamento" value={String(progress)} onChange={(value) => setProgress(Math.min(90, clampPercent(value)))} />
-          <span className="flex h-9 items-center text-xs text-[#98a2b3]">% concluído</span>
+          <span className="flex h-9 items-center text-xs text-muted-foreground">% concluído</span>
         </div>
-        <p className="mb-3.5 text-xs leading-normal text-[#98a2b3]">A conclusão é registrada depois, em “Concluir tarefa”, com as datas reais confirmadas.</p>
+        <p className="mb-3.5 text-xs leading-normal text-muted-foreground">A conclusão é registrada depois, em “Concluir tarefa”, com as datas reais confirmadas.</p>
         <button
           type="button"
           aria-expanded={blocked}
-          className={`mt-3.5 grid w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-[9px] rounded-[7px] border px-2.5 py-2.5 text-left ${controlTransitionClassName} ${blocked ? impedimentTone.surface : "border-[#e4e7ec] bg-white"}`}
+          className={`mt-3.5 grid w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-[9px] rounded-[7px] border px-2.5 py-2.5 text-left ${controlTransitionClassName} ${blocked ? impedimentTone.surface : "border-border bg-card"}`}
           onClick={() => setBlocked((current) => !current)}
         >
-          <span className={`grid size-8 place-items-center rounded-[6px] transition-colors duration-200 ease-out motion-reduce:transition-none ${blocked ? impedimentTone.icon : "bg-[#f2f4f7] text-[#8a94a6]"}`}>
+          <span className={`grid size-8 place-items-center rounded-[6px] transition-colors duration-200 ease-out motion-reduce:transition-none ${blocked ? impedimentTone.icon : "bg-muted text-muted-foreground"}`}>
             <AlertTriangle className="size-4" aria-hidden="true" />
           </span>
           <span>
-            <strong className="block text-xs text-[#344054]">Esta tarefa está impedida</strong>
-            <small className="mt-[3px] block text-xs text-[#98a2b3]">Destaque o item na EAP e informe o motivo.</small>
+            <strong className="block text-xs text-foreground">Esta tarefa está impedida</strong>
+            <small className="mt-[3px] block text-xs text-muted-foreground">Destaque o item na EAP e informe o motivo.</small>
           </span>
         </button>
         <Reveal open={blocked}>
@@ -543,8 +543,8 @@ function MilestoneForm({
           <LockedControl label="Entrega registrada por" value="Apresentador designado ou gestão do projeto" />
           <AreaControl label="Observações da entrega" hint="não gravado" value="" placeholder="As observações formais entram na entrega, depois que o marco existe." onChange={() => undefined} disabled rows={3} full />
         </div>
-        <div className="mt-5 border-t border-[#edf0f3] pt-5">
-          <span className="mb-3 block text-xs font-semibold tracking-[0.04em] text-[#8a94a6] uppercase">Aprovação formal</span>
+        <div className="mt-5 border-t border-border/60 pt-5">
+          <span className="mb-3 block text-xs font-semibold tracking-[0.04em] text-muted-foreground uppercase">Aprovação formal</span>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {reviewers ? (
               <SelectControl
@@ -564,12 +564,12 @@ function MilestoneForm({
             <LockedControl label="Critérios de aceite" hint="não gravado" value="Evidências validadas e sem pendências críticas" as="text" />
           </div>
         </div>
-        <div className="mt-4 flex items-start gap-2 rounded-[7px] bg-[#fff8e9] p-3.5 text-xs leading-[1.5] text-[#8a6116]">
+        <div className="mt-4 flex items-start gap-2 rounded-[7px] bg-status-attention-soft p-3.5 text-xs leading-[1.5] text-status-attention-ink">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <span>O responsável pela entrega pode registrar evidências e enviar para validação, mas o aceite deve ser realizado por outro responsável autorizado.</span>
         </div>
         <div className="mt-4 flex items-center justify-end gap-3">
-          <small className="mr-auto text-xs text-[#98a2b3]">Adicione ao menos uma evidência antes de enviar.</small>
+          <small className="mr-auto text-xs text-muted-foreground">Adicione ao menos uma evidência antes de enviar.</small>
           <Button type="button" variant="outline" className="h-10 gap-1.5 rounded-[7px] px-4 text-xs" disabled>
             Enviar para validação
           </Button>
@@ -594,12 +594,12 @@ function FormBody({
 }) {
   return (
     <>
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-6 pb-6">{children}</div>
-      <footer className="grid shrink-0 grid-cols-2 gap-[7px] border-t border-[#e4e7ec] bg-white px-6 py-3 sm:flex sm:min-h-[80px] sm:items-center sm:justify-end">
-        <Button type="button" variant="outline" className="h-10 rounded-[7px] border-[#d7dce3] px-4 text-xs font-semibold text-[#344054]" onClick={onClose}>
+      <div className="min-h-0 flex-1 overflow-y-auto bg-muted/50 px-6 pb-6">{children}</div>
+      <footer className="grid shrink-0 grid-cols-2 gap-[7px] border-t border-border bg-card px-6 py-3 sm:flex sm:min-h-[80px] sm:items-center sm:justify-end">
+        <Button type="button" variant="outline" className="h-10 rounded-[7px] border-input px-4 text-xs font-semibold text-foreground" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="button" className="h-10 gap-1.5 rounded-[7px] bg-[#175cd3] px-4 text-xs font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]" loading={saving} onClick={onSubmit}>
+        <Button type="button" className="h-10 gap-1.5 rounded-[7px] bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-primary" loading={saving} onClick={onSubmit}>
           <Check className="size-[15px]" aria-hidden="true" />
           {saving ? "Salvando…" : "Criar item"}
         </Button>
@@ -611,17 +611,17 @@ function FormBody({
 function ItemContext({ kind }: { kind: "phase" | "task" | "milestone" }) {
   const label = kind === "phase" ? "Fase" : kind === "task" ? "Tarefa" : "Marco";
   const Icon = kind === "phase" ? Folder : kind === "task" ? Check : Flag;
-  const tone = kind === "phase" ? "bg-[#e9f2ff] text-[#2865b9]" : kind === "task" ? "bg-[#eef2f6] text-[#52677e]" : "bg-[#f4ecfb] text-[#8b5bbb]";
+  const tone = kind === "phase" ? "bg-primary/10 text-primary" : kind === "task" ? "bg-muted text-muted-foreground" : "bg-status-validation-soft text-status-validation-ink";
   return (
-    <div className="-mx-6 mb-4 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-[#e4e7ec] bg-white px-6 py-[13px]">
+    <div className="-mx-6 mb-4 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-border bg-card px-6 py-[13px]">
       <span className={`grid size-8 place-items-center rounded-[7px] ${tone}`}>
         <Icon className="size-4" aria-hidden="true" />
       </span>
       <span>
-        <span className="mb-[3px] block text-xs text-[#98a2b3]">Item da EAP</span>
-        <strong className="block text-xs text-[#344054]">Código gerado ao salvar · {label}</strong>
+        <span className="mb-[3px] block text-xs text-muted-foreground">Item da EAP</span>
+        <strong className="block text-xs text-foreground">Código gerado ao salvar · {label}</strong>
       </span>
-      <span className="inline-flex items-center gap-[5px] rounded-full bg-[#f0f2f4] px-2 py-1 text-xs font-semibold text-[#667085]">
+      <span className="inline-flex items-center gap-[5px] rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
         <span className="size-[5px] rounded-full bg-current" />
         A iniciar
       </span>
@@ -643,11 +643,11 @@ function PanelSection({
   children: ReactNode;
 }) {
   return (
-    <section className={`mt-3 rounded-[10px] border bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-[#d8e6f8]" : "border-[#e4e7ec]"}`}>
+    <section className={`mt-3 rounded-[10px] border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-primary/25" : "border-border"}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <strong className="block text-[13px] text-[#253248]">{title}</strong>
-          <span className="mt-1 block text-xs text-[#98a2b3]">{subtitle}</span>
+          <strong className="block text-[13px] text-foreground">{title}</strong>
+          <span className="mt-1 block text-xs text-muted-foreground">{subtitle}</span>
         </div>
         {aside}
       </div>
@@ -669,15 +669,15 @@ function EvidenceSection({ warning }: { warning?: string }) {
       }
     >
       {warning ? (
-        <div className="mb-3 flex items-start gap-2 text-xs text-[#8a6116]">
+        <div className="mb-3 flex items-start gap-2 text-xs text-status-attention-ink">
           <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
           <span>{warning}</span>
         </div>
       ) : null}
-      <p className="mb-3 text-xs leading-relaxed text-[#667085]">
+      <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
         As evidências são vinculadas depois que o item é criado. Ao clicar em Criar item, a edição abre em seguida para você adicionar os documentos.
       </p>
-      <div className="flex min-h-[48px] items-center rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-3 text-xs text-[#98a2b3]">
+      <div className="flex min-h-[48px] items-center rounded-[7px] border border-dashed border-input bg-muted/50 px-3 text-xs text-muted-foreground">
         Nenhuma evidência vinculada.
       </div>
     </PanelSection>
@@ -695,20 +695,20 @@ function FoldBlock({
 }) {
   const [shown, setShown] = useState(false);
   return (
-    <section className="mt-3 shrink-0 rounded-[10px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+    <section className="mt-3 shrink-0 rounded-[10px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <button
         type="button"
-        className="flex min-h-14 w-full items-center justify-between px-5 text-[13px] font-semibold text-[#344054]"
+        className="flex min-h-14 w-full items-center justify-between px-5 text-[13px] font-semibold text-foreground"
         onClick={() => setShown((current) => !current)}
       >
         <span className="flex items-center gap-2">
           <Icon className="size-4" aria-hidden="true" />
           {title}
         </span>
-        <ChevronRight className={`size-[15px] text-[#98a2b3] transition-transform duration-300 ease-out motion-reduce:transition-none ${shown ? "rotate-90" : ""}`} aria-hidden="true" />
+        <ChevronRight className={`size-[15px] text-muted-foreground transition-transform duration-300 ease-out motion-reduce:transition-none ${shown ? "rotate-90" : ""}`} aria-hidden="true" />
       </button>
       <Reveal open={shown} bleed={false}>
-        <div className="border-t border-[#edf0f3] px-5 py-5">{children}</div>
+        <div className="border-t border-border/60 px-5 py-5">{children}</div>
       </Reveal>
     </section>
   );
@@ -717,22 +717,22 @@ function FoldBlock({
 function HistorySection() {
   return (
     <FoldBlock title="Histórico de alterações" icon={Clock}>
-      <p className="text-xs leading-relaxed text-[#667085]">O histórico começa quando o item é criado. Depois disso, cada alteração fica registrada com autor e data.</p>
+      <p className="text-xs leading-relaxed text-muted-foreground">O histórico começa quando o item é criado. Depois disso, cada alteração fica registrada com autor e data.</p>
     </FoldBlock>
   );
 }
 
 const fieldClass = cn(
-  "h-10 w-full rounded-[7px] border border-[#d7dce3] bg-white px-3 text-xs text-[#344054] shadow-none outline-none disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#98a2b3]",
+  "h-10 w-full rounded-[7px] border border-input bg-card px-3 text-xs text-foreground shadow-none outline-none disabled:cursor-not-allowed disabled:bg-muted/50 disabled:text-muted-foreground",
   controlTransitionClassName,
   controlFocusClassName,
 );
 
 function FieldLabel({ label, hint }: { label: string; hint?: string }) {
   return (
-    <span className="flex items-baseline justify-between text-xs font-semibold text-[#475467]">
+    <span className="flex items-baseline justify-between text-xs font-semibold text-foreground/80">
       {label}
-      {hint ? <small className="text-xs font-normal text-[#98a2b3]">{hint}</small> : null}
+      {hint ? <small className="text-xs font-normal text-muted-foreground">{hint}</small> : null}
     </span>
   );
 }
@@ -896,7 +896,7 @@ function CivilDateField({
               variant="outline"
               aria-invalid={error ? true : undefined}
               aria-describedby={error ? errorId : undefined}
-              className={`${fieldClass} justify-start px-3 font-normal shadow-none hover:bg-white ${value ? "text-[#344054]" : "text-[#98a2b3]"}`}
+              className={`${fieldClass} justify-start px-3 font-normal shadow-none hover:bg-card ${value ? "text-foreground" : "text-muted-foreground"}`}
             />
           }
         >

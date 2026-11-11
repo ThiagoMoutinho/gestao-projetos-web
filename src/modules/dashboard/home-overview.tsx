@@ -44,7 +44,7 @@ import {
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 const INDICATOR_COLOR: Record<DashboardIndicatorKey, string> = {
-  total: "#2865b9",
+  total: "var(--primary)",
   EM_EXECUCAO: PROJECT_STATUS_COLOR.EM_EXECUCAO,
   EM_ATENCAO: PROJECT_STATUS_COLOR.EM_ATENCAO,
   CRITICO: PROJECT_STATUS_COLOR.CRITICO,
@@ -246,7 +246,7 @@ function AttentionRow({ project }: { project: ProjectListRow }) {
             <Progress
               value={basisToPercent(project.progressBasisPoints)}
               aria-label={`Andamento de ${project.name}`}
-              className="w-14 [&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted"
+              className="w-14 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted"
             />
             <span className="text-xs font-semibold text-foreground/80 tabular-nums">{formatBasis(project.progressBasisPoints)}%</span>
           </>
@@ -255,7 +255,7 @@ function AttentionRow({ project }: { project: ProjectListRow }) {
       <span className="row-start-1 flex flex-col items-end gap-1 md:row-start-auto">
         <EapStatusBadge kind={projectStatusKind(status)} label={projectStatusLabel(status)} className="px-2 py-[3px] whitespace-nowrap" />
         {delay > 0 ? (
-          <span className={cn("text-xs font-medium whitespace-nowrap", status === "CRITICO" ? "text-destructive" : "text-[#b4570f]")}>
+          <span className={cn("text-xs font-medium whitespace-nowrap", status === "CRITICO" ? "text-destructive" : "text-status-adjust-ink")}>
             {plural(delay, "dia de atraso", "dias de atraso")}
           </span>
         ) : null}
@@ -306,9 +306,9 @@ function StatusSection({ rows }: { rows: ProjectListRow[] }) {
 function PendingSection({ rows, signals }: { rows: ProjectListRow[]; signals: HomeProps["signals"] }) {
   const pending = portfolioPending(rows, signals);
   const lines: { label: string; value: number; icon: LucideIcon; tone: string; hint: string }[] = [
-    { label: "Tarefas vencidas", value: pending.overdueTasks, icon: Clock, tone: "bg-destructive/10 text-destructive", hint: "Prazo vigente vencido e tarefa não concluída." },
-    { label: "Marcos vencidos", value: pending.overdueMilestones, icon: Flag, tone: "bg-destructive/10 text-destructive", hint: "Data prevista vencida sem entrega." },
-    { label: "Homologações aguardando", value: pending.awaitingHomologation, icon: ClipboardCheck, tone: "bg-[#f4ecfb] text-[#7450bf]", hint: "Marcos entregues aguardando a validação do gestor." },
+    { label: "Tarefas vencidas", value: pending.overdueTasks, icon: Clock, tone: "bg-status-critical-soft text-status-critical-ink", hint: "Prazo vigente vencido e tarefa não concluída." },
+    { label: "Marcos vencidos", value: pending.overdueMilestones, icon: Flag, tone: "bg-status-critical-soft text-status-critical-ink", hint: "Data prevista vencida sem entrega." },
+    { label: "Homologações aguardando", value: pending.awaitingHomologation, icon: ClipboardCheck, tone: "bg-status-validation-soft text-status-validation-ink", hint: "Marcos entregues aguardando a validação do gestor." },
     { label: "Marcos em correção", value: pending.inCorrections, icon: TriangleAlert, tone: "bg-warning/20 text-warning-foreground", hint: "Marcos devolvidos com ajustes solicitados." },
     { label: "Aptos para encerramento", value: pending.readyForClosure, icon: CircleCheck, tone: "bg-success/15 text-success-foreground", hint: "Todas as fases concluídas; falta a decisão formal." },
   ];
@@ -373,7 +373,7 @@ function MilestonesSection({ rows, signals, today }: { rows: ProjectListRow[]; s
                       {milestone.responsibleName ? ` · ${milestone.responsibleName}` : ""}
                     </span>
                   </span>
-                  <span className={cn("shrink-0 text-xs whitespace-nowrap", soon ? "font-medium text-[#b4570f]" : "text-muted-foreground")}>
+                  <span className={cn("shrink-0 text-xs whitespace-nowrap", soon ? "font-medium text-status-adjust-ink" : "text-muted-foreground")}>
                     <span className="sr-only">{civilText(milestone.plannedOn)}, </span>
                     {relativeDayLabel(milestone.daysUntil)}
                   </span>
@@ -415,7 +415,7 @@ function SupplierSection({ rows }: { rows: ProjectListRow[] }) {
                 <span className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
                   <span className="h-full rounded-full bg-primary/70" style={{ width: `${(supplier.total / load.max) * 100}%` }} />
                 </span>
-                {risk.length > 0 ? <span className="mt-1 block text-xs font-medium text-[#b4570f]">{risk.join(" · ")}</span> : null}
+                {risk.length > 0 ? <span className="mt-1 block text-xs font-medium text-status-adjust-ink">{risk.join(" · ")}</span> : null}
               </li>
             );
           })}
@@ -461,7 +461,7 @@ function CountPill({ children, tone = "neutral" }: { children: ReactNode; tone?:
     <span
       className={cn(
         "rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums",
-        tone === "danger" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground",
+        tone === "danger" ? "bg-status-critical-soft text-status-critical-ink" : "bg-muted text-muted-foreground",
       )}
     >
       {children}

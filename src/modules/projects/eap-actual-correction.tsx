@@ -114,10 +114,10 @@ export function PhaseActualCorrection({
       >
         <AlertDialogContent className="max-w-[440px]! gap-3 rounded-[10px] p-5">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[14px] font-semibold text-[#101828]">Corrigir datas reais da fase</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs leading-relaxed text-[#475467]">
-              Registradas hoje: início <strong className="font-semibold text-[#344054]">{dateText(recorded.start)}</strong>, término{" "}
-              <strong className="font-semibold text-[#344054]">{dateText(recorded.end)}</strong>. A correção fica no histórico com a
+            <AlertDialogTitle className="text-[14px] font-semibold text-foreground">Corrigir datas reais da fase</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs leading-relaxed text-foreground/80">
+              Registradas hoje: início <strong className="font-semibold text-foreground">{dateText(recorded.start)}</strong>, término{" "}
+              <strong className="font-semibold text-foreground">{dateText(recorded.end)}</strong>. A correção fica no histórico com a
               justificativa; o planejamento e a linha de base não mudam.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -127,17 +127,17 @@ export function PhaseActualCorrection({
               <DateField label="Término real" value={end} onChange={(value) => { setEnd(value); clear("end"); }} error={errors.end} />
             ) : (
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-[#475467]">Término real</span>
-                <p className="rounded-[7px] border border-[#edf0f3] bg-[#f8f9fb] px-2.5 py-2 text-xs leading-snug text-[#667085]">
+                <span className="text-xs font-semibold text-foreground/80">Término real</span>
+                <p className="rounded-[7px] border border-border/60 bg-muted/50 px-2.5 py-2 text-xs leading-snug text-muted-foreground">
                   Só pode ser registrado com a fase concluída.
                 </p>
               </div>
             )}
           </div>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-[#475467]">Justificativa da correção</span>
+            <span className="text-xs font-semibold text-foreground/80">Justificativa da correção</span>
             <Textarea
-              className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-xs md:text-xs"
+              className="min-h-[66px] rounded-[7px] border-input bg-card px-2.5 py-2 text-xs md:text-xs"
               value={justification}
               onChange={(event) => {
                 setJustification(event.target.value);
@@ -150,13 +150,13 @@ export function PhaseActualCorrection({
             <FieldError id="actual-correction-justification-error" message={errors.justification} />
           </label>
           {changes.length > 0 ? (
-            <ul className="motion-fade flex flex-col gap-1 rounded-[7px] bg-[#f5f9ff] p-2.5 text-xs leading-[1.45] text-[#475467]">
+            <ul className="motion-fade flex flex-col gap-1 rounded-[7px] bg-primary/5 p-2.5 text-xs leading-[1.45] text-foreground/80">
               {changes.map((change) => (
                 <li key={change.label} className="flex flex-wrap items-center gap-1.5">
-                  <strong className="font-semibold text-[#344054]">{change.label}:</strong>
-                  <span className="text-[#8a94a6] line-through">{dateText(change.previous)}</span>
-                  <ArrowRight className="size-3 text-[#3971ba]" aria-hidden="true" />
-                  <span className="font-semibold text-[#175cd3]">{dateText(change.next)}</span>
+                  <strong className="font-semibold text-foreground">{change.label}:</strong>
+                  <span className="text-muted-foreground line-through">{dateText(change.previous)}</span>
+                  <ArrowRight className="size-3 text-primary" aria-hidden="true" />
+                  <span className="font-semibold text-primary">{dateText(change.next)}</span>
                 </li>
               ))}
             </ul>
@@ -179,4 +179,4 @@ function dateText(value: string) {
   return value ? formatCivilDate(value) : "não informada";
 }
 
-const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-3.5 text-xs font-semibold";
+const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-input px-3.5 text-xs font-semibold";

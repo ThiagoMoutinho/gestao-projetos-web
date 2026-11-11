@@ -20,7 +20,7 @@ import { useNotificationFeed } from "./use-notification-feed";
 import { useOpenNotification } from "./use-open-notification";
 
 const TAB_CLASS =
-  "h-9 flex-none rounded-none px-0.5 text-xs font-medium text-[#667085] hover:text-[#344054] data-active:text-[#175cd3] after:bg-[#175cd3] group-data-horizontal/tabs:after:bottom-0";
+  "h-9 flex-none rounded-none px-0.5 text-xs font-medium text-muted-foreground hover:text-foreground data-active:text-primary after:bg-primary group-data-horizontal/tabs:after:bottom-0";
 
 function FeedSkeleton() {
   return (
@@ -41,8 +41,8 @@ function FeedEmpty({ icon: Icon, title, description, action }: { icon: LucideIco
         <EmptyMedia variant="icon">
           <Icon aria-hidden />
         </EmptyMedia>
-        <EmptyTitle className="text-sm font-semibold text-[#172033]">{title}</EmptyTitle>
-        <EmptyDescription className="text-xs text-[#667085]">{description}</EmptyDescription>
+        <EmptyTitle className="text-sm font-semibold text-foreground">{title}</EmptyTitle>
+        <EmptyDescription className="text-xs text-muted-foreground">{description}</EmptyDescription>
       </EmptyHeader>
       {action}
     </Empty>
@@ -105,22 +105,22 @@ export function NotificationCentral({ role, initialTab }: { role: string | null;
   return (
     <div className="mx-auto flex w-full max-w-[90rem] min-w-0 flex-col gap-5">
       <header>
-        <span className="block text-[10px] font-bold tracking-[0.14em] text-[#2865b9] uppercase">Acompanhamento semanal</span>
-        <h1 className="mt-1.5 text-2xl font-medium tracking-tight text-[#172033]">Central de Notificações</h1>
-        <p className="mt-1 text-[13px] text-[#667085]">Avisos sobre a validação semanal do resumo executivo dos projetos da CTIN.</p>
+        <span className="block text-[10px] font-bold tracking-[0.14em] text-primary uppercase">Acompanhamento semanal</span>
+        <h1 className="mt-1.5 text-2xl font-medium tracking-tight text-foreground">Central de Notificações</h1>
+        <p className="mt-1 text-[13px] text-muted-foreground">Avisos sobre a validação semanal do resumo executivo dos projetos da CTIN.</p>
       </header>
 
       <Tabs
         value={tab}
         onValueChange={(value) => changeTab(value === "all" ? "all" : "mine")}
-        className="min-w-0 gap-0 overflow-hidden rounded-[10px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+        className="min-w-0 gap-0 overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
       >
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-5 border-b border-[#edf0f3] px-4 pt-2">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-5 border-b border-border/60 px-4 pt-2">
           <TabsList variant="line" aria-label="Escopo das notificações" className="h-auto justify-start gap-5 overflow-x-auto rounded-none p-0">
             <TabsTrigger value="mine" className={TAB_CLASS}>
               Minhas notificações
               {state.unread && tab === "mine" ? (
-                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#175cd3] px-1 text-[10px] leading-none font-semibold text-white">
+                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-none font-semibold text-primary-foreground">
                   {state.unread > 99 ? "99+" : state.unread}
                 </span>
               ) : null}
@@ -150,7 +150,7 @@ export function NotificationCentral({ role, initialTab }: { role: string | null;
           {allowed ? (
             <div className="flex flex-col gap-3 p-4">
               <NotificationFilters filters={filters} projects={projects} onChange={setFilters} />
-              <div className="flex items-center justify-between gap-3 text-[11px] text-[#667085]">
+              <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
                 <span className="flex items-center gap-1.5" aria-live="polite">
                   <List className="size-3.5" aria-hidden />
                   {state.status === "ready"
@@ -161,7 +161,7 @@ export function NotificationCentral({ role, initialTab }: { role: string | null;
                   <button
                     type="button"
                     onClick={clearFilters}
-                    className="rounded-sm font-medium text-[#175cd3] hover:underline focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none"
+                    className="rounded-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none"
                   >
                     Limpar filtros
                   </button>
@@ -170,7 +170,7 @@ export function NotificationCentral({ role, initialTab }: { role: string | null;
             </div>
           ) : null}
 
-          <div key={`${tab}:${state.status}`} className="motion-fade border-t border-[#edf0f3] bg-[#f9fafb] p-4">
+          <div key={`${tab}:${state.status}`} className="motion-fade border-t border-border/60 bg-muted/50 p-4">
             {!allowed || state.status === "forbidden" ? (
               <FeedEmpty
                 icon={ShieldAlert}
@@ -226,7 +226,7 @@ export function NotificationCentral({ role, initialTab }: { role: string | null;
           </div>
 
           {allowed && state.status === "ready" && state.items.length > 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf0f3] px-4 py-3 text-xs text-[#667085]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
               <span>
                 {state.nextCursor
                   ? `Exibindo as ${shown} mais recentes.`
@@ -235,7 +235,7 @@ export function NotificationCentral({ role, initialTab }: { role: string | null;
               {state.nextCursor ? (
                 <div className="flex items-center gap-2">
                   {state.loadMoreFailed ? <span className="text-destructive">Não foi possível carregar mais.</span> : null}
-                  <Button type="button" variant="outline" size="sm" loading={state.loadingMore} onClick={loadMore} className="border-[#d7dce3] bg-white">
+                  <Button type="button" variant="outline" size="sm" loading={state.loadingMore} onClick={loadMore} className="border-input bg-card">
                     {state.loadMoreFailed ? "Tentar novamente" : "Carregar mais"}
                   </Button>
                 </div>
@@ -245,7 +245,7 @@ export function NotificationCentral({ role, initialTab }: { role: string | null;
         </TabsContent>
       </Tabs>
 
-      <p className="-mt-2 text-[11px] text-[#667085]">Aqui aparecem somente avisos efetivamente entregues; simulações e avisos adiados não são notificações.</p>
+      <p className="-mt-2 text-[11px] text-muted-foreground">Aqui aparecem somente avisos efetivamente entregues; simulações e avisos adiados não são notificações.</p>
     </div>
   );
 }

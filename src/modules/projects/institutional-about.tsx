@@ -476,7 +476,7 @@ export function AboutProject({ projectId, data, onChanged }: { projectId: string
       <Presence open={!editing} className="min-h-0 flex-1">
         {description ? (
           <div className="flex h-full min-h-0 flex-col">
-            <p className="text-xs font-semibold text-[#475467]">{LABELS.SYSTEM_DESCRIPTION}</p>
+            <p className="text-xs font-semibold text-foreground/80">{LABELS.SYSTEM_DESCRIPTION}</p>
             <ExpandableText text={description} markdown lines={10} chevron fill />
           </div>
         ) : empty ? (
@@ -565,7 +565,7 @@ export function ContextPlanning({
             const published = meaningfulText(fieldOf(data, key).published?.value);
             return (
               <div key={key}>
-                <p className="text-xs font-semibold text-[#475467]">{LABELS[key]}</p>
+                <p className="text-xs font-semibold text-foreground/80">{LABELS[key]}</p>
                 {published ? (
                   <ExpandableText text={published} lines={6} markdown />
                 ) : (

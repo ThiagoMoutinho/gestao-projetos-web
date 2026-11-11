@@ -6,9 +6,9 @@ import type { ProjectMilestoneView } from "./eap-present";
 import { recordedDate } from "./project-records";
 
 const DECISIONS = {
-  APROVADO: { title: "Entrega aceita formalmente", icon: Check, tone: "border-[#bfe4d5] bg-[#f0faf6] text-[#157454]" },
-  AJUSTES_SOLICITADOS: { title: "Correções necessárias", icon: RotateCcw, tone: "border-[#f6d2ad] bg-[#fff6ec] text-[#b4570f]" },
-  REJEITADO: { title: "Entrega rejeitada", icon: AlertTriangle, tone: "border-[#efc3bf] bg-[#fff4f1] text-[#9f2219]" },
+  APROVADO: { title: "Entrega aceita formalmente", icon: Check, tone: "border-status-done/40 bg-status-done-soft text-status-done-ink" },
+  AJUSTES_SOLICITADOS: { title: "Correções necessárias", icon: RotateCcw, tone: "border-status-adjust/40 bg-status-adjust-soft text-status-adjust-ink" },
+  REJEITADO: { title: "Entrega rejeitada", icon: AlertTriangle, tone: "border-status-critical/40 bg-status-critical-soft text-status-critical-ink" },
 } as const;
 
 export function MilestoneDecisionFeedback({ milestone, className }: { milestone: ProjectMilestoneView; className?: string }) {

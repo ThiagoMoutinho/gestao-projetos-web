@@ -135,14 +135,14 @@ export function EapDetail({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white">
-      <header className={cn("flex shrink-0 items-start justify-between gap-[15px] border-b border-[#e4e7ec] pt-6", "min-h-[116px] px-6 pb-4")}>
+    <div className="flex h-full min-h-0 flex-col bg-card">
+      <header className={cn("flex shrink-0 items-start justify-between gap-[15px] border-b border-border pt-6", "min-h-[116px] px-6 pb-4")}>
         <div className="min-w-0">
-          <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-[#3871bf] uppercase">{eyebrow}</span>
-          <h2 className="max-w-[470px] truncate text-[17px] leading-[1.35] font-semibold text-[#172033]">{title}</h2>
+          <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-primary uppercase">{eyebrow}</span>
+          <h2 className="max-w-[470px] truncate text-[17px] leading-[1.35] font-semibold text-foreground">{title}</h2>
           {editing && !editorLocked ? (
-            <span className="mt-[7px] flex items-center gap-1.5 text-xs font-semibold text-[#8a6116]">
-              <span className="size-1.5 rounded-full bg-[#e0a130]" />
+            <span className="mt-[7px] flex items-center gap-1.5 text-xs font-semibold text-status-attention-ink">
+              <span className="size-1.5 rounded-full bg-status-attention" />
               Alterações não salvas
             </span>
           ) : null}
@@ -153,7 +153,7 @@ export function EapDetail({
               type="button"
               variant="ghost"
               size="icon-sm"
-              className="hidden text-[#667085] sm:inline-flex"
+              className="hidden text-muted-foreground sm:inline-flex"
               aria-label={wide ? "Reduzir painel" : "Expandir painel"}
               aria-pressed={wide}
               title={wide ? "Reduzir painel" : "Expandir painel"}
@@ -162,14 +162,14 @@ export function EapDetail({
               {wide ? <Minimize2 /> : <Maximize2 />}
             </Button>
           ) : null}
-          <Button type="button" variant="ghost" size="icon-sm" className="text-[#667085]" aria-label="Fechar painel" onClick={onClose}>
+          <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="Fechar painel" onClick={onClose}>
             <X />
           </Button>
         </div>
       </header>
-      <div key={editing ? "edit" : "view"} className={cn("motion-fade min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-6 pb-6", !editing && "[&_.text-xs]:text-[11.5px]")}>
+      <div key={editing ? "edit" : "view"} className={cn("motion-fade min-h-0 flex-1 overflow-y-auto bg-muted/50 px-6 pb-6", !editing && "[&_.text-xs]:text-[11.5px]")}>
         {confirmCancel || pending ? (
-          <div role="alert" className="mt-3 mb-3 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[#865516]">
+          <div role="alert" className="mt-3 mb-3 flex items-start gap-2 rounded-[7px] border border-status-attention/40 bg-status-attention-soft p-2.5 text-status-attention-ink">
             <AlertTriangle className="mt-0.5 size-[15px] shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <p className="text-[11.5px] leading-[1.45]">Há alterações não salvas neste item.</p>
@@ -192,7 +192,7 @@ export function EapDetail({
                 <Button
                   type="button"
                   variant="outline"
-                  className={cn(compactButton, "border-[#f2c7c3] text-[#b42318] hover:bg-[#fff7f6]")}
+                  className={cn(compactButton, "border-status-critical/40 text-status-critical-ink hover:bg-status-critical-soft")}
                   onClick={() => {
                     if (pending) {
                       onDiscard();
@@ -208,7 +208,7 @@ export function EapDetail({
           </div>
         ) : null}
         {editing && notice ? (
-          <p role="status" className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#bad1f0] bg-[#f5f9ff] p-2.5 text-[11.5px] leading-[1.45] text-[#285da8]">
+          <p role="status" className="mt-3 flex items-start gap-2 rounded-[7px] border border-primary/25 bg-primary/5 p-2.5 text-[11.5px] leading-[1.45] text-primary">
             <Check className="mt-px size-[15px] shrink-0" aria-hidden="true" />
             <span>{notice}</span>
           </p>
@@ -250,7 +250,7 @@ export function EapDetail({
           <p className={paragraph}>Este item não está mais na EAP carregada.</p>
         )}
       </div>
-      <footer className={cn("flex shrink-0 items-center justify-end gap-[7px] border-t border-[#e4e7ec] bg-white px-6", editing ? "h-[74px]" : "h-[72px]")}>
+      <footer className={cn("flex shrink-0 items-center justify-end gap-[7px] border-t border-border bg-card px-6", editing ? "h-[74px]" : "h-[72px]")}>
         {editing ? (
           <>
             <Button type="button" variant="outline" className={secondaryButton} onClick={cancelEdit}>
@@ -342,26 +342,26 @@ function PhaseDetail({
         <p className={paragraph}>{phase.description?.trim() || "Nenhuma descrição registrada."}</p>
       </Section>
       {progress.kind === "value" ? (
-        <Section label="Andamento consolidado" extra={<strong className="text-[11.5px] text-[#285da8]">{formatBasis(progress.basisPoints)}%</strong>}>
+        <Section label="Andamento consolidado" extra={<strong className="text-[11.5px] text-primary">{formatBasis(progress.basisPoints)}%</strong>}>
           <Progress
             value={basisToPercent(progress.basisPoints)}
             aria-label="Andamento consolidado da fase"
             className={progressClass}
           />
-          <span className="mt-[9px] block text-[11.5px] leading-normal text-[#8a94a6]">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</span>
+          <span className="mt-[9px] block text-[11.5px] leading-normal text-muted-foreground">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</span>
         </Section>
       ) : (
-        <div className="my-4 flex items-start gap-2.5 rounded-lg border border-[#e4e7ec] bg-[#f8f9fb] p-[13px] text-[#475467]">
-          <Info className="size-4 shrink-0 text-[#667085]" aria-hidden="true" />
+        <div className="my-4 flex items-start gap-2.5 rounded-lg border border-border bg-muted/50 p-[13px] text-foreground/80">
+          <Info className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span>
             <strong className="mb-[3px] block text-[11.5px]">{progressLabel(progress)}</strong>
-            <span className="block text-[11.5px] text-[#667085]">
+            <span className="block text-[11.5px] text-muted-foreground">
               {progress.kind === "empty" ? "Inclua tarefas ou marcos para calcular o andamento." : "O percentual desta fase não está disponível."}
             </span>
           </span>
         </div>
       )}
-      <div className="grid grid-cols-3 gap-2 border-t border-[#edf0f3] py-[18px]">
+      <div className="grid grid-cols-3 gap-2 border-t border-border/60 py-[18px]">
         <Metric value={tasks ? String(tasks.length) : "—"} label="Tarefas" />
         <Metric value={milestones ? String(milestones.length) : "—"} label="Marcos" />
         <Metric value={pending ? String(pending.length) : "—"} label="Pendências" warning={pending !== null && pending.length > 0} />
@@ -370,14 +370,14 @@ function PhaseDetail({
         {pending === null ? (
           <p className={paragraph}>Não foi possível consultar as pendências desta fase.</p>
         ) : pending.length === 0 ? (
-          <p className={cn(emptyInline, "border-[#bfe4d5] bg-[#f0faf6] text-[#157454]")}>
+          <p className={cn(emptyInline, "border-status-done/40 bg-status-done-soft text-status-done-ink")}>
             <Check className="size-3.5" aria-hidden="true" /> Não há pendências nesta fase.
           </p>
         ) : (
           <ul className="flex flex-col gap-[7px]">
             {pending.map((item) => (
               <li key={item.id}>
-                <button type="button" className="grid min-h-10 w-full grid-cols-[12px_minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[11.5px] text-[#475467] hover:bg-[#f8fbff]" onClick={() => onSelect(item.selection)}>
+                <button type="button" className="grid min-h-10 w-full grid-cols-[12px_minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-border/60 px-[9px] text-left text-[11.5px] text-foreground/80 hover:bg-primary/5" onClick={() => onSelect(item.selection)}>
                   <PendingSignal blocked={item.blocked} overdue={item.overdue} />
                   <span className="truncate">{item.title}</span>
                   <EapStatusBadge kind={item.kind} label={item.label} size="sm" />
@@ -563,22 +563,22 @@ function TaskDetail({
           </span>
         </div>
       ) : null}
-      <section className="mt-3 rounded-[10px] border border-[#e4e7ec] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <section className="mt-3 rounded-[10px] border border-border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="mb-4 flex items-start justify-between gap-3">
           <span>
-            <strong className="block text-[12.5px] text-[#253248]">Andamento registrado</strong>
-            <small className="mt-1 block text-[11.5px] text-[#98a2b3]">Selecione um valor para atualizar rapidamente</small>
+            <strong className="block text-[12.5px] text-foreground">Andamento registrado</strong>
+            <small className="mt-1 block text-[11.5px] text-muted-foreground">Selecione um valor para atualizar rapidamente</small>
           </span>
-          <strong className="text-[11.5px] text-[#285da8]">{task.progressPercent}%</strong>
+          <strong className="text-[11.5px] text-primary">{task.progressPercent}%</strong>
         </div>
         <Progress
           value={task.progressPercent}
           aria-label={`Andamento registrado de ${task.title}`}
           className={cn(
-            "[&_[data-slot=progress-track]]:h-[7px] [&_[data-slot=progress-track]]:bg-[#e9eef5]",
-            task.calculatedStatus === "CONCLUIDA" && "[&_[data-slot=progress-indicator]]:bg-[#1c8b65]",
-            task.calculatedStatus === "CANCELADA" && "[&_[data-slot=progress-indicator]]:bg-[#98a2b3]",
-            task.calculatedStatus !== "CONCLUIDA" && task.calculatedStatus !== "CANCELADA" && "[&_[data-slot=progress-indicator]]:bg-[#2873cf]",
+            "[&_[data-slot=progress-track]]:h-[7px] [&_[data-slot=progress-track]]:bg-muted",
+            task.calculatedStatus === "CONCLUIDA" && "[&_[data-slot=progress-indicator]]:bg-status-done",
+            task.calculatedStatus === "CANCELADA" && "[&_[data-slot=progress-indicator]]:bg-muted-foreground/60",
+            task.calculatedStatus !== "CONCLUIDA" && task.calculatedStatus !== "CANCELADA" && "[&_[data-slot=progress-indicator]]:bg-primary",
           )}
         />
         <div className="mt-3 grid grid-cols-5 gap-1.5">
@@ -590,8 +590,8 @@ function TaskDetail({
               className={cn(
                 "h-8 min-w-0 rounded-[6px] border text-[11.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                 draft === value
-                  ? "border-[#8eb4e7] bg-[#edf4ff] text-[#175cd3]"
-                  : "border-[#dce1e7] bg-white text-[#667085] enabled:hover:border-[#8eb4e7] enabled:hover:bg-[#edf4ff] enabled:hover:text-[#175cd3]",
+                  ? "border-primary/50 bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground enabled:hover:border-primary/50 enabled:hover:bg-primary/10 enabled:hover:text-primary",
               )}
               onClick={() => {
                 if (value !== 100 && !concluded) {
@@ -606,7 +606,7 @@ function TaskDetail({
         </div>
         {canComplete && !completing ? (
           <div className="mt-3 flex justify-end">
-            <Button type="button" variant="outline" className={cn(compactButton, "border-[#bfe4d5] text-[#157454] hover:bg-[#f0faf6]")} disabled={saving} onClick={openCompletion}>
+            <Button type="button" variant="outline" className={cn(compactButton, "border-status-done/40 text-status-done-ink hover:bg-status-done-soft")} disabled={saving} onClick={openCompletion}>
               <CircleCheck aria-hidden="true" /> Concluir tarefa
             </Button>
           </div>
@@ -627,18 +627,18 @@ function TaskDetail({
         ) : null}
         {canUpdate && concluded ? (
           <Reveal open={reopenTarget !== null}>
-            <div className="mt-3 flex flex-col gap-2.5 rounded-[9px] border border-[#f6d2ad] bg-[#fff8f1] p-3.5">
-              <span className="block text-[11.5px] font-semibold tracking-[0.04em] text-[#b4570f] uppercase">Reabrir tarefa concluída</span>
-              <p className="text-[11.5px] leading-[1.45] text-[#475467]">
+            <div className="mt-3 flex flex-col gap-2.5 rounded-[9px] border border-status-adjust/40 bg-status-adjust-soft p-3.5">
+              <span className="block text-[11.5px] font-semibold tracking-[0.04em] text-status-adjust-ink uppercase">Reabrir tarefa concluída</span>
+              <p className="text-[11.5px] leading-[1.45] text-foreground/80">
                 O andamento passa de 100% para {reopenTarget ?? 0}%. O término real registrado é retirado e fica preservado no histórico.
               </p>
               <label className="flex flex-col gap-1.5">
-                <span className="flex items-baseline justify-between text-[11.5px] font-semibold text-[#475467]">
+                <span className="flex items-baseline justify-between text-[11.5px] font-semibold text-foreground/80">
                   Justificativa da reabertura
-                  <small className="text-[11.5px] font-normal text-[#98a2b3]">obrigatória</small>
+                  <small className="text-[11.5px] font-normal text-muted-foreground">obrigatória</small>
                 </span>
                 <Textarea
-                  className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[11.5px] md:text-[11.5px]"
+                  className="min-h-[66px] rounded-[7px] border-input bg-card px-2.5 py-2 text-[11.5px] md:text-[11.5px]"
                   value={reopenText}
                   onChange={(event) => {
                     setReopenText(event.target.value);
@@ -654,16 +654,16 @@ function TaskDetail({
                 <Button type="button" variant="outline" className={compactButton} disabled={reopening} onClick={() => { setReopenTarget(null); resetReopen(); }}>
                   Cancelar
                 </Button>
-                <Button type="button" className={cn(compactButton, "border-transparent bg-[#c4620f] text-white hover:bg-[#b4570f]")} loading={reopening} onClick={() => void confirmReopen()}>
+                <Button type="button" className={cn(compactButton, "border-transparent bg-status-adjust text-primary-foreground hover:bg-status-adjust")} loading={reopening} onClick={() => void confirmReopen()}>
                   <Check aria-hidden="true" /> {reopening ? "Reabrindo…" : "Confirmar reabertura"}
                 </Button>
               </div>
             </div>
           </Reveal>
         ) : null}
-        {!canUpdate ? <p className="mt-2 text-[11.5px] text-[#667085]">Seu acesso não permite atualizar o andamento desta tarefa.</p> : null}
-        {canUpdate && locked ? <p className="mt-2 text-[11.5px] text-[#667085]">Tarefa cancelada. Somente a gestão do projeto pode reativá-la.</p> : null}
-        {feedback ? <p className="mt-2 text-[11.5px] text-[#667085]" role="status">{feedback}</p> : null}
+        {!canUpdate ? <p className="mt-2 text-[11.5px] text-muted-foreground">Seu acesso não permite atualizar o andamento desta tarefa.</p> : null}
+        {canUpdate && locked ? <p className="mt-2 text-[11.5px] text-muted-foreground">Tarefa cancelada. Somente a gestão do projeto pode reativá-la.</p> : null}
+        {feedback ? <p className="mt-2 text-[11.5px] text-muted-foreground" role="status">{feedback}</p> : null}
       </section>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={task.assigneeName || "Não informado"} />
@@ -775,23 +775,23 @@ function TaskCompletion({
   }
 
   return (
-    <div className="mt-3 flex flex-col gap-2.5 rounded-[9px] border border-[#bfe4d5] bg-[#f6fcf9] p-3.5">
-      <span className="block text-[11.5px] font-semibold tracking-[0.04em] text-[#157454] uppercase">Concluir tarefa</span>
+    <div className="mt-3 flex flex-col gap-2.5 rounded-[9px] border border-status-done/40 bg-status-done-soft p-3.5">
+      <span className="block text-[11.5px] font-semibold tracking-[0.04em] text-status-done-ink uppercase">Concluir tarefa</span>
       <Reveal open={step === "editing"}>
         <div className="flex flex-col gap-2.5">
-          <p className="text-[11.5px] leading-[1.45] text-[#475467]">Confirme as datas reais. A conclusão grava o andamento em 100% e recalcula a fase.</p>
+          <p className="text-[11.5px] leading-[1.45] text-foreground/80">Confirme as datas reais. A conclusão grava o andamento em 100% e recalcula a fase.</p>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <DateField label="Início real" hint={recorded.start ? undefined : "obrigatório"} value={start} onChange={(value) => { setStart(value); clear("start"); }} error={errors.start} />
             <DateField label="Término real" hint={recorded.end ? undefined : "sugestão: hoje"} value={end} onChange={(value) => { setEnd(value); clear("end"); }} error={errors.end} />
           </div>
           <Reveal open={correction}>
             <label className="flex flex-col gap-1.5">
-              <span className="flex items-baseline justify-between text-[11.5px] font-semibold text-[#475467]">
+              <span className="flex items-baseline justify-between text-[11.5px] font-semibold text-foreground/80">
                 Justificativa da correção
-                <small className="text-[11.5px] font-normal text-[#98a2b3]">obrigatória · altera data real já registrada</small>
+                <small className="text-[11.5px] font-normal text-muted-foreground">obrigatória · altera data real já registrada</small>
               </span>
               <Textarea
-                className="min-h-[66px] rounded-[7px] border-[#d7dce3] bg-white px-2.5 py-2 text-[11.5px] md:text-[11.5px]"
+                className="min-h-[66px] rounded-[7px] border-input bg-card px-2.5 py-2 text-[11.5px] md:text-[11.5px]"
                 value={justification}
                 onChange={(event) => {
                   setJustification(event.target.value);
@@ -807,7 +807,7 @@ function TaskCompletion({
         </div>
       </Reveal>
       <Reveal open={step === "review"}>
-        <dl className="flex flex-col gap-1 rounded-[7px] border border-[#d5ece2] bg-white p-2.5 text-[11.5px] leading-[1.5] text-[#475467]">
+        <dl className="flex flex-col gap-1 rounded-[7px] border border-status-done/40 bg-card p-2.5 text-[11.5px] leading-[1.5] text-foreground/80">
           <ReviewLine label="Andamento">{task.progressPercent}% → 100%</ReviewLine>
           <ReviewLine label="Início real">{reviewDate(recorded.start, start)}</ReviewLine>
           <ReviewLine label="Término real">{reviewDate(recorded.end, end)}</ReviewLine>
@@ -817,7 +817,7 @@ function TaskCompletion({
               <EvidenceCount projectId={projectId} taskId={task.id} />
             </Suspense>
           </ReviewLine>
-          <span className="mt-1 block text-[#667085]">Marcos da fase continuam dependendo de entrega e homologação formais.</span>
+          <span className="mt-1 block text-muted-foreground">Marcos da fase continuam dependendo de entrega e homologação formais.</span>
         </dl>
       </Reveal>
       <div className="flex flex-wrap justify-end gap-[7px]">
@@ -838,11 +838,11 @@ function TaskCompletion({
           {step === "review" ? "Voltar" : "Cancelar"}
         </Button>
         {step === "review" ? (
-          <Button type="button" className={cn(compactButton, "border-transparent bg-[#1c8b65] text-white hover:bg-[#157454]")} loading={saving} onClick={() => void confirm()}>
+          <Button type="button" className={cn(compactButton, "border-transparent bg-status-done text-primary-foreground hover:bg-status-done")} loading={saving} onClick={() => void confirm()}>
             <Check aria-hidden="true" /> {saving ? "Concluindo…" : "Confirmar conclusão"}
           </Button>
         ) : (
-          <Button type="button" className={cn(compactButton, "border-transparent bg-[#175cd3] text-white hover:bg-[#144ca8]")} onClick={review}>
+          <Button type="button" className={cn(compactButton, "border-transparent bg-primary text-primary-foreground hover:bg-primary")} onClick={review}>
             Revisar conclusão
           </Button>
         )}
@@ -859,7 +859,7 @@ function reviewDate(previous: string, next: string) {
 function ReviewLine({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[86px_minmax(0,1fr)] gap-2">
-      <dt className="text-[#98a2b3]">{label}</dt>
+      <dt className="text-muted-foreground">{label}</dt>
       <dd className="break-words whitespace-pre-wrap">{children}</dd>
     </div>
   );
@@ -872,7 +872,7 @@ function EvidenceCount({ projectId, taskId }: { projectId: string; taskId: strin
     return <>{state.message}</>;
   }
   if (state.items.length === 0) {
-    return <span className="text-[#b54708]">Nenhuma evidência vinculada. Vincule os documentos exigidos em “Atualizar andamento”.</span>;
+    return <span className="text-status-adjust-ink">Nenhuma evidência vinculada. Vincule os documentos exigidos em “Atualizar andamento”.</span>;
   }
   return <>{state.items.length === 1 ? "1 evidência vinculada" : `${state.items.length} evidências vinculadas`}</>;
 }
@@ -954,7 +954,7 @@ function MilestoneDetail({
                 <li key={item.id}>
                   <button
                     type="button"
-                    className="grid min-h-10 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-[#edf0f3] px-[9px] text-left text-[11.5px] text-[#475467] hover:bg-[#f8fbff]"
+                    className="grid min-h-10 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] border border-border/60 px-[9px] text-left text-[11.5px] text-foreground/80 hover:bg-primary/5"
                     onClick={() => onSelect({ kind: "task", phaseId: phase.id, taskId: item.id })}
                   >
                     <span className="truncate">{item.title}</span>
@@ -1009,7 +1009,7 @@ function ImpedimentNote({ projectId, phaseId, task }: { projectId: string; phase
   return (
     <>
       <p className={cn(impedimentText, "whitespace-pre-wrap")}>{state.open.description}</p>
-      <small className="mt-1.5 block text-[11.5px] text-[#667085]">
+      <small className="mt-1.5 block text-[11.5px] text-muted-foreground">
         Registrado por {state.open.author} em {state.open.openedAt}
       </small>
     </>
@@ -1033,7 +1033,7 @@ function EvidenceList({
     return (
       <>
         {emptyWarning ? (
-          <div className="mb-2.5 flex items-start gap-2 rounded-[7px] border border-[#f3dcae] bg-[#fff8e9] p-2.5 text-[11.5px] leading-[1.45] text-[#865516]">
+          <div className="mb-2.5 flex items-start gap-2 rounded-[7px] border border-status-attention/40 bg-status-attention-soft p-2.5 text-[11.5px] leading-[1.45] text-status-attention-ink">
             <AlertTriangle className="size-[15px] shrink-0" aria-hidden="true" />
             <span>{emptyWarning}</span>
           </div>
@@ -1045,20 +1045,20 @@ function EvidenceList({
   return (
     <ul className="flex flex-col gap-[7px]">
       {state.items.map((item) => (
-        <li key={item.id} className="grid min-h-[45px] grid-cols-[29px_minmax(0,1fr)_26px] items-center gap-[9px] rounded-[7px] border border-[#e4e7ec] px-[7px] py-1.5">
-          <span className="grid size-[29px] place-items-center rounded-[6px] bg-[#f0f3f6] text-[#52677e]">
+        <li key={item.id} className="grid min-h-[45px] grid-cols-[29px_minmax(0,1fr)_26px] items-center gap-[9px] rounded-[7px] border border-border px-[7px] py-1.5">
+          <span className="grid size-[29px] place-items-center rounded-[6px] bg-muted text-muted-foreground">
             <FileText className="size-[15px]" aria-hidden="true" />
           </span>
           <span className="min-w-0">
-            <strong className="mb-[3px] block truncate text-[11.5px] font-semibold text-[#344054]">{item.title}</strong>
-            <span className="block text-[11.5px] text-[#98a2b3]">Registrada em {item.createdAt}</span>
+            <strong className="mb-[3px] block truncate text-[11.5px] font-semibold text-foreground">{item.title}</strong>
+            <span className="block text-[11.5px] text-muted-foreground">Registrada em {item.createdAt}</span>
           </span>
           <a
             href={item.url}
             target="_blank"
             rel="noreferrer"
             aria-label={`Consultar ${item.title}`}
-            className="grid size-[25px] place-items-center rounded-[6px] text-[#667085] hover:bg-[#f2f4f7]"
+            className="grid size-[25px] place-items-center rounded-[6px] text-muted-foreground hover:bg-muted"
           >
             <ChevronRight className="size-3.5" aria-hidden="true" />
           </a>
@@ -1068,26 +1068,26 @@ function EvidenceList({
   );
 }
 
-const paragraph = "text-[11.5px] leading-[1.65] text-[#475467]";
-const sectionLabel = "block text-[11.5px] font-semibold text-[#475467]";
-const impedimentText = "text-[11.5px] leading-[1.6] text-[#475467]";
-const emptyInline = "flex min-h-11 items-center gap-1.5 rounded-[7px] border border-dashed border-[#d7dce3] bg-[#f8f9fb] px-2.5 text-[11.5px] text-[#98a2b3]";
-const progressClass = "[&_[data-slot=progress-indicator]]:bg-[#2873cf] [&_[data-slot=progress-track]]:h-[7px] [&_[data-slot=progress-track]]:bg-[#e9eef5]";
-const secondaryButton = "h-9 rounded-[7px] border-[#d7dce3] px-[13px] text-[11.5px] font-semibold text-[#344054] hover:bg-[#f8fafc]";
-const primaryButton = "h-9 rounded-[7px] bg-[#175cd3] px-[13px] text-[11.5px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#144ca8]";
-const compactButton = "h-9 gap-1.5 rounded-[7px] border-[#d7dce3] px-3 text-[11.5px] font-semibold text-[#344054]";
+const paragraph = "text-[11.5px] leading-[1.65] text-foreground/80";
+const sectionLabel = "block text-[11.5px] font-semibold text-foreground/80";
+const impedimentText = "text-[11.5px] leading-[1.6] text-foreground/80";
+const emptyInline = "flex min-h-11 items-center gap-1.5 rounded-[7px] border border-dashed border-input bg-muted/50 px-2.5 text-[11.5px] text-muted-foreground";
+const progressClass = "[&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-[7px] [&_[data-slot=progress-track]]:bg-muted";
+const secondaryButton = "h-9 rounded-[7px] border-input px-[13px] text-[11.5px] font-semibold text-foreground hover:bg-muted/50";
+const primaryButton = "h-9 rounded-[7px] bg-primary px-[13px] text-[11.5px] font-semibold text-primary-foreground shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-primary";
+const compactButton = "h-9 gap-1.5 rounded-[7px] border-input px-3 text-[11.5px] font-semibold text-foreground";
 
 function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milestone"; code: string; label: string; kind: EapStatusKind }) {
   return (
-    <div className="-mx-6 mb-1 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-[#e4e7ec] bg-white px-6 py-[13px]">
-      <span className={cn("grid size-8 place-items-center rounded-[7px]", type === "phase" && "bg-[#e9f2ff] text-[#2865b9]", type === "task" && "bg-[#eef2f6] text-[#52677e]", type === "milestone" && "bg-[#f4ecfb] text-[#8b5bbb]")}>
+    <div className="-mx-6 mb-1 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-border bg-card px-6 py-[13px]">
+      <span className={cn("grid size-8 place-items-center rounded-[7px]", type === "phase" && "bg-primary/10 text-primary", type === "task" && "bg-muted text-muted-foreground", type === "milestone" && "bg-status-validation-soft text-status-validation-ink")}>
         {type === "phase" ? <Folder className="size-4" aria-hidden="true" /> : null}
         {type === "task" ? <Check className="size-4" aria-hidden="true" /> : null}
         {type === "milestone" ? <Flag className="size-4" aria-hidden="true" /> : null}
       </span>
       <span>
-        <span className="mb-[3px] block text-[11.5px] text-[#98a2b3]">Item da EAP</span>
-        <strong className="block text-[11.5px] text-[#344054]">{code} · {type === "phase" ? "Fase" : type === "task" ? "Tarefa" : "Marco"}</strong>
+        <span className="mb-[3px] block text-[11.5px] text-muted-foreground">Item da EAP</span>
+        <strong className="block text-[11.5px] text-foreground">{code} · {type === "phase" ? "Fase" : type === "task" ? "Tarefa" : "Marco"}</strong>
       </span>
       <EapStatusBadge kind={kind} label={label} />
     </div>
@@ -1096,9 +1096,9 @@ function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milest
 
 function Section({ label, extra, children }: { label: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <section className="mt-3 rounded-[10px] border border-[#e4e7ec] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+    <section className="mt-3 rounded-[10px] border border-border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <strong className="block text-[12.5px] text-[#253248]">{label}</strong>
+        <strong className="block text-[12.5px] text-foreground">{label}</strong>
         {extra}
       </div>
       {children}
@@ -1108,9 +1108,9 @@ function Section({ label, extra, children }: { label: string; extra?: ReactNode;
 
 function Metric({ value, label, warning = false }: { value: string; label: string; warning?: boolean }) {
   return (
-    <div className={cn("rounded-lg border p-3", warning ? "border-[#f3dcae] bg-[#fff8e9]" : "border-[#e4e7ec] bg-[#fafbfc]")}>
-      <strong className={cn("mb-[3px] block text-[15px]", warning ? "text-[#865516]" : "text-[#253248]")}>{value}</strong>
-      <span className={cn("block text-[11.5px]", warning ? "text-[#a8782f]" : "text-[#8a94a6]")}>{label}</span>
+    <div className={cn("rounded-lg border p-3", warning ? "border-status-attention/40 bg-status-attention-soft" : "border-border bg-muted/50")}>
+      <strong className={cn("mb-[3px] block text-[15px]", warning ? "text-status-attention-ink" : "text-foreground")}>{value}</strong>
+      <span className={cn("block text-[11.5px]", warning ? "text-status-attention-ink" : "text-muted-foreground")}>{label}</span>
     </div>
   );
 }
@@ -1137,11 +1137,11 @@ function PendingSignal({ blocked, overdue }: { blocked: boolean; overdue: boolea
 
 function Fact({ icon, label, value, overdue = false, note }: { icon: ReactNode; label: string; value: string; overdue?: boolean; note?: string | null }) {
   return (
-    <div className={cn("flex min-h-[80px] items-center gap-3 rounded-[10px] border p-3.5", overdue ? overdueTone.surface : "border-[#e4e7ec]")}>
-      <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", overdue ? overdueTone.icon : "bg-[#edf4ff] text-[#2864bb]")}>{icon}</span>
+    <div className={cn("flex min-h-[80px] items-center gap-3 rounded-[10px] border p-3.5", overdue ? overdueTone.surface : "border-border")}>
+      <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", overdue ? overdueTone.icon : "bg-primary/10 text-primary")}>{icon}</span>
       <span className="min-w-0">
-        <span className="mb-1 block text-[11.5px] font-medium text-[#8a94a6]">{label}</span>
-        <strong className="block truncate text-[11.5px] text-[#344054]">{value}</strong>
+        <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">{label}</span>
+        <strong className="block truncate text-[11.5px] text-foreground">{value}</strong>
         {note ? <em className={cn("mt-[3px] block text-[11.5px] font-semibold not-italic", overdueTone.text)}>{note}</em> : null}
       </span>
     </div>

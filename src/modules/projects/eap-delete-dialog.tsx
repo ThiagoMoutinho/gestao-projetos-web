@@ -77,11 +77,11 @@ export function EapDeleteDialog({
     >
       <AlertDialogContent className="max-w-[400px]! gap-3 rounded-[10px] p-5">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-base font-semibold text-[#101828]">
+          <AlertDialogTitle className="text-base font-semibold text-foreground">
             {`Excluir ${copy?.noun ?? "item"}?`}
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-[13px] leading-relaxed text-[#475467]">
-            <strong className="font-semibold text-[#344054]">{request?.label}</strong> será {copy?.removed} da EAP.
+          <AlertDialogDescription className="text-[13px] leading-relaxed text-foreground/80">
+            <strong className="font-semibold text-foreground">{request?.label}</strong> será {copy?.removed} da EAP.
             Use a exclusão apenas para itens criados por engano e sem movimentação. A exclusão fica registrada no
             histórico do projeto.
           </AlertDialogDescription>

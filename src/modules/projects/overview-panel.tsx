@@ -12,13 +12,13 @@ import { useOverflow } from "./use-overflow";
 const SECTION_TONE = {
   blue: "bg-primary/10 text-primary",
   green: "bg-success/15 text-success-foreground",
-  purple: "bg-[#f4ecfb] text-[#7450bf]",
+  purple: "bg-status-validation-soft text-status-validation-ink",
   amber: "bg-warning/20 text-warning-foreground",
 } as const;
 
 /** Acabamento dos cartões da Visão Geral (Figma): borda suave no lugar do anel e sombra em duas camadas. */
 export const OVERVIEW_CARD =
-  "min-h-full rounded-[10px] border border-[#E4E7EC] bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] ring-0 dark:border-border dark:shadow-none";
+  "min-h-full rounded-[10px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] ring-0 dark:border-border dark:shadow-none";
 
 /**
  * Crescimento natural com limite: o cartão tem a altura do conteúdo e para de crescer em `--widget-max` (definido por
@@ -163,7 +163,7 @@ function SectionCardFrame({
       data-expanded={expanded || undefined}
       style={extraHeight > 0 && !expanded && !unbounded ? { maxHeight: `calc(var(--widget-max) + ${extraHeight}px)` } : undefined}
     >
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[#EDF0F3] pb-4 dark:border-border">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border/60 pb-4 dark:border-border">
         <div className="flex min-w-0 items-start gap-3">
           <div
             className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${SECTION_TONE[tone]}`}
@@ -241,7 +241,7 @@ export function Panel({
   }
   return (
     <Card className={`${OVERVIEW_CARD} gap-3 p-5`}>
-      <div className="flex shrink-0 items-start justify-between gap-2 border-b border-[#EDF0F3] pb-3 dark:border-border">
+      <div className="flex shrink-0 items-start justify-between gap-2 border-b border-border/60 pb-3 dark:border-border">
         <div>
           <h2 className="text-base font-medium">{title}</h2>
           <p className="text-xs text-muted-foreground">{subtitle}</p>
