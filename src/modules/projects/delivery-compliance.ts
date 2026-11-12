@@ -77,6 +77,50 @@ export type Conformity = {
   blockingItems: Array<{ id: string; title: string; status: ItemStatus }>;
 };
 
+/** Percentual de documentos obrigatórios atendidos (aprovados ou dispensados). Sem obrigatórios, a versão está 100% conforme. */
+export function conformityPercent(conformity: Pick<Conformity, "required" | "blockingItems">): number {
+  if (conformity.required === 0) {
+    return 100;
+  }
+  return Math.round(((conformity.required - conformity.blockingItems.length) / conformity.required) * 100);
+}
+
+export type ComplianceSummary = {
+  versions: number;
+  conformingVersions: number;
+  /** Documentos obrigatórios de todas as versões e quantos já estão atendidos (aprovados ou dispensados). */
+  required: number;
+  satisfied: number;
+  percent: number;
+  approved: number;
+  dispensed: number;
+  awaitingValidation: number;
+  pending: number;
+  rejected: number;
+};
+
+/**
+ * Totais da Conformidade de Entrega de um projeto (todas as versões registradas): base do quadro da Visão Geral. O percentual
+ * considera só os documentos obrigatórios, como o bloqueio da homologação e do encerramento; as contagens incluem os opcionais.
+ */
+export function complianceSummary(list: ReadonlyArray<Conformity>): ComplianceSummary {
+  const sum = (pick: (item: Conformity) => number) => list.reduce((total, item) => total + pick(item), 0);
+  const required = sum((item) => item.required);
+  const satisfied = sum((item) => item.required - item.blockingItems.length);
+  return {
+    versions: list.length,
+    conformingVersions: list.filter((item) => item.conforming).length,
+    required,
+    satisfied,
+    percent: required === 0 ? 100 : Math.round((satisfied / required) * 100),
+    approved: sum((item) => item.approved),
+    dispensed: sum((item) => item.dispensed),
+    awaitingValidation: sum((item) => item.awaitingValidation),
+    pending: sum((item) => item.pending),
+    rejected: sum((item) => item.rejected),
+  };
+}
+
 /** Selo da conformidade da versão: situação e o que falta. */
 export function conformityBadge(conformity: Conformity): { label: string; tone: Tone; hint: string } {
   if (conformity.conforming) {

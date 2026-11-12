@@ -247,10 +247,10 @@ export function ProjectOverview({
           ),
           historico: <ProjectTimelineCard project={project} refreshKey={refresh} />,
           resumo: <ExecutiveSummaryCard projectId={project.id} ownerName={project.ownerName} suppliers={suppliers} updatedAt={project.updatedAt} refreshKey={project.updatedAt} />,
+          // Só nos projetos com fornecedor (regra existente); sem fornecedor o widget fica oculto no quadro.
+          conformidade: suppliers && suppliers.length > 0 ? <DeliveryComplianceCard projectId={project.id} access={access} closed={closed} /> : null,
         }}
       />
-
-      {suppliers && suppliers.length > 0 ? <DeliveryComplianceCard projectId={project.id} access={access} closed={closed} /> : null}
     </div>
     </OverviewActionsSlotContext.Provider>
   );

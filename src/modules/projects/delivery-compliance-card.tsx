@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ExternalLink, FileCheck2, Plus, Settings2 } from "lucide-react";
+import { ChevronDown, CircleAlert, ExternalLink, FileCheck2, PackagePlus, Plus, RotateCcw, Settings2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { OptionCombobox } from "@/components/option-combobox";
@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Presence } from "@/components/ui/presence";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -38,7 +39,9 @@ import {
   canValidateItem,
   canWaiveDocuments,
   canWaiveItem,
+  complianceSummary,
   conformityBadge,
+  conformityPercent,
   evidenceDisplay,
   evidenceError,
   EVIDENCE_KIND_OPTIONS,
@@ -54,7 +57,7 @@ import {
 } from "./delivery-compliance";
 import { DeliveryTemplatesDialog } from "./delivery-templates-dialog";
 import { personName, stamp, useAction } from "./institutional-shared";
-import { Panel } from "./overview-panel";
+import { SectionCard } from "./overview-panel";
 
 type Version = ListDeliveryVersions200DataItem;
 type Item = ListDeliveryVersions200DataItemItemsItem;
@@ -108,15 +111,19 @@ export function DeliveryComplianceCard({ projectId, access, closed }: { projectI
 
   const canCreate = canSubmitDocuments(access) && !closed;
   const versions = state.status === "ready" ? state.versions : [];
-  const pendingTotal = versions.reduce((sum, version) => sum + version.conformity.blockingItems.length, 0);
+  const retry = () => {
+    setState({ status: "loading" });
+    void load();
+  };
 
   return (
-    <Panel
+    // Widget do quadro da Visão Geral: altura automática (cada versão abre o próprio checklist), sem corte nem "Ver mais".
+    <SectionCard
       title="Conformidade de Entrega"
       subtitle="Documentos exigidos por versão para homologar o marco final e encerrar o projeto"
       icon={FileCheck2}
-      count={state.status === "ready" ? pendingTotal : null}
-      countTone="amber"
+      tone="blue"
+      unbounded
       action={
         <div className="flex items-center gap-2">
           {canManageTemplates(access) ? (
@@ -133,19 +140,37 @@ export function DeliveryComplianceCard({ projectId, access, closed }: { projectI
       }
     >
       {state.status === "loading" ? (
-        <Skeleton className="h-24 rounded-xl" aria-busy="true" aria-label="Carregando conformidade de entrega" />
+        <div className="flex flex-col gap-2" aria-busy="true" aria-label="Carregando conformidade de entrega">
+          <Skeleton className="h-5 w-56 rounded-md" />
+          <Skeleton className="h-11 rounded-lg" />
+          <Skeleton className="h-11 rounded-lg" />
+        </div>
       ) : state.status === "error" ? (
-        <div role="alert" className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">Não foi possível carregar a conformidade de entrega.</p>
-          <Button type="button" size="sm" variant="outline" onClick={() => { setState({ status: "loading" }); void load(); }}>
-            Tentar novamente
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-status-critical/25 bg-status-critical-soft px-3 py-2.5">
+          <CircleAlert aria-hidden="true" className="size-5 shrink-0 text-status-critical-ink" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">Não foi possível carregar a conformidade de entrega.</p>
+            <p className="text-xs text-muted-foreground">Nenhum documento foi alterado. Tente novamente em instantes.</p>
+          </div>
+          <Button type="button" size="sm" variant="outline" onClick={retry}>
+            <RotateCcw aria-hidden="true" /> Tentar novamente
           </Button>
         </div>
       ) : versions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nenhuma versão registrada. {canCreate ? "Crie a primeira versão para abrir o checklist documental do modelo da natureza do projeto." : "O gestor ou o fornecedor cria a versão da entrega."}
-        </p>
+        <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-muted/40 px-3 py-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
+            <PackagePlus className="size-[18px]" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Nenhuma versão registrada</p>
+            <p className="text-xs text-muted-foreground">
+              {canCreate ? "Crie a primeira versão em “Nova versão” para abrir o checklist documental do modelo da natureza do projeto." : "O gestor ou o fornecedor cria a versão da entrega."}
+            </p>
+          </div>
+        </div>
       ) : (
+        <>
+        <ComplianceOverview versions={versions} />
         <ul className="flex flex-col gap-2">
           {versions.map((version) => {
             const badge = conformityBadge(version.conformity as never);
@@ -166,6 +191,7 @@ export function DeliveryComplianceCard({ projectId, access, closed }: { projectI
                     ) : null}
                   </span>
                   <span className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-muted-foreground tabular-nums" title="Documentos obrigatórios atendidos">{conformityPercent(version.conformity as never)}%</span>
                     <ToneBadge tone={badge.tone} title={badge.hint}>{badge.label}</ToneBadge>
                     <ChevronDown aria-hidden="true" className={cn("size-4 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none", expanded && "rotate-180")} />
                   </span>
@@ -194,12 +220,65 @@ export function DeliveryComplianceCard({ projectId, access, closed }: { projectI
             );
           })}
         </ul>
+        </>
       )}
 
       <NewVersionDialog open={creating} projectId={projectId} onClose={() => setCreating(false)} onDone={() => void load()} />
       <DecisionDialog decision={decision} projectId={projectId} onClose={() => setDecision(null)} onDone={() => void load()} />
       {canManageTemplates(access) ? <DeliveryTemplatesDialog open={templates} onClose={() => setTemplates(false)} /> : null}
-    </Panel>
+    </SectionCard>
+  );
+}
+
+/** Totais do projeto: percentual de obrigatórios atendidos, versões conformes e documentos por situação. */
+function ComplianceOverview({ versions }: { versions: Version[] }) {
+  const summary = complianceSummary(versions.map((version) => version.conformity as never));
+  const blocking = summary.required - summary.satisfied;
+  const stats: Array<{ label: string; value: number; hint: string | null; tone: string }> = [
+    { label: "Aprovados", value: summary.approved, hint: summary.dispensed > 0 ? `+${summary.dispensed} dispensado${summary.dispensed === 1 ? "" : "s"}` : null, tone: "bg-status-done" },
+    { label: "Pendentes", value: summary.pending + summary.awaitingValidation, hint: summary.awaitingValidation > 0 ? `${summary.awaitingValidation} em validação` : null, tone: "bg-status-attention" },
+    { label: "Rejeitados", value: summary.rejected, hint: summary.rejected > 0 ? "aguardam correção" : null, tone: "bg-status-critical" },
+  ];
+  return (
+    <div className="grid gap-4 rounded-lg border border-border bg-muted/30 p-3.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] dark:bg-muted/40" aria-live="polite">
+      <div className="flex min-w-0 flex-col justify-center gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="text-2xl font-semibold tabular-nums text-foreground">{summary.percent}%</span>
+          <span className="text-xs text-muted-foreground">
+            de conformidade · {summary.satisfied} de {summary.required} obrigatórios atendidos
+          </span>
+        </div>
+        <Progress
+          value={summary.percent}
+          aria-label="Conformidade documental do projeto"
+          className="[&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted"
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {summary.versions} {summary.versions === 1 ? "versão" : "versões"} · {summary.conformingVersions} {summary.conformingVersions === 1 ? "conforme" : "conformes"}
+          </span>
+          {blocking > 0 ? (
+            <ToneBadge tone="warning" title="Documentos obrigatórios pendentes, sem validação ou rejeitados bloqueiam a homologação do marco final e o encerramento.">
+              {blocking} {blocking === 1 ? "pendência bloqueia" : "pendências bloqueiam"} o encerramento
+            </ToneBadge>
+          ) : (
+            <ToneBadge tone="success" title="Todos os documentos obrigatórios estão aprovados ou dispensados.">Documentação em conformidade</ToneBadge>
+          )}
+        </div>
+      </div>
+      <dl className="grid grid-cols-3 gap-2">
+        {stats.map((stat) => (
+          <div key={stat.label} className="flex min-w-0 flex-col gap-0.5 rounded-md border border-border bg-card px-2.5 py-2">
+            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className={cn("size-2 shrink-0 rounded-full", stat.tone)} aria-hidden="true" />
+              {stat.label}
+            </dt>
+            <dd className="text-lg font-semibold tabular-nums text-foreground">{stat.value}</dd>
+            {stat.hint ? <dd className="truncate text-label text-muted-foreground">{stat.hint}</dd> : null}
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 

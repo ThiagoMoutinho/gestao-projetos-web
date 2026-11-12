@@ -10,7 +10,7 @@ import { getMyOverviewLayout, resetMyOverviewLayout, saveMyOverviewLayout } from
 import { reportFailure } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 
-import { BOARD_WIDGETS, DEFAULT_WIDGETS, moveWidget, normalizeWidgets, placeWidgets, WIDGET_MAX_HEIGHT, type WidgetId, type WidgetState } from "./overview-layout";
+import { BOARD_WIDGETS, DEFAULT_WIDGETS, introduceNewWidgets, moveWidget, normalizeWidgets, placeWidgets, WIDGET_MAX_HEIGHT, type WidgetId, type WidgetState } from "./overview-layout";
 
 const TITLES: Record<WidgetId, string> = {
   sobre: "Sobre o Sistema",
@@ -23,7 +23,28 @@ const TITLES: Record<WidgetId, string> = {
   planejamento: "Planejamento",
   evidencias: "Evidências e Chamados",
   equipe: "Equipe",
+  conformidade: "Conformidade de Entrega",
 };
+
+/** Widgets novos já oferecidos neste navegador (ver `introduceNewWidgets`): quem remove um deles não o recebe de volta. */
+const OFFERED_KEY = "igepps:overview-offered-widgets";
+
+function readOffered(): Set<string> {
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(OFFERED_KEY) ?? "[]");
+    return new Set(Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeOffered(ids: readonly string[]) {
+  try {
+    window.localStorage.setItem(OFFERED_KEY, JSON.stringify(ids));
+  } catch {
+    // Sem armazenamento local: o widget novo só volta a ser oferecido, nada se perde.
+  }
+}
 
 /** Layout pessoal salvo no servidor. Se a consulta falhar, usa o padrão e a Visão Geral continua funcionando. */
 function useOverviewLayout() {
@@ -33,6 +54,8 @@ function useOverviewLayout() {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   /** Último layout que o servidor já tem: evita gravar de novo o mesmo conteúdo. */
   const synced = useRef<string>(JSON.stringify(DEFAULT_WIDGETS));
+  /** `update` mais recente, para a carga inicial salvar o layout quando um widget novo entra no quadro. */
+  const updateRef = useRef<(next: WidgetState[]) => void>(() => undefined);
 
   useEffect(() => {
     let active = true;
@@ -41,7 +64,14 @@ function useOverviewLayout() {
         if (active && response.status === 200) {
           const loaded = normalizeWidgets(response.data.widgets);
           synced.current = JSON.stringify(loaded);
-          setWidgets(loaded);
+          // Layout salvo antes de um widget existir: ele entra uma vez, logo abaixo de Marcos, e o layout é salvo assim.
+          const introduced = introduceNewWidgets(loaded, response.data.widgets ? readOffered() : new Set());
+          writeOffered(introduced.offered);
+          if (introduced.widgets !== loaded) {
+            updateRef.current(introduced.widgets);
+          } else {
+            setWidgets(loaded);
+          }
         }
       })
       .catch(() => undefined);
@@ -72,6 +102,9 @@ function useOverviewLayout() {
       }
     }, 500);
   }, []);
+  useEffect(() => {
+    updateRef.current = update;
+  }, [update]);
 
   const reset = useCallback(async () => {
     clearTimeout(timer.current);

@@ -8,7 +8,9 @@ import {
   canValidateItem,
   canWaiveDocuments,
   canWaiveItem,
+  complianceSummary,
   conformityBadge,
+  conformityPercent,
   draftError,
   draftPayload,
   evidenceDisplay,
@@ -132,5 +134,54 @@ describe("Conformidade de Entrega: editor de modelo", () => {
       notes: "Revisão 2",
     });
     assert.deepEqual(draftPayload(items, "", true), { items: [{ documentType: "ESCOPO", title: "Escopo", description: null, required: true }], notes: null, ctinValidated: true });
+  });
+});
+
+describe("Resumo da conformidade (quadro da Visão Geral)", () => {
+  const version = (overrides: Partial<Parameters<typeof conformityPercent>[0]> & Record<string, unknown>) => ({
+    total: 4,
+    required: 3,
+    approved: 1,
+    dispensed: 0,
+    awaitingValidation: 1,
+    pending: 1,
+    rejected: 1,
+    conforming: false,
+    blockingItems: [
+      { id: "a", title: "Manual", status: "ENVIADO" as const },
+      { id: "b", title: "Dicionário", status: "PENDENTE" as const },
+    ],
+    ...overrides,
+  });
+
+  it("percentual considera só os obrigatórios atendidos (aprovados ou dispensados)", () => {
+    assert.equal(conformityPercent(version({})), 33);
+    assert.equal(conformityPercent(version({ required: 0, blockingItems: [] })), 100);
+    assert.equal(conformityPercent(version({ required: 2, blockingItems: [] })), 100);
+  });
+
+  it("soma todas as versões: obrigatórios, aprovados, dispensados, em validação, pendentes e rejeitados", () => {
+    const summary = complianceSummary([
+      version({}),
+      version({ required: 2, approved: 1, dispensed: 1, awaitingValidation: 0, pending: 0, rejected: 0, conforming: true, blockingItems: [] }),
+    ]);
+    assert.deepEqual(summary, {
+      versions: 2,
+      conformingVersions: 1,
+      required: 5,
+      satisfied: 3,
+      percent: 60,
+      approved: 2,
+      dispensed: 1,
+      awaitingValidation: 1,
+      pending: 1,
+      rejected: 1,
+    });
+  });
+
+  it("sem versões registradas não há pendência", () => {
+    const summary = complianceSummary([]);
+    assert.equal(summary.versions, 0);
+    assert.equal(summary.percent, 100);
   });
 });

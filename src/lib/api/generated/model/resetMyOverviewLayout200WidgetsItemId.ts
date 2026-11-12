@@ -20,4 +20,5 @@ export const ResetMyOverviewLayout200WidgetsItemId = {
   planejamento: 'planejamento',
   evidencias: 'evidencias',
   equipe: 'equipe',
+  conformidade: 'conformidade',
 } as const;
