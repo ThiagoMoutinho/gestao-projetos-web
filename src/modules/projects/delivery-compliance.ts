@@ -193,6 +193,78 @@ export function versionLabelError(label: string) {
   return /^[0-9]+(\.[0-9]+){0,2}$/.test(label.trim()) ? null : "Use o formato 1.0, 1.1 ou 2.0.";
 }
 
+// ---------- Validador e histórico do documento ----------
+
+/** Designa ou troca o validador do documento: gestão do projeto (dono ou gestor) e PMO, como na API. */
+export function canAssignValidator(access: Pick<ViewerAccess, "globalRole" | "isProjectManager">) {
+  return access.globalRole === "PMO" || access.isProjectManager;
+}
+
+type PersonRef = { id: string; name: string | null } | null;
+
+export type ValidatorCandidate = { userId: string; name: string; roles: string[] };
+
+/**
+ * Quem pode ser validador: participante do projeto ou o dono, nunca o fornecedor (mesma regra da API). Responsáveis
+ * técnicos aparecem primeiro; cada pessoa aparece uma vez, com todos os papéis.
+ */
+export function validatorCandidates(
+  members: ReadonlyArray<{ userId: string; name: string; role: string }>,
+  owner: { id: string; name: string },
+): ValidatorCandidate[] {
+  const byUser = new Map<string, ValidatorCandidate>();
+  const add = (userId: string, name: string, role: string) => {
+    const entry = byUser.get(userId) ?? { userId, name, roles: [] };
+    if (!entry.roles.includes(role)) entry.roles.push(role);
+    byUser.set(userId, entry);
+  };
+  add(owner.id, owner.name, "DONO_PROJETO");
+  for (const member of members) add(member.userId, member.name, member.role);
+  const rank = (entry: ValidatorCandidate) => (entry.roles.includes("RESPONSAVEL_TECNICO") ? 0 : 1);
+  return [...byUser.values()]
+    .filter((entry) => !entry.roles.includes("FORNECEDOR"))
+    .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "pt-BR"));
+}
+
+export type ValidatorInfo = { kind: "designado" | "marco" | "nenhum"; names: string[] };
+
+/** Quem valida o documento: o designado para ele; sem designação, o responsável técnico do marco de homologação. */
+export function validatorInfo(validator: PersonRef, defaults: ReadonlyArray<NonNullable<PersonRef>>): ValidatorInfo {
+  if (validator) return { kind: "designado", names: [validator.name?.trim() || "Usuário não identificado"] };
+  const names = defaults.map((person) => person.name?.trim() || "Usuário não identificado");
+  return names.length > 0 ? { kind: "marco", names } : { kind: "nenhum", names: [] };
+}
+
+export type HistoryAction = "ENVIO" | "APROVACAO" | "REJEICAO" | "DISPENSA" | "DESIGNACAO";
+
+/**
+ * Rótulo e tom de cada registro do histórico, na ordem recebida. Um envio depois de outro envio é um reenvio (após a
+ * rejeição); a troca de validador diz se foi designação, alteração ou remoção.
+ */
+export function describeHistory(events: ReadonlyArray<{ action: HistoryAction; previousValidator: PersonRef; newValidator: PersonRef }>) {
+  let sent = false;
+  return events.map((event) => {
+    switch (event.action) {
+      case "ENVIO": {
+        const label = sent ? "Reenvio após correção" : "Envio da evidência";
+        sent = true;
+        return { label, tone: "info" as Tone };
+      }
+      case "APROVACAO":
+        return { label: "Aprovação", tone: "success" as Tone };
+      case "REJEICAO":
+        return { label: "Rejeição · devolvido para correção", tone: "danger" as Tone };
+      case "DISPENSA":
+        return { label: "Dispensa formal", tone: "warning" as Tone };
+      default:
+        return {
+          label: !event.newValidator ? "Designação de validador removida" : event.previousValidator ? "Validador alterado" : "Validador designado",
+          tone: "neutral" as Tone,
+        };
+    }
+  });
+}
+
 // ---------- Editor de modelo (ADMIN e PMO) ----------
 
 export type DraftItem = { key: string; documentType: string; title: string; description: string; required: boolean; existing: boolean };

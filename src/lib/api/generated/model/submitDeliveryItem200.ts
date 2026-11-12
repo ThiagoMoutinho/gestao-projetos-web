@@ -36,5 +36,11 @@ export type SubmitDeliveryItem200 = {
      */
   rounds: number;
   conformity: SubmitDeliveryItem200Conformity;
+  /** Responsáveis técnicos dos marcos de homologação: validam os documentos que não têm validador designado. */
+  defaultValidators: {
+    id: string;
+    /** @nullable */
+    name: string | null;
+  }[];
   items: SubmitDeliveryItem200ItemsItem[];
 };

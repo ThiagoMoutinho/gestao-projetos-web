@@ -36,5 +36,11 @@ export type ListDeliveryVersions200DataItem = {
      */
   rounds: number;
   conformity: ListDeliveryVersions200DataItemConformity;
+  /** Responsáveis técnicos dos marcos de homologação: validam os documentos que não têm validador designado. */
+  defaultValidators: {
+    id: string;
+    /** @nullable */
+    name: string | null;
+  }[];
   items: ListDeliveryVersions200DataItemItemsItem[];
 };

@@ -11,9 +11,27 @@ import type { ListDeliveryItemEvents200DataItemEvidenceKind } from './listDelive
 
 export type ListDeliveryItemEvents200DataItem = {
   id: string;
+  /** DESIGNACAO: troca do validador do documento (vem da auditoria); as demais vêm do histórico do documento. */
   action: ListDeliveryItemEvents200DataItemAction;
   /** @nullable */
   actor: ListDeliveryItemEvents200DataItemActor;
+  /**
+   * Perfil global de quem agiu (ADMIN, PMO, GESTOR, FORNECEDOR...).
+   * @nullable
+   */
+  actorRole: string | null;
+  /** Papéis de quem agiu no projeto (DONO_PROJETO, FORNECEDOR, RESPONSAVEL_TECNICO...). */
+  actorProjectRoles: string[];
+  /**
+   * DESIGNACAO: validador anterior (nulo: nenhum designado).
+   * @nullable
+   */
+  previousValidator: ListDeliveryItemEvents200DataItemActor;
+  /**
+   * DESIGNACAO: novo validador (nulo: designação removida).
+   * @nullable
+   */
+  newValidator: ListDeliveryItemEvents200DataItemActor;
   /** @nullable */
   evidenceKind: ListDeliveryItemEvents200DataItemEvidenceKind;
   /** @nullable */

@@ -33,6 +33,7 @@ import type { ListDeliveryVersions200DataItemItemsItem } from "@/lib/api/generat
 import { cn } from "@/lib/utils";
 
 import {
+  canAssignValidator,
   canManageTemplates,
   canSubmitDocuments,
   canSubmitItem,
@@ -53,8 +54,10 @@ import {
   type EvidenceKind,
   type Nature,
   type Tone,
+  validatorCandidates,
   type ViewerAccess,
 } from "./delivery-compliance";
+import { HistorySheet, type ItemTarget, ValidatorDialog, ValidatorLine } from "./delivery-item-oversight";
 import { DeliveryTemplatesDialog } from "./delivery-templates-dialog";
 import { personName, stamp, useAction } from "./institutional-shared";
 import { SectionCard } from "./overview-panel";
@@ -86,12 +89,27 @@ type Decision = { kind: "submit" | "reject" | "waive"; versionId: string; item: 
  * evidência (link do SharePoint ou tag/release do GitLab), validar, rejeitar e (ADMIN e PMO) dispensar com justificativa. O servidor
  * confere todas as permissões; a tela só esconde o que a pessoa não pode fazer.
  */
-export function DeliveryComplianceCard({ projectId, access, closed }: { projectId: string; access: ViewerAccess; closed: boolean }) {
+export function DeliveryComplianceCard({
+  projectId,
+  access,
+  closed,
+  members,
+  owner,
+}: {
+  projectId: string;
+  access: ViewerAccess;
+  closed: boolean;
+  /** Participantes do projeto: candidatos a validador (o fornecedor fica de fora). */
+  members: ReadonlyArray<{ userId: string; name: string; role: string }>;
+  owner: { id: string; name: string };
+}) {
   const [state, setState] = useState<State>({ status: "loading" });
   const [open, setOpen] = useState<string | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [creating, setCreating] = useState(false);
   const [templates, setTemplates] = useState(false);
+  const [assigning, setAssigning] = useState<ItemTarget | null>(null);
+  const [history, setHistory] = useState<ItemTarget | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -211,6 +229,15 @@ export function DeliveryComplianceCard({ projectId, access, closed }: { projectI
                           busy={approving.busy}
                           onAct={(kind) => setDecision({ kind, versionId: version.id, item })}
                           onApprove={() => approving.run(() => approveDeliveryItem(projectId, version.id, item.id, {}), "Documento aprovado.", "Não foi possível aprovar o documento.")}
+                          oversight={
+                            <ValidatorLine
+                              item={item}
+                              defaults={version.defaultValidators}
+                              canAssign={canAssignValidator(access) && !closed}
+                              onAssign={() => setAssigning({ versionId: version.id, versionLabel: version.versionLabel, item, defaults: version.defaultValidators })}
+                              onHistory={() => setHistory({ versionId: version.id, versionLabel: version.versionLabel, item, defaults: version.defaultValidators })}
+                            />
+                          }
                         />
                       ))}
                     </ul>
@@ -226,6 +253,14 @@ export function DeliveryComplianceCard({ projectId, access, closed }: { projectI
       <NewVersionDialog open={creating} projectId={projectId} onClose={() => setCreating(false)} onDone={() => void load()} />
       <DecisionDialog decision={decision} projectId={projectId} onClose={() => setDecision(null)} onDone={() => void load()} />
       {canManageTemplates(access) ? <DeliveryTemplatesDialog open={templates} onClose={() => setTemplates(false)} /> : null}
+      <ValidatorDialog
+        target={assigning}
+        projectId={projectId}
+        candidates={validatorCandidates(members, owner)}
+        onClose={() => setAssigning(null)}
+        onDone={() => void load()}
+      />
+      <HistorySheet target={history} projectId={projectId} onClose={() => setHistory(null)} />
     </SectionCard>
   );
 }
@@ -282,7 +317,7 @@ function ComplianceOverview({ versions }: { versions: Version[] }) {
   );
 }
 
-function ItemRow({ item, access, closed, busy, onAct, onApprove }: { item: Item; access: ViewerAccess; closed: boolean; busy: boolean; onAct: (kind: Decision["kind"]) => void; onApprove: () => void }) {
+function ItemRow({ item, access, closed, busy, onAct, onApprove, oversight }: { item: Item; access: ViewerAccess; closed: boolean; busy: boolean; onAct: (kind: Decision["kind"]) => void; onApprove: () => void; oversight: React.ReactNode }) {
   const status = ITEM_STATUS[item.status as keyof typeof ITEM_STATUS];
   const evidence = evidenceDisplay(item.evidenceKind as EvidenceKind | null, item.evidenceRef);
   const mine = canSubmitDocuments(access) && !closed;
@@ -330,6 +365,7 @@ function ItemRow({ item, access, closed, busy, onAct, onApprove }: { item: Item;
           {status.label} por {personName(item.decidedBy)}{item.decidedAt ? ` em ${stamp(item.decidedAt)}` : ""}: {item.decisionNote}
         </p>
       ) : null}
+      {oversight}
     </li>
   );
 }

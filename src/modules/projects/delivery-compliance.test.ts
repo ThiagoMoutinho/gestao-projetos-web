@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   canManageTemplates,
+  canAssignValidator,
   canSubmitDocuments,
   canSubmitItem,
   canValidateItem,
@@ -11,11 +12,14 @@ import {
   complianceSummary,
   conformityBadge,
   conformityPercent,
+  describeHistory,
   draftError,
   draftPayload,
   evidenceDisplay,
   evidenceError,
   noteError,
+  validatorCandidates,
+  validatorInfo,
   suggestDocumentType,
   toDraftItems,
   versionLabelError,
@@ -184,5 +188,62 @@ describe("Resumo da conformidade (quadro da Visão Geral)", () => {
     const summary = complianceSummary([]);
     assert.equal(summary.versions, 0);
     assert.equal(summary.percent, 100);
+  });
+});
+
+describe("Validador e histórico do documento", () => {
+  it("designam o validador: gestão do projeto e PMO; os demais não", () => {
+    assert.equal(canAssignValidator({ globalRole: "PMO", isProjectManager: false }), true);
+    assert.equal(canAssignValidator({ globalRole: "GESTOR", isProjectManager: true }), true);
+    for (const role of ["ADMIN", "COORDENADOR", "FORNECEDOR", "COLABORADOR"]) {
+      assert.equal(canAssignValidator({ globalRole: role, isProjectManager: false }), false, role);
+    }
+  });
+
+  it("candidatos: participantes e dono, sem fornecedor, responsáveis técnicos primeiro e sem repetir pessoa", () => {
+    const list = validatorCandidates(
+      [
+        { userId: "u-ana", name: "Ana", role: "GESTOR" },
+        { userId: "u-forn", name: "Fornecedor", role: "FORNECEDOR" },
+        { userId: "u-tec", name: "Técnico", role: "RESPONSAVEL_TECNICO" },
+        { userId: "u-ana", name: "Ana", role: "PO" },
+        { userId: "u-dono", name: "Dono", role: "DONO_PROJETO" },
+      ],
+      { id: "u-dono", name: "Dono" },
+    );
+    assert.deepEqual(list.map((entry) => entry.userId), ["u-tec", "u-ana", "u-dono"]);
+    assert.deepEqual(list[1].roles, ["GESTOR", "PO"]);
+    assert.deepEqual(list[2].roles, ["DONO_PROJETO"]);
+  });
+
+  it("quem valida: o designado; sem designação, o responsável técnico do marco; sem nenhum, avisa", () => {
+    assert.deepEqual(validatorInfo({ id: "t", name: "Técnica" }, [{ id: "m", name: "Marco" }]), { kind: "designado", names: ["Técnica"] });
+    assert.deepEqual(validatorInfo(null, [{ id: "m", name: "Marco" }]), { kind: "marco", names: ["Marco"] });
+    assert.deepEqual(validatorInfo(null, []), { kind: "nenhum", names: [] });
+  });
+
+  it("histórico: envio, rejeição, reenvio, aprovação, dispensa e trocas de validador", () => {
+    const none = { previousValidator: null, newValidator: null };
+    const person = { id: "t", name: "Técnica" };
+    const labels = describeHistory([
+      { action: "DESIGNACAO", previousValidator: null, newValidator: person },
+      { action: "ENVIO", ...none },
+      { action: "REJEICAO", ...none },
+      { action: "ENVIO", ...none },
+      { action: "APROVACAO", ...none },
+      { action: "DESIGNACAO", previousValidator: person, newValidator: { id: "o", name: "Outro" } },
+      { action: "DESIGNACAO", previousValidator: person, newValidator: null },
+      { action: "DISPENSA", ...none },
+    ]).map((entry) => entry.label);
+    assert.deepEqual(labels, [
+      "Validador designado",
+      "Envio da evidência",
+      "Rejeição · devolvido para correção",
+      "Reenvio após correção",
+      "Aprovação",
+      "Validador alterado",
+      "Designação de validador removida",
+      "Dispensa formal",
+    ]);
   });
 });

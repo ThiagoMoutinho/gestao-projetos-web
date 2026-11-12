@@ -36,5 +36,11 @@ export type GetDeliveryVersion200 = {
      */
   rounds: number;
   conformity: GetDeliveryVersion200Conformity;
+  /** Responsáveis técnicos dos marcos de homologação: validam os documentos que não têm validador designado. */
+  defaultValidators: {
+    id: string;
+    /** @nullable */
+    name: string | null;
+  }[];
   items: GetDeliveryVersion200ItemsItem[];
 };

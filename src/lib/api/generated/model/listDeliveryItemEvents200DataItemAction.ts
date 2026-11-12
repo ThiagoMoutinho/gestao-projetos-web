@@ -14,4 +14,5 @@ export const ListDeliveryItemEvents200DataItemAction = {
   APROVACAO: 'APROVACAO',
   REJEICAO: 'REJEICAO',
   DISPENSA: 'DISPENSA',
+  DESIGNACAO: 'DESIGNACAO',
 } as const;
