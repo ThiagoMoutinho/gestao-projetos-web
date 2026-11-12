@@ -786,7 +786,7 @@ export const getWaiveDeliveryItemUrl = (id: string,
 }
 
 /**
- * @summary Dispensa o documento, com justificativa formal (PMO)
+ * @summary Dispensa o documento, com justificativa formal (ADMIN e PMO)
  */
 export const waiveDeliveryItem = async (id: string,
     versionId: string,

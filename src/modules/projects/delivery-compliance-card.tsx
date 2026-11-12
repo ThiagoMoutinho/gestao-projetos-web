@@ -83,7 +83,7 @@ type Decision = { kind: "submit" | "reject" | "waive"; versionId: string; item: 
 
 /**
  * Conformidade de Entrega: versões do produto com o checklist documental de cada uma. Mostra o que falta, deixa enviar a
- * evidência (link do SharePoint ou tag/release do GitLab), validar, rejeitar e (PMO) dispensar com justificativa. O servidor
+ * evidência (link do SharePoint ou tag/release do GitLab), validar, rejeitar e (ADMIN e PMO) dispensar com justificativa. O servidor
  * confere todas as permissões; a tela só esconde o que a pessoa não pode fazer.
  */
 export function DeliveryComplianceCard({ projectId, access, closed }: { projectId: string; access: ViewerAccess; closed: boolean }) {
@@ -402,7 +402,7 @@ function NewVersionDialog({ open, projectId, onClose, onDone }: { open: boolean;
 const DECISION_COPY = {
   submit: { title: "Enviar evidência", description: "Informe onde está o documento. Não anexamos arquivos: use o link do SharePoint ou a tag/release do GitLab.", cta: "Enviar", ok: "Evidência enviada.", fail: "Não foi possível enviar a evidência." },
   reject: { title: "Rejeitar documento", description: "A justificativa é obrigatória e fica no histórico. O fornecedor poderá reenviar o documento corrigido.", cta: "Rejeitar", ok: "Documento rejeitado.", fail: "Não foi possível rejeitar o documento." },
-  waive: { title: "Dispensar documento", description: "A dispensa é formal, exige justificativa e fica registrada no histórico. Só vale para documento obrigatório.", cta: "Dispensar", ok: "Documento dispensado.", fail: "Não foi possível dispensar o documento." },
+  waive: { title: "Dispensar documento", description: "A dispensa é formal, exige justificativa e fica registrada no histórico e na auditoria do projeto. Só vale para documento obrigatório.", cta: "Dispensar", ok: "Documento dispensado.", fail: "Não foi possível dispensar o documento." },
 } as const;
 
 function DecisionDialog({ decision, projectId, onClose, onDone }: { decision: Decision | null; projectId: string; onClose: () => void; onDone: () => void }) {

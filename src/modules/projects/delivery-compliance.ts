@@ -18,7 +18,7 @@ export const ITEM_STATUS: Record<ItemStatus, { label: string; tone: Tone; hint: 
   ENVIADO: { label: "Aguardando validação", tone: "warning", hint: "Enviado: aguarda a validação do responsável técnico." },
   APROVADO: { label: "Aprovado", tone: "success", hint: "Validado pelo responsável técnico." },
   REJEITADO: { label: "Rejeitado", tone: "danger", hint: "Rejeitado: é preciso reenviar o documento corrigido." },
-  DISPENSADO: { label: "Dispensado", tone: "info", hint: "Dispensado formalmente pelo PMO, com justificativa." },
+  DISPENSADO: { label: "Dispensado", tone: "info", hint: "Dispensado formalmente pelo ADMIN ou pelo PMO, com justificativa." },
 };
 
 export const EVIDENCE_KIND_OPTIONS: ReadonlyArray<{ value: EvidenceKind; label: string }> = [
@@ -148,9 +148,9 @@ export function canSubmitDocuments(access: ViewerAccess) {
   return access.isProjectManager || access.memberRoles.some((role) => SUBMITTER_ROLES.includes(role));
 }
 
-/** Só o PMO dispensa documentos, com justificativa formal. */
+/** ADMIN e PMO dispensam documentos, com justificativa formal (registrada no histórico e na auditoria). */
 export function canWaiveDocuments(access: Pick<ViewerAccess, "globalRole">) {
-  return access.globalRole === "PMO";
+  return access.globalRole === "ADMIN" || access.globalRole === "PMO";
 }
 
 /** ADMIN e PMO criam, editam e publicam modelos. */

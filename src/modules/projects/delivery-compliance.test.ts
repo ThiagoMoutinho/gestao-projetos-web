@@ -64,9 +64,10 @@ describe("Conformidade de Entrega: permissões na tela (o servidor repete todas)
     assert.equal(canSubmitDocuments(access({ memberRoles: ["OBSERVADOR"] })), false);
   });
 
-  it("só o PMO dispensa; ADMIN e PMO gerenciam modelos", () => {
+  it("só ADMIN e PMO dispensam; ADMIN e PMO gerenciam modelos", () => {
+    assert.equal(canWaiveDocuments({ globalRole: "ADMIN" }), true);
     assert.equal(canWaiveDocuments({ globalRole: "PMO" }), true);
-    for (const role of ["ADMIN", "COORDENADOR", "GESTOR", "FORNECEDOR"]) assert.equal(canWaiveDocuments({ globalRole: role }), false, role);
+    for (const role of ["COORDENADOR", "GESTOR", "FORNECEDOR", "COLABORADOR"]) assert.equal(canWaiveDocuments({ globalRole: role }), false, role);
     assert.equal(canManageTemplates({ globalRole: "ADMIN" }), true);
     assert.equal(canManageTemplates({ globalRole: "PMO" }), true);
     assert.equal(canManageTemplates({ globalRole: "GESTOR" }), false);
