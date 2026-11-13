@@ -6,15 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 import { OptionCombobox } from "@/components/option-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogMedia,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Presence } from "@/components/ui/presence";
@@ -393,15 +386,15 @@ function NewVersionDialog({ open, projectId, onClose, onDone }: { open: boolean;
 
   return (
     <Dialog open={open} onOpenChange={(value) => (!value && !busy ? onClose() : undefined)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogMedia>
-            <PackagePlus />
-          </DialogMedia>
-          <DialogTitle>Nova versão da entrega</DialogTitle>
-          <DialogDescription>O checklist é copiado da revisão publicada do modelo da natureza escolhida. Modelos posteriores não alteram esta versão.</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-3">
+      <EditDialogContent className="sm:max-w-[600px]">
+        <EditDialogHeader
+          icon={PackagePlus}
+          title="Nova versão da entrega"
+          description="O checklist é copiado da revisão publicada do modelo da natureza escolhida. Modelos posteriores não alteram esta versão."
+          onClose={onClose}
+          closeDisabled={busy}
+        />
+        <EditDialogBody>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="delivery-version-label">Versão do produto</Label>
             <Input id="delivery-version-label" value={label} placeholder="1.0" aria-invalid={touched && !!error} onChange={(event) => setLabel(event.target.value)} />
@@ -415,8 +408,8 @@ function NewVersionDialog({ open, projectId, onClose, onDone }: { open: boolean;
             <Label htmlFor="delivery-version-notes">Observações (opcional)</Label>
             <Textarea id="delivery-version-notes" value={notes} maxLength={2000} onChange={(event) => setNotes(event.target.value)} />
           </div>
-        </div>
-        <DialogFooter>
+        </EditDialogBody>
+        <EditDialogFooter>
           <Button type="button" variant="outline" disabled={busy} onClick={onClose}>Cancelar</Button>
           <Button
             type="button"
@@ -433,8 +426,8 @@ function NewVersionDialog({ open, projectId, onClose, onDone }: { open: boolean;
           >
             Criar versão
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </EditDialogFooter>
+      </EditDialogContent>
     </Dialog>
   );
 }
@@ -475,15 +468,16 @@ function DecisionDialog({ decision, projectId, onClose, onDone }: { decision: De
 
   return (
     <Dialog open={decision !== null} onOpenChange={(value) => (!value && !busy ? onClose() : undefined)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogMedia tone={current.kind === "reject" ? "destructive" : current.kind === "waive" ? "attention" : "primary"}>
-            <ClipboardCheck />
-          </DialogMedia>
-          <DialogTitle>{copy.title}</DialogTitle>
-          <DialogDescription>{current.item.title}. {copy.description}</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-3">
+      <EditDialogContent className="sm:max-w-[600px]">
+        <EditDialogHeader
+          icon={ClipboardCheck}
+          tone={current.kind === "reject" ? "destructive" : current.kind === "waive" ? "attention" : "primary"}
+          title={copy.title}
+          description={<>{current.item.title}. {copy.description}</>}
+          onClose={onClose}
+          closeDisabled={busy}
+        />
+        <EditDialogBody>
           {current.kind === "submit" ? (
             <>
               <div className="flex flex-col gap-1.5">
@@ -507,8 +501,8 @@ function DecisionDialog({ decision, projectId, onClose, onDone }: { decision: De
               {touched && error ? <p role="alert" className="text-xs text-destructive">{error}</p> : null}
             </div>
           )}
-        </div>
-        <DialogFooter>
+        </EditDialogBody>
+        <EditDialogFooter>
           <Button type="button" variant="outline" disabled={busy} onClick={onClose}>Cancelar</Button>
           <Button
             type="button"
@@ -528,8 +522,8 @@ function DecisionDialog({ decision, projectId, onClose, onDone }: { decision: De
           >
             {copy.cta}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </EditDialogFooter>
+      </EditDialogContent>
     </Dialog>
   );
 }

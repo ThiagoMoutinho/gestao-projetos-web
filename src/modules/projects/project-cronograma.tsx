@@ -6,14 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogMedia,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Presence } from "@/components/ui/presence";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getScheduleMonitoring, listScheduleHistory } from "@/lib/api/generated/cronograma/cronograma";
@@ -605,16 +599,14 @@ function PlanningDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(value) => (!value ? onClose() : undefined)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogMedia>
-            <CalendarRange />
-          </DialogMedia>
-          <DialogTitle>Definir planejamento do projeto</DialogTitle>
-          <DialogDescription>
-            Datas gravadas no próprio projeto. A linha de base original é preservada e toda alteração de data exige justificativa e fica no histórico.
-          </DialogDescription>
-        </DialogHeader>
+      <EditDialogContent className="sm:max-w-[640px]">
+        <EditDialogHeader
+          icon={CalendarRange}
+          title="Definir planejamento do projeto"
+          description="Datas gravadas no próprio projeto. A linha de base original é preservada e toda alteração de data exige justificativa e fica no histórico."
+          onClose={onClose}
+        />
+        <EditDialogBody>
         <EapSchedule
           projectId={projectId}
           target={{ entityType: "PROJECT" }}
@@ -624,7 +616,13 @@ function PlanningDialog({
           canReschedule
           onSaved={async () => onSaved()}
         />
-      </DialogContent>
+        </EditDialogBody>
+        <EditDialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Fechar
+          </Button>
+        </EditDialogFooter>
+      </EditDialogContent>
     </Dialog>
   );
 }

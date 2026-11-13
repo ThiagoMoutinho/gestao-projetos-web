@@ -1,14 +1,14 @@
 "use client";
 
-import { Briefcase, Building2, CircleAlert, Info, Loader2, Target, Users, X, type LucideIcon } from "lucide-react";
+import { Briefcase, Building2, CircleAlert, Info, Loader2, Target, Users, type LucideIcon } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TagsInput } from "@/components/ui/tags-input";
-import { cn } from "@/lib/utils";
 
 import { meaningfulText } from "./field-display";
 import { ABOUT_KEYS, CONTEXT_KEYS, fieldOf, LABELS, maxLengthOf, NarrativeField, type ProfileKey, useProfileEditing } from "./institutional-about";
@@ -124,33 +124,16 @@ export function AboutProjectDialog({
 
   return (
     <Dialog open onOpenChange={(next) => (next || saving > 0 ? null : onClose())}>
-      <DialogContent
-        showCloseButton={false}
-        className="flex h-[min(52rem,calc(100dvh-2rem))] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-[24px] border border-border/70 bg-popover/95 p-0 shadow-[0_32px_64px_-24px_rgba(16,24,40,0.45)] backdrop-blur-xl sm:max-w-[920px]"
-      >
-        <DialogHeader className="flex-row shrink-0 items-start gap-4 border-b px-6 pt-6 pb-5 text-left sm:px-7">
-          <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary dark:bg-primary/20">
-            <Info className="size-6" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <DialogTitle className="text-page-title font-semibold tracking-tight text-foreground">
-              {canEdit ? "Editar sobre o projeto" : "Sobre o projeto"}
-            </DialogTitle>
-            <DialogDescription className="mt-1 text-body text-muted-foreground">
-              Identificação, sistema, contexto e resultados para o IGEPPS. Cada campo é salvo ao sair dele e a alteração fica registrada no histórico do
-              projeto.
-            </DialogDescription>
-          </div>
-          <Button type="button" variant="outline" size="icon-sm" onClick={onClose} disabled={saving > 0} aria-label="Fechar" className="shrink-0">
-            <X aria-hidden="true" />
-          </Button>
-        </DialogHeader>
+      <EditDialogContent className="h-[min(52rem,calc(100dvh-2rem))] sm:max-w-[920px]">
+        <EditDialogHeader
+          icon={Info}
+          title={canEdit ? "Editar sobre o projeto" : "Sobre o projeto"}
+          description="Identificação, sistema, contexto e resultados para o IGEPPS. Cada campo é salvo ao sair dele e a alteração fica registrada no histórico do projeto."
+          onClose={onClose}
+          closeDisabled={saving > 0}
+        />
 
-        {/* Única área de rolagem: cabeçalho e rodapé ficam fixos; o editor cresce com o texto (sem segunda barra) e a barra é fina e discreta. */}
-        <div
-          ref={scroller}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-color:color-mix(in_oklch,var(--foreground)_24%,transparent)_transparent] [scrollbar-width:thin] [&_.ProseMirror]:max-h-none [&_.ProseMirror]:overflow-y-visible"
-        >
+        <EditDialogBody ref={scroller} className="gap-0 p-0 sm:px-0 [&_.ProseMirror]:max-h-none [&_.ProseMirror]:overflow-y-visible">
         <section aria-label="Identificação do projeto" className="flex flex-col gap-4 border-b px-6 py-5 sm:px-7">
           <SectionTitle icon={Building2}>Identificação</SectionTitle>
           <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
@@ -210,21 +193,26 @@ export function AboutProjectDialog({
             <ResultsPanel {...results} managing={canRegisterResults} />
           </TabsContent>
         </Tabs>
-        </div>
+        </EditDialogBody>
 
-        <DialogFooter className="mx-0 mb-0 shrink-0 flex-col-reverse items-stretch gap-3 border-t bg-popover/95 px-6 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <span role="status" aria-live="polite" className={cn("flex items-center gap-2 text-body", failed && saving === 0 ? "text-status-critical-ink" : "text-muted-foreground")}>
-            {status.icon}
-            {status.text}
-          </span>
-          <span className="flex justify-end">
-            <Button type="button" onClick={onClose} disabled={saving > 0}>
-              {saving > 0 ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
-              {saving > 0 ? "Salvando…" : "Concluir"}
-            </Button>
-          </span>
-        </DialogFooter>
-      </DialogContent>
+        <EditDialogFooter
+          statusClassName={failed && saving === 0 ? "text-status-critical-ink" : undefined}
+          status={
+            <>
+              {status.icon}
+              {status.text}
+            </>
+          }
+        >
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving > 0}>
+            Cancelar
+          </Button>
+          <Button type="button" onClick={onClose} disabled={saving > 0}>
+            {saving > 0 ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
+            {saving > 0 ? "Salvando…" : "Concluir"}
+          </Button>
+        </EditDialogFooter>
+      </EditDialogContent>
     </Dialog>
   );
 }

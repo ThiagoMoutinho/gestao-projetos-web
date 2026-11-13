@@ -7,15 +7,8 @@ import { OptionCombobox } from "@/components/option-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogMedia,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -108,23 +101,22 @@ export function DeliveryTemplatesDialog({ open, onClose }: { open: boolean; onCl
 
   return (
     <Dialog open={open} onOpenChange={(value) => (!value && !busy ? onClose() : undefined)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogMedia>
-            <ListChecks />
-          </DialogMedia>
-          <DialogTitle>Modelos de checklist da Conformidade de Entrega</DialogTitle>
-          <DialogDescription>
-            Publicar cria uma nova revisão. Versões de entrega já criadas mantêm o checklist copiado e não são alteradas.
-          </DialogDescription>
-        </DialogHeader>
+      <EditDialogContent className="sm:max-w-[760px]">
+        <EditDialogHeader
+          icon={ListChecks}
+          title="Modelos de checklist da Conformidade de Entrega"
+          description="Publicar cria uma nova revisão. Versões de entrega já criadas mantêm o checklist copiado e não são alteradas."
+          onClose={onClose}
+          closeDisabled={busy}
+        />
 
+        <EditDialogBody>
         {state.status === "loading" ? (
           <Skeleton className="h-32 rounded-xl" aria-busy="true" aria-label="Carregando modelos" />
         ) : state.status === "error" ? (
           <p role="alert" className="text-sm text-muted-foreground">Não foi possível carregar os modelos.</p>
         ) : (
-          <div className="flex flex-col gap-3">
+          <>
             <div className="flex flex-col gap-1.5">
               <Label>Natureza</Label>
               <OptionCombobox label="Natureza" value={nature} onChange={(value) => setNature(value as Nature)} options={NATURES.map((value) => ({ value, label: NATURE_LABEL[value] }))} />
@@ -187,15 +179,16 @@ export function DeliveryTemplatesDialog({ open, onClose }: { open: boolean; onCl
               </label>
             ) : null}
             {touched && error ? <p role="alert" className="text-xs text-destructive">{error}</p> : null}
-          </div>
+          </>
         )}
+        </EditDialogBody>
 
-        <DialogFooter>
+        <EditDialogFooter>
           <Button type="button" variant="outline" disabled={busy} onClick={onClose}>Fechar</Button>
           <Button type="button" variant="outline" disabled={busy || state.status !== "ready"} onClick={() => void save(false)}>Salvar rascunho</Button>
           <Button type="button" disabled={busy || state.status !== "ready"} onClick={() => void save(true)}>Publicar revisão</Button>
-        </DialogFooter>
-      </DialogContent>
+        </EditDialogFooter>
+      </EditDialogContent>
     </Dialog>
   );
 }

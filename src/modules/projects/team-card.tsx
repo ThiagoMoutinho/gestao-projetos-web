@@ -17,7 +17,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { ApiError } from "@/lib/api/fetcher";
 import type { ListProjectMemberCandidates200DataItem } from "@/lib/api/generated/model/listProjectMemberCandidates200DataItem";
 import {
@@ -339,25 +340,16 @@ function TeamEditDialog({
   return (
     <>
       <Dialog open onOpenChange={(next) => (next ? null : requestClose())}>
-        <DialogContent
-          showCloseButton={false}
-          className="w-[calc(100vw-2rem)] gap-0 overflow-x-hidden overflow-y-auto rounded-[24px] border border-border/70 bg-popover/95 p-0 shadow-[0_32px_64px_-24px_rgba(16,24,40,0.45)] backdrop-blur-xl sm:max-w-[720px] max-h-[92vh]"
-        >
-          <DialogHeader className="flex-row items-start gap-4 border-b px-6 pt-6 pb-5 text-left sm:px-7">
-            <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary dark:bg-primary/20">
-              <Users className="size-6" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <DialogTitle className="text-page-title font-semibold tracking-tight text-foreground">Editar equipe</DialogTitle>
-              <DialogDescription className="mt-1 text-body text-muted-foreground">
-                Escolha os responsáveis e os participantes entre os usuários ativos do sistema. Cada alteração fica registrada no histórico do projeto.
-              </DialogDescription>
-            </div>
-            <Button type="button" variant="outline" size="icon-sm" onClick={requestClose} disabled={saving} aria-label="Fechar" className="shrink-0">
-              <X aria-hidden="true" />
-            </Button>
-          </DialogHeader>
+        <EditDialogContent>
+          <EditDialogHeader
+            icon={Users}
+            title="Editar equipe"
+            description="Escolha os responsáveis e os participantes entre os usuários ativos do sistema. Cada alteração fica registrada no histórico do projeto."
+            onClose={requestClose}
+            closeDisabled={saving}
+          />
 
+          <EditDialogBody className="gap-0 p-0 sm:px-0">
           <section aria-labelledby="team-key-title" className="flex flex-col gap-4 border-b px-6 py-5 sm:px-7">
             <SectionTitle id="team-key-title" icon={Users}>Responsáveis</SectionTitle>
             <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
@@ -466,22 +458,25 @@ function TeamEditDialog({
             ) : null}
           </section>
 
-          <DialogFooter className="sticky bottom-0 z-10 mx-0 mb-0 flex-col-reverse items-stretch gap-3 border-t bg-popover/95 px-6 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-7">
-            <span className="flex items-center gap-2 text-body text-muted-foreground" aria-live="polite">
-              <Activity className="size-4 shrink-0 text-primary" aria-hidden="true" />
-              {pending === 0 ? "Nenhuma alteração." : `${pending} ${pending === 1 ? "alteração será salva" : "alterações serão salvas"}.`}
-            </span>
-            <span className="flex justify-end gap-2.5">
-              <Button type="button" variant="outline" onClick={requestClose} disabled={saving}>
-                Cancelar
-              </Button>
-              <Button type="button" onClick={() => void save()} disabled={saving || problems.length > 0 || pending === 0}>
-                {saving ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Check aria-hidden="true" />}
-                {saving ? "Salvando…" : "Salvar equipe"}
-              </Button>
-            </span>
-          </DialogFooter>
-        </DialogContent>
+          </EditDialogBody>
+
+          <EditDialogFooter
+            status={
+              <>
+                <Activity className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                {pending === 0 ? "Nenhuma alteração." : `${pending} ${pending === 1 ? "alteração será salva" : "alterações serão salvas"}.`}
+              </>
+            }
+          >
+            <Button type="button" variant="outline" onClick={requestClose} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={() => void save()} disabled={saving || problems.length > 0 || pending === 0}>
+              {saving ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Check aria-hidden="true" />}
+              {saving ? "Salvando…" : "Salvar equipe"}
+            </Button>
+          </EditDialogFooter>
+        </EditDialogContent>
       </Dialog>
 
       <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>

@@ -756,6 +756,20 @@ html.theme-transition *::after {
   }
 }
 
+/*
+ * Barra de rolagem discreta e padronizada: diálogos, painéis laterais e as áreas rolantes dentro deles usam a barra fina
+ * (cor suave, sem trilho), igual ao diálogo "Sobre o projeto". A rolagem continua funcionando; áreas com .no-scrollbar
+ * (que escondem a barra de propósito) ficam de fora.
+ */
+:is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="alert-dialog-content"]),
+:is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="alert-dialog-content"]) :is(.overflow-y-auto, .overflow-auto) {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--foreground) 24%, transparent) transparent;
+}
+:is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="alert-dialog-content"]) .no-scrollbar {
+  scrollbar-width: none;
+}
+
 /* Placeholders: sempre legíveis (≥ 4,5:1); o padrão dos componentes usa opacidade e fica abaixo disso em alguns fundos. */
 input::placeholder,
 textarea::placeholder {

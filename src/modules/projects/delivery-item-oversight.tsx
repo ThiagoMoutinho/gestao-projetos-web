@@ -4,7 +4,8 @@ import { ArrowRight, History, UserCheck, UserCog } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -121,14 +122,20 @@ export function ValidatorDialog({
 
   return (
     <Dialog open={target !== null} onOpenChange={(value) => (!value && !busy ? onClose() : undefined)}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Validador do documento</DialogTitle>
-          <DialogDescription>
-            {current.item.title} · versão {current.versionLabel}. Quem enviou o documento não pode aprovar o próprio envio. A alteração fica
-            registrada no histórico e na auditoria do projeto.
-          </DialogDescription>
-        </DialogHeader>
+      <EditDialogContent className="sm:max-w-[600px]">
+        <EditDialogHeader
+          icon={UserCheck}
+          title="Validador do documento"
+          description={
+            <>
+              {current.item.title} · versão {current.versionLabel}. Quem enviou o documento não pode aprovar o próprio envio. A alteração fica
+              registrada no histórico e na auditoria do projeto.
+            </>
+          }
+          onClose={onClose}
+          closeDisabled={busy}
+        />
+        <EditDialogBody>
         <RadioGroup value={selected} onValueChange={(value) => setSelected(String(value))} aria-label="Validador do documento" className="gap-2">
           {candidates.map((candidate) => (
             <Label
@@ -155,7 +162,8 @@ export function ValidatorDialog({
             </span>
           </Label>
         </RadioGroup>
-        <DialogFooter>
+        </EditDialogBody>
+        <EditDialogFooter>
           <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
             Cancelar
           </Button>
@@ -174,8 +182,8 @@ export function ValidatorDialog({
           >
             Salvar validador
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </EditDialogFooter>
+      </EditDialogContent>
     </Dialog>
   );
 }

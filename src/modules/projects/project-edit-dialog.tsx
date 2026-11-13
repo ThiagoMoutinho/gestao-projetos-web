@@ -7,15 +7,8 @@ import { useState } from "react";
 
 import { FieldError } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogMedia,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/fetcher";
@@ -82,23 +75,22 @@ export function ProjectEditDialog({ project, open, onOpenChange }: { project: Ed
 
   return (
     <Dialog open={open} onOpenChange={reset}>
-      <DialogContent className="sm:max-w-[550px]">
-        <DialogHeader>
-          <DialogMedia>
-            <FolderPen />
-          </DialogMedia>
-          <DialogTitle>Editar projeto</DialogTitle>
-          <DialogDescription>
-            Dados cadastrais do projeto. A situação é calculada pela EAP e o encerramento tem fluxo próprio.
-          </DialogDescription>
-        </DialogHeader>
+      <EditDialogContent className="sm:max-w-[600px]">
+        <EditDialogHeader
+          icon={FolderPen}
+          title="Editar projeto"
+          description="Dados cadastrais do projeto. A situação é calculada pela EAP e o encerramento tem fluxo próprio."
+          onClose={() => reset(false)}
+          closeDisabled={busy}
+        />
         <form
-          className="flex flex-col gap-3"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={(event) => {
             event.preventDefault();
             void save();
           }}
         >
+          <EditDialogBody>
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-foreground/80">Nome *</span>
             <Input
@@ -122,16 +114,17 @@ export function ProjectEditDialog({ project, open, onOpenChange }: { project: Ed
             <span className="text-xs font-semibold text-foreground/80">Chamado GLPI</span>
             <Input value={glpi} maxLength={50} onChange={(event) => setGlpi(event.target.value)} placeholder="Ex.: 351998" className="h-10 text-xs" />
           </label>
-          <DialogFooter>
+          </EditDialogBody>
+          <EditDialogFooter>
             <Button type="button" variant="outline" className="h-10" disabled={busy} onClick={() => reset(false)}>
               Cancelar
             </Button>
             <Button type="submit" className="h-10" disabled={!changed} loading={busy}>
               {busy ? "Salvando…" : "Salvar"}
             </Button>
-          </DialogFooter>
+          </EditDialogFooter>
         </form>
-      </DialogContent>
+      </EditDialogContent>
     </Dialog>
   );
 }

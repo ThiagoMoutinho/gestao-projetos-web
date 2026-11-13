@@ -5,15 +5,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogMedia,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { GetProjectOverview200 } from "@/lib/api/generated/model/getProjectOverview200";
 import { notifySuccess, reportFailure } from "@/lib/feedback";
@@ -169,17 +162,16 @@ export function PendingDecision({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogMedia tone="destructive">
-              <Undo2 />
-            </DialogMedia>
-            <DialogTitle>{rejectTitle}</DialogTitle>
-            <DialogDescription>
-              A versão validada anterior é mantida. A justificativa fica
-              registrada na auditoria.
-            </DialogDescription>
-          </DialogHeader>
+        <EditDialogContent className="sm:max-w-[560px]">
+          <EditDialogHeader
+            icon={Undo2}
+            tone="destructive"
+            title={rejectTitle}
+            description="A versão validada anterior é mantida. A justificativa fica registrada na auditoria."
+            onClose={() => setRejecting(false)}
+            closeDisabled={busy}
+          />
+          <EditDialogBody>
           <Textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
@@ -187,7 +179,8 @@ export function PendingDecision({
             placeholder="Justificativa da rejeição"
             aria-label="Justificativa da rejeição"
           />
-          <DialogFooter>
+          </EditDialogBody>
+          <EditDialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -209,8 +202,8 @@ export function PendingDecision({
             >
               Rejeitar
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </EditDialogFooter>
+        </EditDialogContent>
       </Dialog>
     </div>
   );

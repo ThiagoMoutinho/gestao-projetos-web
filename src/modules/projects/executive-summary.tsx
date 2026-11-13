@@ -4,15 +4,8 @@ import { BadgeCheck, ChevronDown, FileText, Layers, RefreshCw, ShieldCheck, Tria
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogMedia,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Presence } from "@/components/ui/presence";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -244,17 +237,20 @@ function ValidationDialog({
         }
       }}
     >
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogMedia>
-            <BadgeCheck />
-          </DialogMedia>
-          <DialogTitle>{extraordinary ? "Validação extraordinária" : mode === "withoutChanges" ? "Validar sem alterações" : "Validar resumo executivo"}</DialogTitle>
-          <DialogDescription>
-            Você registra, como oficial, os indicadores calculados em {REFERENCE.format(new Date(summary.generatedAt))} (ciclo {cycleDay(summary.governance.cycle.start)} a{" "}
-            {cycleDay(summary.governance.cycle.end)}). Se eles mudarem antes da confirmação, o sistema pede uma nova revisão.
-          </DialogDescription>
-        </DialogHeader>
+      <EditDialogContent className="sm:max-w-[560px]">
+        <EditDialogHeader
+          icon={BadgeCheck}
+          title={extraordinary ? "Validação extraordinária" : mode === "withoutChanges" ? "Validar sem alterações" : "Validar resumo executivo"}
+          description={
+            <>
+              Você registra, como oficial, os indicadores calculados em {REFERENCE.format(new Date(summary.generatedAt))} (ciclo {cycleDay(summary.governance.cycle.start)} a{" "}
+              {cycleDay(summary.governance.cycle.end)}). Se eles mudarem antes da confirmação, o sistema pede uma nova revisão.
+            </>
+          }
+          onClose={onClose}
+          closeDisabled={busy}
+        />
+        <EditDialogBody>
         <p className="rounded-md bg-muted/50 px-3 py-2 text-xs leading-relaxed">{summary.narrative.map((line) => line.text).join(" ")}</p>
         <Textarea
           value={observation}
@@ -264,15 +260,16 @@ function ValidationDialog({
           aria-label="Observação da validação"
           aria-required={extraordinary}
         />
-        <DialogFooter>
+        </EditDialogBody>
+        <EditDialogFooter>
           <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
             Cancelar
           </Button>
           <Button type="button" disabled={busy || !canSend} onClick={() => void confirm()}>
             {busy ? "Registrando…" : "Confirmar validação"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </EditDialogFooter>
+      </EditDialogContent>
     </Dialog>
   );
 }
