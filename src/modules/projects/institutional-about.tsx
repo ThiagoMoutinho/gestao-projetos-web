@@ -42,7 +42,7 @@ export type ProfileKey =
   | "RESULTS_SUMMARY";
 type Key = ProfileKey;
 
-const LABELS: Record<Key, string> = {
+export const LABELS: Record<Key, string> = {
   PROBLEM: "Problema a Resolver",
   PURPOSE: "Finalidade",
   SCOPE: "Escopo",
@@ -60,14 +60,14 @@ export const MAX_LENGTH: Partial<Record<ProfileKey, number>> = {
 };
 export const maxLengthOf = (key: ProfileKey) => MAX_LENGTH[key] ?? 4000;
 
-const ABOUT_KEYS: Key[] = [
+export const ABOUT_KEYS: Key[] = [
   "SYSTEM_DESCRIPTION",
   "REQUESTING_AREA",
   "BENEFITED_SECTORS",
   "RESPONSIBLE_COMPANY",
 ];
 
-const CONTEXT_KEYS: Key[] = ["PROBLEM", "PURPOSE", "SCOPE"];
+export const CONTEXT_KEYS: Key[] = ["PROBLEM", "PURPOSE", "SCOPE"];
 
 export function fieldOf(data: Overview, key: Key): FieldData {
   switch (key) {
@@ -177,6 +177,8 @@ export function useProfileEditing({
   );
   const [saving, setSaving] = useState(0);
   const [saved, setSaved] = useState(false);
+  /** Último campo que não pôde ser salvo (o texto volta ao valor anterior e a falha aparece no aviso de status). */
+  const [failed, setFailed] = useState<Key | null>(null);
   /** Há texto digitado ainda não gravado (aviso ao fechar a página). */
   const [dirty, setDirty] = useState(false);
   const setValues: typeof setRawValues = (next) => {
@@ -211,6 +213,7 @@ export function useProfileEditing({
       return;
     }
     if (markdownLength(next) > maxLengthOf(key)) {
+      setFailed(key);
       reportFailure(
         new Error("too long"),
         `"${LABELS[key]}" passa de ${maxLengthOf(key).toLocaleString("pt-BR")} caracteres. Reduza o texto para salvar.`,
@@ -223,10 +226,12 @@ export function useProfileEditing({
     try {
       await saveProjectProfileField(projectId, key, { value: next });
       setSaved(true);
+      setFailed(null);
       setDirty(false);
       onChanged();
     } catch (caught) {
       delete sent.current[key];
+      setFailed(key);
       setValues((previous) => ({ ...previous, [key]: baseOf(field(key)) }));
       reportFailure(caught, `Não foi possível salvar "${LABELS[key]}".`);
     } finally {
@@ -253,6 +258,7 @@ export function useProfileEditing({
     setValues,
     saving,
     saved,
+    failed,
     start,
     commit,
   };
@@ -307,9 +313,9 @@ export function EditToggle({
 }
 
 /** Área Solicitante, Setores Beneficiados e Empresa Responsável (informação curta, igual no cartão e no painel). */
-function AboutTiles({ data }: { data: Overview }) {
+export function AboutTiles({ data }: { data: Overview }) {
   return (
-    <dl className="grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-2">
+    <dl className="grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] items-stretch gap-2">
       <div className="min-w-0 rounded-md bg-muted/50 px-3 py-2">
         <dt className="text-xs text-muted-foreground">
           {LABELS.REQUESTING_AREA}

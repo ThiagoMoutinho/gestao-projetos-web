@@ -1,11 +1,19 @@
 "use client";
 
-import { ExternalLink, Plus } from "lucide-react";
+import { ExternalLink, FileText, Plus } from "lucide-react";
 import { useId, useState } from "react";
 
 import { AnimatedHeight } from "@/components/ui/animated-height";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogMedia,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldError, useFieldErrors } from "@/components/field-error";
@@ -177,6 +185,9 @@ function EvidenceDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
+          <DialogMedia>
+            <FileText />
+          </DialogMedia>
           <DialogTitle>{evidence ? "Classificar evidência" : "Registrar evidência do projeto"}</DialogTitle>
           <DialogDescription>
             {draft.kind === "GLPI_TICKET"
@@ -254,7 +265,7 @@ export function EvidencesAndTickets({
           <Button
             type="button"
             size="xs"
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               setCreateKey((value) => value + 1);
               setCreating(true);

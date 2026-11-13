@@ -580,7 +580,7 @@ function CreateMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button type="button" className="h-10 gap-2 rounded-[7px] bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-primary" />}>
+      <DropdownMenuTrigger render={<Button type="button" className="h-10 gap-2 px-4" />}>
         <Plus className="size-[17px]" aria-hidden="true" />
         Novo item
         <ChevronDown className="size-3.5 opacity-80" aria-hidden="true" />

@@ -39,7 +39,7 @@ describe("preferências de aparência", () => {
     assert.equal(DEFAULT_PALETTE, "institucional");
     assert.equal(DEFAULT_THEME, "igepps");
     assert.deepEqual([...THEME_IDS], ["igepps", "light", "dark"]);
-    assert.deepEqual([...PALETTE_IDS], ["institucional", "petroleo", "violeta", "esmeralda"]);
+    assert.deepEqual([...PALETTE_IDS], ["institucional", "petroleo", "violeta", "esmeralda", "rosa"]);
   });
 
   it("grava e lê a preferência de cada usuário separadamente", () => {

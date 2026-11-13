@@ -235,7 +235,7 @@ function Lane({ timeline, range, className, label }: { timeline: NonNullable<Ret
   const start = timeline.position((range.start ?? range.end) as string);
   const end = timeline.position((range.end ?? range.start) as string);
   return (
-    <div className="relative h-2.5 rounded-full bg-muted/40" title={`${label}: ${formatCivilDate((range.start ?? range.end) as string)} a ${formatCivilDate((range.end ?? range.start) as string)}`}>
+    <div className="relative h-2.5 rounded-full bg-track" title={`${label}: ${formatCivilDate((range.start ?? range.end) as string)} a ${formatCivilDate((range.end ?? range.start) as string)}`}>
       <span className={cn("absolute inset-y-0 rounded-full", className)} style={{ left: `${start}%`, width: `${Math.max(end - start, 1.5)}%` }} />
     </div>
   );

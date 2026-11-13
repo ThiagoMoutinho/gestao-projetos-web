@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronRight, ChevronUp, Undo2 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogMedia,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -170,6 +171,9 @@ export function PendingDecision({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
+            <DialogMedia tone="destructive">
+              <Undo2 />
+            </DialogMedia>
             <DialogTitle>{rejectTitle}</DialogTitle>
             <DialogDescription>
               A versão validada anterior é mantida. A justificativa fica
@@ -254,7 +258,22 @@ export function ExpandableText({
       const lineHeight =
         Number.parseFloat(style.lineHeight) ||
         Number.parseFloat(style.fontSize) * 1.6;
-      const max = Math.round(lineHeight * lines);
+      let max = Math.round(lineHeight * lines);
+      // Ajusta o limite para terminar na última linha inteira (parágrafos e listas têm margens que cortariam o texto no meio).
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const top = element.getBoundingClientRect().top;
+      let snapped = 0;
+      for (const rect of Array.from(range.getClientRects())) {
+        const bottom = Math.round(rect.bottom - top);
+        if (rect.height > 0 && bottom <= max + 1 && bottom > snapped) {
+          snapped = bottom;
+        }
+      }
+      if (snapped >= lineHeight && snapped < max + 1) {
+        // +3px: folga sob a última linha, onde fica o degradê (assim a linha inteira permanece legível).
+        max = Math.max(snapped, Math.round(lineHeight)) + 3;
+      }
       setLimit(max);
       setFull(element.scrollHeight);
       // No modo fill, o espaço disponível é a altura atual da área de texto (que já inclui o que sobra no cartão).
@@ -306,7 +325,7 @@ export function ExpandableText({
         </div>
         {collapsed ? (
           <span
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-card to-transparent"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-2 bg-gradient-to-t from-card to-transparent"
             aria-hidden="true"
           />
         ) : null}

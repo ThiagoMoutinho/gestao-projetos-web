@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, CircleAlert, ExternalLink, FileCheck2, PackagePlus, Plus, RotateCcw, Settings2 } from "lucide-react";
+import { ChevronDown, CircleAlert, ClipboardCheck, ExternalLink, FileCheck2, PackagePlus, Plus, RotateCcw, Settings2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { OptionCombobox } from "@/components/option-combobox";
@@ -12,6 +12,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogMedia,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -394,6 +395,9 @@ function NewVersionDialog({ open, projectId, onClose, onDone }: { open: boolean;
     <Dialog open={open} onOpenChange={(value) => (!value && !busy ? onClose() : undefined)}>
       <DialogContent>
         <DialogHeader>
+          <DialogMedia>
+            <PackagePlus />
+          </DialogMedia>
           <DialogTitle>Nova versão da entrega</DialogTitle>
           <DialogDescription>O checklist é copiado da revisão publicada do modelo da natureza escolhida. Modelos posteriores não alteram esta versão.</DialogDescription>
         </DialogHeader>
@@ -473,6 +477,9 @@ function DecisionDialog({ decision, projectId, onClose, onDone }: { decision: De
     <Dialog open={decision !== null} onOpenChange={(value) => (!value && !busy ? onClose() : undefined)}>
       <DialogContent>
         <DialogHeader>
+          <DialogMedia tone={current.kind === "reject" ? "destructive" : current.kind === "waive" ? "attention" : "primary"}>
+            <ClipboardCheck />
+          </DialogMedia>
           <DialogTitle>{copy.title}</DialogTitle>
           <DialogDescription>{current.item.title}. {copy.description}</DialogDescription>
         </DialogHeader>

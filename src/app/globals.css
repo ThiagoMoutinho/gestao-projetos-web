@@ -43,6 +43,7 @@
   --color-status-adjust: var(--status-adjust);
   --color-status-adjust-soft: var(--status-adjust-soft);
   --color-status-adjust-ink: var(--status-adjust-ink);
+  --color-track: var(--track);
   --color-bar: var(--bar);
   --color-bar-foreground: var(--bar-foreground);
   --color-bar-muted: var(--bar-muted);
@@ -61,8 +62,9 @@
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
+  /* Separação mínima das superfícies: bordas, campos e fundos suaves ganham um pouco de contraste em qualquer aparência e paleta. */
+  --color-input: color-mix(in oklch, var(--input), var(--foreground) 8%);
+  --color-border: color-mix(in oklch, var(--border), var(--foreground) 6%);
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
@@ -71,13 +73,14 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
+  --color-muted: color-mix(in oklch, var(--muted), var(--foreground) 4%);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -115,6 +118,11 @@
   --accent-foreground: #172033;
   --border: #dde4ee;
   --input: #cfd8e6;
+  --track: color-mix(in oklch, var(--foreground) 14%, transparent);
+  /* Campos de formulário: borda discreta (≈2:1), um pouco mais firme no hover; o foco usa --ring com um halo suave. */
+  --field-border: color-mix(in oklch, var(--foreground) 47%, var(--card));
+  --field-border-hover: color-mix(in oklch, var(--foreground) 52%, var(--card));
+  --field-halo: color-mix(in oklch, var(--ring) 20%, transparent);
   --radius: 0.625rem;
 
   /* Estados */
@@ -151,7 +159,7 @@
   --sidebar-marker: color-mix(in oklch, var(--primary) 55%, white);
 
   /* Barra superior */
-  --bar: color-mix(in oklch, var(--brand-deep) 78%, black);
+  --bar: var(--brand-deep);
   --bar-foreground: #ffffff;
   --bar-muted: #bccbe3;
   --bar-border: rgb(255 255 255 / 14%);
@@ -190,8 +198,8 @@
 [data-palette="petroleo"] {
   --brand: #24565e;
   --brand-deep: #12393f;
-  --primary: #287279;
-  --ring: #287279;
+  --primary: #21666d;
+  --ring: #21666d;
 }
 [data-palette="violeta"] {
   --brand: #4a3b7a;
@@ -202,8 +210,42 @@
 [data-palette="esmeralda"] {
   --brand: #2f5b45;
   --brand-deep: #123a29;
-  --primary: #1d7550;
-  --ring: #1d7550;
+  --primary: #176a46;
+  --ring: #176a46;
+}
+/*
+ * Rosa institucional: vinho, rosa queimado e rosé. Diferente das outras paletas, a Rosa também tinge
+ * barra, menu e superfícies neutras (fundo, cartões de destaque, bordas) para não sobrar azul na tela.
+ * Contraste: branco sobre #71334f 9,1:1; branco sobre #94406a 6,6:1; #94406a sobre #f8f3f6 5,9:1 (primário escurecido na auditoria de contraste).
+ */
+[data-palette="rosa"] {
+  --brand: #71334f;
+  --brand-deep: #482c3b;
+  --primary: #94406a;
+  --primary-foreground: #ffffff;
+  --ring: #94406a;
+}
+/* Padrão IGEPPS + Rosa: barra vinho, menu vinho escuro, fundo rosé muito claro e cards brancos. */
+[data-palette="rosa"]:not(.light):not(.dark) {
+  --background: #f8f3f6;
+  --secondary: #f8eaf0;
+  --secondary-foreground: #3b2230;
+  --muted: #f6eef2;
+  --muted-foreground: #6b5562;
+  --accent: #f6e6ee;
+  --accent-foreground: #3b2230;
+  --border: #ecdde4;
+  --input: #e0ccd6;
+  --bar: #71334f;
+  --bar-muted: #ecd0dc;
+  --bar-border: rgb(255 255 255 / 16%);
+  --sidebar: #482c3b;
+  --sidebar-foreground: #fbf2f6;
+  --sidebar-accent: color-mix(in oklch, #d98aae 22%, transparent);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 12%);
+  --sidebar-ring: #d98aae;
+  --sidebar-marker: #d98aae;
 }
 
 /* Tema claro neutro: menu branco, fundo cinza-azulado suave. */
@@ -247,6 +289,10 @@
   --accent-foreground: #e6edf7;
   --border: #2b3d58;
   --input: #34486a;
+  --track: color-mix(in oklch, var(--foreground) 22%, transparent);
+  --field-border: color-mix(in oklch, var(--foreground) 42%, var(--card));
+  --field-border-hover: color-mix(in oklch, var(--foreground) 48%, var(--card));
+  --field-halo: color-mix(in oklch, var(--ring) 26%, transparent);
   --destructive: oklch(0.704 0.191 22.216);
   --success: oklch(0.72 0.14 152);
   --success-foreground: oklch(0.92 0.04 152);
@@ -260,7 +306,7 @@
   --sidebar: #14233a;
   --sidebar-marker: var(--primary);
   --sidebar-accent: color-mix(in oklch, var(--primary) 16%, transparent);
-  --bar: #0e1827;
+  --bar: var(--sidebar);
   --bar-border: #22324a;
 
   --status-critical: #f2645c;
@@ -286,26 +332,235 @@
   --status-adjust-ink: #f8c49a;
 }
 
-/* Paletas (tema escuro): destaque mais claro para manter a legibilidade sobre o azul-marinho. */
-.dark [data-palette="institucional"],
-.dark[data-palette="institucional"] {
+/*
+ * Tema escuro: fundo, cartões, barra e menu são sempre o grafite azulado do bloco "Escuro" (mais abaixo).
+ * A paleta escolhida muda só os detalhes (botão primário, foco, item ativo do menu, links e destaques),
+ * em tons mais claros para manter contraste AA sobre o grafite.
+ */
+
+/* Claro + Rosa: menu branco (como nas outras paletas), barra vinho e neutros rosados. */
+.light[data-palette="rosa"] {
+  --background: #f6f1f4;
+  --secondary: #f6e8ef;
+  --muted: #f3ebef;
+  --muted-foreground: #6b5562;
+  --accent: #f4e4ec;
+  --border: #e6d6de;
+  --input: #dcc7d1;
+  --sidebar-border: #e6d6de;
+  --bar: #71334f;
+  --bar-muted: #ecd0dc;
+}
+
+/*
+ * Demais paletas no mesmo modelo da Rosa: barra no tom da marca (--brand), menu um tom mais escuro
+ * (--brand-deep), neutros levemente tingidos e grafite tingido no escuro. Contraste AA verificado.
+ */
+/* Padrão IGEPPS + Azul institucional: barra no tom da marca, menu um tom mais escuro, fundo levemente tingido. */
+:root:not([data-palette]):not(.light):not(.dark),
+[data-palette="institucional"]:not(.light):not(.dark) {
+  --background: #f2f5fa;
+  --secondary: #e9eff7;
+  --secondary-foreground: #0f213f;
+  --muted: #f0f4fa;
+  --muted-foreground: #515c71;
+  --accent: #e5ecf6;
+  --accent-foreground: #0f213f;
+  --border: #dce6f3;
+  --input: #cbd9ed;
+  --bar: #244873;
+  --bar-muted: #cddff9;
+  --bar-border: rgb(255 255 255 / 16%);
+  --sidebar: #13294f;
+  --sidebar-foreground: #f6f9fe;
+  --sidebar-accent: color-mix(in oklch, #8fb8f2 22%, transparent);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 12%);
+  --sidebar-ring: #8fb8f2;
+  --sidebar-marker: #8fb8f2;
+}
+
+/* Claro + Azul institucional: menu branco, barra no tom da marca, neutros tingidos. */
+.light:not([data-palette]),
+.light[data-palette="institucional"] {
+  --background: #e8ecf3;
+  --secondary: #ecf1f8;
+  --muted: #ebeff6;
+  --muted-foreground: #515c71;
+  --accent: #e7eef7;
+  --border: #cfd8e5;
+  --input: #bfcbdd;
+  --sidebar-border: #cfd8e5;
+  --bar: #244873;
+  --bar-muted: #cddff9;
+}
+
+/* Escuro (qualquer paleta escolhida): azul institucional sobre grafite azulado, sem preto absoluto. */
+.dark,
+.dark[data-palette] {
+  --brand: #244873;
+  --brand-deep: #13294f;
+  --background: #141a28;
+  --foreground: #f4f8fe;
+  --card: #1a2130;
+  --card-foreground: #f4f8fe;
+  --popover: #1e2536;
+  --popover-foreground: #f4f8fe;
+  --secondary: #242b3d;
+  --secondary-foreground: #f4f8fe;
+  --muted: #212839;
+  --muted-foreground: #a9b7ce;
+  --accent: #262d42;
+  --accent-foreground: #f4f8fe;
+  --border: #293042;
+  --input: #323a4c;
   --primary: #6fa3f2;
+  --primary-foreground: #0a172b;
   --ring: #6fa3f2;
+  --bar: #1e3046;
+  --bar-foreground: #f8fbfe;
+  --bar-muted: #b9c9e1;
+  --bar-border: #304058;
+  --sidebar: #151f32;
+  --sidebar-foreground: #f4f8fe;
+  --sidebar-accent: color-mix(in oklch, #8fb8f2 18%, transparent);
+  --sidebar-border: #293042;
+  --sidebar-marker: #6fa3f2;
 }
-.dark [data-palette="petroleo"],
+
+/* Escuro + paleta: só os detalhes mudam. Contraste do primário sobre o cartão: 6,1–7,5:1; texto sobre o primário: 6,6–7,5:1. */
 .dark[data-palette="petroleo"] {
-  --primary: #5fb5bd;
-  --ring: #5fb5bd;
+  --primary: #5bbcc2;
+  --primary-foreground: #06272a;
 }
-.dark [data-palette="violeta"],
 .dark[data-palette="violeta"] {
-  --primary: #a28bf0;
-  --ring: #a28bf0;
+  --primary: #a891f2;
+  --primary-foreground: #1a1240;
 }
-.dark [data-palette="esmeralda"],
 .dark[data-palette="esmeralda"] {
-  --primary: #5fc48e;
-  --ring: #5fc48e;
+  --primary: #56c495;
+  --primary-foreground: #062a1b;
+}
+.dark[data-palette="rosa"] {
+  --primary: #e292b6;
+  --primary-foreground: #2e0f1f;
+}
+.dark[data-palette] {
+  --ring: var(--primary);
+  --sidebar-ring: var(--primary);
+  --sidebar-marker: var(--primary);
+  --sidebar-accent: color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+/* Padrão IGEPPS + Azul petróleo: barra no tom da marca, menu um tom mais escuro, fundo levemente tingido. */
+[data-palette="petroleo"]:not(.light):not(.dark) {
+  --background: #f2f7f7;
+  --secondary: #eaf1f2;
+  --secondary-foreground: #0e2e32;
+  --muted: #f0f5f6;
+  --muted-foreground: #50616c;
+  --accent: #e5eeef;
+  --accent-foreground: #0e2e32;
+  --border: #dde8ea;
+  --input: #cbdddf;
+  --bar: #24565e;
+  --bar-muted: #c4e4e7;
+  --bar-border: rgb(255 255 255 / 16%);
+  --sidebar: #12393f;
+  --sidebar-foreground: #f5fafb;
+  --sidebar-accent: color-mix(in oklch, #7cc4c9 22%, transparent);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 12%);
+  --sidebar-ring: #7cc4c9;
+  --sidebar-marker: #7cc4c9;
+}
+
+/* Claro + Azul petróleo: menu branco, barra no tom da marca, neutros tingidos. */
+.light[data-palette="petroleo"] {
+  --background: #e8edef;
+  --secondary: #ecf2f3;
+  --muted: #ebf0f2;
+  --muted-foreground: #50616c;
+  --accent: #e7eff0;
+  --border: #cfdade;
+  --input: #bfced4;
+  --sidebar-border: #cfdade;
+  --bar: #24565e;
+  --bar-muted: #c4e4e7;
+}
+
+/* Padrão IGEPPS + Violeta: barra no tom da marca, menu um tom mais escuro, fundo levemente tingido. */
+[data-palette="violeta"]:not(.light):not(.dark) {
+  --background: #f6f4fb;
+  --secondary: #f0edf9;
+  --secondary-foreground: #221a46;
+  --muted: #f5f3fb;
+  --muted-foreground: #575974;
+  --accent: #edeaf8;
+  --accent-foreground: #221a46;
+  --border: #e7e3f5;
+  --input: #dbd5f0;
+  --bar: #4a3b7a;
+  --bar-muted: #ded6f8;
+  --bar-border: rgb(255 255 255 / 16%);
+  --sidebar: #2a2057;
+  --sidebar-foreground: #f9f8fe;
+  --sidebar-accent: color-mix(in oklch, #b6a4f0 22%, transparent);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 12%);
+  --sidebar-ring: #b6a4f0;
+  --sidebar-marker: #b6a4f0;
+}
+
+/* Claro + Violeta: menu branco, barra no tom da marca, neutros tingidos. */
+.light[data-palette="violeta"] {
+  --background: #ecebf4;
+  --secondary: #f2effa;
+  --muted: #efeef7;
+  --muted-foreground: #575974;
+  --accent: #efecf8;
+  --border: #d7d6e7;
+  --input: #cac8df;
+  --sidebar-border: #d7d6e7;
+  --bar: #4a3b7a;
+  --bar-muted: #ded6f8;
+}
+
+/* Padrão IGEPPS + Esmeralda: barra no tom da marca, menu um tom mais escuro, fundo levemente tingido. */
+[data-palette="esmeralda"]:not(.light):not(.dark) {
+  --background: #f1f7f4;
+  --secondary: #e8f1ee;
+  --secondary-foreground: #0e2e21;
+  --muted: #eff5f3;
+  --muted-foreground: #506166;
+  --accent: #e4eeea;
+  --accent-foreground: #0e2e21;
+  --border: #dbe9e3;
+  --input: #c9ded5;
+  --bar: #2f5b45;
+  --bar-muted: #c5ead8;
+  --bar-border: rgb(255 255 255 / 16%);
+  --sidebar: #123a29;
+  --sidebar-foreground: #f5fbf8;
+  --sidebar-accent: color-mix(in oklch, #7fd0a8 22%, transparent);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 12%);
+  --sidebar-ring: #7fd0a8;
+  --sidebar-marker: #7fd0a8;
+}
+
+/* Claro + Esmeralda: menu branco, barra no tom da marca, neutros tingidos. */
+.light[data-palette="esmeralda"] {
+  --background: #e7eded;
+  --secondary: #ebf3ef;
+  --muted: #eaf0f0;
+  --muted-foreground: #506166;
+  --accent: #e6f0ec;
+  --border: #cedad9;
+  --input: #bdcecd;
+  --sidebar-border: #cedad9;
+  --bar: #2f5b45;
+  --bar-muted: #c5ead8;
 }
 
 @layer base {
@@ -404,4 +659,133 @@ html.theme-transition *::after {
 /* Abas inativas: o padrão do shadcn (60% de opacidade) fica abaixo de 4,5:1; esta regra garante o contraste AA. */
 [data-slot="tabs-trigger"]:not([data-active]) {
   color: color-mix(in oklch, var(--foreground) 74%, transparent);
+}
+
+/*
+ * Menu lateral mais largo (protótipo R1): 16,5rem aberto (itens de 44 px, ícones de 18 px) e 4,5rem recolhido (só ícones de 18 px em áreas de 40 px, centrados).
+ * Em @layer utilities com seletor mais específico para vencer os tamanhos fixos do componente base sem editá-lo.
+ */
+@layer utilities {
+  [data-slot="sidebar"] [data-sidebar="menu-button"][data-sidebar]:not([data-size="lg"]) {
+    height: 2.75rem !important;
+    gap: 0.75rem !important;
+    padding-inline: 0.75rem !important;
+    font-size: var(--text-body) !important;
+  }
+  [data-slot="sidebar"] [data-sidebar="menu-button"][data-sidebar] svg {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+  }
+  /* Recolhido (referência Rocketseat): coluna só de ícones, centrados, sem texto visível. */
+  [data-slot="sidebar"][data-collapsible="icon"] [data-sidebar="menu-button"][data-sidebar] {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    justify-content: center;
+    margin-inline: auto;
+  }
+  [data-slot="sidebar"][data-collapsible="icon"] [data-sidebar="menu-button"][data-sidebar] svg {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+  }
+  /* O texto some da tela, mas continua sendo o nome acessível do item (o Tooltip mostra o nome). */
+  [data-slot="sidebar"][data-collapsible="icon"] [data-sidebar="menu-button"][data-sidebar] > :not(svg) {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+  }
+  /* Só o primeiro ícone (setas de submenu somem no recolhido). */
+  [data-slot="sidebar"][data-collapsible="icon"] [data-sidebar="menu-button"][data-sidebar] > svg ~ svg {
+    display: none !important;
+  }
+  [data-slot="sidebar"][data-collapsible="icon"] [data-sidebar="menu"] {
+    align-items: center;
+  }
+  /* Separador curto entre os grupos (como no protótipo): recuado das bordas e com respiro acima e abaixo. */
+  [data-slot="sidebar"][data-collapsible="icon"] [data-sidebar="group"] + [data-sidebar="group"] {
+    position: relative;
+    margin-top: 0.375rem;
+    padding-top: 0.875rem;
+  }
+  [data-slot="sidebar"][data-collapsible="icon"] [data-sidebar="group"] + [data-sidebar="group"]::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 1.25rem;
+    right: 1.25rem;
+    height: 1px;
+    background: var(--sidebar-border);
+  }
+}
+
+/* Trilha das barras de progresso: token --track, mais visível que o muted em todas as aparências (o muted quase some sobre os cards). */
+[data-slot="progress-track"] {
+  background-color: var(--track);
+}
+
+/*
+ * Campos de formulário (texto, área, grupos com ícone/botão, combobox, tags): um único padrão em todo o sistema.
+ * Normal: borda discreta (--field-border). Hover: borda um pouco mais firme. Foco: borda na cor de destaque + halo
+ * suave (sem outline), igual ao editor de texto rico. Erro e desabilitado mantêm as cores dos próprios componentes.
+ * A transição (180 ms, ease-in-out) cobre borda, sombra e fundo e é desligada com movimento reduzido.
+ */
+:is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):not([data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+  transition:
+    border-color 180ms ease-in-out,
+    box-shadow 180ms ease-in-out,
+    background-color 180ms ease-in-out;
+}
+:is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):not(:focus-visible, :has(:focus-visible), [aria-invalid="true"], :has([aria-invalid="true"]), :disabled, [aria-disabled="true"], [data-invalid], [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+  border-color: var(--field-border);
+}
+:is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):hover:not(:focus-visible, :has(:focus-visible), [aria-invalid="true"], :has([aria-invalid="true"]), :disabled, [aria-disabled="true"], [data-invalid], [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+  border-color: var(--field-border-hover);
+}
+:is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):is(:focus-visible, :has(:focus-visible)):not([aria-invalid="true"], :has([aria-invalid="true"]), [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px var(--field-halo);
+  outline: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):not([data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+    transition: none;
+  }
+}
+
+/* Placeholders: sempre legíveis (≥ 4,5:1); o padrão dos componentes usa opacidade e fica abaixo disso em alguns fundos. */
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in oklch, var(--muted-foreground), var(--foreground) 14%);
+  opacity: 1;
+}
+
+/*
+ * Foco por teclado nos demais controles (botões, links, abas, itens de menu): um único anel sólido de 2 px na cor
+ * de destaque (≥ 3:1). O anel de sombra dos componentes é suprimido durante o foco para não haver dois contornos.
+ * Campos de texto ficam de fora: usam o foco suave acima (o contêiner leva o destaque, o campo interno não).
+ */
+:focus-visible:not(
+  div[tabindex="-1"]:not([role]),
+  [role="dialog"], [role="alertdialog"], [data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="popover-content"],
+  :is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]),
+  [data-slot="input-group-control"], [data-slot="command-input"], [data-slot="combobox-chip-input"], [data-slot="tags-input"] input,
+  [contenteditable="true"], [contenteditable=""],
+  textarea, input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="color"])
+) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+:is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"]):focus-visible {
+  outline-offset: -2px;
+}
+[data-slot="sidebar-container"] :focus-visible {
+  outline-color: var(--sidebar-ring);
+}
+header.sticky :focus-visible {
+  outline-color: var(--bar-foreground);
 }

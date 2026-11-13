@@ -24,7 +24,7 @@ export function AccessibilityMenu() {
         type="button"
         variant="outline"
         size="sm"
-        className="rounded-full bg-background px-3"
+        className="bg-background px-3"
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen((current) => !current)}

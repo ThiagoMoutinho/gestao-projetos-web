@@ -32,13 +32,13 @@ function StateBadges({ item, tab }: { item: FeedItem; tab: FeedTab }) {
   const unread = read === "UNREAD" || allRead === false;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <Badge variant="outline" className={cn("h-6 gap-1 px-2 py-[3px] text-[11px]", unread ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground")}>
+      <Badge variant="outline" className={cn("h-6 gap-1 px-2 py-[3px] text-[11px]", unread ? "border-primary/50 bg-card text-primary" : "border-border bg-card text-muted-foreground")}>
         {unread ? <BellRing data-icon="inline-start" aria-hidden /> : <MailOpen data-icon="inline-start" aria-hidden />}
         {tab === "mine" && read ? READ_LABEL[read] : unreadSummary(item.unread ?? 0, item.recipients ?? 0)}
       </Badge>
       <Badge
         variant="outline"
-        className={cn("h-6 gap-1 px-2 py-[3px] text-[11px]", pending === "PENDING" ? "border-warning/40 bg-warning/10 text-warning-foreground" : "border-success/30 bg-success/10 text-success-foreground")}
+        className={cn("h-6 gap-1 px-2 py-[3px] text-[11px]", pending === "PENDING" ? "border-warning/40 bg-card text-warning-foreground" : "border-success/40 bg-card text-success-foreground")}
       >
         {pending === "PENDING" ? <Clock3 data-icon="inline-start" aria-hidden /> : <CheckCircle2 data-icon="inline-start" aria-hidden />}
         {PENDING_LABEL[pending]}

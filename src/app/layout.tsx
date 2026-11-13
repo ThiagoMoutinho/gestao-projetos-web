@@ -40,7 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <TooltipProvider>
             <AppFrame>{children}</AppFrame>
           </TooltipProvider>
-          <Toaster richColors />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

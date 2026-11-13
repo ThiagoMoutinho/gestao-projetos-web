@@ -16,12 +16,12 @@ import type { Overview } from "./institutional-shared";
 import { OverviewWidgets } from "./overview-widgets";
 import { CardSkeleton } from "./overview-skeleton";
 import { Panel } from "./overview-panel";
-import { Users } from "lucide-react";
 import { AboutTabsCard } from "./overview-about-tabs";
-import { Participants, PendingNotice } from "./planning-overview";
+import { PendingNotice } from "./planning-overview";
 import { ScheduleSummaryCard } from "./schedule-summary-card";
 import { consolidateSchedule, requiredFields, timelineMilestones } from "./planning-panel";
 import { SituationCard } from "./project-situation";
+import { TeamCard } from "./team-card";
 
 type State = { status: "loading" } | { status: "ready"; data: Overview } | { status: "error" };
 type Monitoring = { status: "loading" } | { status: "ready"; data: GetScheduleMonitoring200 } | { status: "error" };
@@ -177,11 +177,7 @@ export function ProjectOverviewSections({
               onScheduleSaved={planning.onScheduleSaved}
             />
           ),
-          equipe: (
-            <Panel title="Equipe" subtitle="Responsáveis pelos compromissos do projeto" icon={Users}>
-              <Participants members={planning.members} />
-            </Panel>
-          ),
+          equipe: <TeamCard projectId={projectId} members={planning.members} />,
           evidencias:
             state.status === "loading" ? (
               <CardSkeleton label="Carregando evidências e chamados" lines={3} />

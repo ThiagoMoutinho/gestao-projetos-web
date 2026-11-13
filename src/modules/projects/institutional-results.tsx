@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  Archive,
-  Check,
-  ChevronDown,
-  ExternalLink,
-  Link2,
-  PencilLine,
-  Plus,
-  Target,
-} from "lucide-react";
+import { Archive, Check, ChevronDown, ExternalLink, Link2, PencilLine, Plus, Target } from "lucide-react";
 import { useState } from "react";
 
 import { OptionCombobox, type ComboOption } from "@/components/option-combobox";
@@ -20,6 +11,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -779,6 +771,9 @@ function ResultRow({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
+            <AlertDialogMedia className="bg-status-attention-soft text-status-attention-ink">
+              <Archive />
+            </AlertDialogMedia>
             <AlertDialogTitle>Arquivar resultado?</AlertDialogTitle>
             <AlertDialogDescription>
               O resultado deixa de aparecer na Visão Geral, mas o registro e o
@@ -876,7 +871,7 @@ function ResultColumn({
           <Button
             type="button"
             size="xs"
-            variant="outline"
+            variant="secondary"
             onClick={() => setAdding(true)}
           >
             <Plus aria-hidden="true" /> Adicionar

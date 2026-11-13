@@ -1,5 +1,7 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
+
 import { useState } from "react";
 
 import {
@@ -9,6 +11,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -75,22 +78,25 @@ export function EapDeleteDialog({
         }
       }}
     >
-      <AlertDialogContent className="max-w-[400px]! gap-3 rounded-[10px] p-5">
+      <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-base font-semibold text-foreground">
+          <AlertDialogMedia className="bg-status-critical-soft text-status-critical-ink">
+            <Trash2 />
+          </AlertDialogMedia>
+          <AlertDialogTitle>
             {`Excluir ${copy?.noun ?? "item"}?`}
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-[13px] leading-relaxed text-foreground/80">
+          <AlertDialogDescription>
             <strong className="font-semibold text-foreground">{request?.label}</strong> será {copy?.removed} da EAP.
             Use a exclusão apenas para itens criados por engano e sem movimentação. A exclusão fica registrada no
             histórico do projeto.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="-mx-5 -mb-5 px-5 py-4">
-          <AlertDialogCancel className="h-10 text-xs" disabled={busy}>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>
             Cancelar
           </AlertDialogCancel>
-          <Button type="button" variant="destructive" className="h-10 text-xs" loading={busy} onClick={() => void confirm()}>
+          <Button type="button" variant="destructive" className="h-10" loading={busy} onClick={() => void confirm()}>
             {busy ? "Excluindo…" : "Excluir"}
           </Button>
         </AlertDialogFooter>

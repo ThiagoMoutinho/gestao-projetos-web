@@ -4,10 +4,16 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Archive,
+  CalendarDays,
+  Check,
   Download,
   FolderKanban,
+  LayoutDashboard,
   LayoutGrid,
   List,
+  Network,
+  Pencil,
   EllipsisVertical,
   ChevronLeft,
   ChevronRight,
@@ -67,7 +73,7 @@ import { PROJECT_STATUS_COLOR as STATUS_COLOR, projectStatusKind, projectStatusL
 
 const PAGE_SIZES = ["10", "15", "25", "50"];
 
-const menuItem = "rounded-md px-2.5 py-2 text-label";
+const menuItem = "gap-2.5 rounded-md px-2.5 py-2 text-label [&_svg]:size-4 [&_svg]:text-muted-foreground";
 
 const TAB_LABEL: Record<PortfolioView, string> = { active: "Ativos", concluded: "Concluídos", archived: "Arquivados", all: "Todos" };
 
@@ -211,8 +217,9 @@ export function ProjectList({
               variant="outline"
               aria-pressed={active}
               onClick={() => selectChip(chip.key, active)}
-              className={cn("h-8 rounded-full px-3 text-label", active ? "border-primary bg-primary/10 text-primary hover:bg-primary/10" : "bg-card")}
+              className={cn("h-8 rounded-full px-3 text-label", active ? "border-primary bg-primary/10 font-semibold text-primary hover:bg-primary/10" : "bg-card")}
             >
+              {active ? <Check className="size-3.5 shrink-0" aria-hidden="true" /> : null}
               {chip.key === "total" ? null : (
                 <span className="size-2 shrink-0 rounded-full" style={dotStyle(STATUS_COLOR[chip.key])} aria-hidden="true" />
               )}
@@ -573,18 +580,22 @@ function ProjectRow({
           >
             <EllipsisVertical aria-hidden="true" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 rounded-lg p-1.5">
+          <DropdownMenuContent align="end" className="w-56 rounded-lg p-1.5">
             <DropdownMenuItem className={menuItem} onClick={() => onOpen()}>
+              <LayoutDashboard aria-hidden="true" />
               Abrir visão geral
             </DropdownMenuItem>
             <DropdownMenuItem className={menuItem} onClick={() => onOpen("cronograma")}>
+              <CalendarDays aria-hidden="true" />
               Consultar cronograma
             </DropdownMenuItem>
             <DropdownMenuItem className={menuItem} onClick={() => onOpen("eap")}>
+              <Network aria-hidden="true" />
               Abrir EAP
             </DropdownMenuItem>
             {canEdit ? (
               <DropdownMenuItem className={menuItem} onClick={() => setEditing(true)}>
+                <Pencil aria-hidden="true" />
                 Editar projeto
               </DropdownMenuItem>
             ) : null}
@@ -594,6 +605,7 @@ function ProjectRow({
               className={menuItem}
               title="O arquivamento depende de alteração no banco (campo de arquivamento), ainda não autorizada."
             >
+              <Archive aria-hidden="true" />
               Arquivar
               <span className="ml-auto text-label text-muted-foreground">Em breve</span>
             </DropdownMenuItem>
@@ -627,7 +639,7 @@ function SortHeader({
         variant="ghost"
         size="xs"
         onClick={() => onSort(sortKey)}
-        className={cn("-ml-2 h-auto px-2 py-1 text-label font-semibold tracking-[0.06em] uppercase hover:text-foreground", active ? "text-primary" : "text-muted-foreground")}
+        className={cn("-ml-2 h-auto px-2 py-1 text-label tracking-[0.06em] uppercase hover:text-foreground", active ? "text-primary" : "text-muted-foreground")}
       >
         {label}
         <Icon className={cn("size-3", !active && "opacity-60")} aria-hidden="true" />

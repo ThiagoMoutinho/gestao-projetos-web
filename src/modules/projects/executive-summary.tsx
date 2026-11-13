@@ -1,10 +1,18 @@
 "use client";
 
-import { ChevronDown, FileText, Layers, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { BadgeCheck, ChevronDown, FileText, Layers, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogMedia,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Presence } from "@/components/ui/presence";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -238,6 +246,9 @@ function ValidationDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
+          <DialogMedia>
+            <BadgeCheck />
+          </DialogMedia>
           <DialogTitle>{extraordinary ? "Validação extraordinária" : mode === "withoutChanges" ? "Validar sem alterações" : "Validar resumo executivo"}</DialogTitle>
           <DialogDescription>
             Você registra, como oficial, os indicadores calculados em {REFERENCE.format(new Date(summary.generatedAt))} (ciclo {cycleDay(summary.governance.cycle.start)} a{" "}

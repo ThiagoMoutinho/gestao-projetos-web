@@ -220,10 +220,10 @@ export function EapImportSheet({
                     ))}
                   </ul>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" className="h-8 gap-1.5 rounded-[7px] text-xs" onClick={() => void downloadImportTemplate("xlsx").catch((caught) => reportFailure(caught, "Não foi possível gerar o modelo."))}>
+                    <Button type="button" variant="outline" className="h-8 gap-1.5" onClick={() => void downloadImportTemplate("xlsx").catch((caught) => reportFailure(caught, "Não foi possível gerar o modelo."))}>
                       <Download className="size-3.5" aria-hidden="true" /> Modelo .xlsx
                     </Button>
-                    <Button type="button" variant="outline" className="h-8 gap-1.5 rounded-[7px] text-xs" onClick={() => void downloadImportTemplate("csv")}>
+                    <Button type="button" variant="outline" className="h-8 gap-1.5" onClick={() => void downloadImportTemplate("csv")}>
                       <Download className="size-3.5" aria-hidden="true" /> Modelo .csv
                     </Button>
                   </div>
@@ -398,5 +398,5 @@ function PreviewTable({ result, errorLines }: { result: ImportEap200; errorLines
   );
 }
 
-const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-input px-[13px] text-xs font-semibold text-foreground";
+const secondaryButton = "h-9 gap-1.5 rounded-[9px] px-3.5 text-[13px]";
 const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-primary px-[13px] text-xs font-semibold text-primary-foreground shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-primary";

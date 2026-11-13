@@ -231,7 +231,7 @@ export function EapWorkbench({
               />
             </label>
             <FilterMenu filter={filter} count={filterCount} onChange={onFilterChange} />
-            <Button type="button" variant="outline" size="icon" className="size-[34px] rounded-[7px] border-input text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Mais opções">
+            <Button type="button" variant="outline" size="icon" className="size-[34px] border-input text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Mais opções">
               <MoreHorizontal />
             </Button>
           </div>
@@ -878,7 +878,7 @@ function FilterMenu({ filter, count, onChange }: { filter: EapListFilter; count:
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button type="button" variant="outline" className="h-[34px] rounded-[7px] border-input px-[13px] text-[11px] font-semibold text-foreground" />}>
+      <PopoverTrigger render={<Button type="button" variant="secondary" className="h-[34px] px-3" />}>
         <ListFilter aria-hidden="true" />
         Filtrar
         {count > 0 ? <span className="rounded-full bg-primary/10 px-1.5 text-[11px] text-primary">{count}</span> : null}

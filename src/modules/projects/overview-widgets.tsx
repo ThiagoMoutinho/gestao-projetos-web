@@ -301,7 +301,7 @@ export function OverviewWidgets({ nodes }: Props) {
   const extras = BOARD_WIDGETS.filter((id) => !widgets.some((item) => item.id === id) && nodes[id] !== null && nodes[id] !== undefined);
 
   const layoutToggle = (
-    <Button type="button" data-layout-toggle="" size="sm" variant={customizing ? "default" : "outline"} className={cn("gap-1.5", !customizing && "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:bg-primary/15 dark:hover:bg-primary/20")} aria-pressed={customizing} onClick={() => setCustomizing((current) => !current)}>
+    <Button type="button" data-layout-toggle="" size="sm" variant={customizing ? "default" : "secondary"} aria-pressed={customizing} onClick={() => setCustomizing((current) => !current)}>
       {customizing ? <Check aria-hidden="true" /> : <LayoutDashboard aria-hidden="true" />}
       {customizing ? "Concluir layout" : "Personalizar layout"}
     </Button>
@@ -348,7 +348,7 @@ export function OverviewWidgets({ nodes }: Props) {
                 <div key={id} data-extra={id} style={{ "--widget-max": `${WIDGET_MAX_HEIGHT[id]}px` } as React.CSSProperties} className="flex min-w-0 flex-col gap-2 lg:col-span-6">
                   <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-1.5">
                     <span className="min-w-0 truncate text-xs font-semibold text-primary">{TITLES[id]}</span>
-                    <Button type="button" size="xs" variant="outline" className="shrink-0 gap-1.5" aria-label={`Adicionar ${TITLES[id]} ao quadro`} onClick={() => update([...widgets, { id, wide: false }])}>
+                    <Button type="button" size="xs" variant="secondary" className="shrink-0" aria-label={`Adicionar ${TITLES[id]} ao quadro`} onClick={() => update([...widgets, { id, wide: false }])}>
                       <Plus aria-hidden="true" /> Adicionar ao quadro
                     </Button>
                   </div>

@@ -31,7 +31,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-black/25 duration-200 supports-backdrop-filter:backdrop-blur-[3px] dark:bg-black/50 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:animate-none",
         className
       )}
       {...props}
@@ -53,7 +53,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[10px] bg-popover p-5 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-5 overflow-x-hidden overflow-y-auto p-6 text-sm sm:max-w-sm rounded-[20px] border border-border/70 bg-popover text-popover-foreground shadow-[0_32px_64px_-24px_rgba(16,24,40,0.45)] duration-200 outline-none dark:shadow-[0_32px_64px_-24px_rgba(0,0,0,0.75)] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:animate-none",
           className
         )}
         {...props}
@@ -64,14 +64,14 @@ function DialogContent({
             data-slot="dialog-close"
             render={
               <Button
-                variant="ghost"
-                className="absolute top-2 right-2"
+                variant="outline"
+                className="absolute top-5 right-5 text-muted-foreground hover:text-foreground"
                 size="icon-sm"
               />
             }
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>
@@ -83,7 +83,11 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      className={cn(
+        // Com DialogMedia: ícone à esquerda e título + descrição ao lado (padrão do modal Editar equipe).
+        "flex flex-col gap-1.5 pr-10 has-data-[slot=dialog-media]:grid has-data-[slot=dialog-media]:grid-cols-[auto_minmax(0,1fr)] has-data-[slot=dialog-media]:items-start has-data-[slot=dialog-media]:gap-x-4 has-data-[slot=dialog-media]:gap-y-1",
+        className
+      )}
       {...props}
     />
   )
@@ -101,7 +105,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        "sticky -bottom-6 z-10 -mx-6 -mb-6 mt-1 flex flex-col-reverse gap-2.5 rounded-b-[20px] border-t bg-popover px-6 py-4 sm:flex-row sm:items-center sm:justify-end",
         className
       )}
       {...props}
@@ -121,7 +125,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "cn-font-heading text-base leading-none font-medium",
+        "cn-font-heading text-lg leading-snug font-semibold tracking-tight text-foreground [[data-slot=dialog-header]:has([data-slot=dialog-media])_&]:col-start-2",
         className
       )}
       {...props}
@@ -137,7 +141,30 @@ function DialogDescription({
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        "text-[13px] text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        "text-body leading-relaxed text-muted-foreground [[data-slot=dialog-header]:has([data-slot=dialog-media])_&]:col-start-2 *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+/** Ícone contextual do cabeçalho (container arredondado na cor da paleta; `tone` para aviso ou exclusão). */
+function DialogMedia({
+  className,
+  tone = "primary",
+  ...props
+}: React.ComponentProps<"div"> & { tone?: "primary" | "destructive" | "attention" | "success" }) {
+  return (
+    <div
+      data-slot="dialog-media"
+      aria-hidden="true"
+      className={cn(
+        "row-span-2 flex size-11 shrink-0 items-center justify-center rounded-2xl [&_svg:not([class*='size-'])]:size-5",
+        tone === "primary" && "bg-primary/12 text-primary dark:bg-primary/20",
+        tone === "destructive" && "bg-status-critical-soft text-status-critical-ink",
+        tone === "attention" && "bg-status-attention-soft text-status-attention-ink",
+        tone === "success" && "bg-status-done-soft text-status-done-ink",
         className
       )}
       {...props}
@@ -152,6 +179,7 @@ export {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogMedia,
   DialogOverlay,
   DialogPortal,
   DialogTitle,

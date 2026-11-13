@@ -70,7 +70,7 @@ export function HeaderSearch() {
         aria-label="Buscar projetos (atalho: barra)"
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="h-[46px] w-full max-w-[600px] justify-start gap-3 rounded-lg border border-bar-border bg-bar-foreground/10 px-4 text-body font-normal text-bar-muted transition-colors duration-200 hover:bg-bar-foreground/15 hover:text-bar-foreground focus-visible:ring-bar-foreground/60 max-sm:size-10 max-sm:w-10 max-sm:justify-center max-sm:px-0 motion-reduce:transition-none"
+        className="h-[46px] w-full max-w-[600px] justify-start gap-3 border border-bar-border bg-bar-foreground/10 px-4 text-body font-normal text-bar-muted transition-colors duration-200 hover:bg-bar-foreground/15 hover:text-bar-foreground focus-visible:ring-bar-foreground/60 max-sm:size-10 max-sm:w-10 max-sm:justify-center max-sm:px-0 motion-reduce:transition-none"
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
         <span className="min-w-0 flex-1 truncate text-left max-sm:hidden">Buscar projetos por nome ou GLPI</span>

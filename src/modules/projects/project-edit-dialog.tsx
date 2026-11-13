@@ -1,11 +1,21 @@
 "use client";
 
+import { FolderPen } from "lucide-react";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { FieldError } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogMedia,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/fetcher";
@@ -72,10 +82,13 @@ export function ProjectEditDialog({ project, open, onOpenChange }: { project: Ed
 
   return (
     <Dialog open={open} onOpenChange={reset}>
-      <DialogContent className="w-[95vw] sm:max-w-[550px] max-h-[90vh] gap-4 p-5">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle className="text-base font-semibold text-foreground">Editar projeto</DialogTitle>
-          <DialogDescription className="text-[13px] text-foreground/80">
+          <DialogMedia>
+            <FolderPen />
+          </DialogMedia>
+          <DialogTitle>Editar projeto</DialogTitle>
+          <DialogDescription>
             Dados cadastrais do projeto. A situação é calculada pela EAP e o encerramento tem fluxo próprio.
           </DialogDescription>
         </DialogHeader>
@@ -109,11 +122,11 @@ export function ProjectEditDialog({ project, open, onOpenChange }: { project: Ed
             <span className="text-xs font-semibold text-foreground/80">Chamado GLPI</span>
             <Input value={glpi} maxLength={50} onChange={(event) => setGlpi(event.target.value)} placeholder="Ex.: 351998" className="h-10 text-xs" />
           </label>
-          <DialogFooter className="-mx-5 -mb-5 mt-1 px-5 py-4">
-            <Button type="button" variant="outline" className="h-10 text-xs" disabled={busy} onClick={() => reset(false)}>
+          <DialogFooter>
+            <Button type="button" variant="outline" className="h-10" disabled={busy} onClick={() => reset(false)}>
               Cancelar
             </Button>
-            <Button type="submit" className="h-10 text-xs" disabled={!changed} loading={busy}>
+            <Button type="submit" className="h-10" disabled={!changed} loading={busy}>
               {busy ? "Salvando…" : "Salvar"}
             </Button>
           </DialogFooter>

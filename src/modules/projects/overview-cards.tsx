@@ -214,8 +214,7 @@ function EntryRow({
               <Button
                 type="button"
                 size="xs"
-                variant="outline"
-                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+                variant="secondary"
                 onClick={onOpen}
                 {...prefetch}
               >

@@ -6,7 +6,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogMedia,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Presence } from "@/components/ui/presence";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getScheduleMonitoring, listScheduleHistory } from "@/lib/api/generated/cronograma/cronograma";
@@ -372,7 +379,7 @@ function PhaseChart({ rows, axis, loading, onOpenEap }: { rows: PhaseRow[]; axis
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs dark:border-border">
-        <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onOpenEap}>
+        <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={onOpenEap}>
           Abrir na EAP →
         </Button>
         <span className="text-muted-foreground">Datas reais e progresso vêm da EAP; nada aqui altera datas sem justificativa.</span>
@@ -462,7 +469,7 @@ function HistoryCard({ history, onRetry }: { history: History; onRetry: () => vo
             <ScheduleHistoryList items={matching.slice(PREVIEW)} />
           </Presence>
           {matching.length > PREVIEW ? (
-            <Button type="button" variant="link" size="sm" className="h-auto w-fit p-0 text-xs" aria-expanded={showAll} onClick={() => setShowAll((value) => !value)}>
+            <Button type="button" variant="link" size="sm" className="h-auto w-fit p-0" aria-expanded={showAll} onClick={() => setShowAll((value) => !value)}>
               {showAll ? "Ver menos" : `Ver todos (${matching.length}) →`}
             </Button>
           ) : null}
@@ -569,7 +576,7 @@ function DatesCard({ loading, consolidated, actual, recorded, canDefine, onDefin
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
           <span>Datas do projeto não gravadas: o consolidado da EAP é a referência.</span>
           {canDefine ? (
-            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onDefine}>
+            <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={onDefine}>
               Definir
             </Button>
           ) : null}
@@ -600,6 +607,9 @@ function PlanningDialog({
     <Dialog open={open} onOpenChange={(value) => (!value ? onClose() : undefined)}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
+          <DialogMedia>
+            <CalendarRange />
+          </DialogMedia>
           <DialogTitle>Definir planejamento do projeto</DialogTitle>
           <DialogDescription>
             Datas gravadas no próprio projeto. A linha de base original é preservada e toda alteração de data exige justificativa e fica no histórico.

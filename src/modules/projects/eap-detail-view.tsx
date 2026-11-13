@@ -586,6 +586,7 @@ function TaskDetail({
             <button
               key={value}
               type="button"
+              aria-pressed={draft === value}
               disabled={!canUpdate || saving || locked || completing || reopenTarget !== null}
               className={cn(
                 "h-8 min-w-0 rounded-[6px] border text-[11.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
@@ -654,7 +655,7 @@ function TaskDetail({
                 <Button type="button" variant="outline" className={compactButton} disabled={reopening} onClick={() => { setReopenTarget(null); resetReopen(); }}>
                   Cancelar
                 </Button>
-                <Button type="button" className={cn(compactButton, "border-transparent bg-status-adjust text-primary-foreground hover:bg-status-adjust")} loading={reopening} onClick={() => void confirmReopen()}>
+                <Button type="button" className={cn(compactButton, "border-transparent bg-status-adjust hover:bg-status-adjust")} loading={reopening} onClick={() => void confirmReopen()}>
                   <Check aria-hidden="true" /> {reopening ? "Reabrindo…" : "Confirmar reabertura"}
                 </Button>
               </div>
@@ -838,11 +839,11 @@ function TaskCompletion({
           {step === "review" ? "Voltar" : "Cancelar"}
         </Button>
         {step === "review" ? (
-          <Button type="button" className={cn(compactButton, "border-transparent bg-status-done text-primary-foreground hover:bg-status-done")} loading={saving} onClick={() => void confirm()}>
+          <Button type="button" className={cn(compactButton, "border-transparent bg-status-done hover:bg-status-done")} loading={saving} onClick={() => void confirm()}>
             <Check aria-hidden="true" /> {saving ? "Concluindo…" : "Confirmar conclusão"}
           </Button>
         ) : (
-          <Button type="button" className={cn(compactButton, "border-transparent bg-primary text-primary-foreground hover:bg-primary")} onClick={review}>
+          <Button type="button" className={cn(compactButton, "border-transparent")} onClick={review}>
             Revisar conclusão
           </Button>
         )}
@@ -966,7 +967,7 @@ function MilestoneDetail({
           )}
           {needsCorrection && access.canCreateItems && onCorrectiveTask ? (
             <div className="mt-2.5 flex justify-end">
-              <Button type="button" variant="outline" className={compactButton} onClick={() => onCorrectiveTask(milestone)}>
+              <Button type="button" variant="secondary" className={compactButton} onClick={() => onCorrectiveTask(milestone)}>
                 <Plus aria-hidden="true" /> Registrar tarefa corretiva
               </Button>
             </div>
@@ -1073,9 +1074,9 @@ const sectionLabel = "block text-[11.5px] font-semibold text-foreground/80";
 const impedimentText = "text-[11.5px] leading-[1.6] text-foreground/80";
 const emptyInline = "flex min-h-11 items-center gap-1.5 rounded-[7px] border border-dashed border-input bg-muted/50 px-2.5 text-[11.5px] text-muted-foreground";
 const progressClass = "[&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-[7px] [&_[data-slot=progress-track]]:bg-muted";
-const secondaryButton = "h-9 rounded-[7px] border-input px-[13px] text-[11.5px] font-semibold text-foreground hover:bg-muted/50";
+const secondaryButton = "h-9 gap-1.5 rounded-[9px] px-3.5 text-[13px]";
 const primaryButton = "h-9 rounded-[7px] bg-primary px-[13px] text-[11.5px] font-semibold text-primary-foreground shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-primary";
-const compactButton = "h-9 gap-1.5 rounded-[7px] border-input px-3 text-[11.5px] font-semibold text-foreground";
+const compactButton = "h-9 gap-1.5 rounded-[9px] px-3 text-[13px]";
 
 function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milestone"; code: string; label: string; kind: EapStatusKind }) {
   return (

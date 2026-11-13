@@ -106,7 +106,7 @@ export function EapHistory({
               className={cn(
                 "h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none",
                 active === group
-                  ? "border-primary/50 bg-primary/10 text-primary"
+                  ? "border-primary/50 bg-primary/10 text-primary underline underline-offset-4"
                   : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-primary",
               )}
               onClick={() => setFilter(group)}

@@ -212,7 +212,7 @@ function PhaseForm({
             <span>Andamento consolidado</span>
             <strong className="text-xs text-primary">0%</strong>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-1.5 overflow-hidden rounded-full bg-track">
             <div className="h-full w-0 rounded-full bg-primary" />
           </div>
           <p className="mt-[9px] text-xs leading-normal text-muted-foreground">Calculado a partir das tarefas concluídas e marcos formalmente aceitos.</p>
@@ -373,7 +373,7 @@ function TaskForm({
         </div>
       </PanelSection>
       <PanelSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" aside={<strong className="text-xs text-primary">{progress}%</strong>} tone="accent">
-        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className="h-1.5 overflow-hidden rounded-full bg-track">
           <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
         </div>
         <div className="mt-[11px] mb-3.5 grid grid-cols-5 gap-1.5">
@@ -381,6 +381,7 @@ function TaskForm({
             <button
               key={value}
               type="button"
+              aria-pressed={progress === value}
               className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progress === value ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}
               onClick={() => setProgress(value)}
             >
@@ -570,7 +571,7 @@ function MilestoneForm({
         </div>
         <div className="mt-4 flex items-center justify-end gap-3">
           <small className="mr-auto text-xs text-muted-foreground">Adicione ao menos uma evidência antes de enviar.</small>
-          <Button type="button" variant="outline" className="h-10 gap-1.5 rounded-[7px] px-4 text-xs" disabled>
+          <Button type="button" variant="outline" className="h-10 gap-1.5 px-4" disabled>
             Enviar para validação
           </Button>
         </div>
@@ -596,10 +597,10 @@ function FormBody({
     <>
       <div className="min-h-0 flex-1 overflow-y-auto bg-muted/50 px-6 pb-6">{children}</div>
       <footer className="grid shrink-0 grid-cols-2 gap-[7px] border-t border-border bg-card px-6 py-3 sm:flex sm:min-h-[80px] sm:items-center sm:justify-end">
-        <Button type="button" variant="outline" className="h-10 rounded-[7px] border-input px-4 text-xs font-semibold text-foreground" onClick={onClose}>
+        <Button type="button" variant="outline" className="h-10 border-input px-4 text-foreground" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="button" className="h-10 gap-1.5 rounded-[7px] bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-primary" loading={saving} onClick={onSubmit}>
+        <Button type="button" className="h-10 gap-1.5 px-4" loading={saving} onClick={onSubmit}>
           <Check className="size-[15px]" aria-hidden="true" />
           {saving ? "Salvando…" : "Criar item"}
         </Button>
@@ -662,7 +663,7 @@ function EvidenceSection({ warning }: { warning?: string }) {
       title="Evidências vinculadas"
       subtitle="Documentos e registros associados ao item"
       aside={
-        <Button type="button" variant="outline" className="h-10 gap-1.5 rounded-[7px] px-3 text-xs" disabled title="Disponível depois que o item for criado.">
+        <Button type="button" variant="secondary" disabled title="Disponível depois que o item for criado.">
           <Plus className="size-3.5" aria-hidden="true" />
           Adicionar
         </Button>

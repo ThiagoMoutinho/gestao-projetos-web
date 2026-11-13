@@ -33,9 +33,9 @@ export const KIND_TONE: Record<NotificationKind, KindTone> = {
 
 /** Cores semânticas sobre os tokens do design system; sempre acompanham texto e ícone (nunca só a cor). */
 export const TONE_CLASS: Record<KindTone, { badge: string; rail: string; icon: string }> = {
-  info: { badge: "border-primary/25 bg-primary/10 text-primary", rail: "bg-primary", icon: "bg-primary/10 text-primary" },
-  warning: { badge: "border-warning/50 bg-warning/10 text-warning-foreground", rail: "bg-warning", icon: "bg-warning/25 text-warning-foreground" },
-  critical: { badge: "border-destructive/30 bg-destructive/10 text-destructive", rail: "bg-destructive", icon: "bg-destructive/10 text-destructive" },
+  info: { badge: "border-primary/40 bg-card text-primary", rail: "bg-primary", icon: "bg-primary/10 text-primary" },
+  warning: { badge: "border-warning/50 bg-card text-warning-foreground", rail: "bg-warning", icon: "bg-warning/25 text-warning-foreground" },
+  critical: { badge: "border-destructive/40 bg-card text-destructive", rail: "bg-destructive", icon: "bg-destructive/10 text-destructive" },
 };
 
 /** Eixo da leitura (por destinatário). Ler nunca resolve a pendência. */

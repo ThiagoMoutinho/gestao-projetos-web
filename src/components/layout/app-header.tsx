@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { ListIndentDecrease, ListIndentIncrease } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,23 +25,30 @@ export function AppHeader({ user }: { user: AppUser }) {
   const expanded = isMobile ? openMobile : open;
 
   return (
-    <header className="sticky top-0 z-30 flex h-(--header-height) shrink-0 items-center gap-3 border-b border-bar-border bg-bar px-4 text-bar-foreground md:gap-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-(--header-height) shrink-0 items-center gap-3 border-b border-bar-border bg-bar pr-4 text-bar-foreground md:gap-4 md:pr-6">
+      {/* Mesma largura do menu recolhido: o botão fica centrado sobre a coluna de ícones. */}
+      <div className="flex w-16 shrink-0 justify-center md:w-(--sidebar-width-icon)">
       <Button
         type="button"
         variant="ghost"
         onClick={toggleSidebar}
         aria-label={expanded ? "Recolher menu" : "Expandir menu"}
         aria-expanded={expanded}
-        className="size-10 shrink-0 rounded-lg border border-bar-border bg-transparent p-0 text-bar-foreground transition-colors duration-200 hover:bg-bar-foreground/10 hover:text-bar-foreground focus-visible:ring-bar-foreground/60 motion-reduce:transition-none"
+        className="size-10 shrink-0 border border-bar-border bg-bar-foreground/6 p-0 text-bar-foreground transition-colors duration-200 hover:bg-bar-foreground/12 hover:text-bar-foreground aria-expanded:bg-bar-foreground/6 aria-expanded:text-bar-foreground dark:hover:bg-bar-foreground/12 focus-visible:ring-bar-foreground/60 motion-reduce:transition-none"
       >
-        <Menu className="size-5" aria-hidden="true" />
+        {expanded ? (
+          <ListIndentDecrease className="size-5" aria-hidden="true" />
+        ) : (
+          <ListIndentIncrease className="size-5" aria-hidden="true" />
+        )}
       </Button>
+      </div>
       <Link
         href="/"
         aria-label="IGEPPS — página inicial"
         className="shrink-0 rounded-md focus-visible:ring-2 focus-visible:ring-bar-foreground/60 focus-visible:outline-none"
       >
-        <Image src="/brand/igepps-logo-light.png" alt="IGEPPS" width={592} height={190} priority className="h-9 w-auto" />
+        <Image src="/brand/igepps-logo-light.png" alt="IGEPPS" width={592} height={190} priority className="h-9 w-auto -translate-y-[3px]" />
       </Link>
       <div className="flex min-w-0 flex-1 justify-center">
         <HeaderSearch />

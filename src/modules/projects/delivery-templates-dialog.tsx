@@ -1,13 +1,21 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { ListChecks, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { OptionCombobox } from "@/components/option-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogMedia,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -102,6 +110,9 @@ export function DeliveryTemplatesDialog({ open, onClose }: { open: boolean; onCl
     <Dialog open={open} onOpenChange={(value) => (!value && !busy ? onClose() : undefined)}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
+          <DialogMedia>
+            <ListChecks />
+          </DialogMedia>
           <DialogTitle>Modelos de checklist da Conformidade de Entrega</DialogTitle>
           <DialogDescription>
             Publicar cria uma nova revisão. Versões de entrega já criadas mantêm o checklist copiado e não são alteradas.
@@ -157,7 +168,7 @@ export function DeliveryTemplatesDialog({ open, onClose }: { open: boolean; onCl
             </ul>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               className="self-start"
               onClick={() => setItems((current) => [...current, { key: `novo-${Date.now()}-${current.length}`, documentType: "", title: "", description: "", required: true, existing: false }])}

@@ -355,11 +355,11 @@ function PhaseEditor({
                   : "Suspender interrompe a atualização automática da situação até a fase ser retomada."}
               </span>
               {phase.status === "SUSPENSA" ? (
-                <Button type="button" variant="outline" className="h-9 shrink-0 rounded-[7px] px-3 text-xs" loading={suspending} onClick={() => void toggleSuspension()}>
+                <Button type="button" variant="outline" className="h-9 shrink-0 px-3" loading={suspending} onClick={() => void toggleSuspension()}>
                   {suspending ? "Salvando…" : "Retomar fase"}
                 </Button>
               ) : suspendOpen ? null : (
-                <Button type="button" variant="outline" className="h-9 shrink-0 rounded-[7px] px-3 text-xs" onClick={() => setSuspendOpen(true)}>
+                <Button type="button" variant="outline" className="h-9 shrink-0 px-3" onClick={() => setSuspendOpen(true)}>
                   Suspender fase
                 </Button>
               )}
@@ -376,10 +376,10 @@ function PhaseEditor({
                   full
                 />
                 <div className="flex flex-wrap justify-end gap-[7px]">
-                  <Button type="button" variant="outline" className="h-9 rounded-[7px] px-3 text-xs" disabled={suspending} onClick={() => { setSuspendOpen(false); setSuspendText(""); }}>
+                  <Button type="button" variant="outline" className="h-9 px-3" disabled={suspending} onClick={() => { setSuspendOpen(false); setSuspendText(""); }}>
                     Cancelar
                   </Button>
-                  <Button type="button" className="h-9 rounded-[7px] bg-status-adjust px-3 text-xs text-primary-foreground hover:bg-status-adjust" loading={suspending} onClick={() => void toggleSuspension()}>
+                  <Button type="button" className="h-9 bg-status-adjust px-3 hover:bg-status-adjust" loading={suspending} onClick={() => void toggleSuspension()}>
                     {suspending ? "Suspendendo…" : "Confirmar suspensão"}
                   </Button>
                 </div>
@@ -670,7 +670,7 @@ function TaskEditor({
             <Progress value={progressShown} aria-label="Andamento da tarefa" className="mb-3 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted" />
             <div className="mt-[11px] mb-3.5 grid grid-cols-6 gap-1.5">
               {[0, 25, 50, 75, 90, 100].map((value) => (
-                <button key={value} type="button" className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progressShown === value ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`} onClick={() => choosePercent(String(value))}>
+                <button key={value} type="button" aria-pressed={progressShown === value} className={`h-8 min-w-0 rounded-[6px] border text-xs font-semibold ${progressShown === value ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`} onClick={() => choosePercent(String(value))}>
                   {value}%
                 </button>
               ))}
@@ -678,7 +678,7 @@ function TaskEditor({
             <div className="mb-3.5 grid grid-cols-[140px_auto_1fr] items-end gap-2">
               <EditText label="Percentual exato de andamento" value={percent} onChange={(value) => { choosePercent(value); clear("percent"); }} error={errors.percent} />
               <span className="flex h-9 items-center text-xs text-muted-foreground">% concluído</span>
-              <Button type="button" variant="outline" className="h-9 justify-self-end gap-1.5 rounded-[7px] px-3.5 text-xs" disabled={progressShown === 100} onClick={() => choosePercent("100")}>
+              <Button type="button" variant="outline" className="h-9 justify-self-end gap-1.5 px-3.5" disabled={progressShown === 100} onClick={() => choosePercent("100")}>
                 <Check className="size-3.5" aria-hidden="true" />
                 Concluir
               </Button>
@@ -845,7 +845,7 @@ function TaskStatusDecision({
             <Button
               type="button"
               variant={cancelled ? "default" : "destructive"}
-              className="h-9 rounded-[7px] px-3.5 text-xs"
+              className="h-9 px-3.5"
               loading={saving}
               onClick={() => void decide()}
             >
@@ -1019,7 +1019,7 @@ function TaskImpediment({
             </Button>
             <Button
               type="button"
-              className="h-9 rounded-[7px] px-3.5 text-xs"
+              className="h-9 px-3.5"
               loading={saving}
               onClick={() => void submit(form)}
             >
@@ -1370,7 +1370,7 @@ function EvidenceSection({
       subtitle="Documentos e registros associados ao item"
       aside={
         canRegister ? (
-          <Button type="button" variant="outline" className={compactButtonClass} disabled={formOpen} onClick={() => setAdding(true)}>
+          <Button type="button" variant="secondary" className={compactButtonClass} disabled={formOpen} onClick={() => setAdding(true)}>
             <Plus className="size-3.5" aria-hidden="true" />
             Adicionar
           </Button>
@@ -1456,7 +1456,7 @@ function EvidenceList({ request, emptyWarning }: { request: Promise<EvidenceStat
   );
 }
 
-const compactButtonClass = "h-9 gap-1.5 rounded-[7px] border-input px-3 text-xs font-semibold text-foreground";
+const compactButtonClass = "h-9 gap-1.5 rounded-[9px] px-3 text-[13px]";
 const emptyInlineClass = "flex min-h-11 items-center rounded-[7px] border border-dashed border-input bg-muted/50 px-2.5 text-xs text-muted-foreground";
 
 function FoldBlock({

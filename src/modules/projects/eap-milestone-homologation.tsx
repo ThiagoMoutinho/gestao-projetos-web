@@ -453,7 +453,7 @@ function DecisionEvidenceLinks({ links, onChange }: { links: EvidenceLink[]; onC
         </div>
       ))}
       {links.length < MAX_DECISION_EVIDENCES ? (
-        <Button type="button" variant="outline" className={cn(secondaryButton, "self-start")} onClick={() => onChange([...links, { title: "", url: "" }])}>
+        <Button type="button" variant="secondary" className={cn(secondaryButton, "self-start")} onClick={() => onChange([...links, { title: "", url: "" }])}>
           <Plus aria-hidden="true" /> Adicionar evidência
         </Button>
       ) : null}
@@ -607,7 +607,7 @@ function Notice({ tone, text }: { tone: "warning" | "muted"; text: string }) {
 
 const inputClass = "h-10 min-w-0 rounded-[7px] border border-input bg-card px-3 text-xs text-foreground outline-none focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/40";
 const textareaClass = "min-h-[66px] rounded-[7px] border-input bg-card px-2.5 py-2 text-xs md:text-xs";
-const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-input px-3.5 text-xs font-semibold";
+const secondaryButton = "h-9 gap-1.5 rounded-[9px] px-3.5 text-[13px]";
 const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-primary px-3.5 text-xs font-semibold text-primary-foreground hover:bg-primary";
 const groupLabel = "mb-1.5 block text-xs font-semibold text-foreground/80";
 const emptyInline = "flex min-h-10 items-center rounded-[7px] border border-dashed border-input bg-muted/50 px-2.5 text-xs text-muted-foreground";

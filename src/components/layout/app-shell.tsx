@@ -23,7 +23,7 @@ export function AppShell({
     <AccessibleProjectsProvider>
       <SidebarProvider
         defaultOpen={defaultOpen}
-        style={{ "--header-height": "4.25rem" } as CSSProperties}
+        style={{ "--header-height": "4.25rem", "--sidebar-width": "16.5rem", "--sidebar-width-icon": "4.5rem" } as CSSProperties}
         className="min-h-svh flex-1 flex-col bg-background"
       >
         <AppHeader user={user} />

@@ -4,8 +4,7 @@ import { Bell, CircleAlert } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,8 +28,9 @@ const REFRESH_MS = 60_000;
 /** Quantas notificações recentes o painel mostra; o histórico completo fica na Central. */
 export const PANEL_SIZE = 3;
 
+/** Abas em formato de segmento (como no protótipo): a ativa ganha fundo de cartão. */
 const PANEL_TAB_CLASS =
-  "h-9 flex-none rounded-none px-0.5 text-xs font-medium text-muted-foreground hover:text-foreground data-active:text-primary after:bg-primary group-data-horizontal/tabs:after:bottom-0";
+  "h-7 flex-1 rounded-md text-label font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground data-active:bg-card data-active:text-foreground data-active:shadow-[0_1px_2px_rgb(16_24_40/0.1)] motion-reduce:transition-none";
 
 export function bellLabel(count: number | null) {
   if (count === null) return "Notificações";
@@ -49,26 +49,21 @@ function PanelItem({ item, opening, onOpen }: { item: FeedItem; opening: boolean
         aria-busy={opening || undefined}
         aria-label={`${unread ? "Não lida. " : ""}${item.title}. Abrir o projeto ${item.projectName}.`}
         className={cn(
-          "flex gap-3 px-4 py-2.5 outline-none transition-colors duration-200 hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset motion-reduce:transition-none",
-          unread && "bg-primary/5",
+          "flex gap-3 px-4 py-3 outline-none transition-colors duration-200 hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset motion-reduce:transition-none",
+          unread && "bg-primary/[0.06]",
           opening && "opacity-70",
         )}
       >
-        <KindIcon kind={item.kind} muted={!unread} size="sm">
-          {unread ? <span className="absolute -top-0.5 -left-0.5 size-2.5 rounded-full bg-primary ring-2 ring-popover" /> : null}
-        </KindIcon>
+        <KindIcon kind={item.kind} muted={!unread} size="sm" />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
-            <span className={cn(unread && "text-primary")}>{KIND_LABEL[item.kind]}</span>
-            <span aria-hidden className="size-0.5 rounded-full bg-muted-foreground/60" />
-            <span className="font-normal normal-case tracking-normal">{formatMoment(item.deliveredAt ?? item.createdAt)}</span>
-          </span>
-          <span className={cn("line-clamp-2 text-[13px] leading-snug", unread ? "font-semibold text-foreground" : "font-normal text-muted-foreground")}>{item.title}</span>
-          <span className="truncate text-[11px] text-muted-foreground" title={item.projectName}>
-            {item.projectName}
+          <span className={cn("line-clamp-2 text-body leading-snug", unread ? "font-semibold text-foreground" : "font-medium text-foreground/80")}>{item.title}</span>
+          <span className="truncate text-label text-muted-foreground" title={item.projectName}>
+            {KIND_LABEL[item.kind]} · {item.projectName}
             {resolved ? " · Resolvida" : ""}
           </span>
+          <span className="text-label text-muted-foreground">{formatMoment(item.deliveredAt ?? item.createdAt)}</span>
         </span>
+        {unread ? <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-hidden /> : null}
       </Link>
     </li>
   );
@@ -121,7 +116,7 @@ export function NotificationBell() {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button type="button" variant="outline" size="icon" aria-label={bellLabel(shown)} className="relative size-10 shrink-0 rounded-lg border-bar-border bg-transparent text-bar-foreground transition-colors duration-200 hover:bg-bar-foreground/10 hover:text-bar-foreground focus-visible:ring-bar-foreground/60 motion-reduce:transition-none dark:bg-transparent dark:hover:bg-bar-foreground/10" />}>
+      <PopoverTrigger render={<Button type="button" variant="outline" size="icon" aria-label={bellLabel(shown)} className="relative size-10 shrink-0 border-bar-border bg-transparent text-bar-foreground transition-colors duration-200 hover:bg-bar-foreground/10 hover:text-bar-foreground focus-visible:ring-bar-foreground/60 motion-reduce:transition-none dark:bg-transparent dark:hover:bg-bar-foreground/10" />}>
         <Bell className="size-[18px]" strokeWidth={1.75} aria-hidden />
         {shown ? (
           <span
@@ -142,15 +137,19 @@ export function NotificationBell() {
         // O foco inicial vai ao cabeçalho do painel (não ao último botão, como acontecia enquanto a lista carregava).
         initialFocus={headerRef}
         // 200 ms; com movimento reduzido nenhuma animação (a variante data-open vence animate-none, por isso as duas).
-        className="w-[min(24rem,calc(100vw-1.5rem))] gap-0 p-0 duration-200 motion-reduce:data-closed:animate-none motion-reduce:data-open:animate-none"
+        className="w-[min(23.75rem,calc(100vw-1.5rem))] gap-0 overflow-hidden rounded-xl p-0 duration-200 motion-reduce:data-closed:animate-none motion-reduce:data-open:animate-none"
       >
-        <div ref={headerRef} tabIndex={-1} className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5 outline-none">
-          <PopoverTitle className="text-[13px] font-semibold text-foreground">Notificações</PopoverTitle>
-          {shown ? <Badge className="h-5 bg-primary px-2 text-[11px] text-primary-foreground">{shown > 99 ? "99+" : shown} não lida{shown === 1 ? "" : "s"}</Badge> : null}
+        <div ref={headerRef} tabIndex={-1} className="flex items-center justify-between gap-2 px-4 pt-3.5 pb-2.5 outline-none">
+          <PopoverTitle className="text-card-title font-semibold text-foreground">Notificações</PopoverTitle>
+          {shown ? (
+            <span className="rounded-full bg-primary/12 px-2 py-0.5 text-label font-semibold text-primary dark:bg-primary/20 dark:text-foreground">
+              {shown > 99 ? "99+" : shown} não lida{shown === 1 ? "" : "s"}
+            </span>
+          ) : null}
         </div>
 
-        <Tabs value={panelTab} onValueChange={(value) => setPanelTab(value === "READ" ? "READ" : "UNREAD")} className="gap-0 border-b border-border px-3">
-          <TabsList variant="line" aria-label="Filtro de leitura" className="h-auto w-full justify-start gap-5 rounded-none p-0">
+        <Tabs value={panelTab} onValueChange={(value) => setPanelTab(value === "READ" ? "READ" : "UNREAD")} className="gap-0 border-b border-border px-3 pb-2.5">
+          <TabsList aria-label="Filtro de leitura" className="h-9 w-full gap-1 rounded-lg bg-muted p-1">
             <TabsTrigger value="UNREAD" className={PANEL_TAB_CLASS}>
               Não lidas
             </TabsTrigger>
@@ -181,7 +180,7 @@ export function NotificationBell() {
           ) : visible.length === 0 ? (
             <div className="flex flex-col items-center gap-1 px-4 py-8 text-center">
               <Bell className="size-5 text-muted-foreground" aria-hidden />
-              <p className="text-[13px] font-semibold text-foreground">{panelTab === "UNREAD" ? "Nenhuma notificação não lida" : "Nenhuma notificação lida"}</p>
+              <p className="text-body font-semibold text-foreground">{panelTab === "UNREAD" ? "Nenhuma notificação não lida" : "Nenhuma notificação lida"}</p>
               <p className="text-xs text-muted-foreground">{panelTab === "UNREAD" ? "Você está em dia com os avisos." : "Os avisos que você ler ficam guardados aqui."}</p>
             </div>
           ) : (
@@ -193,8 +192,13 @@ export function NotificationBell() {
           )}
         </div>
 
-        <div className="border-t border-border p-1.5">
-          <Link href="/notificacoes" onClick={() => setOpen(false)} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "w-full justify-center font-medium text-primary hover:bg-primary/10 hover:text-primary dark:text-[color-mix(in_oklch,var(--primary)_70%,white)] dark:hover:text-[color-mix(in_oklch,var(--primary)_70%,white)]")}>
+        <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-2.5">
+          <span className="text-label text-muted-foreground">Mostrando as {PANEL_SIZE} mais recentes</span>
+          <Link
+            href="/notificacoes"
+            onClick={() => setOpen(false)}
+            className="rounded-sm text-body font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-[color-mix(in_oklch,var(--primary)_75%,white)]"
+          >
             Ver todas
           </Link>
         </div>

@@ -653,7 +653,7 @@ function Line({ label, children }: { label: string; children: ReactNode }) {
 
 const chip = "rounded-full px-1.5 py-px text-xs font-semibold";
 const textareaClass = "min-h-[72px] rounded-[7px] border-input bg-card px-2.5 py-2.5 text-xs md:text-xs";
-const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-input px-3.5 text-xs font-semibold";
+const secondaryButton = "h-9 gap-1.5 rounded-[9px] px-3.5 text-[13px]";
 const primaryButton = "h-9 gap-1.5 rounded-[7px] bg-primary px-3.5 text-xs font-semibold text-primary-foreground hover:bg-primary";
 const groupLabel = "mb-1.5 block text-xs font-semibold text-foreground/80";
 const mutedNote = "flex items-start gap-1.5 text-xs leading-[1.45] text-muted-foreground";

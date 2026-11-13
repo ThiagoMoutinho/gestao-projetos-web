@@ -7,7 +7,7 @@
 export const THEME_IDS = ["igepps", "light", "dark"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
-export const PALETTE_IDS = ["institucional", "petroleo", "violeta", "esmeralda"] as const;
+export const PALETTE_IDS = ["institucional", "petroleo", "violeta", "esmeralda", "rosa"] as const;
 export type PaletteId = (typeof PALETTE_IDS)[number];
 
 export const DEFAULT_THEME: ThemeId = "igepps";
@@ -18,6 +18,7 @@ export const PALETTES: ReadonlyArray<{ id: PaletteId; label: string }> = [
   { id: "petroleo", label: "Azul petróleo" },
   { id: "violeta", label: "Violeta" },
   { id: "esmeralda", label: "Esmeralda" },
+  { id: "rosa", label: "Rosa" },
 ];
 
 export const THEMES: ReadonlyArray<{ id: ThemeId; label: string }> = [

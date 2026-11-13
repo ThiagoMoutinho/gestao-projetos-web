@@ -624,7 +624,7 @@ function Bar({
   const start = timeline.position((range.start ?? range.end) as string);
   const end = timeline.position((range.end ?? range.start) as string);
   return (
-    <div className="relative h-2.5 rounded-full bg-muted/40" title={`${label}: ${formatCivilDate((range.start ?? range.end) as string)} a ${formatCivilDate((range.end ?? range.start) as string)}`}>
+    <div className="relative h-2.5 rounded-full bg-track" title={`${label}: ${formatCivilDate((range.start ?? range.end) as string)} a ${formatCivilDate((range.end ?? range.start) as string)}`}>
       <span className={cn("absolute inset-y-0 rounded-full", className)} style={{ left: `${start}%`, width: `${Math.max(end - start, 1.5)}%` }} />
       {hint ? (
         <span className="absolute top-1/2 ml-2 -translate-y-1/2 text-[11px] font-medium whitespace-nowrap text-warning-foreground" style={{ left: `${end}%` }}>
@@ -657,7 +657,7 @@ function ScheduleHistoryBlock({ history, projectId }: { history: History; projec
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-sm font-semibold">Reprogramações e solicitações</h3>
         {total > PREVIEW ? (
-          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" aria-expanded={showAll} onClick={toggle}>
+          <Button type="button" variant="link" size="sm" className="h-auto p-0" aria-expanded={showAll} onClick={toggle}>
             {showAll ? "Ver menos" : `Ver todas (${total})`}
           </Button>
         ) : null}

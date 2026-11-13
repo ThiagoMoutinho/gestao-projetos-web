@@ -8,7 +8,6 @@ import {
   History,
   LayoutDashboard,
   Network,
-  PanelLeftClose,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -20,7 +19,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -32,7 +30,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import type { ComboOption } from "@/components/option-combobox";
@@ -283,7 +280,6 @@ export function AppSidebar({ className }: { className?: string }) {
   const tab = useSearchParams().get("aba");
   const eapOpen = tab === "eap";
   const scheduleOpen = tab === "cronograma";
-  const { state, toggleSidebar } = useSidebar();
   const { projects: accessible } = useAccessibleProjects();
   const projects: ComboOption[] | null = useMemo(
     () => accessible?.map((project) => ({ value: project.id, label: project.name })) ?? null,
@@ -314,20 +310,6 @@ export function AppSidebar({ className }: { className?: string }) {
           </Fragment>
         ))}
       </SidebarContent>
-      <SidebarFooter className="shrink-0">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip={state === "collapsed" ? "Expandir menu" : "Recolher menu"}
-              onClick={toggleSidebar}
-              aria-label={state === "collapsed" ? "Expandir menu lateral" : "Recolher menu lateral"}
-            >
-              <PanelLeftClose className="size-4 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:rotate-180 motion-reduce:transition-none" />
-              <span>Recolher menu</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

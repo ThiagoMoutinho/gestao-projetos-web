@@ -288,7 +288,7 @@ export function LoginForm() {
       <Button
         type="submit"
         size="lg"
-        className="h-12 w-full rounded-lg text-sm font-medium"
+        className="h-12 w-full"
         loading={pending}
       >
         <ArrowRight />

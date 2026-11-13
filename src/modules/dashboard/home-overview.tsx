@@ -412,7 +412,7 @@ function SupplierSection({ rows }: { rows: ProjectListRow[] }) {
                   <span className="truncate text-foreground/80" title={supplier.name}>{supplier.name}</span>
                   <span className="shrink-0 font-semibold text-foreground tabular-nums">{supplier.total}</span>
                 </span>
-                <span className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                <span className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-track" aria-hidden="true">
                   <span className="h-full rounded-full bg-primary/70" style={{ width: `${(supplier.total / load.max) * 100}%` }} />
                 </span>
                 {risk.length > 0 ? <span className="mt-1 block text-xs font-medium text-status-adjust-ink">{risk.join(" · ")}</span> : null}

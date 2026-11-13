@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, PencilLine } from "lucide-react";
+import { ArrowRight, CalendarClock, PencilLine } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -10,6 +10,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { FieldError, useFieldErrors } from "@/components/field-error";
@@ -112,10 +113,13 @@ export function PhaseActualCorrection({
           }
         }}
       >
-        <AlertDialogContent className="max-w-[440px]! gap-3 rounded-[10px] p-5">
+        <AlertDialogContent className="sm:max-w-[460px]!">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[14px] font-semibold text-foreground">Corrigir datas reais da fase</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs leading-relaxed text-foreground/80">
+            <AlertDialogMedia className="bg-status-attention-soft text-status-attention-ink">
+              <CalendarClock />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Corrigir datas reais da fase</AlertDialogTitle>
+            <AlertDialogDescription>
               Registradas hoje: início <strong className="font-semibold text-foreground">{dateText(recorded.start)}</strong>, término{" "}
               <strong className="font-semibold text-foreground">{dateText(recorded.end)}</strong>. A correção fica no histórico com a
               justificativa; o planejamento e a linha de base não mudam.
@@ -161,11 +165,11 @@ export function PhaseActualCorrection({
               ))}
             </ul>
           ) : null}
-          <AlertDialogFooter className="-mx-5 -mb-5 px-5 py-3">
-            <AlertDialogCancel className="h-8 text-xs" disabled={busy}>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>
               Cancelar
             </AlertDialogCancel>
-            <Button type="button" className="h-8 text-xs" disabled={changes.length === 0} loading={busy} onClick={() => void confirm()}>
+            <Button type="button" className="h-8" disabled={changes.length === 0} loading={busy} onClick={() => void confirm()}>
               {busy ? "Salvando…" : "Confirmar correção"}
             </Button>
           </AlertDialogFooter>
@@ -179,4 +183,4 @@ function dateText(value: string) {
   return value ? formatCivilDate(value) : "não informada";
 }
 
-const secondaryButton = "h-9 gap-1.5 rounded-[7px] border-input px-3.5 text-xs font-semibold";
+const secondaryButton = "h-9 gap-1.5 rounded-[9px] px-3.5 text-[13px]";

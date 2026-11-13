@@ -65,7 +65,7 @@ export default async function LoginPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 rounded-lg bg-background text-sm font-medium"
+                className="h-12 bg-background"
                 disabled
                 aria-describedby="manual-unavailable"
                 title="Ainda não disponível"
