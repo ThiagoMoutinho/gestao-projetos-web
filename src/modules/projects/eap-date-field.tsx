@@ -12,18 +12,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 export const dateControlClass = `h-10 w-full rounded-[7px] border border-input bg-card px-3 text-xs text-foreground outline-none disabled:cursor-not-allowed disabled:bg-muted/50 disabled:text-muted-foreground ${controlTransitionClassName} ${controlFocusClassName}`;
 
-/**
- * Combobox (shadcn/ui) com a mesma altura, borda, fonte, ícone e foco dos demais campos da EAP.
- * Use junto com `compact` no OptionCombobox para a lista aberta seguir o mesmo tamanho.
- */
-export const comboboxControlClass = [
-  "h-10 rounded-[7px] border-input bg-card has-disabled:bg-muted/50 has-disabled:opacity-100",
-  "[&_input]:px-3 [&_input]:text-xs [&_input]:text-foreground [&_input]:placeholder:text-muted-foreground [&_input:disabled]:text-muted-foreground",
-  "[&_[data-slot=input-group-button]_svg]:size-3.5 [&_[data-slot=input-group-button]_svg]:text-muted-foreground",
-  "has-[[data-slot=input-group-control]:focus-visible]:border-primary has-[[data-slot=input-group-control]:focus-visible]:ring-4 has-[[data-slot=input-group-control]:focus-visible]:ring-primary/20",
-  controlTransitionClassName,
-].join(" ");
-
 /** Campo de data civil (AAAA-MM-DD) com calendário em português. */
 export function DateField({
   label,

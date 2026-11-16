@@ -227,13 +227,10 @@ export function EapWorkbench({
                 onChange={(event) => onQueryChange(event.target.value)}
                 placeholder="Buscar na EAP..."
                 aria-label="Buscar na EAP"
-                className="h-7 border-0 bg-transparent px-0 text-[11.5px] text-foreground shadow-none focus-visible:ring-0"
+                className="h-7 border-0 bg-transparent px-0 text-[11.5px] text-foreground shadow-none focus-visible:ring-0 dark:bg-transparent"
               />
             </label>
             <FilterMenu filter={filter} count={filterCount} onChange={onFilterChange} />
-            <Button type="button" variant="outline" size="icon" className="size-[34px] border-input text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Mais opções">
-              <MoreHorizontal />
-            </Button>
           </div>
         </div>
         <div className={cn(columns, "hidden h-11 min-h-0 border-b border-border bg-muted/50 px-[17px] text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase md:grid")}>
@@ -247,13 +244,13 @@ export function EapWorkbench({
           <span className="sr-only">Ações</span>
         </div>
         {empty ? (
-          <div className="flex h-44 flex-col items-center justify-center gap-1 text-muted-foreground">
+          <div key="vazio" className="motion-fade flex h-44 flex-col items-center justify-center gap-1 text-muted-foreground">
             <Search className="size-5" aria-hidden="true" />
             <strong className="text-sm text-foreground/80">{untouched ? "Nenhuma fase registrada" : "Nenhum item encontrado"}</strong>
             <span className="text-xs">{untouched ? "Cadastre a primeira fase para montar a EAP." : "Tente buscar ou filtrar por outro critério."}</span>
           </div>
         ) : (
-          <div>{children}</div>
+          <div key="lista" className="motion-fade">{children}</div>
         )}
       </section>
     </div>
@@ -883,9 +880,10 @@ function FilterMenu({ filter, count, onChange }: { filter: EapListFilter; count:
         Filtrar
         {count > 0 ? <span className="rounded-full bg-primary/10 px-1.5 text-[11px] text-primary">{count}</span> : null}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64">
+      {/* Fica sempre abaixo do botão (sem virar para o lado quando a lista muda) e rola por dentro se faltar espaço. */}
+      <PopoverContent align="end" collisionAvoidance={{ side: "none", align: "shift" }} className="max-h-(--available-height) w-64 overflow-y-auto">
         <p className="px-1 text-xs font-semibold tracking-[0.04em] text-muted-foreground uppercase">Situação</p>
-        <div className="flex max-h-52 flex-col gap-2 overflow-y-auto">
+        <div className="flex flex-col gap-2">
           {STATUS_FILTERS.map((option) => (
             <label key={option.value} className="flex items-center gap-2 text-sm text-foreground">
               <Checkbox checked={filter.statuses.includes(option.value)} onCheckedChange={() => toggleStatus(option.value)} />
@@ -911,11 +909,9 @@ function FilterMenu({ filter, count, onChange }: { filter: EapListFilter; count:
           <Checkbox checked={filter.overdue} onCheckedChange={(checked) => onChange({ ...filter, overdue: checked === true })} />
           Atrasado
         </label>
-        {count > 0 ? (
-          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(idleEapFilter)}>
-            Limpar filtros
-          </Button>
-        ) : null}
+        <Button type="button" variant="ghost" size="sm" disabled={count === 0} onClick={() => onChange(idleEapFilter)}>
+          Limpar filtros
+        </Button>
       </PopoverContent>
     </Popover>
   );

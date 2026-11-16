@@ -169,15 +169,15 @@ export function EapDetail({
       </header>
       <div key={editing ? "edit" : "view"} className={cn("motion-fade min-h-0 flex-1 overflow-y-auto bg-muted/50 px-6 pb-6", !editing && "[&_.text-xs]:text-[11.5px]")}>
         {confirmCancel || pending ? (
-          <div role="alert" className="mt-3 mb-3 flex items-start gap-2 rounded-[7px] border border-status-attention/40 bg-status-attention-soft p-2.5 text-status-attention-ink">
-            <AlertTriangle className="mt-0.5 size-[15px] shrink-0" aria-hidden="true" />
+          <div role="alert" className="mt-3 mb-3 flex items-start gap-2.5 rounded-[9px] border border-status-attention/50 bg-status-attention-soft p-3 text-status-attention-ink">
+            <AlertTriangle className="mt-px size-4 shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="text-[11.5px] leading-[1.45]">Há alterações não salvas neste item.</p>
+              <p className="text-xs leading-[1.45] font-semibold">Há alterações não salvas neste item.</p>
               <div className="mt-2 flex flex-wrap justify-end gap-[7px]">
                 <Button
                   type="button"
                   variant="outline"
-                  className={compactButton}
+                  className={cn(compactButton, "border-foreground/30 bg-card text-foreground hover:bg-muted dark:border-foreground/35 dark:bg-card dark:hover:bg-muted")}
                   onClick={() => {
                     if (confirmCancel) {
                       setConfirmCancel(false);
@@ -192,7 +192,7 @@ export function EapDetail({
                 <Button
                   type="button"
                   variant="outline"
-                  className={cn(compactButton, "border-status-critical/40 text-status-critical-ink hover:bg-status-critical-soft")}
+                  className={cn(compactButton, "border-status-critical/70 bg-card text-status-critical-ink hover:bg-status-critical-soft dark:border-status-critical/70 dark:bg-card dark:hover:bg-status-critical-soft")}
                   onClick={() => {
                     if (pending) {
                       onDiscard();

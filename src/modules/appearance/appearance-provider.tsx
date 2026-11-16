@@ -6,6 +6,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExte
 import {
   DEFAULT_PALETTE,
   DEFAULT_THEME,
+  DEVICE_PALETTE_KEY,
+  effectivePalette,
+  paletteLockedFor,
   parsePalette,
   parseTheme,
   readAppearance,
@@ -16,7 +19,10 @@ import {
 
 type AppearanceContextValue = {
   theme: ThemeId;
+  /** Paleta em uso na tela: a institucional no Padrão IGEPPS; nas outras aparências, a escolhida. */
   palette: PaletteId;
+  /** No Padrão IGEPPS a paleta é fixa e a troca fica desativada. */
+  paletteLocked: boolean;
   setTheme: (theme: ThemeId) => void;
   setPalette: (palette: PaletteId) => void;
 };
@@ -32,7 +38,12 @@ function animateChange() {
   transitionTimer = window.setTimeout(() => root.classList.remove("theme-transition"), 350);
 }
 
-/** A paleta vive no atributo data-palette do <html> (aplicado antes da hidratação); este mini-store avisa o React quando muda. */
+/**
+ * Paleta ESCOLHIDA pelo usuário (vale em Claro e Escuro). Fica em memória e no dispositivo; a paleta aplicada ao <html>
+ * (atributo data-palette) é calculada a partir dela e do tema, porque o Padrão IGEPPS força a institucional.
+ * Este mini-store avisa o React quando a escolha muda.
+ */
+let chosenPalette: PaletteId | null = null;
 const paletteListeners = new Set<() => void>();
 function subscribePalette(listener: () => void) {
   paletteListeners.add(listener);
@@ -41,10 +52,17 @@ function subscribePalette(listener: () => void) {
   };
 }
 function readPalette(): PaletteId {
-  return parsePalette(document.documentElement.getAttribute("data-palette")) ?? DEFAULT_PALETTE;
+  if (chosenPalette) {
+    return chosenPalette;
+  }
+  try {
+    return parsePalette(window.localStorage.getItem(DEVICE_PALETTE_KEY)) ?? DEFAULT_PALETTE;
+  } catch {
+    return DEFAULT_PALETTE;
+  }
 }
-function applyPalette(palette: PaletteId) {
-  document.documentElement.setAttribute("data-palette", palette);
+function chooseStoredPalette(palette: PaletteId) {
+  chosenPalette = palette;
   paletteListeners.forEach((listener) => listener());
 }
 
@@ -55,7 +73,7 @@ function applyPalette(palette: PaletteId) {
  */
 export function AppearanceProvider({ userId, children }: { userId: string; children: React.ReactNode }) {
   const { theme: activeTheme, setTheme: applyTheme } = useTheme();
-  const palette = useSyncExternalStore(subscribePalette, readPalette, () => DEFAULT_PALETTE);
+  const chosen = useSyncExternalStore(subscribePalette, readPalette, () => DEFAULT_PALETTE);
 
   // Ao montar: aplica a preferência do usuário; sem preferência salva, mantém o que o dispositivo já usava.
   useEffect(() => {
@@ -66,7 +84,7 @@ export function AppearanceProvider({ userId, children }: { userId: string; child
       stored = {};
     }
     if (stored.palette) {
-      applyPalette(stored.palette);
+      chooseStoredPalette(stored.palette);
     }
     if (stored.theme) {
       applyTheme(stored.theme);
@@ -74,6 +92,13 @@ export function AppearanceProvider({ userId, children }: { userId: string; child
   }, [userId, applyTheme]);
 
   const theme = parseTheme(activeTheme) ?? DEFAULT_THEME;
+  const locked = paletteLockedFor(theme);
+  const palette = effectivePalette(theme, chosen);
+
+  // Aplica ao <html> a paleta que vale agora (institucional no Padrão IGEPPS).
+  useEffect(() => {
+    document.documentElement.setAttribute("data-palette", palette);
+  }, [palette]);
 
   const persist = useCallback(
     (next: { theme: ThemeId; palette: PaletteId }) => {
@@ -88,23 +113,29 @@ export function AppearanceProvider({ userId, children }: { userId: string; child
 
   const setPalette = useCallback(
     (next: PaletteId) => {
+      if (locked) {
+        return;
+      }
       animateChange();
-      applyPalette(next);
+      chooseStoredPalette(next);
       persist({ theme, palette: next });
     },
-    [persist, theme],
+    [persist, theme, locked],
   );
 
   const setTheme = useCallback(
     (next: ThemeId) => {
       animateChange();
       applyTheme(next);
-      persist({ theme: next, palette });
+      persist({ theme: next, palette: chosen });
     },
-    [applyTheme, persist, palette],
+    [applyTheme, persist, chosen],
   );
 
-  const value = useMemo(() => ({ theme, palette, setTheme, setPalette }), [theme, palette, setTheme, setPalette]);
+  const value = useMemo(
+    () => ({ theme, palette, paletteLocked: locked, setTheme, setPalette }),
+    [theme, palette, locked, setTheme, setPalette],
+  );
   return <AppearanceContext.Provider value={value}>{children}</AppearanceContext.Provider>;
 }
 

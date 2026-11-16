@@ -3,6 +3,7 @@
 import { ArrowLeft, FolderKanban } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -49,6 +50,17 @@ export function ProjectDetail({
     : null;
   const router = useRouter();
 
+  // A entrada de uma página nova já é animada pelo PageTransition (template). Aqui só a TROCA de visão dentro da mesma
+  // página (Visão Geral, EAP, Cronograma) anima; a visão inicial não, para as duas animações não se somarem.
+  const view = openSchedule ? "cronograma" : openEap ? "eap" : "geral";
+  const [lastView, setLastView] = useState(view);
+  const [switched, setSwitched] = useState(false);
+  if (view !== lastView) {
+    setLastView(view);
+    setSwitched(true);
+  }
+  const enter = switched ? "motion-enter" : "";
+
   function openEapView() {
     router.push(`/projetos/${project.id}?aba=eap`);
   }
@@ -73,7 +85,7 @@ export function ProjectDetail({
 
   if (openSchedule) {
     return (
-      <div className="motion-enter mx-auto flex w-full max-w-[90rem] flex-col gap-5">
+      <div className={cn(enter, "mx-auto flex w-full max-w-[90rem] flex-col gap-5")}>
         <ProjectCronograma key={project.id} project={project} access={access} onBack={() => router.push(`/projetos/${project.id}`)} onOpenEap={openEapView} onSaved={() => router.refresh()} />
       </div>
     );
@@ -91,7 +103,7 @@ export function ProjectDetail({
           <ArrowLeft className="size-4" aria-hidden="true" />
           Voltar
         </Button>
-        <div className="motion-enter">
+        <div className={enter}>
           <ProjectEap
             key={project.id}
             projectId={project.id}
@@ -106,7 +118,7 @@ export function ProjectDetail({
   }
 
   return (
-    <div className="motion-enter mx-auto flex w-full max-w-[90rem] flex-col gap-5">
+    <div className={cn(enter, "mx-auto flex w-full max-w-[90rem] flex-col gap-5")}>
       <ProjectOverview key={project.id} project={project} access={access} onOpenEap={openEapView} />
     </div>
   );

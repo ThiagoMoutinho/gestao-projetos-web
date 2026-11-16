@@ -218,7 +218,7 @@ function PersonPicker({
       emptyText="Nenhum usuário ativo encontrado."
       disabled={disabled}
       invalid={invalid}
-      className="h-14 min-w-0 rounded-xl bg-background px-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)] [&_input]:text-body"
+      className="min-w-0"
     />
   );
 }
@@ -429,7 +429,7 @@ function TeamEditDialog({
                           onChange={(value) => (TEAM_ROLES as readonly string[]).includes(value) && setRow(row.rowId, { role: value as TeamRole })}
                           options={ROLE_OPTIONS}
                           disabled={saving}
-                          className="h-11 min-w-0 flex-1 rounded-xl bg-background sm:w-48 sm:flex-none [&_input]:text-body"
+                          className="min-w-0 flex-1 sm:w-48 sm:flex-none"
                         />
                         <Button
                           type="button"

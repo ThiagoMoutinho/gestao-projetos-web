@@ -278,7 +278,6 @@ function ResultForm({
             options={milestones}
             placeholder="Vincular a um marco"
             clearable
-            compact
             disabled={busy}
           />
         </div>

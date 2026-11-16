@@ -116,8 +116,8 @@ export function NotificationBell() {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button type="button" variant="outline" size="icon" aria-label={bellLabel(shown)} className="relative size-10 shrink-0 border-bar-border bg-transparent text-bar-foreground transition-colors duration-200 hover:bg-bar-foreground/10 hover:text-bar-foreground focus-visible:ring-bar-foreground/60 motion-reduce:transition-none dark:bg-transparent dark:hover:bg-bar-foreground/10" />}>
-        <Bell className="size-[18px]" strokeWidth={1.75} aria-hidden />
+      <PopoverTrigger render={<Button type="button" variant="outline" size="icon" aria-label={bellLabel(shown)} className="relative size-[41px] shrink-0 border-bar-border bg-transparent text-bar-foreground transition-colors duration-200 hover:bg-bar-foreground/10 hover:text-bar-foreground focus-visible:ring-bar-foreground/60 motion-reduce:transition-none dark:bg-transparent dark:hover:bg-bar-foreground/10" />}>
+        <Bell className="size-[19px]" strokeWidth={1.75} aria-hidden />
         {shown ? (
           <span
             aria-hidden

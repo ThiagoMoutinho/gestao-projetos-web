@@ -30,7 +30,7 @@ import {
   canUpdateTaskProgress,
   type EapAccess,
 } from "./eap-access";
-import { comboboxControlClass, DateField, dateControlClass as editControlClass } from "./eap-date-field";
+import { DateField, dateControlClass as editControlClass } from "./eap-date-field";
 import { actualDatesProblem, correctsActualDate } from "./eap-deadline";
 import { MilestoneDecisionFeedback } from "./eap-decision-feedback";
 import { evidenceRequest, forgetEvidences, type EvidenceParent, type EvidenceState } from "./eap-evidence-cache";
@@ -1264,8 +1264,6 @@ const eapEvidenceUi: EvidenceFieldUi = {
         value={value}
         onChange={(next) => onChange((next || "DOCUMENT") as EvidenceKind)}
         options={options}
-        compact
-        className={comboboxControlClass}
       />
     </div>
   ),
@@ -1522,8 +1520,6 @@ function PriorityField({ value, onChange }: { value: TaskPriority; onChange: (va
         onChange={(next) => onChange((next || DEFAULT_PRIORITY) as TaskPriority)}
         options={PRIORITY_OPTIONS}
         placeholder="Normal"
-        compact
-        className={comboboxControlClass}
       />
     </div>
   );
@@ -1560,8 +1556,6 @@ function AssigneeField({
         placeholder={emptyLabel}
         invalid={Boolean(error)}
         describedBy={errorId}
-        compact
-        className={comboboxControlClass}
       />
       <FieldError id={errorId} message={error} />
     </div>

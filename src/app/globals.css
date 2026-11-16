@@ -595,6 +595,23 @@
   animation: motion-enter 220ms ease-out both;
 }
 
+/* Entrada de página (app/(app)/template.tsx): fade-in com deslocamento vertical curto. "backwards" remove o transform ao terminar. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 200ms ease-out backwards;
+}
+
 /* Troca de abas e conteúdo carregado: só opacidade, curta, sem deslocar o layout. */
 @keyframes motion-fade {
   from {
@@ -612,6 +629,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .motion-enter,
+  .page-enter,
   .motion-fade {
     animation: none;
   }
@@ -733,41 +751,41 @@ html.theme-transition *::after {
  * suave (sem outline), igual ao editor de texto rico. Erro e desabilitado mantêm as cores dos próprios componentes.
  * A transição (180 ms, ease-in-out) cobre borda, sombra e fundo e é desligada com movimento reduzido.
  */
-:is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):not([data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+:is([data-slot="input"]:not(.border-0), [data-slot="textarea"]:not(.border-0), [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not(.border-0, [data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not(.border-0, [data-slot="input-group-control"]), select[class*="border-input"]):not([data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
   transition:
     border-color 180ms ease-in-out,
     box-shadow 180ms ease-in-out,
     background-color 180ms ease-in-out;
 }
-:is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):not(:focus-visible, :has(:focus-visible), [aria-invalid="true"], :has([aria-invalid="true"]), :disabled, [aria-disabled="true"], [data-invalid], [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+:is([data-slot="input"]:not(.border-0), [data-slot="textarea"]:not(.border-0), [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not(.border-0, [data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not(.border-0, [data-slot="input-group-control"]), select[class*="border-input"]):not(:focus-visible, :has(:focus-visible), [aria-invalid="true"], :has([aria-invalid="true"]), :disabled, [aria-disabled="true"], [data-invalid], [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
   border-color: var(--field-border);
 }
-:is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):hover:not(:focus-visible, :has(:focus-visible), [aria-invalid="true"], :has([aria-invalid="true"]), :disabled, [aria-disabled="true"], [data-invalid], [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+:is([data-slot="input"]:not(.border-0), [data-slot="textarea"]:not(.border-0), [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not(.border-0, [data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not(.border-0, [data-slot="input-group-control"]), select[class*="border-input"]):hover:not(:focus-visible, :has(:focus-visible), [aria-invalid="true"], :has([aria-invalid="true"]), :disabled, [aria-disabled="true"], [data-invalid], [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
   border-color: var(--field-border-hover);
 }
-:is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):is(:focus-visible, :has(:focus-visible)):not([aria-invalid="true"], :has([aria-invalid="true"]), [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+:is([data-slot="input"]:not(.border-0), [data-slot="textarea"]:not(.border-0), [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not(.border-0, [data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not(.border-0, [data-slot="input-group-control"]), select[class*="border-input"]):is(:focus-visible, :has(:focus-visible)):not([aria-invalid="true"], :has([aria-invalid="true"]), [data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
   border-color: var(--ring);
   box-shadow: 0 0 0 3px var(--field-halo);
   outline: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  :is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not([data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not([data-slot="input-group-control"]), select[class*="border-input"]):not([data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
+  :is([data-slot="input"]:not(.border-0), [data-slot="textarea"]:not(.border-0), [data-slot="input-group"], [data-slot="combobox-chips"], [data-slot="tags-input"], input[class*="border-input"]:not(.border-0, [data-slot="input-group-control"], [data-slot="combobox-chip-input"]), textarea[class*="border-input"]:not(.border-0, [data-slot="input-group-control"]), select[class*="border-input"]):not([data-slot="combobox-content"] *, [data-slot="sidebar-container"] *) {
     transition: none;
   }
 }
 
 /*
- * Barra de rolagem discreta e padronizada: diálogos, painéis laterais e as áreas rolantes dentro deles usam a barra fina
- * (cor suave, sem trilho), igual ao diálogo "Sobre o projeto". A rolagem continua funcionando; áreas com .no-scrollbar
- * (que escondem a barra de propósito) ficam de fora.
+ * Barra de rolagem discreta e padronizada em todo o sistema: diálogos, painéis laterais, menus, popovers e qualquer área com
+ * rolagem (.overflow-y-auto / .overflow-auto / .overflow-x-auto) usam a barra fina (cor suave, sem trilho), igual ao diálogo
+ * "Sobre o projeto". A rolagem continua funcionando; só ficam de fora as áreas com .no-scrollbar, que escondem a barra de propósito.
  */
-:is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="alert-dialog-content"]),
-:is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="alert-dialog-content"]) :is(.overflow-y-auto, .overflow-auto) {
+:is(
+  [data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="alert-dialog-content"], [data-slot="popover-content"],
+  [data-slot="dropdown-menu-content"], [data-slot="combobox-content"],
+  .overflow-y-auto, .overflow-auto, .overflow-x-auto
+):not(.no-scrollbar) {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklch, var(--foreground) 24%, transparent) transparent;
-}
-:is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="alert-dialog-content"]) .no-scrollbar {
-  scrollbar-width: none;
 }
 
 /* Placeholders: sempre legíveis (≥ 4,5:1); o padrão dos componentes usa opacidade e fica abaixo disso em alguns fundos. */

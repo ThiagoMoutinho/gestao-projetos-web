@@ -27,7 +27,20 @@ export const THEMES: ReadonlyArray<{ id: ThemeId; label: string }> = [
   { id: "dark", label: "Escuro" },
 ];
 
-/** Última paleta aplicada neste dispositivo; lida por um script antes da hidratação para evitar piscar. */
+/**
+ * O Padrão IGEPPS usa só as cores do instituto (azul institucional): a troca de paleta fica desativada nele e só as
+ * aparências Claro e Escuro aceitam outra paleta. A escolha do usuário continua guardada e volta ao sair do Padrão IGEPPS.
+ */
+export function paletteLockedFor(theme: ThemeId): boolean {
+  return theme === "igepps";
+}
+
+/** Paleta que realmente vale na tela: a institucional no Padrão IGEPPS; nas demais aparências, a escolhida. */
+export function effectivePalette(theme: ThemeId, chosen: PaletteId): PaletteId {
+  return paletteLockedFor(theme) ? DEFAULT_PALETTE : chosen;
+}
+
+/** Última paleta escolhida neste dispositivo; lida por um script antes da hidratação para evitar piscar. */
 export const DEVICE_PALETTE_KEY = "igepps:palette";
 
 export type Appearance = { theme: ThemeId; palette: PaletteId };
@@ -77,8 +90,11 @@ export function writeAppearance(store: KeyValueStore, userId: string, appearance
   }
 }
 
-/** Script executado antes da hidratação: aplica a última paleta do dispositivo ao <html>. */
+/**
+ * Script executado antes da hidratação: aplica ao <html> a última paleta do dispositivo, exceto no Padrão IGEPPS
+ * (tema salvo pelo next-themes na chave "theme"; sem valor salvo vale o padrão), que usa sempre a institucional.
+ */
 export function paletteBootstrapScript() {
   const ids = JSON.stringify(PALETTE_IDS);
-  return `try{var p=localStorage.getItem(${JSON.stringify(DEVICE_PALETTE_KEY)});if(p&&${ids}.indexOf(p)!==-1)document.documentElement.setAttribute("data-palette",p)}catch(e){}`;
+  return `try{var t=localStorage.getItem("theme")||${JSON.stringify(DEFAULT_THEME)};var p=t==="igepps"?${JSON.stringify(DEFAULT_PALETTE)}:localStorage.getItem(${JSON.stringify(DEVICE_PALETTE_KEY)});if(p&&${ids}.indexOf(p)!==-1)document.documentElement.setAttribute("data-palette",p)}catch(e){}`;
 }

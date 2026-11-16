@@ -5,7 +5,6 @@ import { OptionCombobox, type ComboOption } from "@/components/option-combobox";
 import type { FeedFilters } from "./notification-feed";
 import { KIND_LABEL, NOTIFICATION_KINDS, isNotificationKind } from "./notification-state";
 
-const FIELD = "h-9 rounded-lg border-input bg-card [&_input]:text-[13px]";
 
 /** Filtros por tipo, projeto e pendência. A leitura (Todas / Não lidas / Lidas) fica nas abas da Central. */
 export function NotificationFilters({
@@ -27,7 +26,6 @@ export function NotificationFilters({
           options={NOTIFICATION_KINDS.map((kind) => ({ value: kind, label: KIND_LABEL[kind] }))}
           placeholder="Tipo: todos"
           clearable
-          className={FIELD}
         />
       </div>
       <div className="min-w-0">
@@ -39,7 +37,6 @@ export function NotificationFilters({
           placeholder="Projeto: todos"
           emptyText="Nenhum projeto encontrado."
           clearable
-          className={FIELD}
         />
       </div>
       <div className="min-w-0">
@@ -53,7 +50,6 @@ export function NotificationFilters({
           ]}
           placeholder="Pendência: todas"
           clearable
-          className={FIELD}
         />
       </div>
     </div>

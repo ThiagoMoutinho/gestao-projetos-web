@@ -19,7 +19,6 @@ import type { ListEapMilestones200DataItemType } from "@/lib/api/generated/model
 
 import { canReschedule, type EapAccess } from "./eap-access";
 import { phaseCoverage, spanOf } from "./eap-deadline";
-import { comboboxControlClass } from "./eap-date-field";
 import { MilestoneFlow } from "./eap-milestone-flow";
 import { civilDateInput, phaseItemRanges, presentMilestone, presentPhase, presentTask, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
 import { DEFAULT_PRIORITY, PRIORITY_OPTIONS, type TaskPriority } from "./eap-priority";
@@ -842,8 +841,6 @@ function SelectControl<T extends string>({
         placeholder={placeholder}
         invalid={Boolean(error)}
         describedBy={errorId}
-        compact
-        className={comboboxControlClass}
       />
       <FieldError id={errorId} message={error} />
     </div>
@@ -867,7 +864,7 @@ function LockedControl({
       {as === "text" ? (
         <input className={fieldClass} aria-label={label} disabled readOnly value={value} />
       ) : (
-        <OptionCombobox label={label} value={value} onChange={() => undefined} options={[{ value, label: value }]} disabled compact className={comboboxControlClass} />
+        <OptionCombobox label={label} value={value} onChange={() => undefined} options={[{ value, label: value }]} disabled />
       )}
     </div>
   );

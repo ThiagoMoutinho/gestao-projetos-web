@@ -99,12 +99,12 @@ function useUnreadCount(active: boolean) {
 /** Avatar da barra superior com o menu da conta: perfil, notificações, aparência, paleta e sair. */
 export function UserMenu({ user }: { user: AppUser }) {
   const router = useRouter();
-  const { theme, setTheme, palette, setPalette } = useAppearance();
+  const { theme, setTheme, palette, paletteLocked, setPalette } = useAppearance();
   const [pending, setPending] = useState(false);
   const [open, setOpen] = useState(false);
   const unread = useUnreadCount(open);
   const profile = roleLabel(user.role);
-  // As paletas valem só nas aparências IGEPPS e Claro; no Escuro ficam visíveis, mas desabilitadas.
+  // O Padrão IGEPPS usa só a paleta institucional (cores do instituto): as outras ficam desativadas. Claro e Escuro aceitam qualquer paleta.
   const darkTheme = theme === "dark";
 
   async function onLogout() {
@@ -127,20 +127,21 @@ export function UserMenu({ user }: { user: AppUser }) {
       <DropdownMenuTrigger
         aria-label={`Menu da conta de ${user.name}`}
         style={SQUIRCLE_STYLE}
-        className="flex h-[52px] w-[58px] shrink-0 items-center justify-center bg-bar-foreground/16 p-[3px] outline-none transition-colors duration-200 focus-visible:bg-bar-foreground data-open:bg-primary dark:data-open:bg-primary motion-reduce:transition-none"
+        className="flex h-[54px] w-[60px] shrink-0 items-center justify-center bg-bar-muted p-[2px] outline-none transition-[background-color,filter] duration-200 dark:bg-[color-mix(in_oklch,var(--primary)_45%,white)] hover:bg-white hover:brightness-105 focus-visible:bg-white data-open:bg-white dark:data-open:bg-white motion-reduce:transition-none"
       >
         <Avatar className="size-full rounded-none after:hidden" style={SQUIRCLE_STYLE}>
           {user.image ? <AvatarImage src={user.image} alt="" className="object-cover" /> : null}
-          <AvatarFallback className={cn("rounded-none text-card-title", FALLBACK_BG)}>{initials(user.name)}</AvatarFallback>
+          {/* Segue a paleta escolhida: degradê primary→brand no claro/IGEPPS; no escuro, o primary da paleta escurecido (a paleta só muda os destaques lá) com iniciais brancas em semibold; o contorno claro vem do botão. */}
+          <AvatarFallback className="rounded-none bg-linear-to-br from-primary to-brand text-card-title font-semibold tracking-wide text-white dark:from-[color-mix(in_oklch,var(--primary)_72%,black)] dark:to-[color-mix(in_oklch,var(--primary)_54%,black)]">{initials(user.name)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={10} className="w-80 rounded-xl p-0">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
             <span className="flex items-center gap-3 px-4 py-4 text-left">
-              <Avatar className="h-11 w-[50px] shrink-0 rounded-none after:hidden" style={SQUIRCLE_STYLE}>
+              <Avatar className="size-12 shrink-0 rounded-none after:hidden" style={SQUIRCLE_STYLE}>
                 {user.image ? <AvatarImage src={user.image} alt="" className="object-cover" /> : null}
-                <AvatarFallback className={cn("rounded-none text-body", FALLBACK_BG)}>{initials(user.name)}</AvatarFallback>
+                <AvatarFallback className={cn("rounded-none text-card-title", FALLBACK_BG)}>{initials(user.name)}</AvatarFallback>
               </Avatar>
               <span className="grid min-w-0 flex-1 gap-0.5 leading-tight">
                 <span className="truncate text-body font-semibold text-foreground">{user.name}</span>
@@ -197,7 +198,11 @@ export function UserMenu({ user }: { user: AppUser }) {
           <span className="mt-4 mb-2 block text-label text-muted-foreground">
             Paleta de cores · <span className="text-foreground">{PALETTES.find((item) => item.id === palette)?.label}</span>
           </span>
-          {darkTheme ? (
+          {paletteLocked ? (
+            <p id="palette-dark-hint" className="mb-2 text-label text-muted-foreground">
+              O Padrão IGEPPS usa só as cores do instituto. Escolha o tema Claro ou Escuro para trocar a paleta.
+            </p>
+          ) : darkTheme ? (
             <p id="palette-dark-hint" className="mb-2 text-label text-muted-foreground">
               No modo Escuro a paleta muda só os destaques; fundo e cartões continuam escuros.
             </p>
@@ -211,14 +216,15 @@ export function UserMenu({ user }: { user: AppUser }) {
               }
             }}
             className="flex gap-2.5"
-            aria-describedby={darkTheme ? "palette-dark-hint" : undefined}
+            aria-describedby={paletteLocked || darkTheme ? "palette-dark-hint" : undefined}
           >
             {PALETTES.map((item) => (
               <DropdownMenuRadioItem
                 key={item.id}
                 value={item.id}
                 aria-label={item.label}
-                title={item.label}
+                title={paletteLocked && item.id !== palette ? `${item.label} (indisponível no Padrão IGEPPS)` : item.label}
+                disabled={paletteLocked}
                 className="size-9 justify-center rounded-full p-0 pr-0 ring-offset-2 ring-offset-popover transition-shadow duration-150 focus:bg-transparent focus-visible:ring-2 focus-visible:ring-ring data-checked:ring-2 data-checked:ring-primary motion-reduce:transition-none [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
               >
                 <span data-palette={item.id} className="flex size-7 overflow-hidden rounded-full ring-1 ring-border" aria-hidden="true">

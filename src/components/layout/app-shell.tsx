@@ -7,6 +7,7 @@ import { AppBreadcrumb } from "./app-breadcrumb";
 import { AppHeader, type AppUser } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { PageTransitionProvider } from "@/components/layout/page-transition";
 import { AppearanceProvider } from "@/modules/appearance/appearance-provider";
 
 export function AppShell({
@@ -19,11 +20,12 @@ export function AppShell({
   defaultOpen: boolean;
 }) {
   return (
+    <PageTransitionProvider>
     <AppearanceProvider userId={user.id}>
     <AccessibleProjectsProvider>
       <SidebarProvider
         defaultOpen={defaultOpen}
-        style={{ "--header-height": "4.25rem", "--sidebar-width": "16.5rem", "--sidebar-width-icon": "4.5rem" } as CSSProperties}
+        style={{ "--header-height": "4.34rem", "--sidebar-width": "16.5rem", "--sidebar-width-icon": "4.5rem" } as CSSProperties}
         className="min-h-svh flex-1 flex-col bg-background"
       >
         <AppHeader user={user} />
@@ -37,5 +39,6 @@ export function AppShell({
       </SidebarProvider>
     </AccessibleProjectsProvider>
     </AppearanceProvider>
+    </PageTransitionProvider>
   );
 }

@@ -394,8 +394,6 @@ export function ProjectList({
                     setPage(1);
                   }}
                   options={PAGE_SIZES.map((size) => ({ value: size, label: `${size} por página` }))}
-                  compact
-                  className="h-8 [&_input]:text-label"
                 />
               </div>
               <span>
@@ -668,7 +666,6 @@ function FilterSelect({
       options={options}
       placeholder={`${label}: todos`}
       clearable
-      className="h-9 [&_input]:text-body"
     />
   );
 }

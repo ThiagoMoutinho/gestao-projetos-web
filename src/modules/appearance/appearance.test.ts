@@ -7,7 +7,9 @@ import {
   DEFAULT_THEME,
   THEME_IDS,
   DEVICE_PALETTE_KEY,
+  effectivePalette,
   PALETTE_IDS,
+  paletteLockedFor,
   paletteBootstrapScript,
   parsePalette,
   parseTheme,
@@ -79,5 +81,22 @@ describe("preferências de aparência", () => {
     }
     assert.ok(script.includes("data-palette"));
     assert.ok(script.includes(DEVICE_PALETTE_KEY));
+  });
+
+  it("no Padrão IGEPPS a paleta é sempre a institucional e a troca fica bloqueada", () => {
+    assert.equal(paletteLockedFor("igepps"), true);
+    assert.equal(paletteLockedFor("light"), false);
+    assert.equal(paletteLockedFor("dark"), false);
+    for (const id of PALETTE_IDS) {
+      assert.equal(effectivePalette("igepps", id), "institucional");
+      assert.equal(effectivePalette("light", id), id);
+      assert.equal(effectivePalette("dark", id), id);
+    }
+  });
+
+  it("o script de pré-hidratação usa a institucional quando o tema salvo é o Padrão IGEPPS", () => {
+    const script = paletteBootstrapScript();
+    assert.ok(script.includes("igepps"));
+    assert.ok(script.includes(`localStorage.getItem("theme")`));
   });
 });
