@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/combobox";
 import { useAccessibleProjects } from "./accessible-projects";
 import { APP_NAV_GROUPS, type AppNavChild, type AppNavItem } from "./app-nav";
+import { SidebarActiveIndicator } from "./sidebar-active-indicator";
 
 function itemTooltip(label: string, enabled: boolean) {
   return enabled ? label : `${label}, indisponível`;
@@ -293,7 +294,8 @@ export function AppSidebar({ className }: { className?: string }) {
       <SidebarHeader className="overflow-hidden group-data-[collapsible=icon]:hidden">
         <ProjectSwitcher projects={projects} currentProject={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="relative">
+        <SidebarActiveIndicator />
         {APP_NAV_GROUPS.map((group) => (
           <Fragment key={group.label}>
             {group.label === "Gestão" ? <ProjectNav projectId={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} /> : null}

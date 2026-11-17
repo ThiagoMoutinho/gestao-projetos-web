@@ -652,6 +652,38 @@
   background: var(--sidebar-marker, var(--primary));
 }
 
+/*
+ * Indicador deslizante do item ativo (sidebar-active-indicator.tsx): um único fundo atrás dos itens, que estica ao
+ * mudar de item. Na aparência IGEPPS (menu escuro) usa o tom claro do marcador com o texto na cor do menu; no Claro e no
+ * Escuro usa a cor primária com o texto de contraste dela. Só vale depois que o indicador mediu o item
+ * (`data-active-indicator`); antes disso fica o estilo padrão do item ativo acima.
+ */
+:root {
+  --sidebar-indicator: var(--sidebar-marker, var(--sidebar-primary));
+  --sidebar-indicator-foreground: var(--sidebar-primary-foreground);
+}
+:root:not(.light):not(.dark) {
+  --sidebar-indicator-foreground: var(--sidebar);
+}
+[data-active-indicator] [data-sidebar="menu-button"] {
+  z-index: 1;
+}
+[data-active-indicator] [data-sidebar="menu-button"][data-indicator-target],
+[data-active-indicator] [data-sidebar="menu-button"][data-indicator-target]:hover {
+  background-color: transparent;
+  color: var(--sidebar-indicator-foreground);
+  transition-property: color, width, height, padding;
+  transition-duration: 200ms;
+}
+[data-active-indicator] [data-sidebar="menu-button"][data-indicator-target]::before {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-active-indicator] [data-sidebar="menu-button"][data-indicator-target] {
+    transition: none;
+  }
+}
+
 /* Troca suave de aparência e paleta (a classe é aplicada só durante a troca; respeita movimento reduzido). */
 html.theme-transition,
 html.theme-transition *,
