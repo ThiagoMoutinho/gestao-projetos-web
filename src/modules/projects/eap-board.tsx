@@ -61,6 +61,7 @@ import {
 } from "./eap-progress";
 import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind } from "./eap-status-badge";
 import { impedimentTone, overdueTone } from "./eap-tones";
+import { eapKindTile } from "./eap-ui";
 import { phaseStatusLabel, taskStatusLabel } from "./project-records";
 
 const columns =
@@ -167,8 +168,8 @@ export function EapWorkbench({
               : `${tasks.value} ${tasks.value === 1 ? "tarefa" : "tarefas"} · ${milestones.value} ${milestones.value === 1 ? "marco" : "marcos"}`
           }
         />
-        <article className="flex min-h-[104px] items-center gap-3.5 rounded-[10px] border border-border bg-card px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-primary/10 text-primary">
+        <article className="flex min-h-[104px] items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/25 ring-inset">
             <ListChecks className="size-4" aria-hidden="true" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -209,8 +210,8 @@ export function EapWorkbench({
         />
       </div>
 
-      <section className="relative overflow-x-auto rounded-[10px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-        <div className="flex min-h-[73px] flex-col justify-center gap-3 border-b border-border px-[17px] py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+      <section className="relative overflow-x-auto rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+        <div className="flex min-h-[73px] flex-col justify-center gap-3 border-b border-border bg-muted/30 px-[17px] py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
           <div>
             <h3 className="text-base leading-[1.4] font-semibold text-foreground">Entregas do projeto</h3>
             <p className="mt-[3px] text-xs text-muted-foreground">
@@ -671,13 +672,13 @@ function Stat({
   note: string;
 }) {
   return (
-    <article className="flex min-h-[104px] items-center gap-3.5 rounded-[10px] border border-border bg-card px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+    <article className="flex min-h-[104px] items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <span
         className={cn(
-          "flex size-11 shrink-0 items-center justify-center rounded-[10px]",
-          tone === "blue" && "bg-primary/10 text-primary",
-          tone === "violet" && "bg-status-validation-soft text-status-validation-ink",
-          tone === "amber" && "bg-status-attention-soft text-status-adjust-ink",
+          "flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset",
+          tone === "blue" && "bg-primary/12 text-primary ring-primary/25",
+          tone === "violet" && "bg-status-validation-soft text-status-validation-ink ring-status-validation/30",
+          tone === "amber" && "bg-status-attention-soft text-status-adjust-ink ring-status-attention/30",
         )}
       >
         {icon}
@@ -760,10 +761,8 @@ function ItemIcon({ type, children }: { type: "phase" | "task" | "milestone"; ch
   return (
     <span
       className={cn(
-        "mr-2.5 flex size-8 shrink-0 items-center justify-center rounded-lg",
-        type === "phase" && "bg-primary/10 text-primary",
-        type === "task" && "bg-muted text-muted-foreground",
-        type === "milestone" && "bg-status-validation-soft text-status-validation-ink",
+        "mr-2.5 flex size-8 shrink-0 items-center justify-center rounded-[9px] ring-1 ring-inset",
+        eapKindTile(type),
       )}
     >
       {children}

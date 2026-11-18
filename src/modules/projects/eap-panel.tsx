@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Ban, CalendarIcon, Check, ChevronRight, Clock, Flag, Folder, List, Lock, Plus, RotateCcw } from "lucide-react";
+import { AlertTriangle, Ban, CalendarIcon, Check, ChevronRight, Clock, List, Lock, Plus, RotateCcw } from "lucide-react";
 import { Suspense, use, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { FieldError, useFieldErrors } from "@/components/field-error";
@@ -54,6 +54,7 @@ import { cancelTone, impedimentTone } from "./eap-tones";
 import { basisToPercent, formatBasis, phaseProgress, progressLabel } from "./eap-progress";
 import { Reveal } from "./eap-reveal";
 import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind, type EapStatusKind } from "./eap-status-badge";
+import { EapContextStrip, EapSection } from "./eap-ui";
 import {
   civilDateInput,
   civilDateToIso,
@@ -1606,49 +1607,10 @@ function useSaveController(
 }
 
 function EditContext({ kind, code, status, statusKind }: { kind: "phase" | "task" | "milestone"; code: string; status: string; statusKind: EapStatusKind }) {
-  const label = kind === "phase" ? "Fase" : kind === "task" ? "Tarefa" : "Marco";
-  const Icon = kind === "phase" ? Folder : kind === "task" ? Check : Flag;
-  const tone = kind === "phase" ? "bg-primary/10 text-primary" : kind === "task" ? "bg-muted text-muted-foreground" : "bg-status-validation-soft text-status-validation-ink";
-  return (
-    <div className="-mx-6 mb-4 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-border bg-card px-6 py-[13px]">
-      <span className={`grid size-8 place-items-center rounded-[7px] ${tone}`}>
-        <Icon className="size-4" aria-hidden="true" />
-      </span>
-      <span>
-        <span className="mb-[3px] block text-xs text-muted-foreground">Item da EAP</span>
-        <strong className="block text-xs text-foreground">{code} · {label}</strong>
-      </span>
-      <EapStatusBadge kind={statusKind} label={status} />
-    </div>
-  );
+  return <EapContextStrip kind={kind} code={code} badge={<EapStatusBadge kind={statusKind} label={status} />} />;
 }
 
-function EditSection({
-  title,
-  subtitle,
-  aside,
-  tone = "plain",
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  aside?: ReactNode;
-  tone?: "plain" | "accent";
-  children: ReactNode;
-}) {
-  return (
-    <section className={`mt-3 rounded-[10px] border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-primary/25" : "border-border"}`}>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <strong className="block text-[13px] text-foreground">{title}</strong>
-          <span className="mt-1 block text-xs text-muted-foreground">{subtitle}</span>
-        </div>
-        {aside}
-      </div>
-      {children}
-    </section>
-  );
-}
+const EditSection = EapSection;
 
 function EditLabel({ label, hint }: { label: string; hint?: string }) {
   return (

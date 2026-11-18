@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, use, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { AlertTriangle, Calendar, Check, ChevronRight, CircleCheck, Clock, FileText, Flag, Folder, Info, Maximize2, Minimize2, Plus, User, X } from "lucide-react";
+import { AlertTriangle, Calendar, Check, ChevronRight, CircleCheck, Clock, FileText, Info, Maximize2, Minimize2, Plus, User, X } from "lucide-react";
 
 import { FieldError, useFieldErrors } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import { Reveal } from "./eap-reveal";
 import { basisToPercent, formatBasis, milestoneDelayReason, milestoneIsOverdue, phaseIsOverdue, phaseProgress, progressLabel, taskIsOverdue, vigenteText } from "./eap-progress";
 import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind, type EapStatusKind } from "./eap-status-badge";
 import type { EapSelection } from "./eap-selection";
+import { EapContextStrip, EapPanelHeader } from "./eap-ui";
 const PERCENT_OPTIONS = [25, 50, 75, 90, 100];
 
 export function EapDetail({
@@ -136,37 +137,40 @@ export function EapDetail({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-card">
-      <header className={cn("flex shrink-0 items-start justify-between gap-[15px] border-b border-border pt-6", "min-h-[116px] px-6 pb-4")}>
-        <div className="min-w-0">
-          <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-primary uppercase">{eyebrow}</span>
-          <h2 className="max-w-[470px] truncate text-[17px] leading-[1.35] font-semibold text-foreground">{title}</h2>
-          {editing && !editorLocked ? (
+      <EapPanelHeader
+        kind={selection.kind}
+        eyebrow={eyebrow}
+        title={<h2 className="max-w-[470px] truncate text-[17px] leading-[1.35] font-semibold text-foreground">{title}</h2>}
+        hint={
+          editing && !editorLocked ? (
             <span className="mt-[7px] flex items-center gap-1.5 text-xs font-semibold text-status-attention-ink">
               <span className="size-1.5 rounded-full bg-status-attention" />
               Alterações não salvas
             </span>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {onToggleWide ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="hidden text-muted-foreground sm:inline-flex"
-              aria-label={wide ? "Reduzir painel" : "Expandir painel"}
-              aria-pressed={wide}
-              title={wide ? "Reduzir painel" : "Expandir painel"}
-              onClick={onToggleWide}
-            >
-              {wide ? <Minimize2 /> : <Maximize2 />}
+          ) : null
+        }
+        actions={
+          <div className="flex shrink-0 items-center gap-1">
+            {onToggleWide ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="hidden text-muted-foreground sm:inline-flex"
+                aria-label={wide ? "Reduzir painel" : "Expandir painel"}
+                aria-pressed={wide}
+                title={wide ? "Reduzir painel" : "Expandir painel"}
+                onClick={onToggleWide}
+              >
+                {wide ? <Minimize2 /> : <Maximize2 />}
+              </Button>
+            ) : null}
+            <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="Fechar painel" onClick={onClose}>
+              <X />
             </Button>
-          ) : null}
-          <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="Fechar painel" onClick={onClose}>
-            <X />
-          </Button>
-        </div>
-      </header>
+          </div>
+        }
+      />
       <div key={editing ? "edit" : "view"} className={cn("motion-fade min-h-0 flex-1 overflow-y-auto bg-muted/50 px-6 pb-6", !editing && "[&_.text-xs]:text-[11.5px]")}>
         {confirmCancel || pending ? (
           <div role="alert" className="mt-3 mb-3 flex items-start gap-2.5 rounded-[9px] border border-status-attention/50 bg-status-attention-soft p-3 text-status-attention-ink">
@@ -1079,20 +1083,7 @@ const primaryButton = "h-9 rounded-[7px] bg-primary px-[13px] text-[11.5px] font
 const compactButton = "h-9 gap-1.5 rounded-[9px] px-3 text-[13px]";
 
 function Topline({ type, code, label, kind }: { type: "phase" | "task" | "milestone"; code: string; label: string; kind: EapStatusKind }) {
-  return (
-    <div className="-mx-6 mb-1 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-border bg-card px-6 py-[13px]">
-      <span className={cn("grid size-8 place-items-center rounded-[7px]", type === "phase" && "bg-primary/10 text-primary", type === "task" && "bg-muted text-muted-foreground", type === "milestone" && "bg-status-validation-soft text-status-validation-ink")}>
-        {type === "phase" ? <Folder className="size-4" aria-hidden="true" /> : null}
-        {type === "task" ? <Check className="size-4" aria-hidden="true" /> : null}
-        {type === "milestone" ? <Flag className="size-4" aria-hidden="true" /> : null}
-      </span>
-      <span>
-        <span className="mb-[3px] block text-[11.5px] text-muted-foreground">Item da EAP</span>
-        <strong className="block text-[11.5px] text-foreground">{code} · {type === "phase" ? "Fase" : type === "task" ? "Tarefa" : "Marco"}</strong>
-      </span>
-      <EapStatusBadge kind={kind} label={label} />
-    </div>
-  );
+  return <EapContextStrip kind={type} code={code} className="mb-1" badge={<EapStatusBadge kind={kind} label={label} />} />;
 }
 
 function Section({ label, extra, children }: { label: string; extra?: ReactNode; children: ReactNode }) {

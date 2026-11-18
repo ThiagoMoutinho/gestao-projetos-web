@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
-import { AlertTriangle, CalendarIcon, Check, ChevronRight, Clock, Flag, Folder, List, Plus, X } from "lucide-react";
+import { AlertTriangle, CalendarIcon, Check, ChevronRight, Clock, Flag, List, Plus, X } from "lucide-react";
 import { ptBR } from "react-day-picker/locale";
 
 import { FieldError, useFieldErrors } from "@/components/field-error";
@@ -26,6 +26,7 @@ import type { EapPerson } from "./eap-panel";
 import { Reveal } from "./eap-reveal";
 import { deriveTaskStatus } from "./eap-status";
 import { impedimentTone } from "./eap-tones";
+import { EapContextStrip, EapPanelHeader, EapSection } from "./eap-ui";
 import { MILESTONE_TYPE_OPTIONS, phaseStatusLabel, taskStatusLabel } from "./project-records";
 
 export type EapCreateRequest =
@@ -76,19 +77,22 @@ export function EapCreateSheet({
         className="w-full gap-0 overflow-hidden bg-card p-0 shadow-[0_18px_48px_rgba(16,24,40,0.16)] data-[side=right]:w-full data-[side=right]:sm:max-w-[680px]"
       >
         <div className="flex h-full min-h-0 flex-col">
-          <header className="flex min-h-[124px] items-start justify-between gap-[15px] border-b border-border px-[22px] pt-6 pb-[18px]">
-            <div className="min-w-0">
-              <span className="mb-[9px] block text-xs leading-none font-bold tracking-[0.12em] text-primary uppercase">Novo item da EAP</span>
-              <SheetTitle className="max-w-[520px] truncate text-[19px] leading-[1.35] font-semibold text-foreground">{title}</SheetTitle>
+          <EapPanelHeader
+            kind={request.kind}
+            eyebrow="Novo item da EAP"
+            title={<SheetTitle className="max-w-[520px] truncate text-[19px] leading-[1.35] font-semibold text-foreground">{title}</SheetTitle>}
+            hint={
               <span className="mt-[7px] flex items-center gap-1.5 text-xs font-semibold text-status-attention-ink">
                 <span className="size-1.5 rounded-full bg-status-attention" />
                 {guidance}
               </span>
-            </div>
-            <Button type="button" variant="ghost" size="icon-sm" aria-label="Fechar painel" onClick={onClose}>
-              <X />
-            </Button>
-          </header>
+            }
+            actions={
+              <Button type="button" variant="ghost" size="icon-sm" aria-label="Fechar painel" onClick={onClose}>
+                <X />
+              </Button>
+            }
+          />
           {access.canCreateItems ? (
             request.kind === "phase" ? (
               <PhaseForm projectId={projectId} projectName={projectName} phases={phases} people={people} names={names} onClose={onClose} onPhase={onPhase} />
@@ -609,52 +613,21 @@ function FormBody({
 }
 
 function ItemContext({ kind }: { kind: "phase" | "task" | "milestone" }) {
-  const label = kind === "phase" ? "Fase" : kind === "task" ? "Tarefa" : "Marco";
-  const Icon = kind === "phase" ? Folder : kind === "task" ? Check : Flag;
-  const tone = kind === "phase" ? "bg-primary/10 text-primary" : kind === "task" ? "bg-muted text-muted-foreground" : "bg-status-validation-soft text-status-validation-ink";
   return (
-    <div className="-mx-6 mb-4 grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-border bg-card px-6 py-[13px]">
-      <span className={`grid size-8 place-items-center rounded-[7px] ${tone}`}>
-        <Icon className="size-4" aria-hidden="true" />
-      </span>
-      <span>
-        <span className="mb-[3px] block text-xs text-muted-foreground">Item da EAP</span>
-        <strong className="block text-xs text-foreground">Código gerado ao salvar · {label}</strong>
-      </span>
-      <span className="inline-flex items-center gap-[5px] rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
-        <span className="size-[5px] rounded-full bg-current" />
-        A iniciar
-      </span>
-    </div>
+    <EapContextStrip
+      kind={kind}
+      code="Código gerado ao salvar"
+      badge={
+        <span className="inline-flex items-center gap-[5px] rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
+          <span className="size-[5px] rounded-full bg-current" />
+          A iniciar
+        </span>
+      }
+    />
   );
 }
 
-function PanelSection({
-  title,
-  subtitle,
-  aside,
-  tone = "plain",
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  aside?: ReactNode;
-  tone?: "plain" | "accent";
-  children: ReactNode;
-}) {
-  return (
-    <section className={`mt-3 rounded-[10px] border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${tone === "accent" ? "border-primary/25" : "border-border"}`}>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <strong className="block text-[13px] text-foreground">{title}</strong>
-          <span className="mt-1 block text-xs text-muted-foreground">{subtitle}</span>
-        </div>
-        {aside}
-      </div>
-      {children}
-    </section>
-  );
-}
+const PanelSection = EapSection;
 
 function EvidenceSection({ warning }: { warning?: string }) {
   return (
