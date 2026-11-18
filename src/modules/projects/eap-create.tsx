@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { controlFocusClassName, controlTransitionClassName } from "@/components/ui/control-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { OptionCombobox } from "@/components/option-combobox";
+import { OptionCombobox, OptionMultiCombobox } from "@/components/option-combobox";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/fetcher";
 import { notifyWarning, reportFailure } from "@/lib/feedback";
@@ -264,15 +264,16 @@ function TaskForm({
   const [selectedPhase, setSelectedPhase] = useState(phaseId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assigneeId, setAssigneeId] = useState("");
-  const [priority, setPriority] = useState<TaskPriority>(DEFAULT_PRIORITY);
+  // Até duas pessoas: a primeira escolhida é o responsável principal e a segunda, o segundo responsável (apoio).
+  const [assignees, setAssignees] = useState<string[]>([]);
+  const [priority, setPriority] = useState<TaskPriority | "">("");
   const [progress, setProgress] = useState(0);
   const [blocked, setBlocked] = useState(false);
   const [blocker, setBlocker] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [saving, setSaving] = useState(false);
-  const { errors, validate, clear } = useFieldErrors<"title" | "phase" | "blocker" | "startDate" | "endDate">();
+  const { errors, validate, clear } = useFieldErrors<"title" | "phase" | "assignee" | "priority" | "blocker" | "startDate" | "endDate">();
   const phase = phases.find((item) => item.id === selectedPhase);
   const phaseCurrent = phase ? { start: civilDateInput(phase.schedule.plannedStartAt), end: civilDateInput(phase.schedule.plannedEndAt) } : null;
   const coverage = phaseCurrent && startDate && endDate && endDate >= startDate ? phaseCoverage(phaseCurrent, spanOf([{ start: startDate, end: endDate }])) : null;
@@ -284,6 +285,9 @@ function TaskForm({
     const valid = validate([
       ["title", !title.trim() && "Informe o nome da tarefa."],
       ["phase", !selectedPhase && "Escolha a fase da tarefa."],
+      // Sem a lista de participantes não há o que escolher: nesse caso a obrigatoriedade não bloqueia a criação.
+      ["assignee", Boolean(people) && assignees.length === 0 && "Informe ao menos um responsável (até dois)."],
+      ["priority", !priority && "Informe a prioridade."],
       ["blocker", blocked && blocker.trim().length < 10 && "Informe o motivo do impedimento com ao menos 10 caracteres."],
       ["startDate", !startDate && "Informe o início planejado."],
       ["endDate", !endDate && "Informe o término planejado."],
@@ -298,8 +302,9 @@ function TaskForm({
         title: title.trim(),
         ...(parentTask ? { parentTaskId: parentTask.id } : {}),
         ...(description.trim() ? { description: description.trim() } : {}),
-        ...(assigneeId ? { assigneeId } : {}),
-        priority,
+        ...(assignees[0] ? { assigneeId: assignees[0] } : {}),
+        ...(assignees[1] ? { secondaryAssigneeId: assignees[1] } : {}),
+        priority: priority || DEFAULT_PRIORITY,
         plannedStartAt: civilToIso(startDate),
         plannedEndAt: civilToIso(endDate),
         ...(extending ? { extendPhase: true, justification: `Período da fase ajustado automaticamente na criação da tarefa "${title.trim()}".` } : {}),
@@ -378,16 +383,27 @@ function TaskForm({
             />
           )}
           {people ? (
-            <SelectControl
-              label="Responsável"
-              value={assigneeId}
-              onChange={setAssigneeId}
-              options={[{ value: "", label: "Sem responsável" }, ...people.map((person) => ({ value: person.userId, label: person.name }))]}
+            <MultiSelectControl
+              label="Responsável *"
+              hint="até 2 pessoas"
+              values={assignees}
+              onChange={(values) => { setAssignees(values); clear("assignee"); }}
+              options={people.map((person) => ({ value: person.userId, label: person.name }))}
+              max={2}
+              error={errors.assignee}
+              placeholder="Selecione os responsáveis..."
             />
           ) : (
-            <LockedControl label="Responsável" value="Não foi possível consultar os participantes." />
+            <LockedControl label="Responsável *" value="Não foi possível consultar os participantes." />
           )}
-          <SelectControl label="Prioridade" value={priority} onChange={setPriority} options={PRIORITY_OPTIONS.map((option) => ({ ...option }))} />
+          <SelectControl
+            label="Prioridade *"
+            value={priority}
+            onChange={(value) => { setPriority(value); clear("priority"); }}
+            error={errors.priority}
+            placeholder="Selecione a prioridade..."
+            options={PRIORITY_OPTIONS.map((option) => ({ ...option }))}
+          />
           <CivilDateField label="Início planejado *" value={startDate} onChange={(value) => { setStartDate(value); clear("startDate"); clear("endDate"); }} error={errors.startDate} />
           <CivilDateField label="Término planejado *" value={endDate} onChange={(value) => { setEndDate(value); clear("endDate"); }} error={errors.endDate} />
         </div>
@@ -832,6 +848,36 @@ function SelectControl<T extends string>({
         invalid={Boolean(error)}
         describedBy={errorId}
       />
+      <FieldError id={errorId} message={error} />
+    </div>
+  );
+}
+
+/** Seleção múltipla com checkboxes (até `max` pessoas), com o mesmo rótulo e erro dos demais campos. */
+function MultiSelectControl({
+  label,
+  hint,
+  values,
+  onChange,
+  options,
+  max,
+  placeholder,
+  error,
+}: {
+  label: string;
+  hint?: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+  options: ReadonlyArray<{ value: string; label: string }>;
+  max: number;
+  placeholder?: string;
+  error?: string | null;
+}) {
+  const errorId = useId();
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <FieldLabel label={label} hint={hint} />
+      <OptionMultiCombobox label={label} values={values} onChange={onChange} options={options} max={max} placeholder={placeholder} invalid={Boolean(error)} describedBy={errorId} />
       <FieldError id={errorId} message={error} />
     </div>
   );

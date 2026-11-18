@@ -27,6 +27,11 @@ export type RegisterEapTaskImpediment201Task = {
   sortOrder: number;
   /** @nullable */
   assigneeId: string | null;
+  /**
+     * Segundo responsável (apoio), quando houver.
+     * @nullable
+     */
+  secondaryAssigneeId: string | null;
   status: RegisterEapTaskImpediment201TaskStatus;
   /**
      * @minimum -9007199254740991

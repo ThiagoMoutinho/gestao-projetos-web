@@ -24,6 +24,11 @@ export type UpdateEapTaskBody = {
      */
   assigneeId?: string | null;
   /**
+     * @minLength 1
+     * @nullable
+     */
+  secondaryAssigneeId?: string | null;
+  /**
      * @minimum 1
      * @maximum 9007199254740991
      */

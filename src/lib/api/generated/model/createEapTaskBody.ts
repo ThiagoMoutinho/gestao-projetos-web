@@ -30,6 +30,12 @@ export type CreateEapTaskBody = {
      */
   assigneeId?: string | null;
   /**
+     * Segundo responsável (opcional, apoio): exige o responsável principal e deve ser outra pessoa.
+     * @minLength 1
+     * @nullable
+     */
+  secondaryAssigneeId?: string | null;
+  /**
      * @minimum 1
      * @maximum 9007199254740991
      */

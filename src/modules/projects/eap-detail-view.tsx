@@ -676,7 +676,7 @@ function TaskDetail({
       </section>
       <Section label="Responsável e prazo">
         <div className="grid grid-cols-2 gap-3">
-          <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={task.assigneeName || "Não informado"} />
+          <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label={task.secondaryAssigneeName ? "Responsáveis" : "Responsável"} value={task.assigneeName || "Não informado"} detail={task.secondaryAssigneeName ? `e ${task.secondaryAssigneeName} (segundo responsável)` : null} />
           <Fact icon={<Calendar className="size-[18px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(task.dates) ?? "Não informado"} overdue={overdue} note={overdue ? "Em atraso" : null} />
         </div>
       </Section>
@@ -1135,13 +1135,14 @@ function PendingSignal({ blocked, overdue }: { blocked: boolean; overdue: boolea
   return <span className="size-[5px] justify-self-center rounded-full bg-muted-foreground/50" aria-hidden="true" />;
 }
 
-function Fact({ icon, label, value, overdue = false, note }: { icon: ReactNode; label: string; value: string; overdue?: boolean; note?: string | null }) {
+function Fact({ icon, label, value, detail, overdue = false, note }: { icon: ReactNode; label: string; value: string; detail?: string | null; overdue?: boolean; note?: string | null }) {
   return (
     <div className={cn("flex min-h-[80px] items-center gap-3 rounded-[10px] border p-3.5", overdue ? overdueTone.surface : "border-border")}>
       <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", overdue ? overdueTone.icon : "bg-primary/10 text-primary")}>{icon}</span>
       <span className="min-w-0">
         <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">{label}</span>
         <strong className="block truncate text-[11.5px] text-foreground">{value}</strong>
+        {detail ? <span className="mt-[3px] block truncate text-[11.5px] text-muted-foreground">{detail}</span> : null}
         {note ? <em className={cn("mt-[3px] block text-[11.5px] font-semibold not-italic", overdueTone.text)}>{note}</em> : null}
       </span>
     </div>

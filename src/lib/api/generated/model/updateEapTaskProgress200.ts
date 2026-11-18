@@ -27,6 +27,11 @@ export type UpdateEapTaskProgress200 = {
   sortOrder: number;
   /** @nullable */
   assigneeId: string | null;
+  /**
+     * Segundo responsável (apoio), quando houver.
+     * @nullable
+     */
+  secondaryAssigneeId: string | null;
   status: UpdateEapTaskProgress200Status;
   /**
      * @minimum -9007199254740991

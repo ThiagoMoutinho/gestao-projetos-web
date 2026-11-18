@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { controlTransitionClassName } from "@/components/ui/control-motion";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { OptionCombobox } from "@/components/option-combobox";
+import { OptionCombobox, OptionMultiCombobox } from "@/components/option-combobox";
 import { ApiError } from "@/lib/api/fetcher";
 import { notifySuccess, reportFailure, showAlert } from "@/lib/feedback";
 import {
@@ -451,7 +451,8 @@ function TaskEditor({
   const fromSubtasks = (phase.tasks ?? []).some((item) => item.parentTaskId === task.id);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
-  const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? "");
+  // Até duas pessoas: a primeira é o responsável principal e a segunda, o segundo responsável (apoio).
+  const [assignees, setAssignees] = useState<string[]>(() => [task.assigneeId, task.secondaryAssigneeId].filter((id): id is string => Boolean(id)));
   const [weight, setWeight] = useState(String(task.weight));
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [percent, setPercent] = useState(String(task.progressPercent));
@@ -461,7 +462,7 @@ function TaskEditor({
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [saving, setSaving] = useState(false);
-  const { errors, validate, clear } = useFieldErrors<"title" | "weight" | "percent" | "actualStart" | "actualEnd" | "correction" | "reopen">();
+  const { errors, validate, clear } = useFieldErrors<"title" | "assignee" | "weight" | "percent" | "actualStart" | "actualEnd" | "correction" | "reopen">();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [evidenceRevision, setEvidenceRevision] = useState(0);
   const [impedimentRevision, setImpedimentRevision] = useState(0);
@@ -473,7 +474,8 @@ function TaskEditor({
     editable &&
     (title.trim() !== task.title ||
       emptyToNull(description) !== task.description ||
-      emptyToNull(assigneeId) !== task.assigneeId ||
+      (assignees[0] ?? null) !== task.assigneeId ||
+      (assignees[1] ?? null) !== task.secondaryAssigneeId ||
       priority !== task.priority ||
       weight !== String(task.weight));
   const progressDirty =
@@ -491,7 +493,7 @@ function TaskEditor({
   function publish(next: {
     title: string;
     description: string;
-    assigneeId: string;
+    assignees: string[];
     weight: string;
     priority: TaskPriority;
     percent: string;
@@ -505,7 +507,8 @@ function TaskEditor({
       editable &&
       (next.title.trim() !== task.title ||
         emptyToNull(next.description) !== task.description ||
-        emptyToNull(next.assigneeId) !== task.assigneeId ||
+        (next.assignees[0] ?? null) !== task.assigneeId ||
+        (next.assignees[1] ?? null) !== task.secondaryAssigneeId ||
         next.priority !== task.priority ||
         next.weight !== String(task.weight));
     const nextProgress =
@@ -523,7 +526,7 @@ function TaskEditor({
   }
 
   function draft() {
-    return { title, description, assigneeId, weight, priority, percent, actualStart, actualEnd, evidenceTitle, evidenceUrl, dateJustification };
+    return { title, description, assignees, weight, priority, percent, actualStart, actualEnd, evidenceTitle, evidenceUrl, dateJustification };
   }
 
   function choosePercent(value: string) {
@@ -549,6 +552,8 @@ function TaskEditor({
     const dateField = !actualStart || actualStart > today ? "actualStart" : "actualEnd";
     const valid = validate([
       ["title", editable && !title.trim() && "Informe o título da tarefa."],
+      // Responsável é obrigatório: não se deixa a tarefa sem ninguém. Tarefa antiga que nunca teve responsável continua editável.
+      ["assignee", editable && assignees.length === 0 && Boolean(task.assigneeId) && "Informe ao menos um responsável (até dois)."],
       ["weight", editable && (!Number.isInteger(parsedWeight) || parsedWeight < 1) && "O peso precisa ser um número inteiro maior que zero."],
       ["percent", canProgress && (!Number.isInteger(progress) || progress < 0 || progress > 100) && "O percentual precisa ser um inteiro de 0 a 100."],
       [dateField, datesProblem],
@@ -569,7 +574,8 @@ function TaskEditor({
         const response = await updateEapTask(projectId, phase.id, task.id, {
           ...(title.trim() !== task.title ? { title: title.trim() } : {}),
           ...(emptyToNull(description) !== task.description ? { description: emptyToNull(description) } : {}),
-          ...(emptyToNull(assigneeId) !== task.assigneeId ? { assigneeId: emptyToNull(assigneeId) } : {}),
+          ...((assignees[0] ?? null) !== task.assigneeId ? { assigneeId: assignees[0] ?? null } : {}),
+          ...((assignees[1] ?? null) !== task.secondaryAssigneeId ? { secondaryAssigneeId: assignees[1] ?? null } : {}),
           ...(weight !== String(task.weight) ? { weight: parsedWeight } : {}),
           ...(priority !== task.priority ? { priority } : {}),
         });
@@ -656,9 +662,21 @@ function TaskEditor({
           <EditLocked label="Situação" hint={cancelled ? "decisão da gestão" : "pelo andamento"} value={statusShown} />
           <EditLocked label="Item superior" value={phase.name} />
           {editable ? (
-            <AssigneeField people={people} value={assigneeId} onChange={(value) => { setAssigneeId(value); publish({ ...draft(), assigneeId: value }); }} />
+            <AssigneesField
+              people={people}
+              values={assignees}
+              known={[
+                { value: task.assigneeId ?? "", label: task.assigneeName },
+                { value: task.secondaryAssigneeId ?? "", label: task.secondaryAssigneeName ?? "" },
+              ]}
+              error={errors.assignee}
+              onChange={(values) => { setAssignees(values); clear("assignee"); publish({ ...draft(), assignees: values }); }}
+            />
           ) : (
-            <EditLocked label="Responsável" value={task.assigneeName || "Não informado"} />
+            <EditLocked
+              label="Responsável"
+              value={[task.assigneeName, task.secondaryAssigneeName].filter(Boolean).join(" e ") || "Não informado"}
+            />
           )}
           {editable ? (
             <PriorityField value={priority} onChange={(value) => { setPriority(value); publish({ ...draft(), priority: value }); }} />
@@ -1531,6 +1549,47 @@ function PriorityField({ value, onChange }: { value: TaskPriority; onChange: (va
         options={PRIORITY_OPTIONS}
         placeholder="Normal"
       />
+    </div>
+  );
+}
+
+/** Responsáveis da tarefa: até duas pessoas, com checkboxes (a primeira escolhida é a principal). */
+function AssigneesField({
+  people,
+  values,
+  known,
+  onChange,
+  error,
+}: {
+  people: EapPerson[] | null;
+  values: string[];
+  /** Responsáveis já gravados (valor e nome): se saíram da lista de participantes, continuam aparecendo pelo nome. */
+  known: ReadonlyArray<{ value: string; label: string }>;
+  onChange: (values: string[]) => void;
+  error?: string | null;
+}) {
+  const errorId = useId();
+  if (!people) {
+    return <EditNotice text="A lista de participantes não pôde ser consultada." />;
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <EditLabel label="Responsável *" hint="até 2 pessoas" />
+      <OptionMultiCombobox
+        label="Responsável"
+        values={values}
+        onChange={onChange}
+        options={[
+          ...people.map((person) => ({ value: person.userId, label: person.name })),
+          ...known.filter((item) => item.value && item.label && !people.some((person) => person.userId === item.value)),
+        ]}
+        max={2}
+        placeholder="Selecione os responsáveis..."
+        invalid={Boolean(error)}
+        describedBy={errorId}
+      />
+      <FieldError id={errorId} message={error} />
     </div>
   );
 }

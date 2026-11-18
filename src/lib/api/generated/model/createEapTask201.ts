@@ -27,6 +27,11 @@ export type CreateEapTask201 = {
   sortOrder: number;
   /** @nullable */
   assigneeId: string | null;
+  /**
+     * Segundo responsável (apoio), quando houver.
+     * @nullable
+     */
+  secondaryAssigneeId: string | null;
   status: CreateEapTask201Status;
   /**
      * @minimum -9007199254740991

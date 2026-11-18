@@ -565,7 +565,7 @@ export function TaskRow({
           <EapStatusBadge kind={taskStatusKind(task.calculatedStatus)} label={task.statusLabel} />
         </StatusCell>
         <ProgressCell label={`${task.progressPercent}%`} value={task.progressPercent} done={task.calculatedStatus === "CONCLUIDA"} muted={task.calculatedStatus === "CANCELADA"} />
-        <Owner name={task.assigneeName} />
+        <Owner name={task.assigneeName} secondary={task.secondaryAssigneeName} />
         <PriorityIndicator priority={task.priority} />
         <PlannedStart value={inicioText(task.dates)} />
         <Due value={vigenteText(task.dates)} overdue={overdue} late={finishedLate(task) ? "Concluída após o prazo" : null} />
@@ -673,7 +673,7 @@ export function MilestoneRow({
         value={percent}
         done={milestone.status === "APROVADO"}
       />
-      <Owner name={milestone.presenterName ?? ""} />
+      <Owner name={milestone.presenterName ?? ""} secondary={milestone.reviewerName} />
       <span className="text-[13px] text-muted-foreground" title="A prioridade é exclusiva das tarefas">—</span>
       <PlannedStart value={null} title="Marco tem data única" />
       <Due value={vigenteText(milestone.dates)} overdue={overdue} reason={milestoneDelayReason(milestone)} late={finishedLate(milestone) ? (milestone.type === "HOMOLOGACAO" ? "Homologado após o prazo" : "Aceito após o prazo") : null} />
@@ -793,17 +793,36 @@ function StatusCell({ children }: { children: ReactNode }) {
   return <span className="flex min-w-0 items-center">{children}</span>;
 }
 
-function Owner({ name }: { name: string }) {
-  if (!name || name === "Não informado") {
+/** Responsável da linha. Com dois (segundo responsável da tarefa; apresentador e validador do marco): avatares sobrepostos, o nome do primeiro e "+1"; os dois nomes aparecem no título. */
+function Owner({ name, secondary }: { name: string; secondary?: string | null }) {
+  const people = [name, secondary ?? ""].filter((person) => person && person !== "Não informado");
+  if (people.length === 0) {
     return <span className="text-[13px] text-muted-foreground">—</span>;
   }
 
+  if (people.length === 1) {
+    return (
+      <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-foreground/80">
+        <Avatar>
+          <AvatarFallback className="bg-primary/10 text-[0.7rem] font-bold text-primary">{initials(people[0])}</AvatarFallback>
+        </Avatar>
+        <span className="truncate">{people[0]}</span>
+      </span>
+    );
+  }
+
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-foreground/80">
-      <Avatar>
-        <AvatarFallback className="bg-primary/10 text-[0.7rem] font-bold text-primary">{initials(name)}</AvatarFallback>
-      </Avatar>
-      <span className="truncate">{name}</span>
+    <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-foreground/80" title={`${people[0]} e ${people[1]}`}>
+      <span className="flex shrink-0 -space-x-1.5" aria-hidden="true">
+        {people.map((person, position) => (
+          <Avatar key={`${position}-${person}`} className="ring-2 ring-card">
+            <AvatarFallback className="bg-primary/10 text-[0.7rem] font-bold text-primary">{initials(person)}</AvatarFallback>
+          </Avatar>
+        ))}
+      </span>
+      <span className="truncate">{people[0]}</span>
+      <span className="shrink-0 rounded-full bg-muted px-1.5 py-px text-[11px] font-semibold text-muted-foreground" aria-hidden="true">+1</span>
+      <span className="sr-only"> e {people[1]}</span>
     </span>
   );
 }

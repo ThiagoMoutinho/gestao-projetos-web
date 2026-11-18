@@ -64,6 +64,9 @@ export type ProjectTaskView = {
   hasImpediment: boolean;
   assigneeId: string | null;
   assigneeName: string;
+  /** Segundo responsável (apoio), opcional; sem permissão extra sobre a tarefa. */
+  secondaryAssigneeId: string | null;
+  secondaryAssigneeName: string | null;
   createdBy: string;
   actualStartAt: string | null;
   actualEndAt: string | null;
@@ -214,6 +217,7 @@ export function presentTask<T extends DatedSpan & {
   title: string;
   description: string | null;
   assigneeId: string | null;
+  secondaryAssigneeId?: string | null;
   status: ListEapTasks200DataItemStatus;
   calculatedStatus: ListEapTasks200DataItemStatus;
   progressPercent: number;
@@ -241,6 +245,8 @@ export function presentTask<T extends DatedSpan & {
     hasImpediment: task.hasImpediment,
     assigneeId: task.assigneeId,
     assigneeName: personName(task.assigneeId, names),
+    secondaryAssigneeId: task.secondaryAssigneeId ?? null,
+    secondaryAssigneeName: task.secondaryAssigneeId ? personName(task.secondaryAssigneeId, names) : null,
     createdBy: task.createdBy,
     actualStartAt: task.actualStartAt,
     actualEndAt: task.actualEndAt,
