@@ -322,6 +322,8 @@ export function ProjectEap({
   function itemActions(next: EapSelection, canEdit: boolean, label: string, deleteBlockedReason?: string): RowActions {
     return {
       onEdit: canEdit ? () => requestSelect(next, true) : undefined,
+      onAddTaskInPhase: access.canCreateItems ? () => setCreate({ kind: "task", phaseId: next.phaseId }) : undefined,
+      onAddMilestoneInPhase: access.canCreateItems ? () => setCreate({ kind: "milestone", phaseId: next.phaseId }) : undefined,
       onDelete: access.canManageStructure ? () => setDeleteRequest({ target: next, label }) : undefined,
       deleteBlockedReason,
     };
@@ -426,6 +428,7 @@ export function ProjectEap({
                 selected={selection?.kind === "phase" && selection.phaseId === phase.id}
                 onOpen={() => requestSelect({ kind: "phase", phaseId: phase.id })}
                 actions={phaseActions(phase.id, phaseIndex)}
+                onAddItem={access.canCreateItems && tasks !== null && !filtering ? (kind) => setCreate(kind === "phase" ? { kind } : { kind, phaseId: phase.id }) : undefined}
                 reorderable={canReorderPhases}
                 dragging={draggingPhaseId === phase.id}
                 dragOver={dragOverPhaseId === phase.id && draggingPhaseId !== phase.id}

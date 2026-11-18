@@ -4,6 +4,7 @@ import {
   ArrowUp,
   Calendar,
   Check,
+  ChevronDown,
   ChevronRight,
   Clock,
   Copy,
@@ -17,6 +18,7 @@ import {
   MoreHorizontal,
   PanelRightOpen,
   PencilLine,
+  Plus,
   Search,
   Trash2,
 } from "lucide-react";
@@ -31,6 +33,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -100,6 +103,9 @@ export type RowActions = {
   canAddChild?: boolean;
   onAddTask?: () => void;
   onAddMilestone?: () => void;
+  /** Em tarefa e marco: abre a criação de uma nova tarefa na mesma fase (a EAP não tem subtarefa). */
+  onAddTaskInPhase?: () => void;
+  onAddMilestoneInPhase?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   moveUpDisabled?: boolean;
@@ -268,6 +274,7 @@ export function PhaseRow({
   actions,
   renderTasks,
   renderMilestones,
+  onAddItem,
   reorderable = false,
   dragging = false,
   dragOver = false,
@@ -287,6 +294,8 @@ export function PhaseRow({
   actions?: RowActions;
   renderTasks: boolean;
   renderMilestones: boolean;
+  /** Atalho "Adicionar" no fim da fase, com a escolha do tipo (tarefa ou marco); ausente quando o usuário não pode criar itens. */
+  onAddItem?: (kind: "task" | "milestone" | "phase") => void;
   reorderable?: boolean;
   dragging?: boolean;
   dragOver?: boolean;
@@ -377,6 +386,60 @@ export function PhaseRow({
       <CollapsibleContent>
         {renderTasks ? tasks : null}
         {renderMilestones ? milestones : null}
+        {onAddItem ? (
+          <div className="flex items-center gap-0.5 border-t border-border/60 px-3 py-1 md:pl-[66px]">
+            <button
+              type="button"
+              onClick={() => onAddItem("task")}
+              className="flex h-8 items-center gap-2 rounded-md px-2 text-xs font-medium text-muted-foreground opacity-70 transition-[color,opacity,background-color] duration-200 hover:bg-primary/5 hover:text-primary hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none motion-reduce:transition-none"
+            >
+              <span className="grid size-4 place-items-center rounded-full border border-current">
+                <Plus className="size-2.5" aria-hidden="true" />
+              </span>
+              Adicionar tarefa
+              <span className="sr-only"> em {phase.name}</span>
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label={`Escolher o tipo de item para adicionar em ${phase.name}`}
+                    className="grid h-8 w-7 place-items-center rounded-md text-muted-foreground opacity-70 transition-[color,opacity,background-color] duration-200 hover:bg-primary/5 hover:text-primary hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none aria-expanded:bg-primary/10 aria-expanded:text-primary aria-expanded:opacity-100 motion-reduce:transition-none"
+                  />
+                }
+              >
+                <ChevronDown className="size-3.5" aria-hidden="true" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" sideOffset={6} className="w-[236px] rounded-xl p-1.5 shadow-lg">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="px-2 pt-1 pb-1.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">Criar em {phase.name}</DropdownMenuLabel>
+                  {(["task", "milestone"] as const).map((kind) => {
+                    const Icon = kind === "task" ? Check : Flag;
+                    return (
+                      <DropdownMenuItem key={kind} className="gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium" onClick={() => onAddItem(kind)}>
+                        <span className={cn("grid size-7 shrink-0 place-items-center rounded-lg ring-1 ring-inset [&>svg]:text-inherit!", eapKindTile(kind))} aria-hidden="true">
+                          <Icon className="size-3.5" />
+                        </span>
+                        {kind === "task" ? "Tarefa" : "Marco"}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="px-2 pt-1 pb-1.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">Criar no projeto</DropdownMenuLabel>
+                  <DropdownMenuItem className="gap-2.5 rounded-lg px-2 py-2 text-[13px] font-medium" onClick={() => onAddItem("phase")}>
+                    <span className={cn("grid size-7 shrink-0 place-items-center rounded-lg ring-1 ring-inset [&>svg]:text-inherit!", eapKindTile("phase"))} aria-hidden="true">
+                      <Folder className="size-3.5" />
+                    </span>
+                    Fase
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : null}
       </CollapsibleContent>
     </Collapsible>
   );
@@ -823,9 +886,21 @@ function RowMenu({ label, onOpen, actions }: { label: string; onOpen: () => void
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           ) : (
-            <DropdownMenuItem className={rowMenuItem} disabled title="Este item não recebe subordinados.">
-              <ListPlus aria-hidden="true" /> Adicionar subordinada
-            </DropdownMenuItem>
+            <>
+              {actions?.onAddTaskInPhase ? (
+                <DropdownMenuItem className={rowMenuItem} onClick={actions.onAddTaskInPhase}>
+                  <Plus aria-hidden="true" /> Nova tarefa nesta fase
+                </DropdownMenuItem>
+              ) : null}
+              {actions?.onAddMilestoneInPhase ? (
+                <DropdownMenuItem className={rowMenuItem} onClick={actions.onAddMilestoneInPhase}>
+                  <Flag aria-hidden="true" /> Novo marco nesta fase
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem className={rowMenuItem} disabled title="Tarefas e marcos não recebem subordinados: a EAP tem fase e, dentro dela, tarefas e marcos.">
+                <ListPlus aria-hidden="true" /> Adicionar subordinada
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem className={rowMenuItem} onClick={onOpen}>
