@@ -12,6 +12,11 @@ import type { UpdateEapTaskProgress200Status } from './updateEapTaskProgress200S
 export type UpdateEapTaskProgress200 = {
   id: string;
   phaseId: string;
+  /**
+     * Tarefa superior, quando esta é uma subtarefa.
+     * @nullable
+     */
+  parentTaskId: string | null;
   title: string;
   /** @nullable */
   description: string | null;

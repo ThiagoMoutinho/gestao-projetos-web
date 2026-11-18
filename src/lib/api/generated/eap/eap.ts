@@ -70,6 +70,24 @@ import type {
   DeliverEapMilestone404,
   DeliverEapMilestone409,
   DeliverEapMilestoneBody,
+  DuplicateEapMilestone201,
+  DuplicateEapMilestone400,
+  DuplicateEapMilestone401,
+  DuplicateEapMilestone403,
+  DuplicateEapMilestone404,
+  DuplicateEapMilestone409,
+  DuplicateEapPhase201,
+  DuplicateEapPhase400,
+  DuplicateEapPhase401,
+  DuplicateEapPhase403,
+  DuplicateEapPhase404,
+  DuplicateEapPhase409,
+  DuplicateEapTask201,
+  DuplicateEapTask400,
+  DuplicateEapTask401,
+  DuplicateEapTask403,
+  DuplicateEapTask404,
+  DuplicateEapTask409,
   GetEapEvidence200,
   GetEapEvidence400,
   GetEapEvidence401,
@@ -374,6 +392,71 @@ return apiFetcher<createEapPhaseResponse>(getCreateEapPhaseUrl(id),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(createEapPhaseBody)
+  }
+);}
+
+
+export type duplicateEapPhaseResponse201 = {
+  data: DuplicateEapPhase201
+  status: 201
+}
+
+export type duplicateEapPhaseResponse400 = {
+  data: DuplicateEapPhase400
+  status: 400
+}
+
+export type duplicateEapPhaseResponse401 = {
+  data: DuplicateEapPhase401
+  status: 401
+}
+
+export type duplicateEapPhaseResponse403 = {
+  data: DuplicateEapPhase403
+  status: 403
+}
+
+export type duplicateEapPhaseResponse404 = {
+  data: DuplicateEapPhase404
+  status: 404
+}
+
+export type duplicateEapPhaseResponse409 = {
+  data: DuplicateEapPhase409
+  status: 409
+}
+
+export type duplicateEapPhaseResponseSuccess = (duplicateEapPhaseResponse201) & {
+  headers: Headers;
+};
+export type duplicateEapPhaseResponseError = (duplicateEapPhaseResponse400 | duplicateEapPhaseResponse401 | duplicateEapPhaseResponse403 | duplicateEapPhaseResponse404 | duplicateEapPhaseResponse409) & {
+  headers: Headers;
+};
+
+export type duplicateEapPhaseResponse = (duplicateEapPhaseResponseSuccess | duplicateEapPhaseResponseError)
+
+export const getDuplicateEapPhaseUrl = (id: string,
+    phaseId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/duplicate`
+}
+
+/**
+ * Cópia limpa da fase com as tarefas, subtarefas e marcos dela, ao final da lista de fases. Tudo nasce não iniciado, sem datas reais, evidências ou histórico. Exige permissão de criar itens.
+ * @summary Duplicar fase
+ */
+export const duplicateEapPhase = async (id: string,
+    phaseId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<duplicateEapPhaseResponse> => {
+
+  return apiFetcher<duplicateEapPhaseResponse>(getDuplicateEapPhaseUrl(id,phaseId),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 
@@ -880,6 +963,73 @@ return apiFetcher<createEapTaskResponse>(getCreateEapTaskUrl(id,phaseId),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(createEapTaskBody)
+  }
+);}
+
+
+export type duplicateEapTaskResponse201 = {
+  data: DuplicateEapTask201
+  status: 201
+}
+
+export type duplicateEapTaskResponse400 = {
+  data: DuplicateEapTask400
+  status: 400
+}
+
+export type duplicateEapTaskResponse401 = {
+  data: DuplicateEapTask401
+  status: 401
+}
+
+export type duplicateEapTaskResponse403 = {
+  data: DuplicateEapTask403
+  status: 403
+}
+
+export type duplicateEapTaskResponse404 = {
+  data: DuplicateEapTask404
+  status: 404
+}
+
+export type duplicateEapTaskResponse409 = {
+  data: DuplicateEapTask409
+  status: 409
+}
+
+export type duplicateEapTaskResponseSuccess = (duplicateEapTaskResponse201) & {
+  headers: Headers;
+};
+export type duplicateEapTaskResponseError = (duplicateEapTaskResponse400 | duplicateEapTaskResponse401 | duplicateEapTaskResponse403 | duplicateEapTaskResponse404 | duplicateEapTaskResponse409) & {
+  headers: Headers;
+};
+
+export type duplicateEapTaskResponse = (duplicateEapTaskResponseSuccess | duplicateEapTaskResponseError)
+
+export const getDuplicateEapTaskUrl = (id: string,
+    phaseId: string,
+    taskId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/tasks/${taskId}/duplicate`
+}
+
+/**
+ * Cópia limpa: nome com (cópia), descrição, responsável, prioridade, peso e datas planejadas; nasce não iniciada, sem datas reais, evidências ou histórico. Leva as subtarefas. Exige permissão de criar itens.
+ * @summary Duplicar tarefa
+ */
+export const duplicateEapTask = async (id: string,
+    phaseId: string,
+    taskId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<duplicateEapTaskResponse> => {
+
+  return apiFetcher<duplicateEapTaskResponse>(getDuplicateEapTaskUrl(id,phaseId,taskId),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 
@@ -1955,6 +2105,73 @@ return apiFetcher<reorderEapMilestonesResponse>(getReorderEapMilestonesUrl(id,ph
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(reorderEapMilestonesBody)
+  }
+);}
+
+
+export type duplicateEapMilestoneResponse201 = {
+  data: DuplicateEapMilestone201
+  status: 201
+}
+
+export type duplicateEapMilestoneResponse400 = {
+  data: DuplicateEapMilestone400
+  status: 400
+}
+
+export type duplicateEapMilestoneResponse401 = {
+  data: DuplicateEapMilestone401
+  status: 401
+}
+
+export type duplicateEapMilestoneResponse403 = {
+  data: DuplicateEapMilestone403
+  status: 403
+}
+
+export type duplicateEapMilestoneResponse404 = {
+  data: DuplicateEapMilestone404
+  status: 404
+}
+
+export type duplicateEapMilestoneResponse409 = {
+  data: DuplicateEapMilestone409
+  status: 409
+}
+
+export type duplicateEapMilestoneResponseSuccess = (duplicateEapMilestoneResponse201) & {
+  headers: Headers;
+};
+export type duplicateEapMilestoneResponseError = (duplicateEapMilestoneResponse400 | duplicateEapMilestoneResponse401 | duplicateEapMilestoneResponse403 | duplicateEapMilestoneResponse404 | duplicateEapMilestoneResponse409) & {
+  headers: Headers;
+};
+
+export type duplicateEapMilestoneResponse = (duplicateEapMilestoneResponseSuccess | duplicateEapMilestoneResponseError)
+
+export const getDuplicateEapMilestoneUrl = (id: string,
+    phaseId: string,
+    milestoneId: string,) => {
+
+
+
+
+  return `/projects/${id}/phases/${phaseId}/milestones/${milestoneId}/duplicate`
+}
+
+/**
+ * Cópia limpa: nome com (cópia), descrição, tipo, data prevista, validador e apresentador; nasce pendente, sem entregas, decisões ou histórico. Exige permissão de criar itens.
+ * @summary Duplicar marco
+ */
+export const duplicateEapMilestone = async (id: string,
+    phaseId: string,
+    milestoneId: string, options?: Parameters<typeof apiFetcher>[1]): Promise<duplicateEapMilestoneResponse> => {
+
+  return apiFetcher<duplicateEapMilestoneResponse>(getDuplicateEapMilestoneUrl(id,phaseId,milestoneId),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 

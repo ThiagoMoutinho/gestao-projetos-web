@@ -8,9 +8,16 @@
 import type { ListProjectReschedules200DataItem } from './listProjectReschedules200DataItem.ts';
 
 export type ListProjectReschedules200 = {
-  /** Reprogramações efetivadas do projeto (a primeira definição de datas não conta). */
+  /**
+     * Reprogramações efetivadas do projeto (a primeira definição de datas não conta).
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
   total: number;
-  /** @nullable */
+  /**
+     * Data da reprogramação mais recente.
+     * @nullable
+     */
   lastAt: string | null;
   data: ListProjectReschedules200DataItem[];
 };

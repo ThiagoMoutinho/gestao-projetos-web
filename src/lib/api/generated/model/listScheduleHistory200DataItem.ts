@@ -5,62 +5,76 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListScheduleChanges200DataItemChangesItem } from './listScheduleChanges200DataItemChangesItem.ts';
-import type { ListScheduleChanges200DataItemEntityType } from './listScheduleChanges200DataItemEntityType.ts';
-import type { ListScheduleChanges200DataItemImpactsItem } from './listScheduleChanges200DataItemImpactsItem.ts';
-import type { ListScheduleChanges200DataItemNext } from './listScheduleChanges200DataItemNext.ts';
-
-/** LEGACY_DIRECT: efetivada diretamente (modelo anterior). REQUEST: solicitação. INITIAL_DEFINITION: primeira definição de datas. */
-export type ListScheduleHistory200DataItemSource = 'LEGACY_DIRECT' | 'REQUEST' | 'INITIAL_DEFINITION';
-
-export type ListScheduleHistory200DataItemStatus =
-  | 'EFETIVADA_DIRETAMENTE'
-  | 'DEFINIDA'
-  | 'PENDENTE'
-  | 'APROVADA'
-  | 'REJEITADA'
-  | 'CANCELADA'
-  | 'CANCELADA_CONFLITO';
-
-export type ListScheduleHistory200DataItemPerson = {
-  id: string;
-  /** @nullable */
-  name: string | null;
-};
+import type { ListScheduleHistory200DataItemChangesItem } from './listScheduleHistory200DataItemChangesItem.ts';
+import type { ListScheduleHistory200DataItemEntityType } from './listScheduleHistory200DataItemEntityType.ts';
+import type { ListScheduleHistory200DataItemField } from './listScheduleHistory200DataItemField.ts';
+import type { ListScheduleHistory200DataItemImpactsItem } from './listScheduleHistory200DataItemImpactsItem.ts';
+import type { ListScheduleHistory200DataItemNext } from './listScheduleHistory200DataItemNext.ts';
+import type { ListScheduleHistory200DataItemPrevious } from './listScheduleHistory200DataItemPrevious.ts';
+import type { ListScheduleHistory200DataItemRegisteredBy } from './listScheduleHistory200DataItemRegisteredBy.ts';
+import type { ListScheduleHistory200DataItemRequestedBy } from './listScheduleHistory200DataItemRequestedBy.ts';
+import type { ListScheduleHistory200DataItemReviewedBy } from './listScheduleHistory200DataItemReviewedBy.ts';
+import type { ListScheduleHistory200DataItemSource } from './listScheduleHistory200DataItemSource.ts';
+import type { ListScheduleHistory200DataItemStatus } from './listScheduleHistory200DataItemStatus.ts';
 
 export type ListScheduleHistory200DataItem = {
   id: string;
+  /** LEGACY_DIRECT: reprogramação efetivada diretamente (modelo anterior, sem solicitante nem aprovador). REQUEST: solicitação de reprogramação. INITIAL_DEFINITION: primeira definição de datas (não conta como reprogramação). */
   source: ListScheduleHistory200DataItemSource;
   status: ListScheduleHistory200DataItemStatus;
-  entityType: ListScheduleChanges200DataItemEntityType;
+  entityType: ListScheduleHistory200DataItemEntityType;
   entityId: string;
-  /** @nullable */
+  /**
+     * Nome do item; nulo no projeto ou se o item foi excluído.
+     * @nullable
+     */
   entityTitle: string | null;
-  /** @nullable */
-  field: 'START' | 'END' | null;
-  previous: ListScheduleChanges200DataItemNext;
-  next: ListScheduleChanges200DataItemNext;
-  changes: ListScheduleChanges200DataItemChangesItem[];
-  /** @nullable */
+  /**
+     * Campo da solicitação (uma por campo); nulo nos registros da auditoria.
+     * @nullable
+     */
+  field: ListScheduleHistory200DataItemField;
+  previous: ListScheduleHistory200DataItemPrevious;
+  /** Datas efetivadas ou, em solicitação não aprovada, as datas propostas (nunca vigentes). */
+  next: ListScheduleHistory200DataItemNext;
+  changes: ListScheduleHistory200DataItemChangesItem[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
   sequence: number | null;
   /** @nullable */
   justification: string | null;
-  /** @nullable */
+  /**
+     * Categoria do motivo; ainda não registrada (sempre nula nesta etapa).
+     * @nullable
+     */
   reasonCategory: string | null;
-  /** @nullable */
-  requestedBy: ListScheduleHistory200DataItemPerson | null;
+  /**
+     * Solicitante; nulo no modelo anterior, que não registrava solicitação.
+     * @nullable
+     */
+  requestedBy: ListScheduleHistory200DataItemRequestedBy;
   /** @nullable */
   requestedAt: string | null;
-  /** @nullable */
-  reviewedBy: ListScheduleHistory200DataItemPerson | null;
+  /**
+     * Analista; nulo no modelo anterior e enquanto a solicitação está pendente.
+     * @nullable
+     */
+  reviewedBy: ListScheduleHistory200DataItemReviewedBy;
   /** @nullable */
   reviewedAt: string | null;
   /** @nullable */
   decisionNote: string | null;
-  /** @nullable */
-  registeredBy: ListScheduleHistory200DataItemPerson | null;
+  /**
+     * Autor do registro na auditoria (modelo anterior e definição inicial).
+     * @nullable
+     */
+  registeredBy: ListScheduleHistory200DataItemRegisteredBy;
+  /** Data de ordenação: registro na auditoria ou solicitação. */
   occurredAt: string;
   escalatedToPmo: boolean;
   wasOverdue: boolean;
-  impacts: ListScheduleChanges200DataItemImpactsItem[];
+  impacts: ListScheduleHistory200DataItemImpactsItem[];
 };

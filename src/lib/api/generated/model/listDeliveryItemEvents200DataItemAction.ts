@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
+/**
+ * DESIGNACAO: troca do validador do documento (vem da auditoria); as demais vêm do histórico do documento.
+ */
 export type ListDeliveryItemEvents200DataItemAction = typeof ListDeliveryItemEvents200DataItemAction[keyof typeof ListDeliveryItemEvents200DataItemAction];
 
 

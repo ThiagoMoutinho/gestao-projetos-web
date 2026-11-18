@@ -7,6 +7,7 @@
  */
 import type { WaiveDeliveryItem200Conformity } from './waiveDeliveryItem200Conformity.ts';
 import type { WaiveDeliveryItem200CreatedBy } from './waiveDeliveryItem200CreatedBy.ts';
+import type { WaiveDeliveryItem200DefaultValidatorsItem } from './waiveDeliveryItem200DefaultValidatorsItem.ts';
 import type { WaiveDeliveryItem200ItemsItem } from './waiveDeliveryItem200ItemsItem.ts';
 import type { WaiveDeliveryItem200Nature } from './waiveDeliveryItem200Nature.ts';
 
@@ -37,10 +38,6 @@ export type WaiveDeliveryItem200 = {
   rounds: number;
   conformity: WaiveDeliveryItem200Conformity;
   /** Responsáveis técnicos dos marcos de homologação: validam os documentos que não têm validador designado. */
-  defaultValidators: {
-    id: string;
-    /** @nullable */
-    name: string | null;
-  }[];
+  defaultValidators: WaiveDeliveryItem200DefaultValidatorsItem[];
   items: WaiveDeliveryItem200ItemsItem[];
 };

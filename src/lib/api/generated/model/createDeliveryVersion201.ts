@@ -7,6 +7,7 @@
  */
 import type { CreateDeliveryVersion201Conformity } from './createDeliveryVersion201Conformity.ts';
 import type { CreateDeliveryVersion201CreatedBy } from './createDeliveryVersion201CreatedBy.ts';
+import type { CreateDeliveryVersion201DefaultValidatorsItem } from './createDeliveryVersion201DefaultValidatorsItem.ts';
 import type { CreateDeliveryVersion201ItemsItem } from './createDeliveryVersion201ItemsItem.ts';
 import type { CreateDeliveryVersion201Nature } from './createDeliveryVersion201Nature.ts';
 
@@ -37,10 +38,6 @@ export type CreateDeliveryVersion201 = {
   rounds: number;
   conformity: CreateDeliveryVersion201Conformity;
   /** Responsáveis técnicos dos marcos de homologação: validam os documentos que não têm validador designado. */
-  defaultValidators: {
-    id: string;
-    /** @nullable */
-    name: string | null;
-  }[];
+  defaultValidators: CreateDeliveryVersion201DefaultValidatorsItem[];
   items: CreateDeliveryVersion201ItemsItem[];
 };

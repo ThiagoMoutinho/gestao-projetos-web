@@ -7,6 +7,7 @@
  */
 import type { SubmitDeliveryItem200Conformity } from './submitDeliveryItem200Conformity.ts';
 import type { SubmitDeliveryItem200CreatedBy } from './submitDeliveryItem200CreatedBy.ts';
+import type { SubmitDeliveryItem200DefaultValidatorsItem } from './submitDeliveryItem200DefaultValidatorsItem.ts';
 import type { SubmitDeliveryItem200ItemsItem } from './submitDeliveryItem200ItemsItem.ts';
 import type { SubmitDeliveryItem200Nature } from './submitDeliveryItem200Nature.ts';
 
@@ -37,10 +38,6 @@ export type SubmitDeliveryItem200 = {
   rounds: number;
   conformity: SubmitDeliveryItem200Conformity;
   /** Responsáveis técnicos dos marcos de homologação: validam os documentos que não têm validador designado. */
-  defaultValidators: {
-    id: string;
-    /** @nullable */
-    name: string | null;
-  }[];
+  defaultValidators: SubmitDeliveryItem200DefaultValidatorsItem[];
   items: SubmitDeliveryItem200ItemsItem[];
 };

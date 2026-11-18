@@ -32,16 +32,26 @@ import type {
   ListExecutiveSummaryValidations409,
   ListExecutiveSummaryValidationsParams,
   ListProjectReschedules200,
+  ListProjectReschedules400,
+  ListProjectReschedules401,
+  ListProjectReschedules403,
+  ListProjectReschedules404,
+  ListProjectReschedules409,
   ListProjectReschedulesParams,
   ListScheduleChanges200,
-  ListScheduleHistory200,
-  ListScheduleHistoryParams,
   ListScheduleChanges400,
   ListScheduleChanges401,
   ListScheduleChanges403,
   ListScheduleChanges404,
   ListScheduleChanges409,
   ListScheduleChangesParams,
+  ListScheduleHistory200,
+  ListScheduleHistory400,
+  ListScheduleHistory401,
+  ListScheduleHistory403,
+  ListScheduleHistory404,
+  ListScheduleHistory409,
+  ListScheduleHistoryParams,
   RescheduleEapMilestone200,
   RescheduleEapMilestone400,
   RescheduleEapMilestone401,
@@ -474,6 +484,76 @@ export const listScheduleChanges = async (id: string,
 );}
 
 
+export type listScheduleHistoryResponse200 = {
+  data: ListScheduleHistory200
+  status: 200
+}
+
+export type listScheduleHistoryResponse400 = {
+  data: ListScheduleHistory400
+  status: 400
+}
+
+export type listScheduleHistoryResponse401 = {
+  data: ListScheduleHistory401
+  status: 401
+}
+
+export type listScheduleHistoryResponse403 = {
+  data: ListScheduleHistory403
+  status: 403
+}
+
+export type listScheduleHistoryResponse404 = {
+  data: ListScheduleHistory404
+  status: 404
+}
+
+export type listScheduleHistoryResponse409 = {
+  data: ListScheduleHistory409
+  status: 409
+}
+
+export type listScheduleHistoryResponseSuccess = (listScheduleHistoryResponse200) & {
+  headers: Headers;
+};
+export type listScheduleHistoryResponseError = (listScheduleHistoryResponse400 | listScheduleHistoryResponse401 | listScheduleHistoryResponse403 | listScheduleHistoryResponse404 | listScheduleHistoryResponse409) & {
+  headers: Headers;
+};
+
+export type listScheduleHistoryResponse = (listScheduleHistoryResponseSuccess | listScheduleHistoryResponseError)
+
+export const getListScheduleHistoryUrl = (id: string,
+    params?: ListScheduleHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/projects/${id}/schedule-history?${stringifiedParams}` : `/projects/${id}/schedule-history`
+}
+
+/**
+ * Somente leitura. Registros anteriores ao fluxo de solicitação aparecem como LEGACY_DIRECT, sem solicitante, aprovador ou categoria.
+ * @summary Histórico unificado do cronograma: reprogramações, solicitações e definições iniciais
+ */
+export const listScheduleHistory = async (id: string,
+    params?: ListScheduleHistoryParams, options?: Parameters<typeof apiFetcher>[1]): Promise<listScheduleHistoryResponse> => {
+
+  return apiFetcher<listScheduleHistoryResponse>(getListScheduleHistoryUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
 
 
 export type listProjectReschedulesResponse200 = {
@@ -481,11 +561,35 @@ export type listProjectReschedulesResponse200 = {
   status: 200
 }
 
-export type listProjectReschedulesResponseError = (listScheduleChangesResponse400 | listScheduleChangesResponse401 | listScheduleChangesResponse403 | listScheduleChangesResponse404 | listScheduleChangesResponse409) & {
-  headers: Headers;
-};
+export type listProjectReschedulesResponse400 = {
+  data: ListProjectReschedules400
+  status: 400
+}
+
+export type listProjectReschedulesResponse401 = {
+  data: ListProjectReschedules401
+  status: 401
+}
+
+export type listProjectReschedulesResponse403 = {
+  data: ListProjectReschedules403
+  status: 403
+}
+
+export type listProjectReschedulesResponse404 = {
+  data: ListProjectReschedules404
+  status: 404
+}
+
+export type listProjectReschedulesResponse409 = {
+  data: ListProjectReschedules409
+  status: 409
+}
 
 export type listProjectReschedulesResponseSuccess = (listProjectReschedulesResponse200) & {
+  headers: Headers;
+};
+export type listProjectReschedulesResponseError = (listProjectReschedulesResponse400 | listProjectReschedulesResponse401 | listProjectReschedulesResponse403 | listProjectReschedulesResponse404 | listProjectReschedulesResponse409) & {
   headers: Headers;
 };
 
@@ -523,50 +627,6 @@ export const listProjectReschedules = async (id: string,
 );}
 
 
-export type listScheduleHistoryResponse200 = {
-  data: ListScheduleHistory200
-  status: 200
-}
-
-export type listScheduleHistoryResponseSuccess = (listScheduleHistoryResponse200) & {
-  headers: Headers;
-};
-export type listScheduleHistoryResponseError = (listScheduleChangesResponse400 | listScheduleChangesResponse401 | listScheduleChangesResponse403 | listScheduleChangesResponse404 | listScheduleChangesResponse409) & {
-  headers: Headers;
-};
-
-export type listScheduleHistoryResponse = (listScheduleHistoryResponseSuccess | listScheduleHistoryResponseError)
-
-export const getListScheduleHistoryUrl = (id: string,
-    params?: ListScheduleHistoryParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/projects/${id}/schedule-history?${stringifiedParams}` : `/projects/${id}/schedule-history`
-}
-
-/**
- * @summary Histórico unificado do cronograma: reprogramações, solicitações e definições iniciais
- */
-export const listScheduleHistory = async (id: string,
-    params?: ListScheduleHistoryParams, options?: Parameters<typeof apiFetcher>[1]): Promise<listScheduleHistoryResponse> => {
-
-  return apiFetcher<listScheduleHistoryResponse>(getListScheduleHistoryUrl(id,params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
 export type getScheduleMonitoringResponse200 = {
   data: GetScheduleMonitoring200
   status: 200

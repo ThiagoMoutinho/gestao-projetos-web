@@ -5,9 +5,41 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
-import type { ListScheduleChanges200DataItem } from './listScheduleChanges200DataItem.ts';
+import type { ListProjectReschedules200DataItemChangesItem } from './listProjectReschedules200DataItemChangesItem.ts';
+import type { ListProjectReschedules200DataItemEntityType } from './listProjectReschedules200DataItemEntityType.ts';
+import type { ListProjectReschedules200DataItemImpactsItem } from './listProjectReschedules200DataItemImpactsItem.ts';
+import type { ListProjectReschedules200DataItemKind } from './listProjectReschedules200DataItemKind.ts';
+import type { ListProjectReschedules200DataItemNext } from './listProjectReschedules200DataItemNext.ts';
+import type { ListProjectReschedules200DataItemPrevious } from './listProjectReschedules200DataItemPrevious.ts';
 
-export type ListProjectReschedules200DataItem = ListScheduleChanges200DataItem & {
-  /** Nome do item alterado; nulo no projeto ou se o item foi excluído. */
+export type ListProjectReschedules200DataItem = {
+  id: string;
+  entityType: ListProjectReschedules200DataItemEntityType;
+  entityId: string;
+  /** PLANNING_DEFINED é a primeira definição de datas e não conta como reprogramação. */
+  kind: ListProjectReschedules200DataItemKind;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  sequence: number | null;
+  previous: ListProjectReschedules200DataItemPrevious;
+  next: ListProjectReschedules200DataItemNext;
+  /** Classificação de cada data alterada na operação. */
+  changes: ListProjectReschedules200DataItemChangesItem[];
+  /** @nullable */
+  justification: string | null;
+  impacts: ListProjectReschedules200DataItemImpactsItem[];
+  escalatedToPmo: boolean;
+  wasOverdue: boolean;
+  actorId: string;
+  /** @nullable */
+  actorName: string | null;
+  createdAt: string;
+  /**
+     * Nome do item alterado; nulo no projeto ou se o item foi excluído.
+     * @nullable
+     */
   entityTitle: string | null;
 };

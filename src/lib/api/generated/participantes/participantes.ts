@@ -103,68 +103,6 @@ export const listProjectMembers = async (id: string, options?: Parameters<typeof
 );}
 
 
-export type listProjectMemberCandidatesResponse200 = {
-  data: ListProjectMemberCandidates200
-  status: 200
-}
-
-export type listProjectMemberCandidatesResponse400 = {
-  data: ListProjectMemberCandidates400
-  status: 400
-}
-
-export type listProjectMemberCandidatesResponse401 = {
-  data: ListProjectMemberCandidates401
-  status: 401
-}
-
-export type listProjectMemberCandidatesResponse403 = {
-  data: ListProjectMemberCandidates403
-  status: 403
-}
-
-export type listProjectMemberCandidatesResponse404 = {
-  data: ListProjectMemberCandidates404
-  status: 404
-}
-
-export type listProjectMemberCandidatesResponse409 = {
-  data: ListProjectMemberCandidates409
-  status: 409
-}
-
-export type listProjectMemberCandidatesResponseSuccess = (listProjectMemberCandidatesResponse200) & {
-  headers: Headers;
-};
-export type listProjectMemberCandidatesResponseError = (listProjectMemberCandidatesResponse400 | listProjectMemberCandidatesResponse401 | listProjectMemberCandidatesResponse403 | listProjectMemberCandidatesResponse404 | listProjectMemberCandidatesResponse409) & {
-  headers: Headers;
-};
-
-export type listProjectMemberCandidatesResponse = (listProjectMemberCandidatesResponseSuccess | listProjectMemberCandidatesResponseError)
-
-export const getListProjectMemberCandidatesUrl = (id: string,) => {
-
-
-
-
-  return `/projects/${id}/member-candidates`
-}
-
-/**
- * @summary Usuários ativos que podem compor a equipe (somente quem gerencia participantes)
- */
-export const listProjectMemberCandidates = async (id: string, options?: Parameters<typeof apiFetcher>[1]): Promise<listProjectMemberCandidatesResponse> => {
-
-  return apiFetcher<listProjectMemberCandidatesResponse>(getListProjectMemberCandidatesUrl(id),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
 export type addProjectMemberResponse201 = {
   data: AddProjectMember201
   status: 201
@@ -238,6 +176,68 @@ return apiFetcher<addProjectMemberResponse>(getAddProjectMemberUrl(id),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(addProjectMemberBody)
+  }
+);}
+
+
+export type listProjectMemberCandidatesResponse200 = {
+  data: ListProjectMemberCandidates200
+  status: 200
+}
+
+export type listProjectMemberCandidatesResponse400 = {
+  data: ListProjectMemberCandidates400
+  status: 400
+}
+
+export type listProjectMemberCandidatesResponse401 = {
+  data: ListProjectMemberCandidates401
+  status: 401
+}
+
+export type listProjectMemberCandidatesResponse403 = {
+  data: ListProjectMemberCandidates403
+  status: 403
+}
+
+export type listProjectMemberCandidatesResponse404 = {
+  data: ListProjectMemberCandidates404
+  status: 404
+}
+
+export type listProjectMemberCandidatesResponse409 = {
+  data: ListProjectMemberCandidates409
+  status: 409
+}
+
+export type listProjectMemberCandidatesResponseSuccess = (listProjectMemberCandidatesResponse200) & {
+  headers: Headers;
+};
+export type listProjectMemberCandidatesResponseError = (listProjectMemberCandidatesResponse400 | listProjectMemberCandidatesResponse401 | listProjectMemberCandidatesResponse403 | listProjectMemberCandidatesResponse404 | listProjectMemberCandidatesResponse409) & {
+  headers: Headers;
+};
+
+export type listProjectMemberCandidatesResponse = (listProjectMemberCandidatesResponseSuccess | listProjectMemberCandidatesResponseError)
+
+export const getListProjectMemberCandidatesUrl = (id: string,) => {
+
+
+
+
+  return `/projects/${id}/member-candidates`
+}
+
+/**
+ * @summary Usuários ativos que podem compor a equipe (somente quem gerencia participantes)
+ */
+export const listProjectMemberCandidates = async (id: string, options?: Parameters<typeof apiFetcher>[1]): Promise<listProjectMemberCandidatesResponse> => {
+
+  return apiFetcher<listProjectMemberCandidatesResponse>(getListProjectMemberCandidatesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

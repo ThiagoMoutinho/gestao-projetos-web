@@ -12,6 +12,11 @@ import type { CreateEapTask201Status } from './createEapTask201Status.ts';
 export type CreateEapTask201 = {
   id: string;
   phaseId: string;
+  /**
+     * Tarefa superior, quando esta é uma subtarefa.
+     * @nullable
+     */
+  parentTaskId: string | null;
   title: string;
   /** @nullable */
   description: string | null;

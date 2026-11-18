@@ -12,6 +12,11 @@ import type { ReactivateEapTask200Status } from './reactivateEapTask200Status.ts
 export type ReactivateEapTask200 = {
   id: string;
   phaseId: string;
+  /**
+     * Tarefa superior, quando esta é uma subtarefa.
+     * @nullable
+     */
+  parentTaskId: string | null;
   title: string;
   /** @nullable */
   description: string | null;

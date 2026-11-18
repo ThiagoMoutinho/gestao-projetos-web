@@ -9,6 +9,12 @@ import type { CreateEapTaskBodyPriority } from './createEapTaskBodyPriority.ts';
 
 export type CreateEapTaskBody = {
   /**
+     * Cria a tarefa como subtarefa desta (mesma fase; a superior não pode ser subtarefa).
+     * @minLength 1
+     * @nullable
+     */
+  parentTaskId?: string | null;
+  /**
      * @minLength 1
      * @maxLength 255
      */

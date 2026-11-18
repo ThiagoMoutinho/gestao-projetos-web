@@ -7,6 +7,7 @@
  */
 import type { ListDeliveryVersions200DataItemConformity } from './listDeliveryVersions200DataItemConformity.ts';
 import type { ListDeliveryVersions200DataItemCreatedBy } from './listDeliveryVersions200DataItemCreatedBy.ts';
+import type { ListDeliveryVersions200DataItemDefaultValidatorsItem } from './listDeliveryVersions200DataItemDefaultValidatorsItem.ts';
 import type { ListDeliveryVersions200DataItemItemsItem } from './listDeliveryVersions200DataItemItemsItem.ts';
 import type { ListDeliveryVersions200DataItemNature } from './listDeliveryVersions200DataItemNature.ts';
 
@@ -37,10 +38,6 @@ export type ListDeliveryVersions200DataItem = {
   rounds: number;
   conformity: ListDeliveryVersions200DataItemConformity;
   /** Responsáveis técnicos dos marcos de homologação: validam os documentos que não têm validador designado. */
-  defaultValidators: {
-    id: string;
-    /** @nullable */
-    name: string | null;
-  }[];
+  defaultValidators: ListDeliveryVersions200DataItemDefaultValidatorsItem[];
   items: ListDeliveryVersions200DataItemItemsItem[];
 };

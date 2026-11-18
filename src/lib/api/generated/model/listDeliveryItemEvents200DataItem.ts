@@ -8,6 +8,8 @@
 import type { ListDeliveryItemEvents200DataItemAction } from './listDeliveryItemEvents200DataItemAction.ts';
 import type { ListDeliveryItemEvents200DataItemActor } from './listDeliveryItemEvents200DataItemActor.ts';
 import type { ListDeliveryItemEvents200DataItemEvidenceKind } from './listDeliveryItemEvents200DataItemEvidenceKind.ts';
+import type { ListDeliveryItemEvents200DataItemNewValidator } from './listDeliveryItemEvents200DataItemNewValidator.ts';
+import type { ListDeliveryItemEvents200DataItemPreviousValidator } from './listDeliveryItemEvents200DataItemPreviousValidator.ts';
 
 export type ListDeliveryItemEvents200DataItem = {
   id: string;
@@ -16,22 +18,22 @@ export type ListDeliveryItemEvents200DataItem = {
   /** @nullable */
   actor: ListDeliveryItemEvents200DataItemActor;
   /**
-   * Perfil global de quem agiu (ADMIN, PMO, GESTOR, FORNECEDOR...).
-   * @nullable
-   */
+     * Perfil global de quem agiu (ADMIN, PMO, GESTOR, FORNECEDOR...).
+     * @nullable
+     */
   actorRole: string | null;
   /** Papéis de quem agiu no projeto (DONO_PROJETO, FORNECEDOR, RESPONSAVEL_TECNICO...). */
   actorProjectRoles: string[];
   /**
-   * DESIGNACAO: validador anterior (nulo: nenhum designado).
-   * @nullable
-   */
-  previousValidator: ListDeliveryItemEvents200DataItemActor;
+     * DESIGNACAO: validador anterior (nulo: nenhum designado).
+     * @nullable
+     */
+  previousValidator: ListDeliveryItemEvents200DataItemPreviousValidator;
   /**
-   * DESIGNACAO: novo validador (nulo: designação removida).
-   * @nullable
-   */
-  newValidator: ListDeliveryItemEvents200DataItemActor;
+     * DESIGNACAO: novo validador (nulo: designação removida).
+     * @nullable
+     */
+  newValidator: ListDeliveryItemEvents200DataItemNewValidator;
   /** @nullable */
   evidenceKind: ListDeliveryItemEvents200DataItemEvidenceKind;
   /** @nullable */

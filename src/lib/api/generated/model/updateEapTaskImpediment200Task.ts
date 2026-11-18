@@ -12,6 +12,11 @@ import type { UpdateEapTaskImpediment200TaskStatus } from './updateEapTaskImpedi
 export type UpdateEapTaskImpediment200Task = {
   id: string;
   phaseId: string;
+  /**
+     * Tarefa superior, quando esta é uma subtarefa.
+     * @nullable
+     */
+  parentTaskId: string | null;
   title: string;
   /** @nullable */
   description: string | null;

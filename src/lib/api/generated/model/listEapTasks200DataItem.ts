@@ -12,6 +12,11 @@ import type { ListEapTasks200DataItemStatus } from './listEapTasks200DataItemSta
 export type ListEapTasks200DataItem = {
   id: string;
   phaseId: string;
+  /**
+     * Tarefa superior, quando esta é uma subtarefa.
+     * @nullable
+     */
+  parentTaskId: string | null;
   title: string;
   /** @nullable */
   description: string | null;

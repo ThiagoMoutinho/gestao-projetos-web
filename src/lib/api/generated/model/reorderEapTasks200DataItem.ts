@@ -12,6 +12,11 @@ import type { ReorderEapTasks200DataItemStatus } from './reorderEapTasks200DataI
 export type ReorderEapTasks200DataItem = {
   id: string;
   phaseId: string;
+  /**
+     * Tarefa superior, quando esta é uma subtarefa.
+     * @nullable
+     */
+  parentTaskId: string | null;
   title: string;
   /** @nullable */
   description: string | null;

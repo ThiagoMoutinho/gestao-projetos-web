@@ -5,6 +5,8 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { ListScheduleHistoryIncludeInitial } from './listScheduleHistoryIncludeInitial.ts';
+import type { ListScheduleHistorySource } from './listScheduleHistorySource.ts';
 
 export type ListScheduleHistoryParams = {
 /**
@@ -14,9 +16,15 @@ export type ListScheduleHistoryParams = {
 limit?: number;
 /**
  * @minimum 0
+ * @maximum 9007199254740991
  */
 offset?: number;
-source?: 'LEGACY_DIRECT' | 'REQUEST' | 'INITIAL_DEFINITION';
-/** false oculta as definições iniciais de datas. */
-includeInitial?: 'true' | 'false';
+/**
+ * LEGACY_DIRECT: reprogramação efetivada diretamente (modelo anterior, sem solicitante nem aprovador). REQUEST: solicitação de reprogramação. INITIAL_DEFINITION: primeira definição de datas (não conta como reprogramação).
+ */
+source?: ListScheduleHistorySource;
+/**
+ * false oculta as definições iniciais de datas.
+ */
+includeInitial?: ListScheduleHistoryIncludeInitial;
 };

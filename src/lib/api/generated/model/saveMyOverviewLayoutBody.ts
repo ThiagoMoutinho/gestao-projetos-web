@@ -10,7 +10,7 @@ import type { SaveMyOverviewLayoutBodyWidgetsItem } from './saveMyOverviewLayout
 export type SaveMyOverviewLayoutBody = {
   /**
      * @minItems 1
-     * @maxItems 7
+     * @maxItems 11
      */
   widgets: SaveMyOverviewLayoutBodyWidgetsItem[];
 };

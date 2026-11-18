@@ -7,6 +7,7 @@
  */
 import type { AssignDeliveryItemValidator200Conformity } from './assignDeliveryItemValidator200Conformity.ts';
 import type { AssignDeliveryItemValidator200CreatedBy } from './assignDeliveryItemValidator200CreatedBy.ts';
+import type { AssignDeliveryItemValidator200DefaultValidatorsItem } from './assignDeliveryItemValidator200DefaultValidatorsItem.ts';
 import type { AssignDeliveryItemValidator200ItemsItem } from './assignDeliveryItemValidator200ItemsItem.ts';
 import type { AssignDeliveryItemValidator200Nature } from './assignDeliveryItemValidator200Nature.ts';
 
@@ -37,10 +38,6 @@ export type AssignDeliveryItemValidator200 = {
   rounds: number;
   conformity: AssignDeliveryItemValidator200Conformity;
   /** Responsáveis técnicos dos marcos de homologação: validam os documentos que não têm validador designado. */
-  defaultValidators: {
-    id: string;
-    /** @nullable */
-    name: string | null;
-  }[];
+  defaultValidators: AssignDeliveryItemValidator200DefaultValidatorsItem[];
   items: AssignDeliveryItemValidator200ItemsItem[];
 };

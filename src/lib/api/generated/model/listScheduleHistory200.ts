@@ -5,22 +5,21 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { ListScheduleHistory200Counts } from './listScheduleHistory200Counts.ts';
 import type { ListScheduleHistory200DataItem } from './listScheduleHistory200DataItem.ts';
 
 export type ListScheduleHistory200 = {
+  /**
+     * Itens que atendem aos filtros (antes da paginação).
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
   total: number;
-  counts: {
-    legacyDirect: number;
-    initialDefinitions: number;
-    requests: {
-      pendente: number;
-      aprovada: number;
-      rejeitada: number;
-      cancelada: number;
-      canceladaConflito: number;
-    };
-  };
-  /** @nullable */
+  counts: ListScheduleHistory200Counts;
+  /**
+     * Última reprogramação efetivada (mesmo critério do monitoramento).
+     * @nullable
+     */
   lastRescheduleAt: string | null;
   data: ListScheduleHistory200DataItem[];
 };

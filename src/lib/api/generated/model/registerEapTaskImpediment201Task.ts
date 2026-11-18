@@ -12,6 +12,11 @@ import type { RegisterEapTaskImpediment201TaskStatus } from './registerEapTaskIm
 export type RegisterEapTaskImpediment201Task = {
   id: string;
   phaseId: string;
+  /**
+     * Tarefa superior, quando esta é uma subtarefa.
+     * @nullable
+     */
+  parentTaskId: string | null;
   title: string;
   /** @nullable */
   description: string | null;
