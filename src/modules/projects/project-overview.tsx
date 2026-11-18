@@ -144,7 +144,9 @@ export function ProjectOverview({
 
       <ProjectOverviewSections
         indicators={
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          // Container query: as 4 colunas dependem da largura útil (viewport menos sidebar), não da janela.
+          <div className="@container">
+          <div className="grid gap-3 sm:grid-cols-2 @[66rem]:grid-cols-4">
             <Indicator icon={ListChecks} tone="primary" label="Situação e progresso">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[15px] font-bold text-foreground dark:text-foreground">{progressPercent === null ? "Indisponível" : `${progressPercent}%`}</p>
@@ -213,6 +215,7 @@ export function ProjectOverview({
                 </p>
               )}
             </Indicator>
+          </div>
           </div>
         }
         projectId={project.id}

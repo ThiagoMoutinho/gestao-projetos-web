@@ -62,10 +62,12 @@ export function OverviewHeaderSkeleton() {
           <Skeleton className={cn("h-8 w-32", PULSE)} />
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }, (_, index) => (
-          <IndicatorSkeleton key={index} />
-        ))}
+      <div className="@container">
+        <div className="grid gap-3 sm:grid-cols-2 @[66rem]:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => (
+            <IndicatorSkeleton key={index} />
+          ))}
+        </div>
       </div>
     </>
   );
