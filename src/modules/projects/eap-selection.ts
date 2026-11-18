@@ -4,7 +4,14 @@ export type PhaseChild =
   | { kind: "task"; item: ProjectTaskView }
   | { kind: "milestone"; item: ProjectMilestoneView };
 
-export function orderPhaseChildren(tasks: ProjectTaskView[], milestones: ProjectMilestoneView[]): PhaseChild[] {
+/** Subtarefas de uma tarefa, na ordem delas. */
+export function subtasksOf(tasks: ProjectTaskView[], parentId: string): ProjectTaskView[] {
+  return tasks.filter((task) => task.parentTaskId === parentId).sort((left, right) => left.sortOrder - right.sortOrder);
+}
+
+/** Itens de nível principal da fase (tarefas sem superior e marcos); as subtarefas aparecem sob a tarefa superior. */
+export function orderPhaseChildren(allTasks: ProjectTaskView[], milestones: ProjectMilestoneView[]): PhaseChild[] {
+  const tasks = allTasks.filter((task) => !task.parentTaskId);
   const taskOrders = new Set(tasks.map((task) => task.sortOrder));
   const sharesOrder = milestones.some((milestone) => taskOrders.has(milestone.sortOrder));
   const children: PhaseChild[] = [
@@ -49,6 +56,11 @@ export function flattenEap(phases: ProjectPhaseView[]) {
             ? { kind: "task", phaseId: phase.id, taskId: child.item.id }
             : { kind: "milestone", phaseId: phase.id, milestoneId: child.item.id },
         );
+        if (child.kind === "task") {
+          for (const subtask of subtasksOf(phase.tasks, child.item.id)) {
+            items.push({ kind: "task", phaseId: phase.id, taskId: subtask.id });
+          }
+        }
       }
     } else {
       for (const task of phase.tasks ?? []) {

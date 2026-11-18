@@ -275,7 +275,7 @@ export function EapDetail({
             Editar fase
           </Button>
         ) : null}
-        {!editing && task && task.calculatedStatus !== "CANCELADA" && canUpdateTaskProgress(access, task) ? (
+        {!editing && task && task.calculatedStatus !== "CANCELADA" && canUpdateTaskProgress(access, task) && !(phase?.tasks ?? []).some((item) => item.parentTaskId === task.id) ? (
           <Button type="button" className={primaryButton} onClick={() => setEditing(true)}>
             Atualizar andamento
           </Button>
@@ -452,7 +452,9 @@ function TaskDetail({
   onTask: (task: ProjectTaskView) => void;
   onDirty: (dirty: boolean) => void;
 }) {
-  const canUpdate = canUpdateTaskProgress(access, task);
+  // O andamento da tarefa superior é calculado pelas subtarefas e não é informado à mão.
+  const fromSubtasks = (phase.tasks ?? []).some((item) => item.parentTaskId === task.id);
+  const canUpdate = canUpdateTaskProgress(access, task) && !fromSubtasks;
   const [draft, setDraft] = useState(task.progressPercent);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -571,7 +573,7 @@ function TaskDetail({
         <div className="mb-4 flex items-start justify-between gap-3">
           <span>
             <strong className="block text-[12.5px] text-foreground">Andamento registrado</strong>
-            <small className="mt-1 block text-[11.5px] text-muted-foreground">Selecione um valor para atualizar rapidamente</small>
+            <small className="mt-1 block text-[11.5px] text-muted-foreground">{fromSubtasks ? "Calculado pelas subtarefas (média ponderada pelo peso)" : "Selecione um valor para atualizar rapidamente"}</small>
           </span>
           <strong className="text-[11.5px] text-primary">{task.progressPercent}%</strong>
         </div>

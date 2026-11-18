@@ -48,6 +48,8 @@ export type ProjectMemberView = {
 export type ProjectTaskView = {
   id: string;
   phaseId: string;
+  /** Tarefa superior, quando esta é uma subtarefa (a EAP tem um só nível de subordinação). */
+  parentTaskId: string | null;
   title: string;
   description: string | null;
   status: ListEapTasks200DataItemStatus;
@@ -208,6 +210,7 @@ export function presentPhase<T extends DatedSpan & {
 export function presentTask<T extends DatedSpan & {
   id: string;
   phaseId: string;
+  parentTaskId?: string | null;
   title: string;
   description: string | null;
   assigneeId: string | null;
@@ -223,6 +226,7 @@ export function presentTask<T extends DatedSpan & {
   return {
     id: task.id,
     phaseId: task.phaseId,
+    parentTaskId: task.parentTaskId ?? null,
     title: task.title,
     description: task.description,
     status: task.status,

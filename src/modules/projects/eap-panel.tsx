@@ -447,6 +447,8 @@ function TaskEditor({
 }) {
   const canEdit = canEditItem(access, task.createdBy);
   const canProgress = canUpdateTaskProgress(access, task);
+  // O andamento da tarefa superior é calculado pelas subtarefas e não é informado à mão.
+  const fromSubtasks = (phase.tasks ?? []).some((item) => item.parentTaskId === task.id);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? "");
@@ -666,7 +668,14 @@ function TaskEditor({
         </div>
       </EditSection>
       <EditSection title="Andamento da tarefa" subtitle="Atualização rápida do progresso registrado" tone="accent" aside={<strong className="text-xs text-primary">{progressShown}%</strong>}>
-        {canProgress && !cancelled ? (
+        {fromSubtasks ? (
+          <>
+            <Progress value={task.progressPercent} aria-label="Andamento da tarefa" className="mb-3 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted" />
+            <p className="text-xs leading-[1.45] text-muted-foreground">
+              Calculado pelas subtarefas (média ponderada pelo peso, sem as canceladas). Para mudar o andamento, atualize as subtarefas.
+            </p>
+          </>
+        ) : canProgress && !cancelled ? (
           <>
             <Progress value={progressShown} aria-label="Andamento da tarefa" className="mb-3 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted" />
             <div className="mt-[11px] mb-3.5 grid grid-cols-6 gap-1.5">

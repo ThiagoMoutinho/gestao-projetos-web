@@ -28,14 +28,14 @@ import { readPhases } from "./load-project-detail";
 import { EapDetail, eapCode } from "./eap-detail-view";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
-import { getEapPhase, reorderEapPhases } from "@/lib/api/generated/eap/eap";
+import { duplicateEapMilestone, duplicateEapPhase, duplicateEapTask, getEapPhase, reorderEapPhases } from "@/lib/api/generated/eap/eap";
 import { ApiError, apiFetcher } from "@/lib/api/fetcher";
 import { notifySuccess, reportFailure } from "@/lib/feedback";
 
 import { canEditItem, canUpdateTaskProgress, type EapAccess } from "./eap-access";
 import type { EapPerson } from "./eap-panel";
 import { presentPhase, type ProjectMilestoneView, type ProjectPhaseView, type ProjectTaskView } from "./eap-present";
-import { orderPhaseChildren, selectionKey, type EapSelection, type PhaseChild } from "./eap-selection";
+import { orderPhaseChildren, selectionKey, subtasksOf, type EapSelection, type PhaseChild } from "./eap-selection";
 
 export function ProjectEap({
   projectId,
@@ -145,6 +145,7 @@ export function ProjectEap({
       canAddChild: access.canCreateItems,
       onAddTask: () => setCreate({ kind: "task", phaseId }),
       onAddMilestone: () => setCreate({ kind: "milestone", phaseId }),
+      onDuplicate: access.canCreateItems && phase ? () => void duplicateItem({ kind: "phase", phaseId }, `Fase "${phase.name}"`) : undefined,
       onMoveUp: access.canManageStructure ? () => void movePhase(phaseId, -1) : undefined,
       onMoveDown: access.canManageStructure ? () => void movePhase(phaseId, 1) : undefined,
       moveUpDisabled: movingPhase || filtering || index <= 0,
@@ -156,6 +157,35 @@ export function ProjectEap({
           ? "Não é possível excluir esta fase porque existem tarefas ou marcos vinculados. Mova ou trate os itens subordinados antes de continuar."
           : undefined,
     };
+  }
+
+  /** Relê as fases, tarefas e marcos (os cálculos da superior e da fase vêm do servidor). A expansão das fases é preservada. */
+  async function reloadItems() {
+    const next = await readPhases(projectId, names);
+    if (next) {
+      setItems(next);
+    } else {
+      reportFailure(null, "Não foi possível atualizar a EAP. Recarregue a página.");
+    }
+  }
+
+  /** Cria uma cópia limpa (sem andamento, datas reais, evidências nem histórico) e atualiza a lista. */
+  async function duplicateItem(target: EapSelection, label: string) {
+    try {
+      const response =
+        target.kind === "phase"
+          ? await duplicateEapPhase(projectId, target.phaseId)
+          : target.kind === "task"
+            ? await duplicateEapTask(projectId, target.phaseId, target.taskId)
+            : await duplicateEapMilestone(projectId, target.phaseId, target.milestoneId);
+      if (response.status !== 201) {
+        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível duplicar o item.");
+      }
+      await reloadItems();
+      notifySuccess(`${label} duplicad${target.kind === "milestone" ? "o" : target.kind === "phase" ? "a" : "a"}.`);
+    } catch (caught) {
+      reportFailure(caught, "Não foi possível duplicar o item.");
+    }
   }
 
   async function refreshPhase(phaseId: string) {
@@ -175,8 +205,14 @@ export function ProjectEap({
   }
 
   function handleDeleted(target: EapSelection) {
+    // Excluir uma subtarefa muda o andamento calculado da tarefa superior: a lista é relida.
+    const wasSubtask =
+      target.kind === "task" &&
+      Boolean(items?.find((phase) => phase.id === target.phaseId)?.tasks?.find((task) => task.id === target.taskId)?.parentTaskId);
     setItems((currentPhases) => removeItem(currentPhases, target));
-    if (target.kind !== "phase") {
+    if (wasSubtask) {
+      void reloadItems();
+    } else if (target.kind !== "phase") {
       void refreshPhase(target.phaseId);
     }
     const selectedPhase = selection?.phaseId;
@@ -245,9 +281,13 @@ export function ProjectEap({
     }
 
     const nextChildren = moveItem(children, from, to);
-    const nextTasks = nextChildren.flatMap((child, sortOrder) =>
+    const nextTopTasks = nextChildren.flatMap((child, sortOrder) =>
       child.kind === "task" ? [{ ...child.item, sortOrder }] : [],
     );
+    // A API renumera as subtarefas depois das tarefas de nível principal; o estado local acompanha.
+    const subtaskBase = nextChildren.length;
+    const nextSubtasks = phase.tasks.filter((item) => item.parentTaskId).map((item, offset) => ({ ...item, sortOrder: subtaskBase + offset }));
+    const nextTasks = [...nextTopTasks, ...nextSubtasks];
     const nextMilestones = nextChildren.flatMap((child, sortOrder) =>
       child.kind === "milestone" ? [{ ...child.item, sortOrder }] : [],
     );
@@ -262,12 +302,12 @@ export function ProjectEap({
     setDragOverPhaseId(null);
 
     try {
-      if (nextTasks.length > 0) {
+      if (nextTopTasks.length > 0) {
         const response = await apiFetcher<{ status: number }>(`/projects/${projectId}/phases/${phaseId}/tasks/order`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            items: nextTasks.map((item: ProjectTaskView) => ({ taskId: item.id, sortOrder: item.sortOrder })),
+            items: nextTopTasks.map((item: ProjectTaskView) => ({ taskId: item.id, sortOrder: item.sortOrder })),
           }),
         });
         if (response.status !== 200) {
@@ -319,25 +359,31 @@ export function ProjectEap({
     }
   }
 
-  function itemActions(next: EapSelection, canEdit: boolean, label: string, deleteBlockedReason?: string): RowActions {
+  function itemActions(next: EapSelection, canEdit: boolean, label: string, deleteBlockedReason?: string, canAddSubtask = false): RowActions {
     return {
       onEdit: canEdit ? () => requestSelect(next, true) : undefined,
-      onAddTaskInPhase: access.canCreateItems ? () => setCreate({ kind: "task", phaseId: next.phaseId }) : undefined,
-      onAddMilestoneInPhase: access.canCreateItems ? () => setCreate({ kind: "milestone", phaseId: next.phaseId }) : undefined,
+      onDuplicate: access.canCreateItems ? () => void duplicateItem(next, label.length > 40 ? `${next.kind === "task" ? "Tarefa" : "Marco"}` : `"${label}"`) : undefined,
+      onAddSubtask:
+        canAddSubtask && access.canCreateItems && next.kind === "task"
+          ? () => setCreate({ kind: "task", phaseId: next.phaseId, parentTaskId: next.taskId })
+          : undefined,
       onDelete: access.canManageStructure ? () => setDeleteRequest({ target: next, label }) : undefined,
       deleteBlockedReason,
     };
   }
 
-  function renderChild(child: PhaseChild, index: number, phaseId: string, phaseIndex: number) {
+  function renderChild(child: PhaseChild, index: number, phaseId: string, phaseIndex: number, visibleTasks: ProjectTaskView[] | null) {
     if (child.kind === "task") {
       const task = child.item;
       const taskSelection = { kind: "task" as const, phaseId, taskId: task.id };
+      const subtasks = visibleTasks ? subtasksOf(visibleTasks, task.id) : [];
+      const allSubtasks = items?.find((phase) => phase.id === phaseId)?.tasks?.filter((item) => item.parentTaskId === task.id) ?? [];
       return (
+        <div key={task.id}>
         <TaskRow
-          key={task.id}
           index={index}
           phaseIndex={phaseIndex}
+          subtaskCount={allSubtasks.length}
           task={task}
           showDivergence={access.canManageStructure}
           selected={selection?.kind === "task" && selection.taskId === task.id}
@@ -346,9 +392,12 @@ export function ProjectEap({
             taskSelection,
             canUpdateTaskProgress(access, task),
             task.title,
-            task.calculatedStatus === "CONCLUIDA"
-              ? "Não é possível excluir uma tarefa concluída. A conclusão faz parte do histórico de execução do projeto."
-              : undefined,
+            allSubtasks.length > 0
+              ? "Não é possível excluir esta tarefa porque ela possui subtarefas. Trate as subtarefas antes de continuar."
+              : task.calculatedStatus === "CONCLUIDA"
+                ? "Não é possível excluir uma tarefa concluída. A conclusão faz parte do histórico de execução do projeto."
+                : undefined,
+            true,
           )}
           reorderable={canReorderPhases}
           dragging={draggingPhaseId === `task:${task.id}`}
@@ -365,6 +414,30 @@ export function ProjectEap({
             }
           }}
         />
+        {subtasks.map((subtask, subIndex) => {
+          const subSelection = { kind: "task" as const, phaseId, taskId: subtask.id };
+          return (
+            <TaskRow
+              key={subtask.id}
+              index={index}
+              phaseIndex={phaseIndex}
+              subtaskNumber={subIndex + 1}
+              task={subtask}
+              showDivergence={access.canManageStructure}
+              selected={selection?.kind === "task" && selection.taskId === subtask.id}
+              onOpen={() => requestSelect(subSelection)}
+              actions={itemActions(
+                subSelection,
+                canUpdateTaskProgress(access, subtask),
+                subtask.title,
+                subtask.calculatedStatus === "CONCLUIDA"
+                  ? "Não é possível excluir uma tarefa concluída. A conclusão faz parte do histórico de execução do projeto."
+                  : undefined,
+              )}
+            />
+          );
+        })}
+        </div>
       );
     }
 
@@ -449,8 +522,8 @@ export function ProjectEap({
                   tasks === null ? (
                     <p className="px-4 py-2 text-sm text-muted-foreground">Não foi possível consultar as tarefas desta fase.</p>
                   ) : (
-                    (milestones === null ? tasks.map((task) => ({ kind: "task" as const, item: task })) : orderPhaseChildren(tasks, milestones)).map((child, index) =>
-                      renderChild(child, index, phase.id, phaseIndex),
+                    (milestones === null ? tasks.filter((task) => !task.parentTaskId).map((task) => ({ kind: "task" as const, item: task })) : orderPhaseChildren(tasks, milestones)).map((child, index) =>
+                      renderChild(child, index, phase.id, phaseIndex, tasks),
                     )
                   )
                 }
@@ -459,7 +532,7 @@ export function ProjectEap({
                     <p className="px-4 py-2 text-sm text-muted-foreground">Não foi possível consultar os marcos desta fase.</p>
                   ) : tasks === null ? (
                     milestones.map((milestone, index) =>
-                      renderChild({ kind: "milestone", item: milestone }, index, phase.id, phaseIndex),
+                      renderChild({ kind: "milestone", item: milestone }, index, phase.id, phaseIndex, tasks),
                     )
                   ) : null
                 }
@@ -501,7 +574,8 @@ export function ProjectEap({
               onPhase={(phase) => setItems((currentPhases) => patchPhase(currentPhases, phase))}
               onTask={(task) => {
                 setItems((currentPhases) => patchTask(currentPhases, task));
-                void refreshPhase(task.phaseId);
+                // Subtarefa: a tarefa superior também muda (andamento e situação calculados), então a lista é relida.
+                void (task.parentTaskId ? reloadItems() : refreshPhase(task.phaseId));
               }}
               onMilestone={(milestone) => {
                 setItems((currentPhases) => patchMilestone(currentPhases, milestone));
@@ -531,8 +605,8 @@ export function ProjectEap({
           }}
           onTask={(task) => {
             setItems((currentPhases) => appendTask(currentPhases, task));
-            void refreshPhase(task.phaseId);
-            openCreated({ kind: "task", phaseId: task.phaseId, taskId: task.id }, "Tarefa criada");
+            void (task.parentTaskId ? reloadItems() : refreshPhase(task.phaseId));
+            openCreated({ kind: "task", phaseId: task.phaseId, taskId: task.id }, task.parentTaskId ? "Subtarefa criada" : "Tarefa criada");
           }}
           onMilestone={(milestone) => {
             setItems((currentPhases) => appendMilestone(currentPhases, milestone));

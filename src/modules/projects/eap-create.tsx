@@ -31,7 +31,7 @@ import { MILESTONE_TYPE_OPTIONS, phaseStatusLabel, taskStatusLabel } from "./pro
 
 export type EapCreateRequest =
   | { kind: "phase" }
-  | { kind: "task"; phaseId: string; correctiveFor?: { milestoneId: string; title: string } }
+  | { kind: "task"; phaseId: string; correctiveFor?: { milestoneId: string; title: string }; parentTaskId?: string }
   | { kind: "milestone"; phaseId: string };
 
 export function EapCreateSheet({
@@ -65,7 +65,9 @@ export function EapCreateSheet({
       : request.kind === "task"
         ? request.correctiveFor
           ? "Nova tarefa corretiva"
-          : "Nova tarefa"
+          : request.parentTaskId
+            ? "Nova subtarefa"
+            : "Nova tarefa"
         : "Novo marco";
   const guidance = "Preencha os campos obrigatórios";
 
@@ -104,6 +106,11 @@ export function EapCreateSheet({
                 names={names}
                 phaseId={request.phaseId}
                 correctiveFor={request.correctiveFor ?? null}
+                parentTask={
+                  request.parentTaskId
+                    ? (phases.flatMap((phase) => phase.tasks ?? []).find((task) => task.id === request.parentTaskId) ?? null)
+                    : null
+                }
                 canExtendPhase={canReschedule(access)}
                 onClose={onClose}
                 onTask={onTask}
@@ -235,6 +242,7 @@ function TaskForm({
   names,
   phaseId,
   correctiveFor,
+  parentTask,
   canExtendPhase,
   onClose,
   onTask,
@@ -246,6 +254,8 @@ function TaskForm({
   phaseId: string;
   /** Tarefa aberta para atender às correções solicitadas na homologação deste marco. */
   correctiveFor: { milestoneId: string; title: string } | null;
+  /** Tarefa superior, quando o item novo é uma subtarefa (a fase fica a da superior). */
+  parentTask: { id: string; title: string } | null;
   /** Quem pode reprogramar pode estender a fase na criação (ajuste em cascata). */
   canExtendPhase: boolean;
   onClose: () => void;
@@ -286,6 +296,7 @@ function TaskForm({
     try {
       const response = await createEapTask(projectId, selectedPhase, {
         title: title.trim(),
+        ...(parentTask ? { parentTaskId: parentTask.id } : {}),
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(assigneeId ? { assigneeId } : {}),
         priority,
@@ -344,7 +355,13 @@ function TaskForm({
           <TextControl label="Nome do item *" value={title} placeholder="Informe o nome da tarefa" onChange={(value) => { setTitle(value); clear("title"); }} error={errors.title} full />
           <AreaControl label="Descrição" value={description} placeholder="Descreva o objetivo e o resultado esperado." onChange={setDescription} full />
           <LockedControl label="Situação" hint="pelo andamento" value={taskStatusLabel(deriveTaskStatus(progress))} />
-          {correctiveFor ? (
+          {parentTask ? (
+            <LockedControl
+              label="Tarefa superior"
+              hint={phases.find((phase) => phase.id === selectedPhase)?.name}
+              value={parentTask.title}
+            />
+          ) : correctiveFor ? (
             <LockedControl
               label="Item superior"
               hint="fase do marco"

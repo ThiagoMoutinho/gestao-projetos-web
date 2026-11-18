@@ -103,9 +103,10 @@ export type RowActions = {
   canAddChild?: boolean;
   onAddTask?: () => void;
   onAddMilestone?: () => void;
-  /** Em tarefa e marco: abre a criação de uma nova tarefa na mesma fase (a EAP não tem subtarefa). */
-  onAddTaskInPhase?: () => void;
-  onAddMilestoneInPhase?: () => void;
+  /** Em tarefa de nível principal: abre a criação de uma subtarefa dela. */
+  onAddSubtask?: () => void;
+  /** Cria uma cópia limpa do item (a de fase leva as tarefas e os marcos; a de tarefa leva as subtarefas). */
+  onDuplicate?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   moveUpDisabled?: boolean;
@@ -466,6 +467,8 @@ export function TaskRow({
   onOpen,
   actions,
   quickEdit,
+  subtaskNumber,
+  subtaskCount = 0,
   reorderable = false,
   dragging = false,
   dragOver = false,
@@ -483,6 +486,10 @@ export function TaskRow({
   onOpen: () => void;
   actions?: RowActions;
   quickEdit?: ReactNode;
+  /** Posição (1, 2, ...) quando a linha é uma subtarefa: ela aparece recuada, sob a tarefa superior, com código 1.1.1. */
+  subtaskNumber?: number;
+  /** Quantidade de subtarefas desta tarefa, mostrada junto do código. */
+  subtaskCount?: number;
   reorderable?: boolean;
   dragging?: boolean;
   dragOver?: boolean;
@@ -538,7 +545,7 @@ export function TaskRow({
         </button>
       ) : null}
       <div className={cn(columns, childRow, "transition-colors duration-200 ease-out hover:bg-primary/5 motion-reduce:transition-none")}>
-        <button type="button" className="flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none" onClick={onOpen}>
+        <button type="button" className={cn("flex min-w-0 items-center text-left focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none", subtaskNumber !== undefined && "md:pl-7")} onClick={onOpen}>
           <span className={treeGuide} aria-hidden="true" />
           <ItemIcon type="task">
             <Check className="size-4" aria-hidden="true" />
@@ -546,7 +553,9 @@ export function TaskRow({
           <span className="min-w-0">
             <span className="block truncate text-[13px] font-medium text-foreground">{task.title}</span>
             <span className="mt-[3px] block text-xs text-muted-foreground">
-              {phaseIndex + 1}.{index + 1} · Tarefa
+              {phaseIndex + 1}.{index + 1}
+              {subtaskNumber !== undefined ? `.${subtaskNumber}` : ""} · {subtaskNumber !== undefined ? "Subtarefa" : "Tarefa"}
+              {subtaskCount > 0 ? ` · ${subtaskCount} ${subtaskCount === 1 ? "subtarefa" : "subtarefas"}` : ""}
               {blocked ? <Signal tone="impediment"><AlertTriangle className="size-3" aria-hidden="true" /> Impedido</Signal> : null}
               {showDivergence && task.statusDiverges ? <DivergenceSignal recorded={taskStatusLabel(task.status)} /> : null}
             </span>
@@ -682,7 +691,10 @@ export function filterPhases(phases: ProjectPhaseView[], query: string, filter: 
 
   return phases.flatMap((phase) => {
     const phaseQuery = term.length === 0 || includes(phase.name, term) || includes(phase.description, term);
-    const tasks = phase.tasks?.filter((task) => (phaseQuery || includes(task.title, term) || includes(task.assigneeName, term)) && matchesFilter(task, "task", filter)) ?? null;
+    const matchedTasks = phase.tasks?.filter((task) => (phaseQuery || includes(task.title, term) || includes(task.assigneeName, term)) && matchesFilter(task, "task", filter)) ?? null;
+    // Uma subtarefa que casa mantém a tarefa superior visível, para ela aparecer no lugar certo.
+    const matchedParents = new Set(matchedTasks?.flatMap((task) => (task.parentTaskId ? [task.parentTaskId] : [])) ?? []);
+    const tasks = matchedTasks && phase.tasks ? phase.tasks.filter((task) => matchedParents.has(task.id) || matchedTasks.some((matched) => matched.id === task.id)) : matchedTasks;
     const milestones = phase.milestones?.filter((milestone) => (phaseQuery || includes(milestone.title, term)) && matchesFilter(milestone, "milestone", filter)) ?? null;
     const phaseVisible = phaseQuery && matchesFilter(phase, "phase", filter);
     const childrenVisible = (tasks?.length ?? 0) > 0 || (milestones?.length ?? 0) > 0 || phase.tasks === null || phase.milestones === null;
@@ -868,7 +880,12 @@ function RowMenu({ label, onOpen, actions }: { label: string; onOpen: () => void
           <DropdownMenuItem className={rowMenuItem} disabled={!actions?.onEdit} onClick={actions?.onEdit}>
             <PencilLine aria-hidden="true" /> Editar item
           </DropdownMenuItem>
-          <DropdownMenuItem className={rowMenuItem} disabled title="A duplicação ainda não está disponível. A cópia precisa de um endpoint próprio.">
+          <DropdownMenuItem
+            className={rowMenuItem}
+            disabled={!actions?.onDuplicate}
+            title={actions?.onDuplicate ? "Cria uma cópia sem andamento, datas reais, evidências nem histórico." : "Seu acesso não permite criar itens da EAP."}
+            onClick={actions?.onDuplicate}
+          >
             <Copy aria-hidden="true" /> Duplicar
           </DropdownMenuItem>
           {actions?.canAddChild ? (
@@ -886,21 +903,14 @@ function RowMenu({ label, onOpen, actions }: { label: string; onOpen: () => void
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           ) : (
-            <>
-              {actions?.onAddTaskInPhase ? (
-                <DropdownMenuItem className={rowMenuItem} onClick={actions.onAddTaskInPhase}>
-                  <Plus aria-hidden="true" /> Nova tarefa nesta fase
-                </DropdownMenuItem>
-              ) : null}
-              {actions?.onAddMilestoneInPhase ? (
-                <DropdownMenuItem className={rowMenuItem} onClick={actions.onAddMilestoneInPhase}>
-                  <Flag aria-hidden="true" /> Novo marco nesta fase
-                </DropdownMenuItem>
-              ) : null}
-              <DropdownMenuItem className={rowMenuItem} disabled title="Tarefas e marcos não recebem subordinados: a EAP tem fase e, dentro dela, tarefas e marcos.">
-                <ListPlus aria-hidden="true" /> Adicionar subordinada
-              </DropdownMenuItem>
-            </>
+            <DropdownMenuItem
+              className={rowMenuItem}
+              disabled={!actions?.onAddSubtask}
+              title={actions?.onAddSubtask ? "Cria uma subtarefa desta tarefa." : "Só tarefas de nível principal recebem subtarefas (um nível de subordinação)."}
+              onClick={actions?.onAddSubtask}
+            >
+              <ListPlus aria-hidden="true" /> Adicionar subordinada
+            </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem className={rowMenuItem} onClick={onOpen}>
