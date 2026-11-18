@@ -45,15 +45,15 @@ export function EditDialogHeader({
   tone?: "primary" | "destructive" | "attention" | "success";
 }) {
   return (
-    <DialogHeader className="flex-row shrink-0 items-start gap-4 border-b px-6 pt-6 pb-5 text-left sm:px-7">
+    <DialogHeader className="flex-row shrink-0 items-start gap-4 border-b bg-muted/30 px-6 pt-6 pb-5 text-left sm:px-7">
       <span
         aria-hidden="true"
         className={cn(
-          "flex size-12 shrink-0 items-center justify-center rounded-2xl",
-          tone === "primary" && "bg-primary/12 text-primary dark:bg-primary/20",
-          tone === "destructive" && "bg-status-critical-soft text-status-critical-ink",
-          tone === "attention" && "bg-status-attention-soft text-status-attention-ink",
-          tone === "success" && "bg-status-done-soft text-status-done-ink",
+          "flex size-12 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset",
+          tone === "primary" && "bg-primary/12 text-primary ring-primary/25 dark:bg-primary/20",
+          tone === "destructive" && "bg-status-critical-soft text-status-critical-ink ring-status-critical/30",
+          tone === "attention" && "bg-status-attention-soft text-status-attention-ink ring-status-attention/30",
+          tone === "success" && "bg-status-done-soft text-status-done-ink ring-status-done/30",
         )}
       >
         <Icon className="size-6" />
@@ -80,7 +80,7 @@ export function EditDialogBody({ className, children, ...props }: ComponentProps
 
 export function EditDialogFooter({ status, statusClassName, children }: { status?: ReactNode; statusClassName?: string; children: ReactNode }) {
   return (
-    <DialogFooter className="mx-0 mb-0 shrink-0 flex-col-reverse items-stretch gap-3 border-t bg-popover/95 px-6 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-7">
+    <DialogFooter className="mx-0 mb-0 shrink-0 flex-col-reverse items-stretch gap-3 border-t bg-muted/30 px-6 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-7">
       {status ? <span role="status" aria-live="polite" className={cn("flex items-center gap-2 text-body text-muted-foreground", statusClassName)}>{status}</span> : null}
       <span className="ml-auto flex flex-wrap justify-end gap-2">{children}</span>
     </DialogFooter>

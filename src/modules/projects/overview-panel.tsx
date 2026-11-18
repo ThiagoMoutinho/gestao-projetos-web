@@ -10,15 +10,15 @@ import { SeeMore } from "./institutional-shared";
 import { useOverflow } from "./use-overflow";
 
 const SECTION_TONE = {
-  blue: "bg-primary/10 text-primary",
-  green: "bg-success/15 text-success-foreground",
-  purple: "bg-status-validation-soft text-status-validation-ink",
-  amber: "bg-warning/20 text-warning-foreground",
+  blue: "bg-primary/12 text-primary ring-primary/25",
+  green: "bg-success/15 text-success-foreground ring-success/30",
+  purple: "bg-status-validation-soft text-status-validation-ink ring-status-validation/30",
+  amber: "bg-warning/20 text-warning-foreground ring-warning/35",
 } as const;
 
 /** Acabamento dos cartões da Visão Geral (Figma): borda suave no lugar do anel e sombra em duas camadas. */
 export const OVERVIEW_CARD =
-  "min-h-full rounded-[10px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] ring-0 dark:border-border dark:shadow-none";
+  "min-h-full rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] ring-0 dark:border-border dark:shadow-none";
 
 /**
  * Crescimento natural com limite: o cartão tem a altura do conteúdo e para de crescer em `--widget-max` (definido por
@@ -163,10 +163,10 @@ function SectionCardFrame({
       data-expanded={expanded || undefined}
       style={extraHeight > 0 && !expanded && !unbounded ? { maxHeight: `calc(var(--widget-max) + ${extraHeight}px)` } : undefined}
     >
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border/60 pb-4 dark:border-border">
+      <div className="-mx-5 -mt-5 flex shrink-0 items-start justify-between gap-3 rounded-t-xl border-b border-border/60 bg-muted/30 px-5 pt-5 pb-4 dark:border-border">
         <div className="flex min-w-0 items-start gap-3">
           <div
-            className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${SECTION_TONE[tone]}`}
+            className={`flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ${SECTION_TONE[tone]}`}
             aria-hidden="true"
           >
             <Icon className="size-5" />
@@ -241,10 +241,17 @@ export function Panel({
   }
   return (
     <Card className={`${OVERVIEW_CARD} gap-3 p-5`}>
-      <div className="flex shrink-0 items-start justify-between gap-2 border-b border-border/60 pb-3 dark:border-border">
-        <div>
-          <h2 className="text-base font-medium">{title}</h2>
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
+      <div className="-mx-5 -mt-5 flex shrink-0 items-start justify-between gap-2 rounded-t-xl border-b border-border/60 bg-muted/30 px-5 pt-5 pb-3 dark:border-border">
+        <div className="flex min-w-0 items-start gap-3">
+          {Icon ? (
+            <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ${SECTION_TONE.blue}`} aria-hidden="true">
+              <Icon className="size-5" />
+            </div>
+          ) : null}
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">{title}</h2>
+            <p className="text-xs leading-snug text-muted-foreground">{subtitle}</p>
+          </div>
         </div>
         {action ? (
           action
@@ -254,8 +261,6 @@ export function Panel({
           >
             {String(count).padStart(2, "0")}
           </span>
-        ) : Icon ? (
-          <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
         ) : null}
       </div>
       <div className="flex flex-col gap-3">{children}</div>

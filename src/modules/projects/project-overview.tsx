@@ -112,7 +112,7 @@ export function ProjectOverview({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <div
-            className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground"
+            className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
             aria-hidden="true"
           >
             {initials(project.name)}
@@ -287,10 +287,10 @@ function DeadlineStatus({ indicator }: { indicator: DeadlineIndicator }) {
 }
 
 const INDICATOR_TONE = {
-  primary: "bg-primary/10 text-primary",
-  purple: "bg-status-validation-soft text-status-validation-ink",
-  amber: "bg-warning/20 text-warning-foreground",
-  green: "bg-success/15 text-success-foreground",
+  primary: "bg-primary/12 text-primary ring-primary/25",
+  purple: "bg-status-validation-soft text-status-validation-ink ring-status-validation/30",
+  amber: "bg-warning/20 text-warning-foreground ring-warning/35",
+  green: "bg-success/15 text-success-foreground ring-success/30",
 } as const;
 
 function Indicator({
@@ -306,7 +306,7 @@ function Indicator({
 }) {
   return (
     <Card className={cn(OVERVIEW_CARD, "min-h-[104px] flex-row items-center gap-3.5 px-4 py-4")}>
-      <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-[10px]", INDICATOR_TONE[tone])} aria-hidden="true">
+      <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset", INDICATOR_TONE[tone])} aria-hidden="true">
         <Icon className="size-5" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">

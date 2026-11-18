@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * duas colunas), para o carregamento não deslocar o layout. Sem "use client": também serve ao loading.tsx da rota.
  * O acabamento do cartão repete OVERVIEW_CARD (overview-panel.tsx), que é um módulo de cliente.
  */
-const CARD = "rounded-[10px] border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] ring-0 dark:border-border dark:shadow-none";
+const CARD = "rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] ring-0 dark:border-border dark:shadow-none";
 const PULSE = "motion-reduce:animate-none";
 
 /** Cartão de seção em carregamento: bloco do ícone, título, subtítulo e linhas de conteúdo. */
@@ -16,8 +16,8 @@ export function CardSkeleton({ label, lines = 4, nested = false, className }: { 
   return (
     <Card {...(nested ? {} : { role: "status", "aria-busy": true })} className={cn(CARD, "min-h-full gap-3 px-4 py-4", className)}>
       {nested ? null : <span className="sr-only">{label}…</span>}
-      <div className="flex items-center gap-3" aria-hidden="true">
-        <Skeleton className={cn("size-9 shrink-0 rounded-[10px]", PULSE)} />
+      <div className="-mx-4 -mt-4 mb-1 flex items-center gap-3 rounded-t-xl border-b border-border/60 bg-muted/30 px-4 py-3.5" aria-hidden="true">
+        <Skeleton className={cn("size-9 shrink-0 rounded-xl", PULSE)} />
         <div className="flex flex-1 flex-col gap-1.5">
           <Skeleton className={cn("h-4 w-1/2", PULSE)} />
           <Skeleton className={cn("h-3 w-2/3", PULSE)} />
@@ -35,7 +35,7 @@ export function CardSkeleton({ label, lines = 4, nested = false, className }: { 
 function IndicatorSkeleton() {
   return (
     <Card className={cn(CARD, "min-h-[104px] flex-row items-center gap-3.5 px-4 py-4")} aria-hidden="true">
-      <Skeleton className={cn("size-11 shrink-0 rounded-[10px]", PULSE)} />
+      <Skeleton className={cn("size-11 shrink-0 rounded-xl", PULSE)} />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <Skeleton className={cn("h-3 w-24", PULSE)} />
         <Skeleton className={cn("h-4 w-32", PULSE)} />
