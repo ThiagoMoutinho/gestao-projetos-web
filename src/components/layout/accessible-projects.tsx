@@ -3,8 +3,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import { listProjects } from "@/lib/api/generated/projetos/projetos";
+import type { ListProjects200DataItemStatus } from "@/lib/api/generated/model/listProjects200DataItemStatus";
 
-export type AccessibleProject = { id: string; name: string; glpiTicketId: string | null };
+export type AccessibleProject = { id: string; name: string; glpiTicketId: string | null; status: ListProjects200DataItemStatus };
 
 type State = { projects: AccessibleProject[] | null; status: "loading" | "ready" | "error" };
 
@@ -28,7 +29,7 @@ export function AccessibleProjectsProvider({ children }: { children: React.React
           setState({
             status: "ready",
             projects: response.data.data
-              .map((project) => ({ id: project.id, name: project.name, glpiTicketId: project.glpiTicketId }))
+              .map((project) => ({ id: project.id, name: project.name, glpiTicketId: project.glpiTicketId, status: project.status }))
               .sort((left, right) => left.name.localeCompare(right.name, "pt-BR")),
           });
         } else {
