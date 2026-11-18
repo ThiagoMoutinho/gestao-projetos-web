@@ -665,6 +665,18 @@
 :root:not(.light):not(.dark) {
   --sidebar-indicator-foreground: var(--sidebar);
 }
+/* Traço lateral do item ativo: segue a cor primária da paleta, ajustada para contrastar com o fundo do indicador.
+   Fundo claro (IGEPPS e Escuro): primária levemente mais fechada. Fundo escuro (Claro): primária bem clareada. */
+:root {
+  --sidebar-indicator-bar: color-mix(in oklch, var(--primary) 78%, black);
+}
+:root.light {
+  --sidebar-indicator-bar: color-mix(in oklch, var(--primary) 30%, white);
+}
+/* No Escuro a primária é tão clara quanto o fundo do indicador; precisa de um tom bem mais fechado. */
+:root.dark {
+  --sidebar-indicator-bar: color-mix(in oklch, var(--primary) 45%, black);
+}
 [data-active-indicator] [data-sidebar="menu-button"] {
   z-index: 1;
 }

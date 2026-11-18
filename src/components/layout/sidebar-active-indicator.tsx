@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 
 /** Item ativo do menu lateral (o SidebarMenuButton marca `data-active` quando `isActive`). */
 const ACTIVE_ITEM = '[data-sidebar="menu-button"][data-active]:not([data-active="false"])';
+/** Marca no item que o indicador cobre (lida pelo CSS em globals.css). */
+const TARGET_ATTR = "data-indicator-target";
 /** Duração do deslizamento, dentro da faixa de movimento do projeto (180–250 ms). */
 const DURATION = 240;
 
@@ -58,7 +60,16 @@ export function SidebarActiveIndicator() {
       };
     };
 
+    // Marca só o item que o indicador cobre; o CSS (globals.css) usa a marca para deixar o fundo dele transparente.
+    const mark = (target: HTMLElement | null) => {
+      container.querySelectorAll(`[${TARGET_ATTR}]`).forEach((item) => {
+        if (item !== target) item.removeAttribute(TARGET_ATTR);
+      });
+      target?.setAttribute(TARGET_ATTR, "");
+    };
+
     const hide = () => {
+      mark(null);
       if (indicator.dataset.state === "hidden") return;
       indicator.dataset.state = "hidden";
       container.removeAttribute("data-active-indicator");
@@ -67,7 +78,9 @@ export function SidebarActiveIndicator() {
     };
 
     const update = () => {
-      const next = container.querySelector<HTMLElement>(ACTIVE_ITEM);
+      // Pai e filho podem estar ativos ao mesmo tempo (Projetos e Visão Geral): vale o último, o mais específico.
+      const actives = container.querySelectorAll<HTMLElement>(ACTIVE_ITEM);
+      const next = actives.length > 0 ? actives[actives.length - 1] : null;
       if (!next || next.getClientRects().length === 0) {
         hide();
         return;
@@ -97,8 +110,10 @@ export function SidebarActiveIndicator() {
       }
       if (indicator.dataset.state !== "visible") {
         indicator.dataset.state = "visible";
-        container.setAttribute("data-active-indicator", "");
       }
+      // Sempre reafirma o atributo: no modo dev (StrictMode) o efeito roda duas vezes e a limpeza do primeiro o removeu.
+      container.setAttribute("data-active-indicator", "");
+      mark(next);
       current = next;
       last = box;
     };
@@ -125,6 +140,7 @@ export function SidebarActiveIndicator() {
       cancelAnimationFrame(frame);
       sizes.disconnect();
       changes.disconnect();
+      mark(null);
       container.removeAttribute("data-active-indicator");
     };
   }, []);
@@ -136,6 +152,10 @@ export function SidebarActiveIndicator() {
       data-state="hidden"
       data-slot="sidebar-active-indicator"
       className="pointer-events-none absolute top-0 left-0 z-0 rounded-[10px] bg-(--sidebar-indicator) opacity-0 shadow-[0_6px_16px_-8px_rgb(0_0_0/0.45)] transition-opacity duration-200 data-[state=visible]:opacity-100 motion-reduce:transition-none"
-    />
+    >
+      {/* Traço lateral: anda junto com o fundo (elástico), encostado na lateral esquerda do item como o marcador antigo
+          (mesma geometria), numa cor de contraste levemente acinzentada (`--sidebar-indicator-bar`). */}
+      <span data-slot="sidebar-active-bar" className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-[3px] bg-(--sidebar-indicator-bar)" />
+    </span>
   );
 }
