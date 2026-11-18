@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Check, ChevronDown, FileSpreadsheet, Flag, Folder, ListTodo, Plus } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, FileSpreadsheet, Flag, Folder, ListTodo, Plus, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -562,6 +562,57 @@ export function ProjectEap({
 }
 
 
+/** Cor própria de cada tipo no menu "Novo item" (mesmos tons de status usados na EAP). `!` vence a cor uniforme do foco do item. */
+const CREATE_TONES = {
+  phase: "bg-primary/12 text-primary! ring-primary/25",
+  task: "bg-status-running-soft text-status-running-ink! ring-status-running/30",
+  milestone: "bg-status-validation-soft text-status-validation-ink! ring-status-validation/30",
+  import: "bg-status-done-soft text-status-done-ink! ring-status-done/30",
+} as const;
+
+function CreateMenuItem({
+  icon: Icon,
+  tone,
+  title,
+  description,
+  badge,
+  disabled,
+  onClick,
+}: {
+  icon: LucideIcon;
+  tone: keyof typeof CREATE_TONES;
+  title: string;
+  description: string;
+  badge?: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <DropdownMenuItem
+      className="grid grid-cols-[38px_minmax(0,1fr)_16px] items-center gap-3 rounded-[9px] px-2.5 py-2.5 transition-colors duration-150 motion-reduce:transition-none"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <span
+        className={`flex size-[38px] items-center justify-center rounded-[10px] ring-1 ring-inset transition-transform duration-200 group-focus/dropdown-menu-item:scale-105 motion-reduce:transition-none [&>svg]:text-inherit! ${CREATE_TONES[tone]}`}
+      >
+        <Icon className="size-[18px]" aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <strong className="flex items-center gap-2 text-[13px] leading-tight font-semibold">
+          {title}
+          {badge ? <span className="rounded-full border border-border px-1.5 py-px text-[10px] leading-none font-medium text-muted-foreground">{badge}</span> : null}
+        </strong>
+        <small className="mt-1 block text-[11.5px] leading-snug text-muted-foreground">{description}</small>
+      </span>
+      <ChevronRight
+        className="size-4 -translate-x-1 text-muted-foreground opacity-0 transition-[opacity,transform] duration-200 group-focus/dropdown-menu-item:translate-x-0 group-focus/dropdown-menu-item:opacity-100 motion-reduce:transition-none"
+        aria-hidden="true"
+      />
+    </DropdownMenuItem>
+  );
+}
+
 function CreateMenu({
   phases,
   enabled,
@@ -580,47 +631,56 @@ function CreateMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button type="button" className="h-10 gap-2 px-4" />}>
+      <DropdownMenuTrigger render={<Button type="button" className="group/trigger h-10 gap-2 px-4" />}>
         <Plus className="size-[17px]" aria-hidden="true" />
         Novo item
-        <ChevronDown className="size-3.5 opacity-80" aria-hidden="true" />
+        <ChevronDown
+          className="size-3.5 opacity-80 transition-transform duration-200 group-aria-expanded/trigger:rotate-180 motion-reduce:transition-none"
+          aria-hidden="true"
+        />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[286px] p-2">
+      <DropdownMenuContent align="end" sideOffset={8} className="w-[328px] rounded-xl p-2 shadow-xl">
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="px-[9px] text-[11px] font-bold tracking-[0.1em] text-muted-foreground">
+          <DropdownMenuLabel className="px-2.5 pt-1.5 pb-2 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
             {enabled ? "Adicionar à EAP" : "Seu acesso não permite cadastrar itens"}
           </DropdownMenuLabel>
-          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled} onClick={() => onCreate({ kind: "phase" })}>
-            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-primary/10 text-primary"><Folder className="size-4" aria-hidden="true" /></span>
-            <span>
-              <strong className="block text-xs">Nova fase</strong>
-              <small className="mt-1 block text-[11px] leading-snug text-muted-foreground">Organize uma grande etapa do projeto</small>
-            </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || !firstPhase} onClick={() => firstPhase && onCreate({ kind: "task", phaseId: "" })}>
-            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-muted text-muted-foreground"><Check className="size-4" aria-hidden="true" /></span>
-            <span>
-              <strong className="block text-xs">Nova tarefa</strong>
-              <small className="mt-1 block text-[11px] leading-snug text-muted-foreground">Crie uma atividade com responsável e prazo</small>
-            </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || !firstPhase} onClick={() => firstPhase && onCreate({ kind: "milestone", phaseId: "" })}>
-            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-status-validation-soft text-status-validation-ink"><Flag className="size-4" aria-hidden="true" /></span>
-            <span>
-              <strong className="block text-xs">Novo marco</strong>
-              <small className="mt-1 block text-[11px] leading-snug text-muted-foreground">Registre uma entrega ou decisão importante</small>
-            </span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="my-1.5" />
-          <DropdownMenuItem className="grid grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-[7px] px-[9px] py-[9px]" disabled={!enabled || importBlocked} onClick={onImport}>
-            <span className="flex size-[34px] items-center justify-center rounded-[7px] bg-status-done-soft text-status-done-ink"><FileSpreadsheet className="size-4" aria-hidden="true" /></span>
-            <span>
-              <strong className="block text-xs">Importar EAP</strong>
-              <small className="mt-1 block text-[11px] leading-snug text-muted-foreground">
-                {importBlocked ? "Disponível apenas com a EAP vazia (carga inicial)" : "Carga inicial de fases, tarefas e marcos por .xlsx ou .csv"}
-              </small>
-            </span>
-          </DropdownMenuItem>
+          <CreateMenuItem
+            icon={Folder}
+            tone="phase"
+            title="Nova fase"
+            description="Organize uma grande etapa do projeto"
+            disabled={!enabled}
+            onClick={() => onCreate({ kind: "phase" })}
+          />
+          <CreateMenuItem
+            icon={Check}
+            tone="task"
+            title="Nova tarefa"
+            description="Crie uma atividade com responsável e prazo"
+            disabled={!enabled || !firstPhase}
+            onClick={() => firstPhase && onCreate({ kind: "task", phaseId: "" })}
+          />
+          <CreateMenuItem
+            icon={Flag}
+            tone="milestone"
+            title="Novo marco"
+            description="Registre uma entrega ou decisão importante"
+            disabled={!enabled || !firstPhase}
+            onClick={() => firstPhase && onCreate({ kind: "milestone", phaseId: "" })}
+          />
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator className="my-2" />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="px-2.5 pt-0.5 pb-2 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">Carga inicial</DropdownMenuLabel>
+          <CreateMenuItem
+            icon={FileSpreadsheet}
+            tone="import"
+            title="Importar EAP"
+            badge={importBlocked ? "Indisponível" : undefined}
+            description={importBlocked ? "Só com a EAP vazia (carga inicial)" : "Fases, tarefas e marcos por .xlsx ou .csv"}
+            disabled={!enabled || importBlocked}
+            onClick={onImport}
+          />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
