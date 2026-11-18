@@ -391,10 +391,12 @@ function PhaseDetail({
           </ul>
         )}
       </Section>
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={phase.responsibleName ?? "Não informado"} />
-        <Fact icon={<Calendar className="size-[18px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(phase.dates) ?? "Não informado"} overdue={phaseIsOverdue(phase)} note={phaseIsOverdue(phase) ? "Em atraso" : null} />
-      </div>
+      <Section label="Responsável e prazo">
+        <div className="grid grid-cols-2 gap-3">
+          <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={phase.responsibleName ?? "Não informado"} />
+          <Fact icon={<Calendar className="size-[18px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(phase.dates) ?? "Não informado"} overdue={phaseIsOverdue(phase)} note={phaseIsOverdue(phase) ? "Em atraso" : null} />
+        </div>
+      </Section>
       <Section label="Critério de conclusão">
         <p className={paragraph}>{phase.completionCriteria?.trim() || "Nenhum critério registrado."}</p>
       </Section>
@@ -672,10 +674,12 @@ function TaskDetail({
         {canUpdate && locked ? <p className="mt-2 text-[11.5px] text-muted-foreground">Tarefa cancelada. Somente a gestão do projeto pode reativá-la.</p> : null}
         {feedback ? <p className="mt-2 text-[11.5px] text-muted-foreground" role="status">{feedback}</p> : null}
       </section>
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={task.assigneeName || "Não informado"} />
-        <Fact icon={<Calendar className="size-[18px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(task.dates) ?? "Não informado"} overdue={overdue} note={overdue ? "Em atraso" : null} />
-      </div>
+      <Section label="Responsável e prazo">
+        <div className="grid grid-cols-2 gap-3">
+          <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Responsável" value={task.assigneeName || "Não informado"} />
+          <Fact icon={<Calendar className="size-[18px]" aria-hidden="true" />} label="Término planejado" value={vigenteText(task.dates) ?? "Não informado"} overdue={overdue} note={overdue ? "Em atraso" : null} />
+        </div>
+      </Section>
       <Section label="Evidências vinculadas">
         <Suspense fallback={<SkeletonList rows={2} label="Consultando evidências" rowClassName="h-[45px]" />}>
           <EvidenceList
@@ -925,19 +929,21 @@ function MilestoneDetail({
       <Section label="Fluxo de entrega e aceite">
         <MilestoneFlow status={milestone.status} />
       </Section>
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Apresentador" value={milestone.presenterName ?? "Não designado"} />
-        <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Gestor validador" value={milestone.reviewerName ?? "Gestão do projeto"} />
-      </div>
-      <div className="mt-3 gap-3 sm:grid-cols-2">
-      <Fact
-          icon={<Calendar className="size-[18px]" aria-hidden="true" />}
-          label="Data prevista"
-          value={vigenteText(milestone.dates) ?? "Não informado"}
-          overdue={overdue}
-          note={overdue ? (delayReason ? `Em atraso · ${delayReason.toLowerCase()}` : "Em atraso") : null}
-      />
-      </div>
+      <Section label="Responsáveis e prazo">
+        <div className="grid grid-cols-2 gap-3">
+          <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Apresentador" value={milestone.presenterName ?? "Não designado"} />
+          <Fact icon={<User className="size-[17px]" aria-hidden="true" />} label="Gestor validador" value={milestone.reviewerName ?? "Gestão do projeto"} />
+          <div className="col-span-2">
+            <Fact
+              icon={<Calendar className="size-[18px]" aria-hidden="true" />}
+              label="Data prevista"
+              value={vigenteText(milestone.dates) ?? "Não informado"}
+              overdue={overdue}
+              note={overdue ? (delayReason ? `Em atraso · ${delayReason.toLowerCase()}` : "Em atraso") : null}
+            />
+          </div>
+        </div>
+      </Section>
       <Section label="Entrega e homologação">
         <MilestoneHomologation
           projectId={projectId}
