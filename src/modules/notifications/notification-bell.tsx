@@ -159,12 +159,12 @@ export function NotificationBell() {
           </TabsList>
         </Tabs>
 
-        <div role="tabpanel" aria-label={panelTab === "UNREAD" ? "Notificações não lidas" : "Notificações lidas"} className="max-h-[min(26rem,60vh)] overflow-y-auto">
+        <div role="tabpanel" aria-label={panelTab === "UNREAD" ? "Notificações não lidas" : "Notificações lidas"} className="max-h-[min(26rem,60vh)] min-h-32 overflow-y-auto">
           {state.status === "loading" ? (
             <div role="status" aria-busy="true" className="flex flex-col gap-2 p-3">
               <span className="sr-only">Carregando as notificações…</span>
-              {Array.from({ length: 3 }, (_, index) => (
-                <Skeleton key={index} className="h-14 w-full rounded-md motion-reduce:animate-none" />
+              {Array.from({ length: 2 }, (_, index) => (
+                <Skeleton key={index} className="h-12 w-full rounded-md motion-reduce:animate-none" />
               ))}
             </div>
           ) : state.status === "error" || state.status === "forbidden" ? (

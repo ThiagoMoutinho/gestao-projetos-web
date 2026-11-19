@@ -158,6 +158,7 @@ export function OptionMultiCombobox({
         className={cn(
           "flex h-10 w-full items-center justify-between gap-2 rounded-[7px] border border-input bg-card px-3 text-left text-xs text-foreground outline-none disabled:cursor-not-allowed disabled:bg-muted/50 disabled:text-muted-foreground",
           controlFocusClassName,
+          "data-popup-open:border-primary data-popup-open:ring-4 data-popup-open:ring-primary/20",
           controlTransitionClassName,
           className,
         )}
