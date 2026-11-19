@@ -870,7 +870,7 @@ header.sticky :focus-visible {
  * Azul Institucional Vidro (só nos temas Claro e Escuro; o Padrão IGEPPS força a institucional): azul institucional com barra superior,
  * menu lateral e menus flutuantes translúcidos (vidro fosco: fundo semitransparente + desfoque). O fundo da tela ganha um
  * degradê azul fixo para o vidro ter o que desfocar. Contraste: branco sobre #244873 9,7:1 (claro: barra, botões e destaques usam o mesmo azul da marca); no escuro, #6fa3f2 sobre o cartão #1a2130 6,1:1 e #0a172b sobre #6fa3f2 7,5:1.
- * No claro a barra é opaca no azul da marca; no escuro continua translúcida.
+ * A barra é vidro (azul da marca a 70%, como o Grafite) nos dois temas. Menus flutuantes: 45% no Claro e 72% no Escuro.
  */
 [data-palette="azulvidro"] {
   --brand: #244873;
@@ -887,8 +887,8 @@ header.sticky :focus-visible {
   --accent: #e7eef7;
   --border: #cfd8e5;
   --input: #bfcbdd;
-  --popover: rgb(255 255 255 / 60%);
-  --bar: #244873;
+  --popover: rgb(255 255 255 / 45%);
+  --bar: rgb(24 66 122 / 70%);
   --primary: #244873;
   --ring: #244873;
   --bar-muted: #cddff9;
@@ -900,7 +900,7 @@ header.sticky :focus-visible {
   --primary: #5a9bff;
   --primary-foreground: #0a172b;
   --popover: rgb(26 33 48 / 62%);
-  --bar: #244873;
+  --bar: rgb(36 72 115 / 70%);
   --bar-border: rgb(111 163 242 / 22%);
   --sidebar: rgb(21 31 50 / 66%);
   --sidebar-border: rgb(111 163 242 / 16%);
@@ -940,7 +940,7 @@ header.sticky :focus-visible {
   --accent: #e3e7ec;
   --border: #d3d8df;
   --input: #c4cad3;
-  --popover: rgb(255 255 255 / 60%);
+  --popover: rgb(255 255 255 / 45%);
   --bar: rgb(18 21 27 / 82%);
   --bar-foreground: #f6f8fb;
   --bar-muted: #c9d0da;
@@ -1002,6 +1002,11 @@ header.sticky :focus-visible {
 .dark[data-palette="grafite"] :is([data-slot="combobox-content"], [data-slot="dialog-content"]:not(.dark), [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
   --popover: #1b1f27;
   background-color: #1b1f27 !important;
+}
+/* Claro: a barra é vidro a 70%, mas o fundo atrás dela é escurecido para o azul da marca continuar vivo (sem lavar sobre a página clara). */
+.light[data-palette="azulvidro"] header.sticky {
+  -webkit-backdrop-filter: blur(16px) saturate(1.5) brightness(0.4);
+  backdrop-filter: blur(16px) saturate(1.5) brightness(0.4);
 }
 /* Sem suporte a desfoque, volta a cor sólida para não perder legibilidade. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
