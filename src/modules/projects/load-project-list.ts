@@ -125,7 +125,8 @@ async function readPeople(projectId: string) {
     return {
       managers: byRole("GESTOR"),
       suppliers: byRole("FORNECEDOR"),
-      team: buildTeam(members.data.data.map((member) => ({ userId: member.userId, role: member.role, name: member.user.name }))),
+      // A função do catálogo (ex.: Stakeholder) aparece no lugar do rótulo do acesso (Observador).
+      team: buildTeam(members.data.data.map((member) => ({ userId: member.userId, role: member.function?.name ?? member.role, name: member.user.name }))),
     };
   } catch {
     return null;

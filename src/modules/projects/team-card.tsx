@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Award, Briefcase, Check, Info, Loader2, type LucideIcon, PencilLine, Plus, Trash2, TriangleAlert, UserCog, UserRound, Users, X } from "lucide-react";
+import { Activity, Award, Briefcase, Check, Info, Loader2, type LucideIcon, PencilLine, Plus, Trash2, TriangleAlert, UserCog, UserRound, Users, X, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -24,6 +24,7 @@ import type { ListProjectMemberCandidates200DataItem } from "@/lib/api/generated
 import {
   addProjectMember,
   listProjectMemberCandidates,
+  listProjectMemberFunctions,
   removeProjectMember,
   updateProjectMember,
 } from "@/lib/api/generated/participantes/participantes";
@@ -34,9 +35,13 @@ import { roleLabel } from "@/modules/auth/roles";
 import type { ProjectMemberView } from "./eap-present";
 import { Panel } from "./overview-panel";
 import { Participants } from "./planning-overview";
+import { MemberFunctionDialog, type MemberFunction } from "./member-function-dialog";
 import { projectRoleLabel } from "./project-records";
 import {
   draftFromMembers,
+  applyChoice,
+  choiceOf,
+  FUNCTION_PREFIX,
   KEY_ROLES,
   OWNER_ROLE,
   TEAM_ROLES,
@@ -54,7 +59,7 @@ type Candidate = ListProjectMemberCandidates200DataItem;
  * Cartão Equipe da Visão Geral. O lápis só aparece para quem a API autoriza a gerenciar participantes:
  * a consulta de candidatos responde 403 para os demais (a regra fica no backend, não é repetida aqui).
  */
-export function TeamCard({ projectId, members }: { projectId: string; members: ProjectMemberView[] | null }) {
+export function TeamCard({ projectId, members, canManageFunctions = false }: { projectId: string; members: ProjectMemberView[] | null; canManageFunctions?: boolean }) {
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -90,7 +95,7 @@ export function TeamCard({ projectId, members }: { projectId: string; members: P
     >
       <Participants members={members} />
       {open && members !== null && candidates !== null ? (
-        <TeamEditDialog projectId={projectId} members={members} candidates={candidates} onClose={() => setOpen(false)} />
+        <TeamEditDialog projectId={projectId} members={members} candidates={candidates} canManageFunctions={canManageFunctions} onClose={() => setOpen(false)} />
       ) : null}
     </Panel>
   );
@@ -245,11 +250,13 @@ function TeamEditDialog({
   projectId,
   members,
   candidates,
+  canManageFunctions,
   onClose,
 }: {
   projectId: string;
   members: ProjectMemberView[];
   candidates: Candidate[];
+  canManageFunctions: boolean;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -257,6 +264,31 @@ function TeamEditDialog({
   const [draft, setDraft] = useState<TeamDraft>(initial);
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [functions, setFunctions] = useState<MemberFunction[]>([]);
+  const [newFunctionOpen, setNewFunctionOpen] = useState(false);
+
+  // Funções do catálogo institucional (rótulos como Stakeholder). Falhou? O formulário segue só com os papéis de acesso.
+  useEffect(() => {
+    let alive = true;
+    listProjectMemberFunctions()
+      .then((response) => {
+        if (alive && response.status === 200) setFunctions(response.data.data);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Papéis de acesso + funções do catálogo. Quem já tem uma função desativada continua vendo o nome dela.
+  const roleOptions: ComboOption[] = useMemo(() => {
+    const known = new Map(functions.map((entry) => [entry.id, entry.name]));
+    for (const member of members) if (member.functionId && !known.has(member.functionId)) known.set(member.functionId, member.roleLabel);
+    return [
+      ...ROLE_OPTIONS,
+      ...[...known.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR")).map(([id, name]) => ({ value: `${FUNCTION_PREFIX}${id}`, label: `${name} (função)` })),
+    ];
+  }, [functions, members]);
 
   // Pessoas conhecidas: candidatos ativos e quem já está na equipe (pode estar inativo e continuar visível).
   const people = useMemo(() => {
@@ -291,7 +323,7 @@ function TeamEditDialog({
     setDraft((current) => ({ ...current, key: { ...current.key, [role]: userId } }));
   }
 
-  function setRow(rowId: string, patch: Partial<{ userId: string; role: TeamRole }>) {
+  function setRow(rowId: string, patch: Partial<{ userId: string; role: TeamRole; functionId: string | null }>) {
     setDraft((current) => ({ ...current, others: current.others.map((row) => (row.rowId === rowId ? { ...row, ...patch } : row)) }));
   }
 
@@ -300,13 +332,13 @@ function TeamEditDialog({
   }
 
   function addRow() {
-    setDraft((current) => ({ ...current, others: [...current.others, { rowId: newRowId(), memberId: null, userId: "", role: "DESENVOLVEDOR" }] }));
+    setDraft((current) => ({ ...current, others: [...current.others, { rowId: newRowId(), memberId: null, userId: "", role: "DESENVOLVEDOR", functionId: null }] }));
   }
 
   async function run(operation: TeamOperation) {
     if (operation.type === "remove") return removeProjectMember(projectId, operation.memberId);
-    if (operation.type === "update") return updateProjectMember(projectId, operation.memberId, { role: operation.role });
-    return addProjectMember(projectId, { userId: operation.userId, role: operation.role });
+    if (operation.type === "update") return updateProjectMember(projectId, operation.memberId, { role: operation.role, functionId: operation.functionId });
+    return addProjectMember(projectId, { userId: operation.userId, role: operation.role, functionId: operation.functionId });
   }
 
   async function save() {
@@ -395,6 +427,12 @@ function TeamEditDialog({
                 <Plus aria-hidden="true" />
                 Adicionar participante
               </Button>
+              {canManageFunctions ? (
+                <Button type="button" variant="outline" onClick={() => setNewFunctionOpen(true)} disabled={saving}>
+                  <Tag aria-hidden="true" />
+                  Nova função
+                </Button>
+              ) : null}
             </div>
             {draft.others.length === 0 ? (
               <p className="rounded-xl border border-dashed px-4 py-5 text-center text-body text-muted-foreground">Nenhum outro participante.</p>
@@ -425,9 +463,12 @@ function TeamEditDialog({
                       <div className="flex items-center gap-2.5 sm:shrink-0">
                         <OptionCombobox
                           label={`Função de ${who}`}
-                          value={row.role}
-                          onChange={(value) => (TEAM_ROLES as readonly string[]).includes(value) && setRow(row.rowId, { role: value as TeamRole })}
-                          options={ROLE_OPTIONS}
+                          value={choiceOf(row)}
+                          onChange={(value) => {
+                            const choice = applyChoice(value);
+                            if (choice) setRow(row.rowId, choice);
+                          }}
+                          options={roleOptions}
                           disabled={saving}
                           className="min-w-0 flex-1 sm:w-48 sm:flex-none"
                         />
@@ -478,6 +519,13 @@ function TeamEditDialog({
           </EditDialogFooter>
         </EditDialogContent>
       </Dialog>
+
+      <MemberFunctionDialog
+        open={newFunctionOpen}
+        onClose={() => setNewFunctionOpen(false)}
+        existing={functions}
+        onCreated={(created) => setFunctions((current) => (current.some((entry) => entry.id === created.id) ? current : [...current, created]))}
+      />
 
       <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
         <AlertDialogContent>

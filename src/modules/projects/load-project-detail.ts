@@ -63,7 +63,8 @@ export async function loadProjectDetail(id: string): Promise<ProjectDetail> {
           name: member.name,
           email: member.email,
           role: member.role,
-          roleLabel: projectRoleLabel(member.role),
+          roleLabel: member.functionName ?? projectRoleLabel(member.role),
+          functionId: member.functionId,
         }))
       : null,
     phases,
@@ -94,6 +95,8 @@ async function readMembers(projectId: string) {
         name: member.user.name.trim() || "Não informado",
         email: member.user.email,
         role: member.role,
+        functionId: member.function?.id ?? null,
+        functionName: member.function?.name ?? null,
       }))
       .sort((left, right) => {
         const byRole = roleOrder(left.role) - roleOrder(right.role);

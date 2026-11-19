@@ -8,6 +8,7 @@ import type { GetScheduleMonitoring200 } from "@/lib/api/generated/model/getSche
 import { getProjectOverview } from "@/lib/api/generated/visão-institucional/visão-institucional";
 
 import type { EapAccess } from "./eap-access";
+import { canManageMemberFunctions } from "./team-editing";
 import type { ProjectDetail, ScheduleView } from "./eap-present";
 import { fieldOf } from "./institutional-about";
 import { EvidencesAndTickets, type EvidenceOrigins } from "./institutional-evidence";
@@ -177,7 +178,7 @@ export function ProjectOverviewSections({
               onScheduleSaved={planning.onScheduleSaved}
             />
           ),
-          equipe: <TeamCard projectId={projectId} members={planning.members} />,
+          equipe: <TeamCard projectId={projectId} members={planning.members} canManageFunctions={canManageMemberFunctions(planning.access.globalRole)} />,
           evidencias:
             state.status === "loading" ? (
               <CardSkeleton label="Carregando evidências e chamados" lines={3} />

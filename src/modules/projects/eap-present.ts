@@ -42,7 +42,10 @@ export type ProjectMemberView = {
   name: string;
   email: string;
   role: GetProject200RolesItem;
+  /** Nome da função do catálogo quando houver; senão o rótulo do papel de acesso. */
   roleLabel: string;
+  /** Função do catálogo (só junto do acesso Observador). */
+  functionId?: string | null;
 };
 
 export type ProjectTaskView = {

@@ -13,9 +13,9 @@ export type KeyRole = (typeof KEY_ROLES)[number];
 /** A função de dono do projeto é protegida pela API (muda só por transferência de titularidade). */
 export const OWNER_ROLE = "DONO_PROJETO";
 
-export type TeamMember = { id: string; userId: string; role: string };
+export type TeamMember = { id: string; userId: string; role: string; /** Função do catálogo (só junto do acesso Observador). */ functionId?: string | null };
 
-export type DraftRow = { rowId: string; memberId: string | null; userId: string; role: TeamRole };
+export type DraftRow = { rowId: string; memberId: string | null; userId: string; role: TeamRole; functionId: string | null };
 
 export type TeamDraft = {
   /** userId escolhido para cada responsável principal; "" = não definido. */
@@ -26,8 +26,8 @@ export type TeamDraft = {
 
 export type TeamOperation =
   | { type: "remove"; memberId: string; userId: string; role: string }
-  | { type: "update"; memberId: string; userId: string; from: string; role: TeamRole }
-  | { type: "add"; userId: string; role: TeamRole };
+  | { type: "update"; memberId: string; userId: string; from: string; role: TeamRole; functionId: string | null }
+  | { type: "add"; userId: string; role: TeamRole; functionId: string | null };
 
 function isTeamRole(role: string): role is TeamRole {
   return (TEAM_ROLES as readonly string[]).includes(role);
@@ -57,7 +57,7 @@ export function draftFromMembers(members: ReadonlyArray<TeamMember>): TeamDraft 
     },
     others: members
       .filter((member) => member.role !== OWNER_ROLE && !principalIds.has(member.id) && isTeamRole(member.role))
-      .map((member) => ({ rowId: member.id, memberId: member.id, userId: member.userId, role: member.role as TeamRole })),
+      .map((member) => ({ rowId: member.id, memberId: member.id, userId: member.userId, role: member.role as TeamRole, functionId: member.functionId ?? null })),
   };
 }
 
@@ -106,7 +106,7 @@ export function teamOperations(members: ReadonlyArray<TeamMember>, draft: TeamDr
     const chosen = draft.key[role];
     if (current && current.userId === chosen) continue;
     if (current) removes.push({ type: "remove", memberId: current.id, userId: current.userId, role });
-    if (chosen) adds.push({ type: "add", userId: chosen, role });
+    if (chosen) adds.push({ type: "add", userId: chosen, role, functionId: null });
   }
 
   const before = draftFromMembers(members).others;
@@ -115,12 +115,12 @@ export function teamOperations(members: ReadonlyArray<TeamMember>, draft: TeamDr
     const next = kept.get(row.memberId as string);
     if (!next) {
       removes.push({ type: "remove", memberId: row.memberId as string, userId: row.userId, role: row.role });
-    } else if (next.role !== row.role) {
-      updates.push({ type: "update", memberId: row.memberId as string, userId: row.userId, from: row.role, role: next.role });
+    } else if (next.role !== row.role || next.functionId !== row.functionId) {
+      updates.push({ type: "update", memberId: row.memberId as string, userId: row.userId, from: row.role, role: next.role, functionId: next.functionId });
     }
   }
   for (const row of draft.others) {
-    if (!row.memberId && row.userId) adds.push({ type: "add", userId: row.userId, role: row.role });
+    if (!row.memberId && row.userId) adds.push({ type: "add", userId: row.userId, role: row.role, functionId: row.functionId });
   }
 
   return [...removes, ...updates, ...adds];
@@ -128,4 +128,57 @@ export function teamOperations(members: ReadonlyArray<TeamMember>, draft: TeamDr
 
 export function isKeyRoleValue(role: string): role is KeyRole {
   return isKeyRole(role);
+}
+
+/** Prefixo do valor do seletor para uma função do catálogo (as demais opções usam o próprio papel de acesso). */
+export const FUNCTION_PREFIX = "FN:";
+
+/** Valor do seletor da linha: a função do catálogo, quando houver; senão o papel de acesso. */
+export function choiceOf(row: { role: TeamRole; functionId: string | null }): string {
+  return row.functionId ? `${FUNCTION_PREFIX}${row.functionId}` : row.role;
+}
+
+/** Traduz a escolha do seletor: função do catálogo = acesso Observador + a função (só rótulo, sem permissões extras). */
+export function applyChoice(value: string): { role: TeamRole; functionId: string | null } | null {
+  if (value.startsWith(FUNCTION_PREFIX)) {
+    const functionId = value.slice(FUNCTION_PREFIX.length);
+    return functionId ? { role: "OBSERVADOR", functionId } : null;
+  }
+  return isTeamRole(value) ? { role: value, functionId: null } : null;
+}
+
+/** Quem cria funções do catálogo: ADMIN e PMO (a API é quem de fato barra os demais). */
+export function canManageMemberFunctions(globalRole: string): boolean {
+  return globalRole === "ADMIN" || globalRole === "PMO";
+}
+
+export const MEMBER_FUNCTION_NAME_MIN = 2;
+export const MEMBER_FUNCTION_NAME_MAX = 60;
+
+const ACCENTED = "áàâãäåéèêëíìîïóòôõöúùûüçñ";
+const PLAIN = "aaaaaaeeeeiiiiooooouuuucn";
+
+/** Mesma chave da API: minúsculas, sem acento nem pontuação e sem espaços repetidos ("Gestão" = "gestao"). */
+export function functionNameKey(name: string): string {
+  let out = "";
+  for (const char of name.replace(/\s+/g, " ").trim().toLowerCase()) {
+    const index = ACCENTED.indexOf(char);
+    out += index >= 0 ? PLAIN[index] : char;
+  }
+  return out.replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Problema do nome digitado (ou null): vazio, curto, longo ou sem letras/números. */
+export function memberFunctionNameProblem(name: string): string | null {
+  const clean = name.replace(/\s+/g, " ").trim();
+  if (clean.length < MEMBER_FUNCTION_NAME_MIN) return `Informe o nome da função (mínimo ${MEMBER_FUNCTION_NAME_MIN} caracteres).`;
+  if (clean.length > MEMBER_FUNCTION_NAME_MAX) return `Use no máximo ${MEMBER_FUNCTION_NAME_MAX} caracteres.`;
+  if (functionNameKey(clean).length < MEMBER_FUNCTION_NAME_MIN) return "Use letras ou números no nome.";
+  return null;
+}
+
+/** A função já existe no catálogo? (ignora caixa, acento e espaços). */
+export function duplicateFunctionName(name: string, existing: ReadonlyArray<{ name: string }>): boolean {
+  const key = functionNameKey(name);
+  return key.length > 0 && existing.some((entry) => functionNameKey(entry.name) === key);
 }
