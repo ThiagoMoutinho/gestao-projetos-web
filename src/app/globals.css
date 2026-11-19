@@ -990,16 +990,16 @@ header.sticky :focus-visible {
   backdrop-filter: blur(16px) saturate(1.3);
 }
 /* Selects, diálogos, alertas e painéis laterais ficam opacos (legibilidade); a barra superior, o menu lateral e todos os menus e popovers (perfil, ações, notificações, listas de seleção múltipla) seguem o padrão vidro. */
-.light[data-palette="azulvidro"] :is([data-slot="combobox-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]),
-.light[data-palette="grafite"] :is([data-slot="combobox-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
+.light[data-palette="azulvidro"] :is([data-slot="combobox-content"], [data-slot="dialog-content"]:not(.dark), [data-slot="alert-dialog-content"], [data-slot="sheet-content"]),
+.light[data-palette="grafite"] :is([data-slot="combobox-content"], [data-slot="dialog-content"]:not(.dark), [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
   --popover: #ffffff;
   background-color: #ffffff !important;
 }
-.dark[data-palette="azulvidro"] :is([data-slot="combobox-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
+.dark[data-palette="azulvidro"] :is([data-slot="combobox-content"], [data-slot="dialog-content"]:not(.dark), [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
   --popover: #1e2536;
   background-color: #1e2536 !important;
 }
-.dark[data-palette="grafite"] :is([data-slot="combobox-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
+.dark[data-palette="grafite"] :is([data-slot="combobox-content"], [data-slot="dialog-content"]:not(.dark), [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
   --popover: #1b1f27;
   background-color: #1b1f27 !important;
 }

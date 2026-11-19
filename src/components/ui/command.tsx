@@ -11,10 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  InputGroup,
-  InputGroupAddon,
-} from "@/components/ui/input-group"
 import { SearchIcon, CheckIcon } from "lucide-react"
 
 function Command({
@@ -71,20 +67,22 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
-        <CommandPrimitive.Input
-          data-slot="command-input"
-          className={cn(
-            "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
-            className
-          )}
-          {...props}
-        />
-        <InputGroupAddon>
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
-        </InputGroupAddon>
-      </InputGroup>
+    <div
+      data-slot="command-input-wrapper"
+      className="flex h-14 items-center gap-3 border-b border-border px-4 transition-colors duration-200 focus-within:border-primary/50 motion-reduce:transition-none"
+    >
+      <SearchIcon className="size-[18px] shrink-0 text-muted-foreground" aria-hidden="true" />
+      <CommandPrimitive.Input
+        data-slot="command-input"
+        className={cn(
+          "h-full w-full min-w-0 bg-transparent text-[15px] text-foreground outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        {...props}
+      />
+      <kbd className="shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 font-sans text-label leading-none text-muted-foreground max-sm:hidden">
+        Esc
+      </kbd>
     </div>
   )
 }

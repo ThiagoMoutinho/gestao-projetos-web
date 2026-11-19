@@ -1,6 +1,23 @@
 "use client";
 
-import { CornerDownLeft, FolderKanban, Search, SearchX } from "lucide-react";
+import {
+  AlertOctagon,
+  ClipboardList,
+  CornerDownLeft,
+  FileText,
+  Flag,
+  FolderKanban,
+  Layers,
+  ListChecks,
+  Package,
+  Paperclip,
+  Search,
+  SearchX,
+  Target,
+  Ticket,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -16,8 +33,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { EapStatusBadge } from "@/modules/projects/eap-status-badge";
 import { projectStatusKind, projectStatusLabel } from "@/modules/projects/project-status";
+import { groupResults, KIND_LABEL, resultHref, resultKey, WORKSPACE_MIN_QUERY, type WorkspaceKind, type WorkspaceResult } from "@/modules/search/workspace-search";
 
 import { type AccessibleProject, useAccessibleProjects } from "./accessible-projects";
+import { useWorkspaceSearch } from "./use-workspace-search";
 
 /** Projetos abertos por último (só ids, guardados neste navegador) para a lista "Recentes". */
 const RECENT_KEY = "igepps:recent-projects";
@@ -179,6 +198,55 @@ function ResultItem({
   );
 }
 
+/** Ícone de cada tipo de resultado da busca global. */
+const KIND_ICON: Record<WorkspaceKind, LucideIcon> = {
+  PROJECT: FolderKanban,
+  GLPI: Ticket,
+  MINUTES: FileText,
+  PHASE: Layers,
+  TASK: ListChecks,
+  MILESTONE: Flag,
+  EVIDENCE: Paperclip,
+  DELIVERY: Package,
+  PROFILE: ClipboardList,
+  RESULT: Target,
+  IMPEDIMENT: AlertOctagon,
+  PERSON: UserRound,
+};
+
+/** Resultado da busca no servidor (chamado, ata, item da EAP, entrega, texto, impedimento ou pessoa). */
+function WorkspaceItem({ item, tokens, onSelect }: { item: WorkspaceResult; tokens: string[]; onSelect: (item: WorkspaceResult) => void }) {
+  const Icon = KIND_ICON[item.kind];
+  return (
+    <CommandItem value={resultKey(item)} onSelect={() => onSelect(item)} className="gap-3 py-2.5">
+      <span
+        className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground transition-colors duration-200 group-data-selected/command-item:border-primary/40 group-data-selected/command-item:bg-primary/15 group-data-selected/command-item:text-primary motion-reduce:transition-none"
+        aria-hidden="true"
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="grid min-w-0 flex-1 leading-tight">
+        <span className="truncate text-body font-medium text-foreground">
+          <span className="sr-only">{KIND_LABEL[item.kind]}: </span>
+          <Highlight text={item.title} tokens={tokens} />
+        </span>
+        {item.detail ? (
+          <span className="truncate text-label text-muted-foreground">
+            <Highlight text={item.detail} tokens={tokens} />
+          </span>
+        ) : null}
+      </span>
+      <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-label leading-none text-muted-foreground max-sm:hidden" aria-hidden="true">
+        {KIND_LABEL[item.kind]}
+      </span>
+      <CornerDownLeft
+        className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity duration-150 group-data-selected/command-item:opacity-100 motion-reduce:transition-none"
+        aria-hidden="true"
+      />
+    </CommandItem>
+  );
+}
+
 function ResultsSkeleton() {
   return (
     <div role="status" aria-label="Carregando projetos" className="flex flex-col gap-1 p-2">
@@ -260,12 +328,28 @@ export function HeaderSearch() {
   }, [projects, recentIds, searching]);
   const others = useMemo(() => (searching ? results : results.filter((project) => !recents.some((recent) => recent.id === project.id))), [results, recents, searching]);
 
+  // Busca no servidor (chamados GLPI, atas, EAP, evidências, entregas, textos, impedimentos e pessoas), além dos projetos locais.
+  const remote = useWorkspaceSearch(query, open);
+  const localIds = useMemo(() => new Set(results.map((project) => project.id)), [results]);
+  const remoteGroups = useMemo(
+    () => groupResults(remote.items, (item) => item.kind === "PROJECT" && localIds.has(item.id)),
+    [remote.items, localIds],
+  );
+  const remoteCount = remoteGroups.reduce((sum, group) => sum + group.items.length, 0);
+  const remoteSearching = searching && query.trim().length >= WORKSPACE_MIN_QUERY;
+  const nothing = results.length === 0 && remoteCount === 0;
+
+  function selectResult(item: WorkspaceResult) {
+    changeOpen(false);
+    router.push(resultHref(item));
+  }
+
   const total = (projects ?? []).length;
   const footerCount =
     status !== "ready"
       ? null
       : searching
-        ? `${results.length} ${results.length === 1 ? "resultado" : "resultados"}`
+        ? `${results.length + remoteCount} ${results.length + remoteCount === 1 ? "resultado" : "resultados"}`
         : `${total} ${total === 1 ? "projeto" : "projetos"}`;
 
   return (
@@ -293,7 +377,7 @@ export function HeaderSearch() {
       >
         {/* O filtro e a ordem são feitos aqui (por palavras, sem acento); o cmdk cuida só do teclado e da seleção. */}
         <Command shouldFilter={false} loop>
-          <CommandInput value={query} onValueChange={setQuery} placeholder="Buscar projeto por nome ou código GLPI…" />
+          <CommandInput value={query} onValueChange={setQuery} placeholder="Buscar projetos, chamados GLPI, atas, tarefas…" />
           <CommandList className="max-h-[min(24rem,50svh)]">
             {status === "loading" ? (
               <ResultsSkeleton />
@@ -301,14 +385,18 @@ export function HeaderSearch() {
               <div role="alert" className="px-4 py-6 text-center text-body text-muted-foreground">
                 Não foi possível carregar os projetos. Tente novamente mais tarde.
               </div>
-            ) : results.length === 0 ? (
+            ) : nothing && !(remoteSearching && remote.status === "loading") ? (
               <div role="status" className="motion-fade flex flex-col items-center gap-1.5 px-4 py-8 text-center">
                 <SearchX className="size-6 text-muted-foreground" aria-hidden="true" />
                 <p className="text-body font-medium text-foreground">
-                  {searching ? <>Nenhum projeto encontrado para “{query.trim()}”</> : "Nenhum projeto disponível"}
+                  {searching ? <>Nada encontrado para “{query.trim()}”</> : "Nenhum projeto disponível"}
                 </p>
                 <p className="text-label text-muted-foreground">
-                  {searching ? "Confira o nome ou o número do chamado GLPI." : "Os projetos aos quais você tem acesso aparecerão aqui."}
+                  {remote.status === "error"
+                    ? "A busca completa não respondeu agora; só os projetos foram consultados."
+                    : searching
+                      ? "Confira o nome, o número do chamado GLPI ou outra palavra do texto."
+                      : "Os projetos aos quais você tem acesso aparecerão aqui."}
                 </p>
               </div>
             ) : (
@@ -326,6 +414,24 @@ export function HeaderSearch() {
                       <ResultItem key={project.id} project={project} tokens={tokens} current={project.id === currentId} onSelect={select} />
                     ))}
                   </CommandGroup>
+                ) : null}
+                {remoteGroups.map((group) => (
+                  <CommandGroup key={group.heading} heading={group.heading}>
+                    {group.items.map((entry) => (
+                      <WorkspaceItem key={resultKey(entry)} item={entry} tokens={tokens} onSelect={selectResult} />
+                    ))}
+                  </CommandGroup>
+                ))}
+                {remoteSearching && remote.status === "loading" ? (
+                  <div role="status" aria-label="Pesquisando em atas, chamados e itens" className="motion-fade flex flex-col gap-1 p-2">
+                    <Skeleton className="h-3 w-24 motion-reduce:animate-none" />
+                    <Skeleton className="h-10 w-full rounded-lg motion-reduce:animate-none" />
+                  </div>
+                ) : null}
+                {remoteSearching && remote.status === "error" ? (
+                  <p role="status" className="px-4 py-3 text-label text-muted-foreground">
+                    A busca completa não respondeu agora; só os projetos foram consultados.
+                  </p>
                 ) : null}
               </div>
             )}
