@@ -8,6 +8,7 @@ import {
   THEME_IDS,
   DEVICE_PALETTE_KEY,
   effectivePalette,
+  SELECTABLE_PALETTES,
   PALETTE_IDS,
   paletteLockedFor,
   paletteBootstrapScript,
@@ -41,7 +42,7 @@ describe("preferências de aparência", () => {
     assert.equal(DEFAULT_PALETTE, "institucional");
     assert.equal(DEFAULT_THEME, "igepps");
     assert.deepEqual([...THEME_IDS], ["igepps", "light", "dark"]);
-    assert.deepEqual([...PALETTE_IDS], ["institucional", "petroleo", "violeta", "esmeralda", "rosa"]);
+    assert.deepEqual([...PALETTE_IDS], ["institucional", "petroleo", "violeta", "esmeralda", "rosa", "grafite", "azulvidro"]);
   });
 
   it("grava e lê a preferência de cada usuário separadamente", () => {
@@ -89,14 +90,21 @@ describe("preferências de aparência", () => {
     assert.equal(paletteLockedFor("dark"), false);
     for (const id of PALETTE_IDS) {
       assert.equal(effectivePalette("igepps", id), "institucional");
-      assert.equal(effectivePalette("light", id), id);
-      assert.equal(effectivePalette("dark", id), id);
+      const esperado = id === "institucional" ? "azulvidro" : id;
+      assert.equal(effectivePalette("light", id), esperado);
+      assert.equal(effectivePalette("dark", id), esperado);
     }
+  });
+
+  it("a institucional não é opção do seletor e vira Azul institucional vidro em Claro e Escuro", () => {
+    assert.ok(!SELECTABLE_PALETTES.some((item) => item.id === "institucional"));
+    assert.ok(SELECTABLE_PALETTES.some((item) => item.id === "azulvidro"));
   });
 
   it("o script de pré-hidratação usa a institucional quando o tema salvo é o Padrão IGEPPS", () => {
     const script = paletteBootstrapScript();
     assert.ok(script.includes("igepps"));
     assert.ok(script.includes(`localStorage.getItem("theme")`));
+    assert.ok(script.includes("azulvidro"));
   });
 });

@@ -865,3 +865,171 @@ textarea::placeholder {
 header.sticky :focus-visible {
   outline-color: var(--bar-foreground);
 }
+
+/*
+ * Azul Institucional Vidro (só nos temas Claro e Escuro; o Padrão IGEPPS força a institucional): azul institucional com barra superior,
+ * menu lateral e menus flutuantes translúcidos (vidro fosco: fundo semitransparente + desfoque). O fundo da tela ganha um
+ * degradê azul fixo para o vidro ter o que desfocar. Contraste: branco sobre #244873 9,7:1 (claro: barra, botões e destaques usam o mesmo azul da marca); no escuro, #6fa3f2 sobre o cartão #1a2130 6,1:1 e #0a172b sobre #6fa3f2 7,5:1.
+ * No claro a barra é opaca no azul da marca; no escuro continua translúcida.
+ */
+[data-palette="azulvidro"] {
+  --brand: #244873;
+  --brand-deep: #13294f;
+  --primary: #2760b3;
+  --primary-foreground: #ffffff;
+  --ring: #2760b3;
+}
+.light[data-palette="azulvidro"] {
+  --background: #e8ecf3;
+  --secondary: #ecf1f8;
+  --muted: #ebeff6;
+  --muted-foreground: #515c71;
+  --accent: #e7eef7;
+  --border: #cfd8e5;
+  --input: #bfcbdd;
+  --popover: rgb(255 255 255 / 60%);
+  --bar: #244873;
+  --primary: #244873;
+  --ring: #244873;
+  --bar-muted: #cddff9;
+  --bar-border: rgb(255 255 255 / 22%);
+  --sidebar: rgb(255 255 255 / 62%);
+  --sidebar-border: rgb(39 96 179 / 18%);
+}
+.dark[data-palette="azulvidro"] {
+  --primary: #5a9bff;
+  --primary-foreground: #0a172b;
+  --popover: rgb(26 33 48 / 62%);
+  --bar: #244873;
+  --bar-border: rgb(111 163 242 / 22%);
+  --sidebar: rgb(21 31 50 / 66%);
+  --sidebar-border: rgb(111 163 242 / 16%);
+}
+.light[data-palette="azulvidro"] body {
+  background-image:
+    radial-gradient(60rem 36rem at 8% -6%, rgb(60 120 210 / 34%), transparent 70%),
+    radial-gradient(46rem 30rem at 100% 8%, rgb(36 72 115 / 26%), transparent 70%);
+  background-attachment: fixed;
+}
+.dark[data-palette="azulvidro"] body {
+  background-image:
+    radial-gradient(60rem 36rem at 8% -6%, rgb(60 110 190 / 30%), transparent 70%),
+    radial-gradient(46rem 30rem at 100% 8%, rgb(30 60 110 / 34%), transparent 70%);
+  background-attachment: fixed;
+}
+
+/*
+ * Grafite Vidro (só nos temas Claro e Escuro; o Padrão IGEPPS força a institucional): vidro fumê grafite/preto. Barra
+ * superior, menu lateral e menus flutuantes ficam translúcidos (fundo semitransparente + desfoque) e o fundo da tela ganha um
+ * degradê cinza-azulado fixo para o vidro ter o que desfocar. Destaques neutros: no claro, botão primário grafite (branco
+ * sobre #2f3a48 10,9:1); no escuro, cinza prata (#c3ccd8 sobre o cartão #1a2130 9,6:1; #12151b sobre #c3ccd8 10,8:1).
+ * Barra e menu usam 76–82% de opacidade sobre fundo escuro: texto claro >= 12:1.
+ */
+[data-palette="grafite"] {
+  --brand: #2b313b;
+  --brand-deep: #14171d;
+  --primary: #2f3a48;
+  --primary-foreground: #ffffff;
+  --ring: #2f3a48;
+}
+.light[data-palette="grafite"] {
+  --background: #eceef1;
+  --secondary: #eceff2;
+  --muted: #eceef1;
+  --muted-foreground: #566070;
+  --accent: #e3e7ec;
+  --border: #d3d8df;
+  --input: #c4cad3;
+  --popover: rgb(255 255 255 / 60%);
+  --bar: rgb(18 21 27 / 82%);
+  --bar-foreground: #f6f8fb;
+  --bar-muted: #c9d0da;
+  --bar-border: rgb(255 255 255 / 16%);
+  --sidebar: rgb(20 23 30 / 78%);
+  --sidebar-foreground: #f3f5f8;
+  --sidebar-accent: color-mix(in oklch, #ffffff 14%, transparent);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 10%);
+  --sidebar-ring: #aeb8c6;
+  --sidebar-marker: #cfd6e0;
+}
+.dark[data-palette="grafite"] {
+  --primary: #c3ccd8;
+  --primary-foreground: #12151b;
+  --popover: rgb(22 25 32 / 62%);
+  --bar: rgb(10 12 16 / 76%);
+  --bar-border: rgb(255 255 255 / 14%);
+  --sidebar: rgb(10 12 16 / 70%);
+  --sidebar-border: rgb(255 255 255 / 10%);
+}
+/* Fundo com degradê grafite fixo (atrás do vidro) e o desfoque nas superfícies translúcidas. */
+.light[data-palette="grafite"] body {
+  background-image:
+    radial-gradient(60rem 36rem at 8% -6%, rgb(70 82 100 / 30%), transparent 70%),
+    radial-gradient(46rem 30rem at 100% 8%, rgb(40 48 62 / 22%), transparent 70%);
+  background-attachment: fixed;
+}
+.dark[data-palette="grafite"] body {
+  background-image:
+    radial-gradient(60rem 36rem at 8% -6%, rgb(120 135 160 / 16%), transparent 70%),
+    radial-gradient(46rem 30rem at 100% 8%, rgb(90 100 120 / 16%), transparent 70%);
+  background-attachment: fixed;
+}
+[data-palette="azulvidro"] header.sticky,
+[data-palette="azulvidro"] [data-slot="sidebar-inner"],
+[data-palette="azulvidro"] [data-slot="dropdown-menu-content"],
+[data-palette="azulvidro"] [data-slot="popover-content"] {
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
+}
+[data-palette="grafite"] header.sticky,
+[data-palette="grafite"] [data-slot="sidebar-inner"],
+[data-palette="grafite"] [data-slot="dropdown-menu-content"],
+[data-palette="grafite"] [data-slot="popover-content"] {
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+}
+/* Selects, diálogos, alertas e painéis laterais ficam opacos (legibilidade); a barra superior, o menu lateral e todos os menus e popovers (perfil, ações, notificações, listas de seleção múltipla) seguem o padrão vidro. */
+.light[data-palette="azulvidro"] :is([data-slot="combobox-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]),
+.light[data-palette="grafite"] :is([data-slot="combobox-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
+  --popover: #ffffff;
+  background-color: #ffffff !important;
+}
+.dark[data-palette="azulvidro"] :is([data-slot="combobox-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
+  --popover: #1e2536;
+  background-color: #1e2536 !important;
+}
+.dark[data-palette="grafite"] :is([data-slot="combobox-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
+  --popover: #1b1f27;
+  background-color: #1b1f27 !important;
+}
+/* Sem suporte a desfoque, volta a cor sólida para não perder legibilidade. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .light[data-palette="grafite"] {
+    --popover: #ffffff;
+    --bar: #12151b;
+    --sidebar: #14171e;
+  }
+  .dark[data-palette="grafite"] {
+    --popover: #1e2536;
+    --bar: #0a0c10;
+    --sidebar: #0a0c10;
+  }
+  .light[data-palette="azulvidro"] {
+    --popover: #ffffff;
+    --bar: #244873;
+    --sidebar: #ffffff;
+  }
+  .dark[data-palette="azulvidro"] {
+    --popover: #1e2536;
+    --bar: #1e3046;
+    --sidebar: #151f32;
+  }
+}
+
+/* Claro (menu branco): o item ativo do menu lateral segue o azul da barra superior (a cor da marca da paleta), não o primário. */
+.light,
+.light[data-palette] {
+  --sidebar-marker: var(--brand);
+  --sidebar-indicator: var(--brand);
+}

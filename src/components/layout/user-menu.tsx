@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Building2, ClipboardList, Loader2, LogOut, Moon, Sun, UserRound, type LucideIcon } from "lucide-react";
+import { Bell, Building2, Check, ChevronDown, ClipboardList, Loader2, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,10 +14,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PALETTES, THEMES, parsePalette, parseTheme } from "@/modules/appearance/appearance";
+import { PALETTES, SELECTABLE_PALETTES, THEMES, parsePalette, parseTheme } from "@/modules/appearance/appearance";
 import { useAppearance } from "@/modules/appearance/appearance-provider";
 import { NOTIFICATIONS_CHANGED_EVENT } from "@/modules/notifications/use-notification-feed";
 import { listMyNotifications } from "@/lib/api/generated/notificações-do-acompanhamento/notificações-do-acompanhamento";
@@ -57,11 +56,30 @@ const THEME_SHORT: Record<string, string> = { igepps: "IGEPPS", light: "Claro", 
 
 /** Fundo das iniciais quando não há foto: degradê da paleta. */
 const FALLBACK_BG =
-  "bg-linear-to-br from-primary to-brand-deep dark:from-[color-mix(in_oklch,var(--primary)_55%,black)] font-semibold tracking-wide text-white";
+  "bg-linear-to-br from-primary to-brand-deep dark:from-[color-mix(in_oklch,var(--primary)_55%,black)] dark:in-data-[palette=grafite]:from-[#454d5b] dark:in-data-[palette=grafite]:to-[#272d38] font-semibold tracking-wide text-white";
 
 /** Item do menu em formato de segmento (Aparência): sem o marcador de seleção padrão. */
 const SEGMENT =
   "flex-1 justify-center gap-1.5 rounded-md px-2 py-1.5 pr-2 text-body text-muted-foreground transition-colors duration-150 focus:bg-background/60 data-checked:bg-background data-checked:font-medium data-checked:text-foreground data-checked:shadow-[0_1px_2px_rgb(16_24_40/0.12)] motion-reduce:transition-none [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden";
+
+/** Ícone em bloco arredondado: no hover da linha ganha o tom da paleta. */
+function MenuIcon({ icon: Icon, tone = "default" }: { icon: LucideIcon; tone?: "default" | "danger" }) {
+  return (
+    <span
+      className={cn(
+        "flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-200 motion-reduce:transition-none",
+        tone === "danger"
+          ? "bg-status-critical-soft text-status-critical-ink"
+          : "bg-muted text-muted-foreground group-focus/dropdown-menu-item:bg-primary/12 group-focus/dropdown-menu-item:text-primary",
+      )}
+    >
+      <Icon className={cn("size-[17px]", Icon === Loader2 && "animate-spin")} aria-hidden="true" />
+    </span>
+  );
+}
+
+const MENU_ITEM = "group/dropdown-menu-item h-11 gap-3 rounded-lg px-2 text-body font-medium";
+const SOON = "ml-auto rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground";
 
 function CountBadge({ value }: { value: number }) {
   return (
@@ -126,28 +144,43 @@ export function UserMenu({ user }: { user: AppUser }) {
       <SquircleDefs />
       <DropdownMenuTrigger
         aria-label={`Menu da conta de ${user.name}`}
-        style={SQUIRCLE_STYLE}
-        className="flex h-[54px] w-[60px] shrink-0 items-center justify-center bg-bar-muted p-[2px] outline-none transition-[background-color,filter] duration-200 dark:bg-[color-mix(in_oklch,var(--primary)_45%,white)] hover:bg-white hover:brightness-105 focus-visible:bg-white data-open:bg-white dark:data-open:bg-white motion-reduce:transition-none"
+        className="group/user flex shrink-0 items-center gap-2.5 rounded-full border border-bar-border bg-bar-foreground/6 py-1 pr-2 pl-1 outline-none transition-colors duration-200 hover:bg-bar-foreground/12 focus-visible:ring-2 focus-visible:ring-bar-foreground/60 data-open:bg-bar-foreground/14 motion-reduce:transition-none lg:pr-3"
       >
-        <Avatar className="size-full rounded-none after:hidden" style={SQUIRCLE_STYLE}>
-          {user.image ? <AvatarImage src={user.image} alt="" className="object-cover" /> : null}
-          {/* Segue a paleta escolhida: degradê primary→brand no claro/IGEPPS; no escuro, o primary da paleta escurecido (a paleta só muda os destaques lá) com iniciais brancas em semibold; o contorno claro vem do botão. */}
-          <AvatarFallback className="rounded-none bg-linear-to-br from-primary to-brand text-card-title font-semibold tracking-wide text-white dark:from-[color-mix(in_oklch,var(--primary)_72%,black)] dark:to-[color-mix(in_oklch,var(--primary)_54%,black)]">{initials(user.name)}</AvatarFallback>
-        </Avatar>
+        <span
+          style={SQUIRCLE_STYLE}
+          className="flex h-[45px] w-[50px] shrink-0 items-center justify-center bg-bar-muted p-[2px] transition-[background-color,filter] duration-200 dark:bg-[color-mix(in_oklch,var(--primary)_45%,white)] group-hover/user:bg-white group-hover/user:brightness-105 group-focus-visible/user:bg-white group-data-open/user:bg-white dark:group-data-open/user:bg-white motion-reduce:transition-none"
+        >
+          <Avatar className="size-full rounded-none after:hidden" style={SQUIRCLE_STYLE}>
+            {user.image ? <AvatarImage src={user.image} alt="" className="object-cover" /> : null}
+            {/* Segue a paleta escolhida: degradê primary→brand no claro/IGEPPS; no escuro, o primary da paleta escurecido (a paleta só muda os destaques lá) com iniciais brancas em semibold; o contorno claro vem do botão. */}
+            <AvatarFallback className="rounded-none bg-linear-to-br from-primary to-brand text-body font-semibold tracking-wide text-white dark:from-[color-mix(in_oklch,var(--primary)_72%,black)] dark:to-[color-mix(in_oklch,var(--primary)_54%,black)] dark:in-data-[palette=grafite]:from-[#454d5b] dark:in-data-[palette=grafite]:to-[#272d38]">
+              {initials(user.name)}
+            </AvatarFallback>
+          </Avatar>
+        </span>
+        <span className="hidden min-w-0 max-w-40 flex-col text-left leading-tight text-bar-foreground lg:flex">
+          <span className="truncate text-body font-semibold">{user.name}</span>
+          {profile ? <span className="truncate text-label text-bar-foreground/70">{profile}</span> : null}
+        </span>
+        <ChevronDown
+          className="hidden size-4 shrink-0 text-bar-foreground/70 transition-transform duration-200 group-data-open/user:rotate-180 motion-reduce:transition-none lg:block"
+          aria-hidden="true"
+        />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={10} className="w-80 rounded-xl p-0">
+      <DropdownMenuContent align="end" sideOffset={10} className="glass-menu w-[21rem] rounded-2xl p-0 shadow-xl">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <span className="flex items-center gap-3 px-4 py-4 text-left">
-              <Avatar className="size-12 shrink-0 rounded-none after:hidden" style={SQUIRCLE_STYLE}>
+            <span className="relative flex items-center gap-3.5 rounded-t-2xl border-b border-border/70 px-4 py-5 text-left">
+              <Avatar className="relative size-14 shrink-0 rounded-none after:hidden" style={SQUIRCLE_STYLE}>
                 {user.image ? <AvatarImage src={user.image} alt="" className="object-cover" /> : null}
-                <AvatarFallback className={cn("rounded-none text-card-title", FALLBACK_BG)}>{initials(user.name)}</AvatarFallback>
+                <AvatarFallback className={cn("rounded-none text-lg", FALLBACK_BG)}>{initials(user.name)}</AvatarFallback>
               </Avatar>
-              <span className="grid min-w-0 flex-1 gap-0.5 leading-tight">
-                <span className="truncate text-body font-semibold text-foreground">{user.name}</span>
+              <span className="relative grid min-w-0 flex-1 gap-0.5 leading-tight">
+                <span className="truncate text-card-title font-semibold text-foreground">{user.name}</span>
                 <span className="truncate text-label text-muted-foreground">{user.email}</span>
                 {profile ? (
-                  <span className="mt-1 w-fit rounded-full bg-primary/12 px-2 py-0.5 text-label font-semibold text-primary dark:bg-primary/20">
+                  <span className="mt-1.5 inline-flex w-fit items-center gap-1 rounded-full bg-primary/14 px-2 py-0.5 text-label font-semibold text-primary dark:bg-primary/22">
+                    <ShieldCheck className="size-3" aria-hidden="true" />
                     {profile}
                   </span>
                 ) : null}
@@ -155,26 +188,25 @@ export function UserMenu({ user }: { user: AppUser }) {
             </span>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator className="my-0" />
-        <DropdownMenuGroup className="p-1.5">
-          <DropdownMenuItem disabled className="h-10 gap-3 px-2.5 text-body">
-            <UserRound className="size-[18px]" />
+        <DropdownMenuGroup className="p-2">
+          <DropdownMenuItem disabled className={MENU_ITEM}>
+            <MenuIcon icon={UserRound} />
             Minha conta
-            <span className="ml-auto text-label text-muted-foreground">Em breve</span>
+            <span className={SOON}>Em breve</span>
           </DropdownMenuItem>
-          <DropdownMenuItem disabled className="h-10 gap-3 px-2.5 text-body">
-            <ClipboardList className="size-[18px]" />
+          <DropdownMenuItem disabled className={MENU_ITEM}>
+            <MenuIcon icon={ClipboardList} />
             Minhas pendências
-            <span className="ml-auto text-label text-muted-foreground">Em breve</span>
+            <span className={SOON}>Em breve</span>
           </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/notificacoes" />} className="h-10 gap-3 px-2.5 text-body">
-            <Bell className="size-[18px]" />
+          <DropdownMenuItem render={<Link href="/notificacoes" />} className={MENU_ITEM}>
+            <MenuIcon icon={Bell} />
             Notificações
             {unread ? <CountBadge value={unread} /> : null}
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <div className="px-4 pt-2 pb-3">
-          <span className="mb-2 block text-label text-muted-foreground">Aparência</span>
+        <div className="border-t border-border/70 bg-muted/30 px-4 pt-3.5 pb-4">
+          <span className="mb-2 block text-label font-semibold tracking-wide text-muted-foreground uppercase">Aparência</span>
           <DropdownMenuRadioGroup
             value={theme}
             onValueChange={(value) => {
@@ -183,7 +215,7 @@ export function UserMenu({ user }: { user: AppUser }) {
                 setTheme(next);
               }
             }}
-            className="flex gap-1 rounded-lg bg-muted p-1"
+            className="flex gap-1 rounded-xl bg-muted p-1 ring-1 ring-border/60"
           >
             {THEMES.map((item) => {
               const Icon = THEME_ICON[item.id] ?? Sun;
@@ -195,8 +227,9 @@ export function UserMenu({ user }: { user: AppUser }) {
               );
             })}
           </DropdownMenuRadioGroup>
-          <span className="mt-4 mb-2 block text-label text-muted-foreground">
-            Paleta de cores · <span className="text-foreground">{PALETTES.find((item) => item.id === palette)?.label}</span>
+          <span className="mt-4 mb-2 flex items-baseline justify-between text-label font-semibold tracking-wide text-muted-foreground uppercase">
+            Paleta de cores
+            <span className="font-medium tracking-normal text-foreground normal-case">{PALETTES.find((item) => item.id === palette)?.label}</span>
           </span>
           {paletteLocked ? (
             <p id="palette-dark-hint" className="mb-2 text-label text-muted-foreground">
@@ -215,30 +248,30 @@ export function UserMenu({ user }: { user: AppUser }) {
                 setPalette(next);
               }
             }}
-            className="flex gap-2.5"
+            className="flex justify-between gap-1"
             aria-describedby={paletteLocked || darkTheme ? "palette-dark-hint" : undefined}
           >
-            {PALETTES.map((item) => (
+            {SELECTABLE_PALETTES.map((item) => (
               <DropdownMenuRadioItem
                 key={item.id}
                 value={item.id}
                 aria-label={item.label}
                 title={paletteLocked && item.id !== palette ? `${item.label} (indisponível no Padrão IGEPPS)` : item.label}
                 disabled={paletteLocked}
-                className="size-9 justify-center rounded-full p-0 pr-0 ring-offset-2 ring-offset-popover transition-shadow duration-150 focus:bg-transparent focus-visible:ring-2 focus-visible:ring-ring data-checked:ring-2 data-checked:ring-primary motion-reduce:transition-none [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
+                className="relative size-10 justify-center rounded-full p-0 pr-0 ring-offset-2 ring-offset-popover transition-[box-shadow,transform] duration-200 hover:scale-105 focus:bg-transparent focus-visible:ring-2 focus-visible:ring-ring data-checked:ring-2 data-checked:ring-primary/70 motion-reduce:transition-none motion-reduce:hover:scale-100 [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
               >
-                <span data-palette={item.id} className="flex size-7 overflow-hidden rounded-full ring-1 ring-border" aria-hidden="true">
-                  <span className="h-full w-1/2 bg-brand-deep" />
-                  <span className="h-full w-1/2 bg-primary" />
+                <span data-palette={item.id} className="relative flex size-8 items-center justify-center overflow-hidden rounded-full ring-1 ring-foreground/15" aria-hidden="true">
+                  <span className="absolute inset-y-0 left-0 w-1/2 bg-brand-deep" />
+                  <span className="absolute inset-y-0 right-0 w-1/2 bg-primary" />
+                  {item.id === palette ? <Check className="relative size-4 text-white drop-shadow" strokeWidth={3} /> : null}
                 </span>
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
         </div>
-        <DropdownMenuSeparator className="my-0" />
-        <DropdownMenuGroup className="p-1.5">
-          <DropdownMenuItem variant="destructive" disabled={pending} onClick={() => void onLogout()} className="h-10 gap-3 px-2.5 text-body">
-            {pending ? <Loader2 className="size-[18px] animate-spin" /> : <LogOut className="size-[18px]" />}
+        <DropdownMenuGroup className="border-t border-border/70 p-2">
+          <DropdownMenuItem variant="destructive" disabled={pending} onClick={() => void onLogout()} className={MENU_ITEM}>
+            <MenuIcon icon={pending ? Loader2 : LogOut} tone="danger" />
             Sair
           </DropdownMenuItem>
         </DropdownMenuGroup>

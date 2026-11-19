@@ -7,7 +7,7 @@
 export const THEME_IDS = ["igepps", "light", "dark"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
-export const PALETTE_IDS = ["institucional", "petroleo", "violeta", "esmeralda", "rosa"] as const;
+export const PALETTE_IDS = ["institucional", "petroleo", "violeta", "esmeralda", "rosa", "grafite", "azulvidro"] as const;
 export type PaletteId = (typeof PALETTE_IDS)[number];
 
 export const DEFAULT_THEME: ThemeId = "igepps";
@@ -15,11 +15,22 @@ export const DEFAULT_PALETTE: PaletteId = "institucional";
 
 export const PALETTES: ReadonlyArray<{ id: PaletteId; label: string }> = [
   { id: "institucional", label: "Azul institucional" },
+  { id: "azulvidro", label: "Azul institucional vidro" },
   { id: "petroleo", label: "Azul petróleo" },
   { id: "violeta", label: "Violeta" },
   { id: "esmeralda", label: "Esmeralda" },
   { id: "rosa", label: "Rosa" },
+  { id: "grafite", label: "Grafite vidro" },
 ];
+
+/**
+ * Paletas que o usuário pode escolher em Claro e Escuro. A institucional não é mais uma opção do seletor: ela continua
+ * existindo só como a paleta fixa do Padrão IGEPPS (e como valor antigo guardado no dispositivo, que vale como Azul institucional vidro).
+ */
+export const SELECTABLE_PALETTES: ReadonlyArray<{ id: PaletteId; label: string }> = PALETTES.filter((item) => item.id !== "institucional");
+
+/** Paleta aplicada no lugar da institucional quando o tema é Claro ou Escuro. */
+export const FALLBACK_PALETTE: PaletteId = "azulvidro";
 
 export const THEMES: ReadonlyArray<{ id: ThemeId; label: string }> = [
   { id: "igepps", label: "Padrão IGEPPS" },
@@ -37,7 +48,10 @@ export function paletteLockedFor(theme: ThemeId): boolean {
 
 /** Paleta que realmente vale na tela: a institucional no Padrão IGEPPS; nas demais aparências, a escolhida. */
 export function effectivePalette(theme: ThemeId, chosen: PaletteId): PaletteId {
-  return paletteLockedFor(theme) ? DEFAULT_PALETTE : chosen;
+  if (paletteLockedFor(theme)) {
+    return DEFAULT_PALETTE;
+  }
+  return chosen === DEFAULT_PALETTE ? FALLBACK_PALETTE : chosen;
 }
 
 /** Última paleta escolhida neste dispositivo; lida por um script antes da hidratação para evitar piscar. */
@@ -96,5 +110,5 @@ export function writeAppearance(store: KeyValueStore, userId: string, appearance
  */
 export function paletteBootstrapScript() {
   const ids = JSON.stringify(PALETTE_IDS);
-  return `try{var t=localStorage.getItem("theme")||${JSON.stringify(DEFAULT_THEME)};var p=t==="igepps"?${JSON.stringify(DEFAULT_PALETTE)}:localStorage.getItem(${JSON.stringify(DEVICE_PALETTE_KEY)});if(p&&${ids}.indexOf(p)!==-1)document.documentElement.setAttribute("data-palette",p)}catch(e){}`;
+  return `try{var t=localStorage.getItem("theme")||${JSON.stringify(DEFAULT_THEME)};var p=t==="igepps"?${JSON.stringify(DEFAULT_PALETTE)}:localStorage.getItem(${JSON.stringify(DEVICE_PALETTE_KEY)});if(p===${JSON.stringify(DEFAULT_PALETTE)}&&t!=="igepps")p=${JSON.stringify(FALLBACK_PALETTE)};if(p&&${ids}.indexOf(p)!==-1)document.documentElement.setAttribute("data-palette",p)}catch(e){}`;
 }
