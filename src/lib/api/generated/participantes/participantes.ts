@@ -13,12 +13,26 @@ import type {
   AddProjectMember404,
   AddProjectMember409,
   AddProjectMemberBody,
+  CreateProjectMemberFunction201,
+  CreateProjectMemberFunction400,
+  CreateProjectMemberFunction401,
+  CreateProjectMemberFunction403,
+  CreateProjectMemberFunction404,
+  CreateProjectMemberFunction409,
+  CreateProjectMemberFunctionBody,
   ListProjectMemberCandidates200,
   ListProjectMemberCandidates400,
   ListProjectMemberCandidates401,
   ListProjectMemberCandidates403,
   ListProjectMemberCandidates404,
   ListProjectMemberCandidates409,
+  ListProjectMemberFunctions200,
+  ListProjectMemberFunctions400,
+  ListProjectMemberFunctions401,
+  ListProjectMemberFunctions403,
+  ListProjectMemberFunctions404,
+  ListProjectMemberFunctions409,
+  ListProjectMemberFunctionsParams,
   ListProjectMembers200,
   ListProjectMembers400,
   ListProjectMembers401,
@@ -36,7 +50,14 @@ import type {
   UpdateProjectMember403,
   UpdateProjectMember404,
   UpdateProjectMember409,
-  UpdateProjectMemberBody
+  UpdateProjectMemberBody,
+  UpdateProjectMemberFunction200,
+  UpdateProjectMemberFunction400,
+  UpdateProjectMemberFunction401,
+  UpdateProjectMemberFunction403,
+  UpdateProjectMemberFunction404,
+  UpdateProjectMemberFunction409,
+  UpdateProjectMemberFunctionBody
 } from '../model';
 
 import { apiFetcher } from '../../fetcher.ts';
@@ -381,6 +402,229 @@ export const removeProjectMember = async (id: string,
     method: 'DELETE'
 
 
+  }
+);}
+
+
+export type listProjectMemberFunctionsResponse200 = {
+  data: ListProjectMemberFunctions200
+  status: 200
+}
+
+export type listProjectMemberFunctionsResponse400 = {
+  data: ListProjectMemberFunctions400
+  status: 400
+}
+
+export type listProjectMemberFunctionsResponse401 = {
+  data: ListProjectMemberFunctions401
+  status: 401
+}
+
+export type listProjectMemberFunctionsResponse403 = {
+  data: ListProjectMemberFunctions403
+  status: 403
+}
+
+export type listProjectMemberFunctionsResponse404 = {
+  data: ListProjectMemberFunctions404
+  status: 404
+}
+
+export type listProjectMemberFunctionsResponse409 = {
+  data: ListProjectMemberFunctions409
+  status: 409
+}
+
+export type listProjectMemberFunctionsResponseSuccess = (listProjectMemberFunctionsResponse200) & {
+  headers: Headers;
+};
+export type listProjectMemberFunctionsResponseError = (listProjectMemberFunctionsResponse400 | listProjectMemberFunctionsResponse401 | listProjectMemberFunctionsResponse403 | listProjectMemberFunctionsResponse404 | listProjectMemberFunctionsResponse409) & {
+  headers: Headers;
+};
+
+export type listProjectMemberFunctionsResponse = (listProjectMemberFunctionsResponseSuccess | listProjectMemberFunctionsResponseError)
+
+export const getListProjectMemberFunctionsUrl = (params?: ListProjectMemberFunctionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/project-member-functions?${stringifiedParams}` : `/project-member-functions`
+}
+
+/**
+ * Funções institucionais que são só rótulo (ex.: Stakeholder). Quem as recebe tem o acesso de Observador.
+ * @summary Listar as funções de participante do catálogo
+ */
+export const listProjectMemberFunctions = async (params?: ListProjectMemberFunctionsParams, options?: Parameters<typeof apiFetcher>[1]): Promise<listProjectMemberFunctionsResponse> => {
+
+  return apiFetcher<listProjectMemberFunctionsResponse>(getListProjectMemberFunctionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+export type createProjectMemberFunctionResponse201 = {
+  data: CreateProjectMemberFunction201
+  status: 201
+}
+
+export type createProjectMemberFunctionResponse400 = {
+  data: CreateProjectMemberFunction400
+  status: 400
+}
+
+export type createProjectMemberFunctionResponse401 = {
+  data: CreateProjectMemberFunction401
+  status: 401
+}
+
+export type createProjectMemberFunctionResponse403 = {
+  data: CreateProjectMemberFunction403
+  status: 403
+}
+
+export type createProjectMemberFunctionResponse404 = {
+  data: CreateProjectMemberFunction404
+  status: 404
+}
+
+export type createProjectMemberFunctionResponse409 = {
+  data: CreateProjectMemberFunction409
+  status: 409
+}
+
+export type createProjectMemberFunctionResponseSuccess = (createProjectMemberFunctionResponse201) & {
+  headers: Headers;
+};
+export type createProjectMemberFunctionResponseError = (createProjectMemberFunctionResponse400 | createProjectMemberFunctionResponse401 | createProjectMemberFunctionResponse403 | createProjectMemberFunctionResponse404 | createProjectMemberFunctionResponse409) & {
+  headers: Headers;
+};
+
+export type createProjectMemberFunctionResponse = (createProjectMemberFunctionResponseSuccess | createProjectMemberFunctionResponseError)
+
+export const getCreateProjectMemberFunctionUrl = () => {
+
+
+
+
+  return `/project-member-functions`
+}
+
+/**
+ * @summary Criar função de participante (ADMIN e PMO)
+ */
+export const createProjectMemberFunction = async (createProjectMemberFunctionBody: CreateProjectMemberFunctionBody, options?: Parameters<typeof apiFetcher>[1]): Promise<createProjectMemberFunctionResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<createProjectMemberFunctionResponse>(getCreateProjectMemberFunctionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createProjectMemberFunctionBody)
+  }
+);}
+
+
+export type updateProjectMemberFunctionResponse200 = {
+  data: UpdateProjectMemberFunction200
+  status: 200
+}
+
+export type updateProjectMemberFunctionResponse400 = {
+  data: UpdateProjectMemberFunction400
+  status: 400
+}
+
+export type updateProjectMemberFunctionResponse401 = {
+  data: UpdateProjectMemberFunction401
+  status: 401
+}
+
+export type updateProjectMemberFunctionResponse403 = {
+  data: UpdateProjectMemberFunction403
+  status: 403
+}
+
+export type updateProjectMemberFunctionResponse404 = {
+  data: UpdateProjectMemberFunction404
+  status: 404
+}
+
+export type updateProjectMemberFunctionResponse409 = {
+  data: UpdateProjectMemberFunction409
+  status: 409
+}
+
+export type updateProjectMemberFunctionResponseSuccess = (updateProjectMemberFunctionResponse200) & {
+  headers: Headers;
+};
+export type updateProjectMemberFunctionResponseError = (updateProjectMemberFunctionResponse400 | updateProjectMemberFunctionResponse401 | updateProjectMemberFunctionResponse403 | updateProjectMemberFunctionResponse404 | updateProjectMemberFunctionResponse409) & {
+  headers: Headers;
+};
+
+export type updateProjectMemberFunctionResponse = (updateProjectMemberFunctionResponseSuccess | updateProjectMemberFunctionResponseError)
+
+export const getUpdateProjectMemberFunctionUrl = (id: string,) => {
+
+
+
+
+  return `/project-member-functions/${id}`
+}
+
+/**
+ * @summary Ativar ou desativar uma função de participante (ADMIN e PMO)
+ */
+export const updateProjectMemberFunction = async (id: string,
+    updateProjectMemberFunctionBody: UpdateProjectMemberFunctionBody, options?: Parameters<typeof apiFetcher>[1]): Promise<updateProjectMemberFunctionResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetcher<updateProjectMemberFunctionResponse>(getUpdateProjectMemberFunctionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateProjectMemberFunctionBody)
   }
 );}
 

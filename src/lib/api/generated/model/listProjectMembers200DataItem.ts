@@ -5,6 +5,7 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { ListProjectMembers200DataItemFunction } from './listProjectMembers200DataItemFunction.ts';
 import type { ListProjectMembers200DataItemRole } from './listProjectMembers200DataItemRole.ts';
 import type { ListProjectMembers200DataItemUser } from './listProjectMembers200DataItemUser.ts';
 
@@ -13,6 +14,8 @@ export type ListProjectMembers200DataItem = {
   projectId: string;
   userId: string;
   role: ListProjectMembers200DataItemRole;
+  /** @nullable */
+  function: ListProjectMembers200DataItemFunction;
   createdAt: string;
   user: ListProjectMembers200DataItemUser;
 };

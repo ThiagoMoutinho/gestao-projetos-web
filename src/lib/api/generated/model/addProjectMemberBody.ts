@@ -11,4 +11,10 @@ export type AddProjectMemberBody = {
   /** @minLength 1 */
   userId: string;
   role: AddProjectMemberBodyRole;
+  /**
+     * Função do catálogo (só com o acesso de Observador).
+     * @minLength 1
+     * @nullable
+     */
+  functionId?: string | null;
 };

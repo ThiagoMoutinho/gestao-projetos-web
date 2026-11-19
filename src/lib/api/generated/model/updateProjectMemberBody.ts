@@ -9,4 +9,10 @@ import type { UpdateProjectMemberBodyRole } from './updateProjectMemberBodyRole.
 
 export type UpdateProjectMemberBody = {
   role: UpdateProjectMemberBodyRole;
+  /**
+     * Função do catálogo; omitida, mantém a atual quando o acesso continua Observador.
+     * @minLength 1
+     * @nullable
+     */
+  functionId?: string | null;
 };
