@@ -69,6 +69,7 @@ import {
   type ProjectListRow,
   type ProjectStatus,
 } from "./project-portfolio";
+import { AVATAR_PALETTE } from "./people-stack";
 import { PROJECT_STATUS_COLOR as STATUS_COLOR, projectStatusKind, projectStatusLabel } from "./project-status";
 
 const PAGE_SIZES = ["10", "15", "25", "50"];
@@ -76,18 +77,6 @@ const PAGE_SIZES = ["10", "15", "25", "50"];
 const menuItem = "gap-2.5 rounded-md px-2.5 py-2 text-label [&_svg]:size-4 [&_svg]:text-muted-foreground";
 
 const TAB_LABEL: Record<PortfolioView, string> = { active: "Ativos", concluded: "Concluídos", archived: "Arquivados", all: "Todos" };
-
-/** Paleta suave de 8 cores para os avatares da equipe (fundo claro + iniciais escuras, contraste acima de 4,5:1). A cor vem só do ID da pessoa. */
-const AVATAR_PALETTE = [
-  "bg-sky-100 text-sky-900 dark:bg-sky-900/50 dark:text-sky-100",
-  "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100",
-  "bg-violet-100 text-violet-900 dark:bg-violet-900/50 dark:text-violet-100",
-  "bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-100",
-  "bg-rose-100 text-rose-900 dark:bg-rose-900/50 dark:text-rose-100",
-  "bg-teal-100 text-teal-900 dark:bg-teal-900/50 dark:text-teal-100",
-  "bg-indigo-100 text-indigo-900 dark:bg-indigo-900/50 dark:text-indigo-100",
-  "bg-orange-100 text-orange-900 dark:bg-orange-900/50 dark:text-orange-100",
-] as const;
 
 const focusRing = "focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none";
 

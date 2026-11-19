@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -65,6 +64,7 @@ import {
 import { EapStatusBadge, milestoneStatusKind, phaseStatusKind, taskStatusKind } from "./eap-status-badge";
 import { impedimentTone, overdueTone } from "./eap-tones";
 import { eapKindTile } from "./eap-ui";
+import { PeopleStack } from "./people-stack";
 import { phaseStatusLabel, taskStatusLabel } from "./project-records";
 
 const columns =
@@ -245,7 +245,7 @@ export function EapWorkbench({
           <span>Item da EAP</span>
           <span>Situação</span>
           <span>Andamento</span>
-          <span>Responsável</span>
+          <span className="text-center">Responsável</span>
           <span>Prioridade</span>
           <span>Início planejado</span>
           <span>Término planejado</span>
@@ -378,7 +378,7 @@ export function PhaseRow({
           value={progress.kind === "value" ? basisToPercent(progress.basisPoints) : null}
           done={phase.calculatedStatus === "CONCLUIDA"}
         />
-        <Owner name={phase.responsibleName ?? ""} />
+        <Owner entries={[{ id: phase.responsibleId, name: phase.responsibleName, role: "Responsável" }]} />
         <span className="text-[13px] text-muted-foreground" title="A prioridade é exclusiva das tarefas">—</span>
         <PlannedStart value={inicioText(phase.dates)} />
         <Due value={vigenteText(phase.dates)} overdue={overdue} late={finishedLate(phase) ? "Concluída após o prazo" : null} />
@@ -565,7 +565,12 @@ export function TaskRow({
           <EapStatusBadge kind={taskStatusKind(task.calculatedStatus)} label={task.statusLabel} />
         </StatusCell>
         <ProgressCell label={`${task.progressPercent}%`} value={task.progressPercent} done={task.calculatedStatus === "CONCLUIDA"} muted={task.calculatedStatus === "CANCELADA"} />
-        <Owner name={task.assigneeName} secondary={task.secondaryAssigneeName} />
+        <Owner
+          entries={[
+            { id: task.assigneeId, name: task.assigneeName, role: "Responsável principal" },
+            { id: task.secondaryAssigneeId, name: task.secondaryAssigneeName, role: "Apoio" },
+          ]}
+        />
         <PriorityIndicator priority={task.priority} />
         <PlannedStart value={inicioText(task.dates)} />
         <Due value={vigenteText(task.dates)} overdue={overdue} late={finishedLate(task) ? "Concluída após o prazo" : null} />
@@ -673,7 +678,12 @@ export function MilestoneRow({
         value={percent}
         done={milestone.status === "APROVADO"}
       />
-      <Owner name={milestone.presenterName ?? ""} secondary={milestone.reviewerName} />
+      <Owner
+        entries={[
+          { id: milestone.presenterId, name: milestone.presenterName, role: "Apresentador" },
+          { id: milestone.reviewerId, name: milestone.reviewerName, role: "Gestor validador" },
+        ]}
+      />
       <span className="text-[13px] text-muted-foreground" title="A prioridade é exclusiva das tarefas">—</span>
       <PlannedStart value={null} title="Marco tem data única" />
       <Due value={vigenteText(milestone.dates)} overdue={overdue} reason={milestoneDelayReason(milestone)} late={finishedLate(milestone) ? (milestone.type === "HOMOLOGACAO" ? "Homologado após o prazo" : "Aceito após o prazo") : null} />
@@ -793,36 +803,24 @@ function StatusCell({ children }: { children: ReactNode }) {
   return <span className="flex min-w-0 items-center">{children}</span>;
 }
 
-/** Responsável da linha. Com dois (segundo responsável da tarefa; apresentador e validador do marco): avatares sobrepostos, o nome do primeiro e "+1"; os dois nomes aparecem no título. */
-function Owner({ name, secondary }: { name: string; secondary?: string | null }) {
-  const people = [name, secondary ?? ""].filter((person) => person && person !== "Não informado");
+type OwnerEntry = { id: string | null; name: string | null; role: string };
+
+/**
+ * Responsáveis da linha, no padrão da coluna Equipe da lista de projetos: avatares coloridos sobrepostos (a cor vem do
+ * identificador da pessoa) e tooltip com nome e função. Tarefa: responsável principal e apoio; marco: apresentador e
+ * gestor validador; fase: responsável.
+ */
+function Owner({ entries }: { entries: ReadonlyArray<OwnerEntry> }) {
+  const people = entries
+    .filter((entry): entry is OwnerEntry & { name: string } => Boolean(entry.name) && entry.name !== "Não informado")
+    .map((entry) => ({ id: entry.id ?? entry.name, name: entry.name, detail: entry.role }));
   if (people.length === 0) {
-    return <span className="text-[13px] text-muted-foreground">—</span>;
+    return <span className="text-[13px] text-muted-foreground md:text-center">—</span>;
   }
-
-  if (people.length === 1) {
-    return (
-      <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-foreground/80">
-        <Avatar>
-          <AvatarFallback className="bg-primary/10 text-[0.7rem] font-bold text-primary">{initials(people[0])}</AvatarFallback>
-        </Avatar>
-        <span className="truncate">{people[0]}</span>
-      </span>
-    );
-  }
-
+  // Centralizada na coluna (como a Equipe da lista de projetos), para não ficar colada no andamento.
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-foreground/80" title={`${people[0]} e ${people[1]}`}>
-      <span className="flex shrink-0 -space-x-1.5" aria-hidden="true">
-        {people.map((person, position) => (
-          <Avatar key={`${position}-${person}`} className="ring-2 ring-card">
-            <AvatarFallback className="bg-primary/10 text-[0.7rem] font-bold text-primary">{initials(person)}</AvatarFallback>
-          </Avatar>
-        ))}
-      </span>
-      <span className="truncate">{people[0]}</span>
-      <span className="shrink-0 rounded-full bg-muted px-1.5 py-px text-[11px] font-semibold text-muted-foreground" aria-hidden="true">+1</span>
-      <span className="sr-only"> e {people[1]}</span>
+    <span className="flex md:justify-center">
+      <PeopleStack people={people} label="Responsáveis" />
     </span>
   );
 }
@@ -1061,10 +1059,4 @@ function countSignals(phases: ProjectPhaseView[]) {
 
 function includes(value: string | null | undefined, term: string) {
   return value?.toLocaleLowerCase("pt-BR").includes(term) ?? false;
-}
-
-function initials(name: string) {
-  const parts = name.split(/\s+/).filter((part) => part !== "·" && part !== "Demo" && part !== "-");
-  const source = parts.length > 0 ? parts : name.split(/\s+/);
-  return source.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("");
 }
