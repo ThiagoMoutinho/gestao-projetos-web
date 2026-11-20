@@ -784,6 +784,16 @@ html.theme-transition *::after {
   }
 }
 
+/* Menu lateral: expandir e recolher sem animação quando o usuário pede movimento reduzido. */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-container"],
+  [data-slot="sidebar-rail"],
+  [data-slot="sidebar-group-label"] {
+    transition: none !important;
+  }
+}
+
 /* Trilha das barras de progresso: token --track, mais visível que o muted em todas as aparências (o muted quase some sobre os cards). */
 [data-slot="progress-track"] {
   background-color: var(--track);

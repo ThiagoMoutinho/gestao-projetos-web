@@ -30,7 +30,7 @@ export function AppShell({
       >
         <AppHeader user={user} />
         <div className="flex min-w-0 flex-1">
-          <AppSidebar className="top-(--header-height) h-[calc(100svh-var(--header-height))]!" />
+          <AppSidebar user={user} className="top-(--header-height) h-[calc(100svh-var(--header-height))]!" />
           <SidebarInset className="min-w-0 bg-transparent">
             <AppBreadcrumb />
             <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 pt-2 md:p-6 md:pt-2">{children}</div>

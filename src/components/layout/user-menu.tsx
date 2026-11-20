@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Building2, Check, ChevronDown, ClipboardList, Loader2, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from "lucide-react";
+import { Bell, Building2, Check, ChevronDown, ChevronsUpDown, ClipboardList, Loader2, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -115,7 +115,8 @@ function useUnreadCount(active: boolean) {
 }
 
 /** Avatar da barra superior com o menu da conta: perfil, notificações, aparência, paleta e sair. */
-export function UserMenu({ user }: { user: AppUser }) {
+export function UserMenu({ user, variant = "header" }: { user: AppUser; variant?: "header" | "sidebar" }) {
+  const inSidebar = variant === "sidebar";
   const router = useRouter();
   const { theme, setTheme, palette, paletteLocked, setPalette } = useAppearance();
   const [pending, setPending] = useState(false);
@@ -141,33 +142,52 @@ export function UserMenu({ user }: { user: AppUser }) {
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <SquircleDefs />
-      <DropdownMenuTrigger
-        aria-label={`Menu da conta de ${user.name}`}
-        className="group/user flex shrink-0 items-center gap-2.5 rounded-full border border-bar-border bg-bar-foreground/6 py-1 pr-2 pl-1 outline-none transition-colors duration-200 hover:bg-bar-foreground/12 focus-visible:ring-2 focus-visible:ring-bar-foreground/60 data-open:bg-bar-foreground/14 motion-reduce:transition-none lg:pr-3"
-      >
-        <span
-          style={SQUIRCLE_STYLE}
-          className="flex h-[45px] w-[50px] shrink-0 items-center justify-center bg-bar-muted p-[2px] transition-[background-color,filter] duration-200 dark:bg-[color-mix(in_oklch,var(--primary)_45%,white)] group-hover/user:bg-white group-hover/user:brightness-105 group-focus-visible/user:bg-white group-data-open/user:bg-white dark:group-data-open/user:bg-white motion-reduce:transition-none"
+      {inSidebar ? null : <SquircleDefs />}
+      {inSidebar ? (
+        <DropdownMenuTrigger
+          aria-label={`Menu da conta de ${user.name}`}
+          className="mx-auto flex w-full items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-2 text-left text-sidebar-foreground outline-none transition-colors duration-200 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-open:bg-sidebar-accent motion-reduce:transition-none group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0"
         >
-          <Avatar className="size-full rounded-none after:hidden" style={SQUIRCLE_STYLE}>
+          <Avatar className="size-9 shrink-0">
             {user.image ? <AvatarImage src={user.image} alt="" className="object-cover" /> : null}
-            {/* Segue a paleta escolhida: degradê primary→brand no claro/IGEPPS; no escuro, o primary da paleta escurecido (a paleta só muda os destaques lá) com iniciais brancas em semibold; o contorno claro vem do botão. */}
-            <AvatarFallback className="rounded-none bg-linear-to-br from-primary to-brand text-body font-semibold tracking-wide text-white dark:from-[color-mix(in_oklch,var(--primary)_72%,black)] dark:to-[color-mix(in_oklch,var(--primary)_54%,black)] dark:in-data-[palette=grafite]:from-[#454d5b] dark:in-data-[palette=grafite]:to-[#272d38]">
+            <AvatarFallback className="bg-linear-to-br from-primary to-brand text-xs font-semibold tracking-wide text-white dark:from-[color-mix(in_oklch,var(--primary)_72%,black)] dark:to-[color-mix(in_oklch,var(--primary)_54%,black)] dark:in-data-[palette=grafite]:from-[#454d5b] dark:in-data-[palette=grafite]:to-[#272d38]">
               {initials(user.name)}
             </AvatarFallback>
           </Avatar>
-        </span>
-        <span className="hidden min-w-0 max-w-40 flex-col text-left leading-tight text-bar-foreground lg:flex">
-          <span className="truncate text-body font-semibold">{user.name}</span>
-          {profile ? <span className="truncate text-label text-bar-foreground/70">{profile}</span> : null}
-        </span>
-        <ChevronDown
-          className="hidden size-4 shrink-0 text-bar-foreground/70 transition-transform duration-200 group-data-open/user:rotate-180 motion-reduce:transition-none lg:block"
-          aria-hidden="true"
-        />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={10} className="glass-menu w-[21rem] rounded-2xl p-0 shadow-xl">
+          <span className="grid min-w-0 flex-1 leading-tight group-data-[collapsible=icon]:hidden">
+            <span className="truncate text-xs font-semibold">{user.name}</span>
+            {profile ? <span className="truncate text-[10px] text-sidebar-foreground/70">{profile}</span> : null}
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden" aria-hidden="true" />
+        </DropdownMenuTrigger>
+      ) : (
+        <DropdownMenuTrigger
+          aria-label={`Menu da conta de ${user.name}`}
+          className="group/user flex shrink-0 items-center gap-2.5 rounded-full border border-bar-border bg-bar-foreground/6 py-1 pr-2 pl-1 outline-none transition-colors duration-200 hover:bg-bar-foreground/12 focus-visible:ring-2 focus-visible:ring-bar-foreground/60 data-open:bg-bar-foreground/14 motion-reduce:transition-none lg:pr-3"
+        >
+          <span
+            style={SQUIRCLE_STYLE}
+            className="flex h-[45px] w-[50px] shrink-0 items-center justify-center bg-bar-muted p-[2px] transition-[background-color,filter] duration-200 dark:bg-[color-mix(in_oklch,var(--primary)_45%,white)] group-hover/user:bg-white group-hover/user:brightness-105 group-focus-visible/user:bg-white group-data-open/user:bg-white dark:group-data-open/user:bg-white motion-reduce:transition-none"
+          >
+            <Avatar className="size-full rounded-none after:hidden" style={SQUIRCLE_STYLE}>
+              {user.image ? <AvatarImage src={user.image} alt="" className="object-cover" /> : null}
+              {/* Segue a paleta escolhida: degradê primary→brand no claro/IGEPPS; no escuro, o primary da paleta escurecido (a paleta só muda os destaques lá) com iniciais brancas em semibold; o contorno claro vem do botão. */}
+              <AvatarFallback className="rounded-none bg-linear-to-br from-primary to-brand text-body font-semibold tracking-wide text-white dark:from-[color-mix(in_oklch,var(--primary)_72%,black)] dark:to-[color-mix(in_oklch,var(--primary)_54%,black)] dark:in-data-[palette=grafite]:from-[#454d5b] dark:in-data-[palette=grafite]:to-[#272d38]">
+                {initials(user.name)}
+              </AvatarFallback>
+            </Avatar>
+          </span>
+          <span className="hidden min-w-0 max-w-40 flex-col text-left leading-tight text-bar-foreground lg:flex">
+            <span className="truncate text-body font-semibold">{user.name}</span>
+            {profile ? <span className="truncate text-label text-bar-foreground/70">{profile}</span> : null}
+          </span>
+          <ChevronDown
+            className="hidden size-4 shrink-0 text-bar-foreground/70 transition-transform duration-200 group-data-open/user:rotate-180 motion-reduce:transition-none lg:block"
+            aria-hidden="true"
+          />
+        </DropdownMenuTrigger>
+      )}
+      <DropdownMenuContent align={inSidebar ? "start" : "end"} side={inSidebar ? "top" : "bottom"} sideOffset={inSidebar ? 8 : 10} className="glass-menu w-[21rem] rounded-2xl p-0 shadow-xl">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
             <span className="relative flex items-center gap-3.5 rounded-t-2xl border-b border-border/70 px-4 py-5 text-left">

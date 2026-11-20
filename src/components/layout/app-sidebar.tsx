@@ -6,6 +6,8 @@ import {
   FileText,
   Flag,
   History,
+  ChevronsUpDown,
+  FolderKanban,
   LayoutDashboard,
   Network,
   Users,
@@ -19,6 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -42,9 +45,34 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { useAccessibleProjects } from "./accessible-projects";
+import { ownerInitials } from "@/modules/projects/project-portfolio";
+import { PROJECT_STATUS_COLOR, projectStatusLabel } from "@/modules/projects/project-status";
+import { type AccessibleProject, useAccessibleProjects } from "./accessible-projects";
+import type { AppUser } from "./app-header";
 import { APP_NAV_GROUPS, type AppNavChild, type AppNavItem } from "./app-nav";
 import { SidebarActiveIndicator } from "./sidebar-active-indicator";
+import { UserMenu } from "./user-menu";
+
+/** Título de seção: pequeno, em caixa alta e discreto; no recolhido some (o componente base já o esconde). */
+const GROUP_LABEL = "h-7 px-3 text-[10px] font-semibold tracking-[0.12em] text-sidebar-foreground/55 uppercase";
+
+/** Seções depois da primeira ganham um filete e respiro; recolhido, o separador curto vem do globals.css. */
+const GROUP_DIVIDER = "not-first:mt-1 not-first:border-t not-first:border-sidebar-border/60 not-first:pt-2 group-data-[collapsible=icon]:border-t-0 group-data-[collapsible=icon]:pt-0";
+
+/** Nome do item indisponível com a legenda "Em breve" embaixo (cabe sem quebrar o nome; some no menu recolhido). */
+function SoonLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="grid min-w-0 leading-tight">
+      <span className="truncate">
+        {children}
+        <span className="sr-only">, indisponível</span>
+      </span>
+      <span className="text-[10px] font-normal text-sidebar-foreground/60" aria-hidden="true">
+        Em breve
+      </span>
+    </span>
+  );
+}
 
 function itemTooltip(label: string, enabled: boolean) {
   return enabled ? label : `${label}, indisponível`;
@@ -126,10 +154,7 @@ function NavItem({ item, pathname }: { item: AppNavItem; pathname: string }) {
           className="aria-disabled:pointer-events-auto"
         >
           <Icon className="size-4 shrink-0" />
-          <span>
-            {item.label}
-            <span className="sr-only">, indisponível</span>
-          </span>
+          <SoonLabel>{item.label}</SoonLabel>
         </SidebarMenuButton>
       )}
     </SidebarMenuItem>
@@ -159,8 +184,8 @@ function ProjectNav({ projectId, eapOpen, scheduleOpen }: { projectId: string | 
 
   return (
     <>
-      <SidebarGroup>
-        <SidebarGroupLabel>Projeto</SidebarGroupLabel>
+      <SidebarGroup className={GROUP_DIVIDER}>
+        <SidebarGroupLabel className={GROUP_LABEL}>Projeto</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu className="gap-1">
             <SidebarMenuItem>
@@ -203,10 +228,7 @@ function ProjectNav({ projectId, eapOpen, scheduleOpen }: { projectId: string | 
               <SidebarMenuItem key={label}>
                 <SidebarMenuButton tooltip={`${label}, indisponível`} {...disabledProps}>
                   <Icon className="size-4 shrink-0" />
-                  <span>
-                    {label}
-                    <span className="sr-only">, indisponível</span>
-                  </span>
+                  <SoonLabel>{label}</SoonLabel>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
@@ -217,13 +239,36 @@ function ProjectNav({ projectId, eapOpen, scheduleOpen }: { projectId: string | 
   );
 }
 
+type SwitcherOption = ComboOption & { status: AccessibleProject["status"] };
+
+/** Bloco com as iniciais do projeto, como o do cabeçalho da Visão Geral; sem projeto mostra o ícone de pasta. */
+function ProjectTile({ name, className }: { name: string | null; className?: string }) {
+  return (
+    <span
+      className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground", className)}
+      aria-hidden="true"
+    >
+      {name ? ownerInitials(name) : <FolderKanban className="size-4" />}
+    </span>
+  );
+}
+
+function StatusLine({ status }: { status: AccessibleProject["status"] }) {
+  return (
+    <span className="flex items-center gap-1.5 truncate text-[10px] text-sidebar-foreground/70" title="Situação registrada no cadastro do projeto">
+      <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: PROJECT_STATUS_COLOR[status] }} aria-hidden="true" />
+      <span className="truncate">{projectStatusLabel(status)}</span>
+    </span>
+  );
+}
+
 function ProjectSwitcher({
   projects,
   currentProject,
   eapOpen,
   scheduleOpen,
 }: {
-  projects: ComboOption[] | null;
+  projects: SwitcherOption[] | null;
   currentProject: string | undefined;
   eapOpen: boolean;
   scheduleOpen: boolean;
@@ -243,47 +288,71 @@ function ProjectSwitcher({
   }
 
   return (
-    <div className="group-data-[collapsible=icon]:hidden">
-      <Combobox
-        items={projects}
-        value={selected}
-        onValueChange={(next: ComboOption | null) => select(next?.value ?? "")}
-        itemToStringLabel={(option: ComboOption) => option.label}
-        isItemEqualToValue={(item: ComboOption, current: ComboOption) => item.value === current.value}
-      >
-        <ComboboxTrigger
-          aria-label="Selecionar projeto"
-          className="flex w-full items-center gap-2.5 rounded-lg border border-sidebar-border bg-sidebar-accent p-2.5 text-left text-sidebar-accent-foreground transition-colors hover:bg-sidebar-accent/80 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none [&>svg]:ml-auto [&>svg]:shrink-0 [&>svg]:text-sidebar-foreground/80"
+    <>
+      {/* Recolhido: só o bloco com as iniciais (o nome fica acessível e no title). */}
+      <div className="hidden justify-center group-data-[collapsible=icon]:flex">
+        <ProjectTile name={selected?.label ?? null} className="size-10" />
+        <span className="sr-only">{selected ? `Projeto selecionado: ${selected.label}` : "Nenhum projeto selecionado"}</span>
+      </div>
+      <div className="group-data-[collapsible=icon]:hidden">
+        <Combobox
+          items={projects}
+          value={selected}
+          onValueChange={(next: SwitcherOption | null) => select(next?.value ?? "")}
+          itemToStringLabel={(option: SwitcherOption) => option.label}
+          isItemEqualToValue={(item: SwitcherOption, current: SwitcherOption) => item.value === current.value}
         >
-          <span className="grid min-w-0 flex-1 leading-tight">
-            <span className="truncate text-[10px] text-sidebar-foreground/70">Projeto selecionado</span>
-            <span className="truncate text-xs font-semibold">{selected?.label ?? "Selecione um projeto"}</span>
-          </span>
-        </ComboboxTrigger>
-        <ComboboxContent className="min-w-64">
-          <ComboboxInput placeholder="Buscar projeto..." showTrigger={false} />
-          <ComboboxEmpty>Nenhum projeto encontrado.</ComboboxEmpty>
-          <ComboboxList>
-            {(option: ComboOption) => (
-              <ComboboxItem key={option.value} value={option}>
-                <span className="truncate">{option.label}</span>
-              </ComboboxItem>
-            )}
-          </ComboboxList>
-        </ComboboxContent>
-      </Combobox>
-    </div>
+          <ComboboxTrigger
+            aria-label={selected ? `Projeto selecionado: ${selected.label}. Trocar de projeto` : "Selecionar projeto"}
+            className="flex w-full items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-2 text-left text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none data-open:bg-sidebar-accent motion-reduce:transition-none [&>svg]:hidden"
+          >
+            <ProjectTile name={selected?.label ?? null} />
+            <span className="grid min-w-0 flex-1 leading-tight">
+              {selected ? (
+                <>
+                  <span className="truncate text-xs font-semibold">{selected.label}</span>
+                  <StatusLine status={selected.status} />
+                </>
+              ) : (
+                <>
+                  <span className="truncate text-xs font-semibold">Selecione um projeto</span>
+                  <span className="truncate text-[10px] text-sidebar-foreground/70">Para abrir Visão Geral, EAP e Cronograma</span>
+                </>
+              )}
+            </span>
+            <ChevronsUpDown className="size-4 shrink-0 text-sidebar-foreground/60" aria-hidden="true" />
+          </ComboboxTrigger>
+          <ComboboxContent className="min-w-64">
+            <ComboboxInput placeholder="Buscar projeto..." showTrigger={false} />
+            <ComboboxEmpty>Nenhum projeto encontrado.</ComboboxEmpty>
+            <ComboboxList>
+              {(option: SwitcherOption) => (
+                <ComboboxItem key={option.value} value={option}>
+                  <span className="grid min-w-0 leading-tight">
+                    <span className="truncate">{option.label}</span>
+                    <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: PROJECT_STATUS_COLOR[option.status] }} aria-hidden="true" />
+                      {projectStatusLabel(option.status)}
+                    </span>
+                  </span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
+    </>
   );
 }
 
-export function AppSidebar({ className }: { className?: string }) {
+export function AppSidebar({ className, user }: { className?: string; user: AppUser }) {
   const pathname = usePathname();
   const tab = useSearchParams().get("aba");
   const eapOpen = tab === "eap";
   const scheduleOpen = tab === "cronograma";
   const { projects: accessible } = useAccessibleProjects();
-  const projects: ComboOption[] | null = useMemo(
-    () => accessible?.map((project) => ({ value: project.id, label: project.name })) ?? null,
+  const projects: SwitcherOption[] | null = useMemo(
+    () => accessible?.map((project) => ({ value: project.id, label: project.name, status: project.status })) ?? null,
     [accessible],
   );
   const routeProject = pathname.match(/^\/projetos\/([^/]+)$/)?.[1];
@@ -291,7 +360,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
   return (
     <Sidebar collapsible="icon" className={className}>
-      <SidebarHeader className="overflow-hidden group-data-[collapsible=icon]:hidden">
+      <SidebarHeader className="overflow-hidden">
         <ProjectSwitcher projects={projects} currentProject={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} />
       </SidebarHeader>
       <SidebarContent className="relative">
@@ -299,8 +368,8 @@ export function AppSidebar({ className }: { className?: string }) {
         {APP_NAV_GROUPS.map((group) => (
           <Fragment key={group.label}>
             {group.label === "Gestão" ? <ProjectNav projectId={currentProject} eapOpen={eapOpen} scheduleOpen={scheduleOpen} /> : null}
-            <SidebarGroup>
-              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroup className={GROUP_DIVIDER}>
+              <SidebarGroupLabel className={GROUP_LABEL}>{group.label}</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-1">
                   {group.items.map((item) => (
@@ -312,6 +381,9 @@ export function AppSidebar({ className }: { className?: string }) {
           </Fragment>
         ))}
       </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border/60">
+        <UserMenu user={user} variant="sidebar" />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
