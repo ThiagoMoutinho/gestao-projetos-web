@@ -945,13 +945,9 @@ header.sticky :focus-visible {
   --bar-foreground: #f6f8fb;
   --bar-muted: #c9d0da;
   --bar-border: rgb(255 255 255 / 16%);
-  --sidebar: rgb(20 23 30 / 78%);
-  --sidebar-foreground: #f3f5f8;
-  --sidebar-accent: color-mix(in oklch, #ffffff 14%, transparent);
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgb(255 255 255 / 10%);
-  --sidebar-ring: #aeb8c6;
-  --sidebar-marker: #cfd6e0;
+  /* Menu lateral no padrão das outras paletas no Claro: vidro claro, texto escuro e item ativo na cor da marca (grafite). */
+  --sidebar: rgb(255 255 255 / 62%);
+  --sidebar-border: rgb(43 49 59 / 18%);
 }
 .dark[data-palette="grafite"] {
   --primary: #c3ccd8;
@@ -1013,7 +1009,7 @@ header.sticky :focus-visible {
   .light[data-palette="grafite"] {
     --popover: #ffffff;
     --bar: #12151b;
-    --sidebar: #14171e;
+    --sidebar: #ffffff;
   }
   .dark[data-palette="grafite"] {
     --popover: #1e2536;
