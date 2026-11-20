@@ -187,6 +187,14 @@ export function statusChips(rows: ReadonlyArray<Pick<ProjectListRow, "status">>)
   return STATUS_CHIPS.map((chip) => ({ ...chip, value: counts[chip.key] ?? 0 }));
 }
 
+/** Participação (0 a 100, inteiro) de uma situação no portfólio; sem projetos, 0. Calculada, nunca fixa. */
+export function statusShare(value: number, total: number): number {
+  if (total <= 0 || value <= 0) {
+    return 0;
+  }
+  return Math.min(100, Math.round((value / total) * 100));
+}
+
 /** Iniciais do gestor para o avatar (primeira e última palavra do nome). */
 export function ownerInitials(name: string | null) {
   const words = (name ?? "").trim().split(/\s+/).filter(Boolean);

@@ -17,7 +17,15 @@ import {
   EllipsisVertical,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
+  CircleCheck,
+  CircleDashed,
+  Activity,
+  OctagonAlert,
   Search,
+  TriangleAlert,
+  X,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -60,6 +68,7 @@ import {
   SORT_LABEL,
   sortPortfolio,
   statusChips,
+  statusShare,
   TEAM_ROLE_LABEL,
   teamPreview,
   unavailableSituations,
@@ -80,26 +89,119 @@ const TAB_LABEL: Record<PortfolioView, string> = { active: "Ativos", concluded: 
 
 const focusRing = "focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none";
 
-/** Ponto colorido com halo suave, na cor da situação (token --status-*). */
-function dotStyle(color: string) {
-  return { backgroundColor: color, boxShadow: `0 0 0 3px color-mix(in oklch, ${color} 15%, transparent)` };
-}
-
 function PageHeader({ eapPrompt = false, actions }: { eapPrompt?: boolean; actions?: ReactNode }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3">
-      <div className="min-w-0">
-        <span className="block text-label font-bold tracking-[0.14em] text-primary uppercase">Portfólio institucional</span>
-        <h1 className="mt-1.5 text-page-title font-medium tracking-tight text-foreground">Projetos</h1>
-        <p className="mt-1 text-body text-muted-foreground">Situação, prazo e responsáveis de cada projeto da CTIN.</p>
-        {eapPrompt ? (
-          <p className="mt-3 max-w-xl rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-body text-primary">
-            Selecione um projeto para abrir a Estrutura Analítica.
-          </p>
-        ) : null}
+    <header className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground" aria-hidden="true">
+          <FolderKanban className="size-6" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-primary uppercase">Portfólio institucional</p>
+          <h1 className="text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">Projetos</h1>
+          <p className="text-body text-muted-foreground">Situação, prazo e responsáveis de cada projeto da CTIN.</p>
+        </div>
       </div>
       {actions}
+      {eapPrompt ? (
+        <p className="w-full max-w-xl rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-body text-primary">
+          Selecione um projeto para abrir a Estrutura Analítica.
+        </p>
+      ) : null}
     </header>
+  );
+}
+
+/** Aparência de cada cartão de situação: ícone em bloco na cor da situação (tokens --status-*) e a cor da barra de participação. */
+const SITUATION_CARD: Record<string, { icon: LucideIcon; tile: string; bar: string }> = {
+  total: { icon: FolderKanban, tile: "bg-primary/10 text-primary", bar: "var(--primary)" },
+  CRITICO: { icon: OctagonAlert, tile: "bg-status-critical-soft text-status-critical-ink", bar: STATUS_COLOR.CRITICO },
+  EM_ATENCAO: { icon: TriangleAlert, tile: "bg-status-attention-soft text-status-attention-ink", bar: STATUS_COLOR.EM_ATENCAO },
+  EM_EXECUCAO: { icon: Activity, tile: "bg-status-running-soft text-status-running-ink", bar: STATUS_COLOR.EM_EXECUCAO },
+  EM_VALIDACAO: { icon: ClipboardCheck, tile: "bg-status-validation-soft text-status-validation-ink", bar: STATUS_COLOR.EM_VALIDACAO },
+  NAO_INICIADO: { icon: CircleDashed, tile: "bg-status-idle-soft text-status-idle-ink", bar: STATUS_COLOR.NAO_INICIADO },
+  CONCLUIDO: { icon: CircleCheck, tile: "bg-status-done-soft text-status-done-ink", bar: STATUS_COLOR.CONCLUIDO },
+};
+
+/**
+ * Cartões de situação do topo: contagem e participação de cada situação no portfólio, calculadas dos próprios projetos.
+ * Cada cartão é um filtro (botão com aria-pressed); o ativo volta para Todos ao ser clicado de novo.
+ */
+function SituationCards({
+  chips,
+  isActive,
+  onSelect,
+}: {
+  chips: ReadonlyArray<{ key: string; label: string; value: number }>;
+  isActive: (key: string) => boolean;
+  onSelect: (key: string, active: boolean) => void;
+}) {
+  const total = chips.find((chip) => chip.key === "total")?.value ?? 0;
+  return (
+    <section aria-label="Situação dos projetos" className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-7">
+      {chips.map((chip) => {
+        const meta = SITUATION_CARD[chip.key];
+        const Icon = meta.icon;
+        const active = isActive(chip.key);
+        const share = chip.key === "total" ? null : statusShare(chip.value, total);
+        const noun = chip.value === 1 ? "projeto" : "projetos";
+        return (
+          <button
+            key={chip.key}
+            type="button"
+            aria-pressed={active}
+            aria-label={`${chip.label}: ${chip.value} ${noun}${share === null ? "" : `, ${share}% do portfólio`}`}
+            title={share === null ? `${chip.value} ${noun} no portfólio` : `${share}% do portfólio`}
+            onClick={() => onSelect(chip.key, active)}
+            className={cn(
+              "relative flex min-w-0 items-center gap-2.5 overflow-hidden rounded-xl border bg-card px-3 py-2.5 text-left shadow-xs transition-[border-color,box-shadow,background-color] duration-200 hover:border-primary/40 hover:shadow-sm motion-reduce:transition-none",
+              focusRing,
+              active ? "border-primary bg-primary/[0.05] ring-1 ring-primary" : "border-border",
+            )}
+          >
+            <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", meta.tile)} aria-hidden="true">
+              <Icon className="size-4" />
+            </span>
+            <span className="grid min-w-0 flex-1 leading-tight">
+              <span className="flex items-baseline gap-1.5">
+                <span className="text-lg font-semibold tracking-tight text-foreground tabular-nums">{chip.value}</span>
+                {share === null ? null : <span className="text-label text-muted-foreground tabular-nums">{share}%</span>}
+              </span>
+              <span className="truncate text-label text-muted-foreground">{chip.label}</span>
+            </span>
+            {active ? <Check className="size-4 shrink-0 text-primary" aria-hidden="true" /> : null}
+            <span className="absolute inset-x-0 bottom-0 h-[3px] bg-muted" aria-hidden="true">
+              <span
+                className="block h-full transition-[width] duration-300 ease-out motion-reduce:transition-none"
+                style={{ width: `${share ?? (total > 0 ? 100 : 0)}%`, backgroundColor: meta.bar }}
+              />
+            </span>
+          </button>
+        );
+      })}
+    </section>
+  );
+}
+
+/** Etiquetas dos filtros em uso, cada uma com o botão de remover (a situação vem dos cartões do topo). */
+function ActiveFilters({ tags }: { tags: ReadonlyArray<{ key: string; text: string; onRemove: () => void }> }) {
+  if (tags.length === 0) return null;
+  return (
+    <ul aria-label="Filtros ativos" className="flex flex-wrap items-center gap-2">
+      {tags.map((tag) => (
+        <li key={tag.key} className="inline-flex max-w-full items-center gap-1 rounded-full border border-primary/25 bg-primary/10 py-0.5 pr-1 pl-2.5 text-label text-primary">
+          <span className="truncate">{tag.text}</span>
+          <button
+            type="button"
+            onClick={tag.onRemove}
+            aria-label={`Remover filtro: ${tag.text}`}
+            className={cn("flex size-5 shrink-0 items-center justify-center rounded-full hover:bg-primary/15", focusRing)}
+          >
+            <X className="size-3" aria-hidden="true" />
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -132,6 +234,7 @@ export function ProjectList({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const chips = useMemo(() => statusChips(projects), [projects]);
+  const statusLabel = useMemo(() => new Map(chips.map((chip) => [chip.key, chip.label])), [chips]);
   const unavailable = useMemo(() => unavailableSituations(projects), [projects]);
   const options = useMemo(() => filterOptions(projects), [projects]);
   const visible = useMemo(() => sortPortfolio(filterPortfolio(projects, filters, view), sort), [projects, filters, view, sort]);
@@ -182,7 +285,7 @@ export function ProjectList({
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-5">
+    <div className="flex w-full min-w-0 flex-col gap-[18px]">
       <PageHeader
         eapPrompt={eapPrompt}
         actions={
@@ -195,29 +298,11 @@ export function ProjectList({
         }
       />
 
-      <section aria-label="Situação dos projetos" className="flex flex-wrap gap-2">
-        {chips.map((chip) => {
-          const active =
-            chip.key === "total" ? view === "all" && filters.status === "" : chip.key === "CONCLUIDO" ? view === "concluded" : filters.status === chip.key;
-          return (
-            <Button
-              key={chip.key}
-              type="button"
-              variant="outline"
-              aria-pressed={active}
-              onClick={() => selectChip(chip.key, active)}
-              className={cn("h-8 rounded-full px-3 text-label", active ? "border-primary bg-primary/10 font-semibold text-primary hover:bg-primary/10" : "bg-card")}
-            >
-              {active ? <Check className="size-3.5 shrink-0" aria-hidden="true" /> : null}
-              {chip.key === "total" ? null : (
-                <span className="size-2 shrink-0 rounded-full" style={dotStyle(STATUS_COLOR[chip.key])} aria-hidden="true" />
-              )}
-              {chip.label}
-              <span className="font-semibold tabular-nums">{chip.value}</span>
-            </Button>
-          );
-        })}
-      </section>
+      <SituationCards
+        chips={chips}
+        isActive={(key) => (key === "total" ? view === "all" && filters.status === "" : key === "CONCLUIDO" ? view === "concluded" : filters.status === key)}
+        onSelect={selectChip}
+      />
       {unavailable > 0 ? (
         <p className="-mt-2 text-label text-muted-foreground">
           {unavailable === 1
@@ -252,7 +337,7 @@ export function ProjectList({
                 value={filters.query}
                 onChange={(event) => updateFilters({ query: event.target.value })}
                 placeholder="Pesquisar por nome, GLPI ou identificador..."
-                className="h-9 pl-9 text-body"
+                className="h-10 rounded-[7px] pl-9 text-xs"
               />
             </label>
             {options.suppliers.length > 0 ? (
@@ -298,6 +383,14 @@ export function ProjectList({
               </TabsList>
             </Tabs>
           </div>
+          <ActiveFilters
+            tags={[
+              ...(filters.status ? [{ key: "status", text: `Situação: ${statusLabel.get(filters.status) ?? filters.status}`, onRemove: () => updateFilters({ status: "" }) }] : []),
+              ...(filters.supplier ? [{ key: "supplier", text: `Fornecedor: ${filters.supplier}`, onRemove: () => updateFilters({ supplier: "" }) }] : []),
+              ...(filters.owner ? [{ key: "owner", text: `Gestor: ${filters.owner}`, onRemove: () => updateFilters({ owner: "" }) }] : []),
+              ...(filters.query.trim() ? [{ key: "query", text: `Busca: ${filters.query.trim()}`, onRemove: () => updateFilters({ query: "" }) }] : []),
+            ]}
+          />
           <div className="flex items-center justify-between gap-3 text-label text-muted-foreground">
             <span aria-live="polite">
               {visible.length === 1 ? "1 projeto encontrado" : `${visible.length} projetos encontrados`} · ordenados por {SORT_LABEL[sort.key]} (
@@ -343,7 +436,7 @@ export function ProjectList({
         ) : (
           <div className="relative w-full min-w-0 overflow-x-auto border-t border-border">
             <table className="w-full min-w-[1040px] text-left">
-              <thead className="bg-muted/60 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+              <thead className="bg-muted/50 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
                 <tr className="border-b border-border">
                   <SortHeader label="Projeto" sortKey="name" sort={sort} onSort={toggleSort} className="pl-4" />
                   <th scope="col" className="px-2.5 py-4">Fornecedor</th>
@@ -467,7 +560,7 @@ function ProjectRow({
       onClick={handleClick}
       style={attention && project.status ? { boxShadow: `inset 3px 0 0 ${STATUS_COLOR[project.status]}` } : undefined}
       className={cn(
-        "cursor-pointer border-b border-border/60 align-middle text-body transition-colors duration-200 last:border-b-0 even:bg-muted/30 hover:bg-primary/5 motion-reduce:transition-none",
+        "cursor-pointer border-b border-border/60 align-middle text-body transition-colors duration-200 last:border-b-0 hover:bg-primary/5 motion-reduce:transition-none",
         opening && "bg-primary/5",
       )}
     >

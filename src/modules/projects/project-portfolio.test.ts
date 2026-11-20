@@ -20,6 +20,7 @@ import {
   delayCell,
   ownerInitials,
   statusChips,
+  statusShare,
   matchesView,
   PORTFOLIO_VIEWS,
   type ProjectListRow,
@@ -197,5 +198,21 @@ describe("Portfólio de projetos", () => {
       assert.ok(Number.isInteger(index) && index >= 0 && index < 8);
     }
     assert.equal(new Set(ids.map((id) => avatarColorIndex(id))).size, 8);
+  });
+});
+
+describe("participação da situação no portfólio", () => {
+  it("calcula a porcentagem dos próprios projetos, sem valores fixos", () => {
+    assert.equal(statusShare(7, 12), 58);
+    assert.equal(statusShare(1, 3), 33);
+    assert.equal(statusShare(12, 12), 100);
+    assert.equal(statusShare(0, 12), 0);
+  });
+
+  it("portfólio vazio ou valores inválidos não geram NaN nem passam de 100", () => {
+    assert.equal(statusShare(0, 0), 0);
+    assert.equal(statusShare(5, 0), 0);
+    assert.equal(statusShare(-1, 10), 0);
+    assert.equal(statusShare(15, 10), 100);
   });
 });
