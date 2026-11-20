@@ -21,7 +21,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -48,10 +47,8 @@ import {
 import { ownerInitials } from "@/modules/projects/project-portfolio";
 import { PROJECT_STATUS_COLOR, projectStatusLabel } from "@/modules/projects/project-status";
 import { type AccessibleProject, useAccessibleProjects } from "./accessible-projects";
-import type { AppUser } from "./app-header";
 import { APP_NAV_GROUPS, type AppNavChild, type AppNavItem } from "./app-nav";
 import { SidebarActiveIndicator } from "./sidebar-active-indicator";
-import { UserMenu } from "./user-menu";
 
 /** Título de seção: pequeno, em caixa alta e discreto; no recolhido some (o componente base já o esconde). */
 const GROUP_LABEL = "h-7 px-3 text-[10px] font-semibold tracking-[0.12em] text-sidebar-foreground/55 uppercase";
@@ -345,7 +342,7 @@ function ProjectSwitcher({
   );
 }
 
-export function AppSidebar({ className, user }: { className?: string; user: AppUser }) {
+export function AppSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const tab = useSearchParams().get("aba");
   const eapOpen = tab === "eap";
@@ -381,9 +378,6 @@ export function AppSidebar({ className, user }: { className?: string; user: AppU
           </Fragment>
         ))}
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border/60">
-        <UserMenu user={user} variant="sidebar" />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
