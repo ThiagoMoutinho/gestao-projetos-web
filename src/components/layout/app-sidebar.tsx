@@ -6,7 +6,7 @@ import {
   FileText,
   Flag,
   History,
-  ChevronsUpDown,
+  ChevronDown,
   FolderKanban,
   LayoutDashboard,
   Network,
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Fragment, useMemo } from "react";
+import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -33,6 +33,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ComboOption } from "@/components/option-combobox";
 import {
@@ -44,7 +45,6 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { ownerInitials } from "@/modules/projects/project-portfolio";
 import { PROJECT_STATUS_COLOR, projectStatusLabel } from "@/modules/projects/project-status";
 import { type AccessibleProject, useAccessibleProjects } from "./accessible-projects";
 import { APP_NAV_GROUPS, type AppNavChild, type AppNavItem } from "./app-nav";
@@ -238,24 +238,62 @@ function ProjectNav({ projectId, eapOpen, scheduleOpen }: { projectId: string | 
 
 type SwitcherOption = ComboOption & { status: AccessibleProject["status"] };
 
-/** Bloco com as iniciais do projeto, como o do cabeçalho da Visão Geral; sem projeto mostra o ícone de pasta. */
+/** Iniciais do projeto: primeira e última palavra com letra ou número ("Homologação do Firewall Dados ." vira HD, não "H."). */
+function projectInitials(name: string) {
+  const words = name.split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word));
+  if (words.length === 0) {
+    return "?";
+  }
+  const first = Array.from(words[0].replace(/[^\p{L}\p{N}]/gu, ""));
+  const letters = words.length === 1 ? first.slice(0, 2).join("") : `${first[0] ?? ""}${Array.from(words[words.length - 1].replace(/[^\p{L}\p{N}]/gu, ""))[0] ?? ""}`;
+  return letters.toLocaleUpperCase("pt-BR");
+}
+
+/** Bloco com as iniciais do projeto, como o do cabeçalho da Visão Geral; sem projeto mostra o ícone de pasta. Mesmo tamanho no cartão e na lista. */
 function ProjectTile({ name, className }: { name: string | null; className?: string }) {
   return (
     <span
-      className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground", className)}
+      className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-semibold tracking-wide text-sidebar-primary-foreground", className)}
       aria-hidden="true"
     >
-      {name ? ownerInitials(name) : <FolderKanban className="size-4" />}
+      {name ? projectInitials(name) : <FolderKanban className="size-4" />}
     </span>
   );
 }
 
-function StatusLine({ status }: { status: AccessibleProject["status"] }) {
+/** Indicador de situação: o mesmo ponto (8 px com halo suave) e o mesmo texto no cartão e na lista. */
+function StatusLine({ status, className }: { status: AccessibleProject["status"]; className?: string }) {
+  const color = PROJECT_STATUS_COLOR[status];
   return (
-    <span className="flex items-center gap-1.5 truncate text-[10px] text-sidebar-foreground/70" title="Situação registrada no cadastro do projeto">
-      <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: PROJECT_STATUS_COLOR[status] }} aria-hidden="true" />
+    <span className={cn("flex items-center gap-1.5 truncate text-xs leading-4", className)} title="Situação registrada no cadastro do projeto">
+      <span
+        className="size-2 shrink-0 rounded-full"
+        style={{ backgroundColor: color, boxShadow: `0 0 0 2px color-mix(in oklch, ${color} 18%, transparent)` }}
+        aria-hidden="true"
+      />
       <span className="truncate">{projectStatusLabel(status)}</span>
     </span>
+  );
+}
+
+/** Nome em uma linha com reticências; quando é cortado, o nome completo aparece em tooltip (só então, para não repetir o que já se lê). */
+function ClippedName({ text, className }: { text: string; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [clipped, setClipped] = useState(false);
+  const measure = () => {
+    const element = ref.current;
+    if (element) {
+      setClipped(element.scrollWidth > element.clientWidth + 1);
+    }
+  };
+  useLayoutEffect(measure, [text]);
+  return (
+    <Tooltip disabled={!clipped}>
+      <TooltipTrigger render={<span ref={ref} onMouseEnter={measure} className={cn("block truncate", className)} />}>{text}</TooltipTrigger>
+      <TooltipContent side="right" align="start">
+        {text}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -301,36 +339,43 @@ function ProjectSwitcher({
         >
           <ComboboxTrigger
             aria-label={selected ? `Projeto selecionado: ${selected.label}. Trocar de projeto` : "Selecionar projeto"}
-            className="flex w-full items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-2 text-left text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none data-open:bg-sidebar-accent motion-reduce:transition-none [&>svg]:hidden"
+            className="switcher-card group/switcher flex w-full items-center gap-2.5 rounded-xl border border-sidebar-foreground/15 bg-sidebar-foreground/[0.07] p-2 text-left text-sidebar-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] transition-colors duration-200 hover:bg-sidebar-foreground/[0.11] focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none motion-reduce:transition-none [&>svg]:hidden"
           >
             <ProjectTile name={selected?.label ?? null} />
             <span className="grid min-w-0 flex-1 leading-tight">
               {selected ? (
                 <>
-                  <span className="truncate text-xs font-semibold">{selected.label}</span>
-                  <StatusLine status={selected.status} />
+                  <ClippedName text={selected.label} className="text-body font-semibold" />
+                  <StatusLine status={selected.status} className="text-sidebar-foreground/70" />
                 </>
               ) : (
                 <>
-                  <span className="truncate text-xs font-semibold">Selecione um projeto</span>
-                  <span className="truncate text-[10px] text-sidebar-foreground/70">Para abrir Visão Geral, EAP e Cronograma</span>
+                  <span className="truncate text-body font-semibold">Selecione um projeto</span>
+                  <span className="truncate text-xs text-sidebar-foreground/70">Para abrir Visão Geral, EAP e Cronograma</span>
                 </>
               )}
             </span>
-            <ChevronsUpDown className="size-4 shrink-0 text-sidebar-foreground/60" aria-hidden="true" />
+            <ChevronDown className="size-4 shrink-0 text-sidebar-foreground/70 transition-transform duration-200 group-data-popup-open/switcher:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
           </ComboboxTrigger>
-          <ComboboxContent className="min-w-64">
-            <ComboboxInput placeholder="Buscar projeto..." showTrigger={false} />
+          <ComboboxContent className="glass-select w-80 min-w-72 p-1.5 shadow-sm">
+            <ComboboxInput
+              placeholder="Buscar projeto..."
+              showTrigger={false}
+              className="switcher-search m-1 h-10 bg-background/60"
+            />
             <ComboboxEmpty>Nenhum projeto encontrado.</ComboboxEmpty>
-            <ComboboxList>
+            {/* Lista arejada e uniforme: itens de 56 px, avatares de 36 px, 4 px entre linhas; o selecionado tem fundo azul suave e check. */}
+            <ComboboxList className="flex max-h-[min(22rem,var(--available-height))] flex-col gap-1 p-1">
               {(option: SwitcherOption) => (
-                <ComboboxItem key={option.value} value={option}>
-                  <span className="grid min-w-0 leading-tight">
-                    <span className="truncate">{option.label}</span>
-                    <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                      <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: PROJECT_STATUS_COLOR[option.status] }} aria-hidden="true" />
-                      {projectStatusLabel(option.status)}
-                    </span>
+                <ComboboxItem
+                  key={option.value}
+                  value={option}
+                  className="min-h-14 gap-3 rounded-lg py-2 pr-10 pl-2.5 data-selected:bg-primary/10 data-selected:data-highlighted:bg-primary/15 [&_svg]:text-primary!"
+                >
+                  <ProjectTile name={option.label} className="bg-brand text-white!" />
+                  <span className="grid min-w-0 flex-1 gap-0.5 leading-tight">
+                    <ClippedName text={option.label} className="text-body font-medium" />
+                    <StatusLine status={option.status} className="text-muted-foreground" />
                   </span>
                 </ComboboxItem>
               )}
