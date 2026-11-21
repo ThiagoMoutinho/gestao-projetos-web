@@ -418,6 +418,12 @@ function TeamEditDialog({
               <SectionTitle id="team-others-title" icon={Users}>
                 Participantes ({draft.others.length})
               </SectionTitle>
+              {canManageFunctions ? (
+                <Button type="button" variant="outline" onClick={() => setNewFunctionOpen(true)} disabled={saving}>
+                  <Tag aria-hidden="true" />
+                  Nova função
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="secondary"
@@ -427,12 +433,6 @@ function TeamEditDialog({
                 <Plus aria-hidden="true" />
                 Adicionar participante
               </Button>
-              {canManageFunctions ? (
-                <Button type="button" variant="outline" onClick={() => setNewFunctionOpen(true)} disabled={saving}>
-                  <Tag aria-hidden="true" />
-                  Nova função
-                </Button>
-              ) : null}
             </div>
             {draft.others.length === 0 ? (
               <p className="rounded-xl border border-dashed px-4 py-5 text-center text-body text-muted-foreground">Nenhum outro participante.</p>
