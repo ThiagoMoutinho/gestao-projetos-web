@@ -3,7 +3,7 @@
 import { Bell, Building2, Check, ChevronDown, ClipboardList, Loader2, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -121,6 +121,33 @@ export function UserMenu({ user }: { user: AppUser }) {
   const [pending, setPending] = useState(false);
   const [open, setOpen] = useState(false);
   const unread = useUnreadCount(open);
+  const haloRef = useRef<HTMLSpanElement>(null);
+
+  // Pulse Glow: quando o usuário volta à aba ou à janela, a contagem de 3 min do brilho recomeça (a animação é só CSS; aqui apenas a reiniciamos).
+  useEffect(() => {
+    function restartPulse() {
+      const el = haloRef.current;
+      if (!el) {
+        return;
+      }
+      el.dataset.pulse = "off";
+      void el.offsetWidth; // força o navegador a aplicar o estado sem animação antes de religá-la
+      delete el.dataset.pulse;
+    }
+    function onVisibility() {
+      if (document.visibilityState === "visible") {
+        restartPulse();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", restartPulse);
+    window.addEventListener("focus", restartPulse);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", restartPulse);
+      window.removeEventListener("focus", restartPulse);
+    };
+  }, []);
   const profile = roleLabel(user.role);
   // O Padrão IGEPPS usa só a paleta institucional (cores do instituto): as outras ficam desativadas. Claro e Escuro aceitam qualquer paleta.
   const darkTheme = theme === "dark";
@@ -146,7 +173,7 @@ export function UserMenu({ user }: { user: AppUser }) {
         aria-label={`Menu da conta de ${user.name}`}
         className="group/user flex shrink-0 items-center gap-2.5 rounded-full border border-bar-border bg-bar-foreground/6 py-1 pr-2 pl-1 outline-none transition-colors duration-200 hover:bg-bar-foreground/12 focus-visible:ring-2 focus-visible:ring-bar-foreground/60 data-open:bg-bar-foreground/14 motion-reduce:transition-none lg:pr-3"
       >
-        <span className="avatar-halo flex shrink-0">
+        <span ref={haloRef} className="avatar-halo flex shrink-0">
         <span
           style={SQUIRCLE_STYLE}
           className="avatar-ring flex h-[45px] w-[50px] shrink-0 items-center justify-center bg-bar-muted p-[2px] transition-[background-color,filter] duration-200 dark:bg-[color-mix(in_oklch,var(--primary)_45%,white)] group-hover/user:bg-white group-hover/user:brightness-105 group-focus-visible/user:bg-white group-data-open/user:bg-white dark:group-data-open/user:bg-white motion-reduce:transition-none"

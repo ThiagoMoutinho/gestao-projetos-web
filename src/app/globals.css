@@ -635,44 +635,44 @@
   }
 }
 
-/* Pulse Glow do avatar da conta: a cada 4 min a borda do avatar acende na cor de destaque da paleta (azul no azul institucional), no estilo do hover do perfil, de forma suave (~2 s) e volta ao normal, sem movimento.
-   Uma única animação CSS (sem timers), só opacidade, numa camada sob o avatar visível nos 2 px da borda; não muda tamanho nem layout. */
+/* Pulse Glow do avatar da conta: a cada 3 min a borda do avatar acende na cor de destaque da paleta (azul no azul institucional), no estilo do hover do perfil, de forma suave (~2 s) e volta ao normal, sem movimento.
+   Uma única animação CSS (sem timers), só opacidade, numa camada sob o avatar visível nos 2 px da borda; não muda tamanho nem layout.
+   O brilho ocorre no fim de cada ciclo de 180 s: ao reiniciar o ciclo (data-pulse="off" por um instante, feito em user-menu.tsx quando o usuário volta à aba),
+   a contagem recomeça e o próximo brilho só vem 3 min depois. */
 @keyframes avatar-ring-run {
   0%,
+  98.9%,
   100% {
     opacity: 0;
   }
 
-  0.35%,
-  0.45% {
+  99.45%,
+  99.6% {
     opacity: 1;
-  }
-
-  0.8% {
-    opacity: 0;
   }
 }
 
 /* Halo externo suave na mesma cor, no mesmo ciclo. O drop-shadow fica no invólucro porque o avatar é recortado (clip-path). */
 @keyframes avatar-halo-pulse {
   0%,
-  0.8%,
+  98.9%,
   100% {
     filter: drop-shadow(0 0 0 transparent);
   }
 
-  0.35%,
-  0.45% {
+  99.45%,
+  99.6% {
     filter: drop-shadow(0 0 4px oklch(from var(--primary) 0.78 min(calc(c * 1.15), 0.2) h / 0.55));
   }
 }
 
 .avatar-halo {
-  animation: avatar-halo-pulse 240s ease-in-out 3s infinite;
+  animation: avatar-halo-pulse 180s ease-in-out infinite;
 }
 
 [data-open] .avatar-halo,
-[data-popup-open] .avatar-halo {
+[data-popup-open] .avatar-halo,
+.avatar-halo[data-pulse="off"] {
   animation: none;
 }
 
@@ -701,12 +701,13 @@
   background:
     linear-gradient(to bottom, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 58%),
     linear-gradient(160deg, oklch(from var(--primary) 0.86 min(c, 0.14) h), oklch(from var(--primary) 0.68 min(calc(c * 1.15), 0.2) h));
-  animation: avatar-ring-run 240s ease-in-out 3s infinite;
+  animation: avatar-ring-run 180s ease-in-out infinite;
 }
 
 /* Com o menu aberto o botão já tem destaque próprio: sem brilho. */
 [data-open] .avatar-ring::before,
-[data-popup-open] .avatar-ring::before {
+[data-popup-open] .avatar-ring::before,
+.avatar-halo[data-pulse="off"] .avatar-ring::before {
   animation: none;
 }
 
