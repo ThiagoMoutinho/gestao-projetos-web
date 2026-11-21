@@ -5,9 +5,12 @@
  * API para gestão de projetos
  * OpenAPI spec version: 1.0.0
  */
+import type { UpdateProjectMemberFunction200Usage } from './updateProjectMemberFunction200Usage.ts';
 
 export type UpdateProjectMemberFunction200 = {
   id: string;
   name: string;
   isActive: boolean;
+  /** @nullable */
+  usage: UpdateProjectMemberFunction200Usage;
 };

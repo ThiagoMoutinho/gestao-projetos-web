@@ -7,5 +7,10 @@
  */
 
 export type UpdateProjectMemberFunctionBody = {
-  isActive: boolean;
+  /**
+     * @minLength 2
+     * @maxLength 60
+     */
+  name?: string;
+  isActive?: boolean;
 };

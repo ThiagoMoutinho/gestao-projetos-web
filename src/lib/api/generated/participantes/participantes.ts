@@ -20,6 +20,11 @@ import type {
   CreateProjectMemberFunction404,
   CreateProjectMemberFunction409,
   CreateProjectMemberFunctionBody,
+  DeleteProjectMemberFunction400,
+  DeleteProjectMemberFunction401,
+  DeleteProjectMemberFunction403,
+  DeleteProjectMemberFunction404,
+  DeleteProjectMemberFunction409,
   ListProjectMemberCandidates200,
   ListProjectMemberCandidates400,
   ListProjectMemberCandidates401,
@@ -600,7 +605,8 @@ export const getUpdateProjectMemberFunctionUrl = (id: string,) => {
 }
 
 /**
- * @summary Ativar ou desativar uma função de participante (ADMIN e PMO)
+ * Altera o nome e/ou a situação. O nome não pode ser de um papel fixo nem repetir outra função; função com nome de papel fixo não pode ser reativada.
+ * @summary Editar, ativar ou desativar uma função de participante (ADMIN e PMO)
  */
 export const updateProjectMemberFunction = async (id: string,
     updateProjectMemberFunctionBody: UpdateProjectMemberFunctionBody, options?: Parameters<typeof apiFetcher>[1]): Promise<updateProjectMemberFunctionResponse> => {
@@ -625,6 +631,69 @@ return apiFetcher<updateProjectMemberFunctionResponse>(getUpdateProjectMemberFun
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(updateProjectMemberFunctionBody)
+  }
+);}
+
+
+export type deleteProjectMemberFunctionResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteProjectMemberFunctionResponse400 = {
+  data: DeleteProjectMemberFunction400
+  status: 400
+}
+
+export type deleteProjectMemberFunctionResponse401 = {
+  data: DeleteProjectMemberFunction401
+  status: 401
+}
+
+export type deleteProjectMemberFunctionResponse403 = {
+  data: DeleteProjectMemberFunction403
+  status: 403
+}
+
+export type deleteProjectMemberFunctionResponse404 = {
+  data: DeleteProjectMemberFunction404
+  status: 404
+}
+
+export type deleteProjectMemberFunctionResponse409 = {
+  data: DeleteProjectMemberFunction409
+  status: 409
+}
+
+export type deleteProjectMemberFunctionResponseSuccess = (deleteProjectMemberFunctionResponse204) & {
+  headers: Headers;
+};
+export type deleteProjectMemberFunctionResponseError = (deleteProjectMemberFunctionResponse400 | deleteProjectMemberFunctionResponse401 | deleteProjectMemberFunctionResponse403 | deleteProjectMemberFunctionResponse404 | deleteProjectMemberFunctionResponse409) & {
+  headers: Headers;
+};
+
+export type deleteProjectMemberFunctionResponse = (deleteProjectMemberFunctionResponseSuccess | deleteProjectMemberFunctionResponseError)
+
+export const getDeleteProjectMemberFunctionUrl = (id: string,) => {
+
+
+
+
+  return `/project-member-functions/${id}`
+}
+
+/**
+ * Só é possível se a função nunca foi atribuída (nenhum participante a tem e nenhum registro do histórico a cita). Havendo uso, responde 409 e a função só pode ser desativada.
+ * @summary Excluir definitivamente uma função de participante (ADMIN e PMO)
+ */
+export const deleteProjectMemberFunction = async (id: string, options?: Parameters<typeof apiFetcher>[1]): Promise<deleteProjectMemberFunctionResponse> => {
+
+  return apiFetcher<deleteProjectMemberFunctionResponse>(getDeleteProjectMemberFunctionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
   }
 );}
 

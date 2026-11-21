@@ -82,7 +82,8 @@ export function teamProblems(draft: TeamDraft, names: (userId: string) => string
   return [...new Set(problems)];
 }
 
-const ROLE_TEXT: Record<TeamRole, string> = {
+/** Rótulos dos papéis fixos do seletor de função. */
+export const ROLE_TEXT: Record<TeamRole, string> = {
   GESTOR: "Gestor",
   RESPONSAVEL_TECNICO: "Responsável técnico",
   FORNECEDOR: "Fornecedor",
@@ -177,8 +178,18 @@ export function memberFunctionNameProblem(name: string): string | null {
   return null;
 }
 
-/** A função já existe no catálogo? (ignora caixa, acento e espaços). */
-export function duplicateFunctionName(name: string, existing: ReadonlyArray<{ name: string }>): boolean {
+/** Nomes dos papéis fixos da lista (iguais aos rótulos do seletor): uma função do catálogo não pode repetir nenhum. */
+const RESERVED_ROLE_NAMES = ["Dono do projeto", "Gestor", "PO", "Responsável técnico", "Desenvolvedor", "Fornecedor", "Observador"] as const;
+
+/** Conflito do nome com o que já existe: "role" (papel fixo), "function" (função do catálogo) ou null. Ignora caixa, acento e espaços. */
+export function functionNameConflict(name: string, existing: ReadonlyArray<{ name: string }>): "role" | "function" | null {
   const key = functionNameKey(name);
-  return key.length > 0 && existing.some((entry) => functionNameKey(entry.name) === key);
+  if (key.length === 0) return null;
+  if (RESERVED_ROLE_NAMES.some((role) => functionNameKey(role) === key)) return "role";
+  return existing.some((entry) => functionNameKey(entry.name) === key) ? "function" : null;
+}
+
+/** A função já existe (como papel fixo ou no catálogo)? */
+export function duplicateFunctionName(name: string, existing: ReadonlyArray<{ name: string }>): boolean {
+  return functionNameConflict(name, existing) !== null;
 }

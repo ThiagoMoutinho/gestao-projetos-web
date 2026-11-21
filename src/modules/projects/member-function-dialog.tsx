@@ -11,7 +11,7 @@ import { ApiError } from "@/lib/api/fetcher";
 import { createProjectMemberFunction } from "@/lib/api/generated/participantes/participantes";
 import { notifyError, notifySuccess } from "@/lib/feedback";
 
-import { duplicateFunctionName, MEMBER_FUNCTION_NAME_MAX, MEMBER_FUNCTION_NAME_MIN, memberFunctionNameProblem } from "./team-editing";
+import { functionNameConflict, MEMBER_FUNCTION_NAME_MAX, MEMBER_FUNCTION_NAME_MIN, memberFunctionNameProblem } from "./team-editing";
 
 export type MemberFunction = { id: string; name: string; isActive: boolean };
 
@@ -34,7 +34,10 @@ export function MemberFunctionDialog({
   const [saving, setSaving] = useState(false);
   const [touched, setTouched] = useState(false);
 
-  const problem = memberFunctionNameProblem(name) ?? (duplicateFunctionName(name, existing) ? "Já existe uma função com esse nome." : null);
+  const conflict = functionNameConflict(name, existing);
+  const problem =
+    memberFunctionNameProblem(name) ??
+    (conflict === "role" ? "Esse nome já existe como papel na lista (ex.: Desenvolvedor)." : conflict === "function" ? "Já existe uma função com esse nome." : null);
 
   function close() {
     if (saving) return;

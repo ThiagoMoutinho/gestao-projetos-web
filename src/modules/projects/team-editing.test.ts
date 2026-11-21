@@ -7,6 +7,7 @@ import {
   choiceOf,
   draftFromMembers,
   duplicateFunctionName,
+  functionNameConflict,
   functionNameKey,
   memberFunctionNameProblem,
   teamOperations,
@@ -121,6 +122,16 @@ describe("funções do catálogo na equipe", () => {
     assert.equal(functionNameKey("Gestão  de Contrato"), functionNameKey("gestao de contrato"));
     assert.equal(duplicateFunctionName("  stakeholder ", [{ name: "Stakeholder" }]), true);
     assert.equal(duplicateFunctionName("Patrocinador", [{ name: "Stakeholder" }]), false);
+  });
+
+  it("nome igual ao de um papel fixo da lista é recusado (Desenvolvedor, Gestor, PO...), ignorando caixa e acento", () => {
+    for (const nome of ["Desenvolvedor", "  desenvolvedor ", "GESTOR", "Responsavel tecnico", "po", "Observador", "Fornecedor", "Dono do Projeto"]) {
+      assert.equal(functionNameConflict(nome, []), "role", nome);
+      assert.equal(duplicateFunctionName(nome, []), true, nome);
+    }
+    assert.equal(functionNameConflict("Stakeholder", [{ name: "Stakeholder" }]), "function");
+    assert.equal(functionNameConflict("Stakeholder", []), null);
+    assert.equal(functionNameConflict("Desenvolvedor sênior", []), null);
   });
 
   it("só ADMIN e PMO veem o botão de criar função", () => {

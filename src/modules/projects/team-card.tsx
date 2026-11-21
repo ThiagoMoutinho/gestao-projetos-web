@@ -1,8 +1,8 @@
 "use client";
 
-import { Activity, Award, Briefcase, Check, Info, Loader2, type LucideIcon, PencilLine, Plus, Trash2, TriangleAlert, UserCog, UserRound, Users, X, Tag } from "lucide-react";
+import { Activity, Award, Briefcase, Check, Info, Loader2, type LucideIcon, PencilLine, ListChecks, Plus, Trash2, TriangleAlert, UserCog, UserRound, Users, X, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { OptionCombobox, type ComboOption } from "@/components/option-combobox";
 import {
@@ -36,6 +36,7 @@ import type { ProjectMemberView } from "./eap-present";
 import { Panel } from "./overview-panel";
 import { Participants } from "./planning-overview";
 import { MemberFunctionDialog, type MemberFunction } from "./member-function-dialog";
+import { MemberFunctionsManager } from "./member-functions-manager";
 import { projectRoleLabel } from "./project-records";
 import {
   draftFromMembers,
@@ -266,19 +267,47 @@ function TeamEditDialog({
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [functions, setFunctions] = useState<MemberFunction[]>([]);
   const [newFunctionOpen, setNewFunctionOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const membersRef = useRef(members);
+  useEffect(() => {
+    membersRef.current = members;
+  });
 
-  // Funções do catálogo institucional (rótulos como Stakeholder). Falhou? O formulário segue só com os papéis de acesso.
+  // Funções ativas do catálogo institucional (rótulos como Stakeholder). Falhou? O formulário segue só com os papéis de acesso.
+  const applyFunctions = useCallback((list: MemberFunction[]) => {
+    setFunctions(list);
+    // Linhas ainda não salvas que usam uma função que deixou de estar ativa (ou foi excluída) voltam a Observador sem função.
+    // A função que um participante já tem (salva) continua valendo mesmo desativada.
+    const active = new Set(list.map((entry) => entry.id));
+    const saved = new Map(membersRef.current.map((member) => [member.id, member.functionId ?? null]));
+    setDraft((current) => ({
+      ...current,
+      others: current.others.map((row) =>
+        row.functionId && !active.has(row.functionId) && !(row.memberId && saved.get(row.memberId) === row.functionId) ? { ...row, functionId: null } : row,
+      ),
+    }));
+  }, []);
+
+  const loadFunctions = useCallback(async () => {
+    try {
+      const response = await listProjectMemberFunctions();
+      if (response.status === 200) applyFunctions(response.data.data);
+    } catch {
+      // sem a lista, o formulário segue só com os papéis de acesso
+    }
+  }, [applyFunctions]);
+
   useEffect(() => {
     let alive = true;
     listProjectMemberFunctions()
       .then((response) => {
-        if (alive && response.status === 200) setFunctions(response.data.data);
+        if (alive && response.status === 200) applyFunctions(response.data.data);
       })
       .catch(() => undefined);
     return () => {
       alive = false;
     };
-  }, []);
+  }, [applyFunctions]);
 
   // Papéis de acesso + funções do catálogo. Quem já tem uma função desativada continua vendo o nome dela.
   const roleOptions: ComboOption[] = useMemo(() => {
@@ -414,25 +443,29 @@ function TeamEditDialog({
           </section>
 
           <section aria-labelledby="team-others-title" className="flex flex-col gap-4 px-6 py-5 sm:px-7">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col gap-3">
               <SectionTitle id="team-others-title" icon={Users}>
                 Participantes ({draft.others.length})
               </SectionTitle>
-              {canManageFunctions ? (
-                <Button type="button" variant="outline" onClick={() => setNewFunctionOpen(true)} disabled={saving}>
-                  <Tag aria-hidden="true" />
-                  Nova função
+              {/* Mesma linha: as funções à esquerda e a ação principal (Adicionar participante) no canto direito. */}
+              <div className="flex flex-wrap items-center gap-2">
+                {canManageFunctions ? (
+                  <>
+                    <Button type="button" variant="outline" onClick={() => setManageOpen(true)} disabled={saving}>
+                      <ListChecks aria-hidden="true" />
+                      Gerenciar funções
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setNewFunctionOpen(true)} disabled={saving}>
+                      <Tag aria-hidden="true" />
+                      Nova função
+                    </Button>
+                  </>
+                ) : null}
+                <Button type="button" variant="secondary" onClick={addRow} disabled={saving} className="ml-auto">
+                  <Plus aria-hidden="true" />
+                  Adicionar participante
                 </Button>
-              ) : null}
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={addRow}
-                disabled={saving}
-              >
-                <Plus aria-hidden="true" />
-                Adicionar participante
-              </Button>
+              </div>
             </div>
             {draft.others.length === 0 ? (
               <p className="rounded-xl border border-dashed px-4 py-5 text-center text-body text-muted-foreground">Nenhum outro participante.</p>
@@ -519,6 +552,8 @@ function TeamEditDialog({
           </EditDialogFooter>
         </EditDialogContent>
       </Dialog>
+
+      <MemberFunctionsManager open={manageOpen} onClose={() => setManageOpen(false)} onChanged={() => void loadFunctions()} />
 
       <MemberFunctionDialog
         open={newFunctionOpen}
