@@ -146,9 +146,10 @@ export function UserMenu({ user }: { user: AppUser }) {
         aria-label={`Menu da conta de ${user.name}`}
         className="group/user flex shrink-0 items-center gap-2.5 rounded-full border border-bar-border bg-bar-foreground/6 py-1 pr-2 pl-1 outline-none transition-colors duration-200 hover:bg-bar-foreground/12 focus-visible:ring-2 focus-visible:ring-bar-foreground/60 data-open:bg-bar-foreground/14 motion-reduce:transition-none lg:pr-3"
       >
+        <span className="avatar-halo flex shrink-0">
         <span
           style={SQUIRCLE_STYLE}
-          className="flex h-[45px] w-[50px] shrink-0 items-center justify-center bg-bar-muted p-[2px] transition-[background-color,filter] duration-200 dark:bg-[color-mix(in_oklch,var(--primary)_45%,white)] group-hover/user:bg-white group-hover/user:brightness-105 group-focus-visible/user:bg-white group-data-open/user:bg-white dark:group-data-open/user:bg-white motion-reduce:transition-none"
+          className="avatar-ring flex h-[45px] w-[50px] shrink-0 items-center justify-center bg-bar-muted p-[2px] transition-[background-color,filter] duration-200 dark:bg-[color-mix(in_oklch,var(--primary)_45%,white)] group-hover/user:bg-white group-hover/user:brightness-105 group-focus-visible/user:bg-white group-data-open/user:bg-white dark:group-data-open/user:bg-white motion-reduce:transition-none"
         >
           <Avatar className="size-full rounded-none after:hidden" style={SQUIRCLE_STYLE}>
             {user.image ? <AvatarImage src={user.image} alt="" className="object-cover" /> : null}
@@ -157,6 +158,7 @@ export function UserMenu({ user }: { user: AppUser }) {
               {initials(user.name)}
             </AvatarFallback>
           </Avatar>
+        </span>
         </span>
         <span className="hidden min-w-0 max-w-40 flex-col text-left leading-tight text-bar-foreground lg:flex">
           <span className="truncate text-body font-semibold">{user.name}</span>

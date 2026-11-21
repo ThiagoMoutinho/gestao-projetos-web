@@ -635,6 +635,87 @@
   }
 }
 
+/* Pulse Glow do avatar da conta: a cada 4 min a borda do avatar acende na cor de destaque da paleta (azul no azul institucional), no estilo do hover do perfil, de forma suave (~2 s) e volta ao normal, sem movimento.
+   Uma única animação CSS (sem timers), só opacidade, numa camada sob o avatar visível nos 2 px da borda; não muda tamanho nem layout. */
+@keyframes avatar-ring-run {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  0.35%,
+  0.45% {
+    opacity: 1;
+  }
+
+  0.8% {
+    opacity: 0;
+  }
+}
+
+/* Halo externo suave na mesma cor, no mesmo ciclo. O drop-shadow fica no invólucro porque o avatar é recortado (clip-path). */
+@keyframes avatar-halo-pulse {
+  0%,
+  0.8%,
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+
+  0.35%,
+  0.45% {
+    filter: drop-shadow(0 0 4px oklch(from var(--primary) 0.78 min(calc(c * 1.15), 0.2) h / 0.55));
+  }
+}
+
+.avatar-halo {
+  animation: avatar-halo-pulse 240s ease-in-out 3s infinite;
+}
+
+[data-open] .avatar-halo,
+[data-popup-open] .avatar-halo {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-halo {
+    animation: none;
+  }
+}
+
+.avatar-ring {
+  position: relative;
+  isolation: isolate;
+}
+
+.avatar-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  /* Borda "vidro brilhante" na cor da paleta: corpo saturado e luminoso, com reflexo claro na metade de cima (estilo moldura do Messenger). */
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 58%),
+    color-mix(in oklch, var(--primary) 70%, white);
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 58%),
+    linear-gradient(160deg, oklch(from var(--primary) 0.86 min(c, 0.14) h), oklch(from var(--primary) 0.68 min(calc(c * 1.15), 0.2) h));
+  animation: avatar-ring-run 240s ease-in-out 3s infinite;
+}
+
+/* Com o menu aberto o botão já tem destaque próprio: sem brilho. */
+[data-open] .avatar-ring::before,
+[data-popup-open] .avatar-ring::before {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-ring::before {
+    animation: none;
+  }
+}
+
 /* Menu lateral: item ativo em negrito com marcador de 3 px na cor primária (fora de @layer para vencer as utilidades do componente). */
 [data-sidebar="menu-button"] {
   position: relative;
