@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { roleLabel } from "@/modules/auth/roles";
 
 import type { ProjectMemberView } from "./eap-present";
-import { Panel } from "./overview-panel";
+import { SectionCard } from "./overview-panel";
 import { Participants } from "./planning-overview";
 import { MemberFunctionDialog, type MemberFunction } from "./member-function-dialog";
 import { MemberFunctionsManager } from "./member-functions-manager";
@@ -82,23 +82,29 @@ export function TeamCard({ projectId, members, canManageFunctions = false }: { p
   const canEdit = candidates !== null && members !== null;
 
   return (
-    <Panel
-      title="Equipe"
-      subtitle="Responsáveis pelos compromissos do projeto"
-      icon={Users}
-      action={
-        canEdit ? (
-          <Button type="button" variant="outline" size="icon" aria-label="Editar: Equipe" onClick={() => setOpen(true)}>
-            <PencilLine aria-hidden="true" />
-          </Button>
-        ) : null
-      }
-    >
-      <Participants members={members} />
+    <>
+      <SectionCard
+        title="Equipe"
+        subtitle="Responsáveis pelos compromissos do projeto"
+        icon={Users}
+        tone="blue"
+        moreLabel={`Ver todos os participantes (${members?.length ?? 0})`}
+        expandable={members !== null && members.length > 0}
+        expansion={members !== null && members.length > 0 ? <Participants members={members} all /> : undefined}
+        action={
+          canEdit ? (
+            <Button type="button" variant="outline" size="icon" aria-label="Editar: Equipe" onClick={() => setOpen(true)}>
+              <PencilLine aria-hidden="true" />
+            </Button>
+          ) : null
+        }
+      >
+        <Participants members={members} />
+      </SectionCard>
       {open && members !== null && candidates !== null ? (
         <TeamEditDialog projectId={projectId} members={members} candidates={candidates} canManageFunctions={canManageFunctions} onClose={() => setOpen(false)} />
       ) : null}
-    </Panel>
+    </>
   );
 }
 

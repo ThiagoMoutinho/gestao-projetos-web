@@ -9,7 +9,7 @@ export type WidgetState = { id: WidgetId; wide: boolean };
  * sem relação com a linha do grid, e pode evoluir para tamanhos e personalização por usuário.
  */
 export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
-  sobre: 480,
+  sobre: 520,
   resultados: 480,
   situacao: 360,
   evolucoes: 340,
@@ -19,7 +19,7 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
   // Planejamento cresce com as seções que o usuário abre; Evidências guarda o próprio limite.
   planejamento: 100000,
   evidencias: 430,
-  equipe: 480,
+  equipe: 520,
   // Conformidade de Entrega acompanha o conteúdo: cada versão abre e fecha o próprio checklist.
   conformidade: 100000,
 };

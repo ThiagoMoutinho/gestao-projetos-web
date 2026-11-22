@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarRange, Check, ChevronDown, Circle, CircleCheck, CircleDot, CircleHelp, Diamond, OctagonAlert, PencilLine, RotateCcw, RotateCw, TriangleAlert, X } from "lucide-react";
+import { Briefcase, CalendarRange, Check, ChevronDown, Circle, CircleCheck, CircleDot, CircleHelp, Diamond, Landmark, OctagonAlert, PencilLine, RotateCcw, RotateCw, TriangleAlert, UserCog, Wrench, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -836,10 +836,10 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 }
 
 const PARTICIPANT_ROLES = [
-  { role: "GESTOR", label: "Gestor" },
-  { role: "PATROCINADOR", label: "Patrocinador" },
-  { role: "RESPONSAVEL_TECNICO", label: "Responsável técnico" },
-  { role: "FORNECEDOR", label: "Fornecedor" },
+  { role: "GESTOR", label: "Gestor", icon: UserCog },
+  { role: "PATROCINADOR", label: "Patrocinador", icon: Landmark },
+  { role: "RESPONSAVEL_TECNICO", label: "Responsável técnico", icon: Wrench },
+  { role: "FORNECEDOR", label: "Fornecedor", icon: Briefcase },
 ] as const;
 
 function initialsOf(name: string) {
@@ -847,71 +847,122 @@ function initialsOf(name: string) {
   return (parts.length === 1 ? parts[0].slice(0, 2) : `${parts[0][0]}${parts[parts.length - 1][0]}`).toUpperCase();
 }
 
-export function Participants({ members }: { members: ProjectDetail["members"] }) {
+/** Tons já existentes no sistema para diferenciar as iniciais das pessoas (a cor vem só do nome, sempre a mesma). */
+const PERSON_TONES = [
+  "bg-primary/12 text-primary dark:bg-primary/20",
+  "bg-status-validation-soft text-status-validation-ink",
+  "bg-status-running-soft text-status-running-ink",
+  "bg-status-done-soft text-status-done-ink",
+  "bg-status-attention-soft text-status-attention-ink",
+];
+
+function personTone(key: string) {
+  let hash = 0;
+  for (const char of key) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return PERSON_TONES[hash % PERSON_TONES.length];
+}
+
+function PersonAvatar({ name, className }: { name: string; className?: string }) {
   return (
-    <section aria-label="Participantes" className="min-w-0">
-      {members === null ? (
-        <p role="alert" className="text-xs text-muted-foreground">Não foi possível consultar os participantes.</p>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {PARTICIPANT_ROLES.map(({ role, label }) => {
-            const found = members.filter((member) => member.role === role);
-            const structural = role === "PATROCINADOR";
-            return (
-              <li key={role} className="flex min-w-0 items-center gap-3">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                    found.length > 0 ? "bg-status-validation-soft text-status-validation-ink" : "border border-dashed text-muted-foreground",
-                  )}
-                >
-                  {found.length > 0 ? initialsOf(found[0].name) : "?"}
+    <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center rounded-full font-semibold", personTone(name), className)}>
+      {initialsOf(name)}
+    </span>
+  );
+}
+
+/**
+ * Cartão Equipe: responsáveis principais em linhas com ícone do papel e, abaixo, um resumo dos participantes (rostos e quantidade
+ * por papel). Com `all` (cartão expandido), acrescenta a lista completa de participantes.
+ */
+export function Participants({ members, all = false }: { members: ProjectDetail["members"]; all?: boolean }) {
+  if (members === null) {
+    return (
+      <p role="alert" className="text-xs text-muted-foreground">
+        Não foi possível consultar os participantes.
+      </p>
+    );
+  }
+  const people = [...new Map(members.map((member) => [member.email || member.id, member])).values()];
+  const byRole = new Map<string, number>();
+  for (const member of members) byRole.set(member.roleLabel, (byRole.get(member.roleLabel) ?? 0) + 1);
+  const faces = people.slice(0, 6);
+  return (
+    <section aria-label="Participantes" className="flex min-w-0 flex-col gap-4">
+      <ul className="flex flex-col gap-2">
+        {PARTICIPANT_ROLES.map(({ role, label, icon: Icon }) => {
+          const found = [...new Set(members.filter((member) => member.role === role).map((member) => member.name))];
+          const structural = role === "PATROCINADOR";
+          return (
+            <li key={role} data-cut-unit className="flex min-w-0 items-center gap-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 dark:border-border">
+              {found.length > 0 ? (
+                <PersonAvatar name={found[0]} className="size-9 text-xs" />
+              ) : (
+                <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground">
+                  <Icon className="size-4" />
                 </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">{label}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {found.length > 0
-                      ? [...new Set(found.map((member) => member.name))].join(", ")
-                      : structural
-                        ? "Não definido · papel ainda não implementado no sistema"
-                        : "Não definido"}
-                  </p>
-                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                  <Icon className="size-3" aria-hidden="true" />
+                  {label}
+                </p>
+                <p className={cn("truncate text-sm", found.length > 0 ? "font-semibold" : "text-muted-foreground")}>
+                  {found.length > 0 ? found.join(", ") : "Não definido"}
+                </p>
+              </div>
+              {found.length > 1 ? <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground">+{found.length - 1}</span> : null}
+              {found.length === 0 && structural ? (
+                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground" title="O papel de patrocinador ainda não existe no sistema.">
+                  Em breve
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      {people.length > 0 ? (
+        <div data-cut-unit className="flex min-w-0 flex-col gap-2 rounded-xl bg-muted/40 px-3 py-2.5 dark:bg-muted/25">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+              Participantes <span className="ml-1 rounded-full bg-card px-2 py-0.5 text-foreground normal-case">{people.length}</span>
+            </p>
+            <div className="flex items-center" aria-hidden="true">
+              {faces.slice(0, 5).map((person) => (
+                <PersonAvatar key={person.id} name={person.name} className="-ml-2 size-7 text-[10px] ring-2 ring-card first:ml-0" />
+              ))}
+              {people.length > 5 ? (
+                <span className="-ml-2 flex size-7 items-center justify-center rounded-full bg-card text-[10px] font-semibold text-muted-foreground ring-2 ring-card">+{people.length - 5}</span>
+              ) : null}
+            </div>
+          </div>
+          <ul className="flex flex-wrap gap-1.5" aria-label="Participantes por papel">
+            {[...byRole.entries()].map(([label, count]) => (
+              <li key={label} className="rounded-full border border-border/60 bg-card px-2 py-0.5 text-label text-muted-foreground dark:border-border">
+                {label} · <span className="font-semibold text-foreground">{count}</span>
               </li>
-            );
-          })}
-        </ul>
-      )}
-      {members !== null && members.length > 0 ? <AllParticipants members={members} /> : null}
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {all && members.length > 0 ? <AllParticipants members={members} /> : null}
     </section>
   );
 }
 
-/** Lista completa de participantes do projeto (todos os papéis), recolhida por padrão. */
+/** Lista completa de participantes do projeto (todos os papéis); aparece com o cartão Equipe expandido. */
 function AllParticipants({ members }: { members: NonNullable<ProjectDetail["members"]> }) {
-  const [open, setOpen] = useState(false);
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className="mt-3 border-t pt-2">
-      <CollapsibleTrigger className="group/all flex w-full items-center justify-between gap-2 rounded px-1 py-1.5 text-left text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-        <span>{open ? "Ocultar participantes" : `Ver todos os participantes (${members.length})`}</span>
-        <ChevronDown
-          className="size-3.5 transition-transform duration-200 group-data-panel-open/all:rotate-180 motion-reduce:transition-none"
-          aria-hidden="true"
-        />
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <ul aria-label="Todos os participantes do projeto" className="mt-1 flex flex-col divide-y rounded-md border px-3">
-          {members.map((member) => (
-            <li key={member.id} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2">
-              <span className="min-w-0 truncate text-xs font-semibold">{member.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {member.roleLabel} · {member.email}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </CollapsibleContent>
-    </Collapsible>
+    <ul aria-label="Todos os participantes do projeto" className="motion-fade flex flex-col divide-y rounded-xl border border-border/60 dark:border-border">
+      {members.map((member) => (
+        <li key={member.id} className="flex min-w-0 items-center gap-3 px-3 py-2.5">
+          <PersonAvatar name={member.name} className="size-8 text-label" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{member.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{member.email}</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground">{member.roleLabel}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
