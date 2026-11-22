@@ -227,15 +227,15 @@
 }
 /* Padrão IGEPPS + Rosa: barra vinho, menu vinho escuro, fundo rosé muito claro e cards brancos. */
 [data-palette="rosa"]:not(.light):not(.dark) {
-  --background: #f8f3f6;
-  --secondary: #f8eaf0;
-  --secondary-foreground: #3b2230;
-  --muted: #f6eef2;
-  --muted-foreground: #6b5562;
-  --accent: #f6e6ee;
-  --accent-foreground: #3b2230;
-  --border: #ecdde4;
-  --input: #e0ccd6;
+  --background: #f2f5fa;
+  --secondary: #e9eff7;
+  --secondary-foreground: #0f213f;
+  --muted: #f0f4fa;
+  --muted-foreground: #515c71;
+  --accent: #e5ecf6;
+  --accent-foreground: #0f213f;
+  --border: #dce6f3;
+  --input: #cbd9ed;
   --bar: #71334f;
   --bar-muted: #ecd0dc;
   --bar-border: rgb(255 255 255 / 16%);
@@ -340,14 +340,14 @@
 
 /* Claro + Rosa: menu branco (como nas outras paletas), barra vinho e neutros rosados. */
 .light[data-palette="rosa"] {
-  --background: #f6f1f4;
-  --secondary: #f6e8ef;
-  --muted: #f3ebef;
-  --muted-foreground: #6b5562;
-  --accent: #f4e4ec;
-  --border: #e6d6de;
-  --input: #dcc7d1;
-  --sidebar-border: #e6d6de;
+  --background: #e8ecf3;
+  --secondary: #ecf1f8;
+  --muted: #ebeff6;
+  --muted-foreground: #515c71;
+  --accent: #e7eef7;
+  --border: #cfd8e5;
+  --input: #bfcbdd;
+  --sidebar-border: #cfd8e5;
   --bar: #71334f;
   --bar-muted: #ecd0dc;
 }
@@ -454,15 +454,15 @@
 
 /* Padrão IGEPPS + Azul petróleo: barra no tom da marca, menu um tom mais escuro, fundo levemente tingido. */
 [data-palette="petroleo"]:not(.light):not(.dark) {
-  --background: #f2f7f7;
-  --secondary: #eaf1f2;
-  --secondary-foreground: #0e2e32;
-  --muted: #f0f5f6;
-  --muted-foreground: #50616c;
-  --accent: #e5eeef;
-  --accent-foreground: #0e2e32;
-  --border: #dde8ea;
-  --input: #cbdddf;
+  --background: #f2f5fa;
+  --secondary: #e9eff7;
+  --secondary-foreground: #0f213f;
+  --muted: #f0f4fa;
+  --muted-foreground: #515c71;
+  --accent: #e5ecf6;
+  --accent-foreground: #0f213f;
+  --border: #dce6f3;
+  --input: #cbd9ed;
   --bar: #24565e;
   --bar-muted: #c4e4e7;
   --bar-border: rgb(255 255 255 / 16%);
@@ -477,29 +477,29 @@
 
 /* Claro + Azul petróleo: menu branco, barra no tom da marca, neutros tingidos. */
 .light[data-palette="petroleo"] {
-  --background: #e8edef;
-  --secondary: #ecf2f3;
-  --muted: #ebf0f2;
-  --muted-foreground: #50616c;
-  --accent: #e7eff0;
-  --border: #cfdade;
-  --input: #bfced4;
-  --sidebar-border: #cfdade;
+  --background: #e8ecf3;
+  --secondary: #ecf1f8;
+  --muted: #ebeff6;
+  --muted-foreground: #515c71;
+  --accent: #e7eef7;
+  --border: #cfd8e5;
+  --input: #bfcbdd;
+  --sidebar-border: #cfd8e5;
   --bar: #24565e;
   --bar-muted: #c4e4e7;
 }
 
 /* Padrão IGEPPS + Violeta: barra no tom da marca, menu um tom mais escuro, fundo levemente tingido. */
 [data-palette="violeta"]:not(.light):not(.dark) {
-  --background: #f6f4fb;
-  --secondary: #f0edf9;
-  --secondary-foreground: #221a46;
-  --muted: #f5f3fb;
-  --muted-foreground: #575974;
-  --accent: #edeaf8;
-  --accent-foreground: #221a46;
-  --border: #e7e3f5;
-  --input: #dbd5f0;
+  --background: #f2f5fa;
+  --secondary: #e9eff7;
+  --secondary-foreground: #0f213f;
+  --muted: #f0f4fa;
+  --muted-foreground: #515c71;
+  --accent: #e5ecf6;
+  --accent-foreground: #0f213f;
+  --border: #dce6f3;
+  --input: #cbd9ed;
   --bar: #4a3b7a;
   --bar-muted: #ded6f8;
   --bar-border: rgb(255 255 255 / 16%);
@@ -514,29 +514,29 @@
 
 /* Claro + Violeta: menu branco, barra no tom da marca, neutros tingidos. */
 .light[data-palette="violeta"] {
-  --background: #ecebf4;
-  --secondary: #f2effa;
-  --muted: #efeef7;
-  --muted-foreground: #575974;
-  --accent: #efecf8;
-  --border: #d7d6e7;
-  --input: #cac8df;
-  --sidebar-border: #d7d6e7;
+  --background: #e8ecf3;
+  --secondary: #ecf1f8;
+  --muted: #ebeff6;
+  --muted-foreground: #515c71;
+  --accent: #e7eef7;
+  --border: #cfd8e5;
+  --input: #bfcbdd;
+  --sidebar-border: #cfd8e5;
   --bar: #4a3b7a;
   --bar-muted: #ded6f8;
 }
 
 /* Padrão IGEPPS + Esmeralda: barra no tom da marca, menu um tom mais escuro, fundo levemente tingido. */
 [data-palette="esmeralda"]:not(.light):not(.dark) {
-  --background: #f1f7f4;
-  --secondary: #e8f1ee;
-  --secondary-foreground: #0e2e21;
-  --muted: #eff5f3;
-  --muted-foreground: #506166;
-  --accent: #e4eeea;
-  --accent-foreground: #0e2e21;
-  --border: #dbe9e3;
-  --input: #c9ded5;
+  --background: #f2f5fa;
+  --secondary: #e9eff7;
+  --secondary-foreground: #0f213f;
+  --muted: #f0f4fa;
+  --muted-foreground: #515c71;
+  --accent: #e5ecf6;
+  --accent-foreground: #0f213f;
+  --border: #dce6f3;
+  --input: #cbd9ed;
   --bar: #2f5b45;
   --bar-muted: #c5ead8;
   --bar-border: rgb(255 255 255 / 16%);
@@ -551,14 +551,14 @@
 
 /* Claro + Esmeralda: menu branco, barra no tom da marca, neutros tingidos. */
 .light[data-palette="esmeralda"] {
-  --background: #e7eded;
-  --secondary: #ebf3ef;
-  --muted: #eaf0f0;
-  --muted-foreground: #506166;
-  --accent: #e6f0ec;
-  --border: #cedad9;
-  --input: #bdcecd;
-  --sidebar-border: #cedad9;
+  --background: #e8ecf3;
+  --secondary: #ecf1f8;
+  --muted: #ebeff6;
+  --muted-foreground: #515c71;
+  --accent: #e7eef7;
+  --border: #cfd8e5;
+  --input: #bfcbdd;
+  --sidebar-border: #cfd8e5;
   --bar: #2f5b45;
   --bar-muted: #c5ead8;
 }
