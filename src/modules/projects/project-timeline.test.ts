@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { auditEvents, deliveryEvents, impedimentEvents, mergeTimeline, scheduleEvents } from "./project-timeline.ts";
+import { auditEvents, deliveryEvents, impedimentEvents, mergeTimeline, relativeDay, scheduleEvents, timelineSource } from "./project-timeline.ts";
 import type { HistoryItem } from "./schedule-history.ts";
 
 const history = (overrides: Partial<HistoryItem>): HistoryItem =>
@@ -92,5 +92,24 @@ describe("Linha do tempo: consolidação", () => {
     const bad = { ...one, id: "z", at: "sem data", title: "C" };
     const merged = mergeTimeline([one, two], [one, bad]);
     assert.deepEqual(merged.map((event) => event.id), ["y", "x"]);
+  });
+});
+
+describe("relativeDay e timelineSource", () => {
+  const now = new Date("2026-11-21T15:00:00-03:00");
+  it("hoje, ontem e há N dias; depois de 30 dias ou data inválida, vazio", () => {
+    assert.equal(relativeDay("2026-11-21T09:00:00-03:00", now), "hoje");
+    assert.equal(relativeDay("2026-11-20T23:00:00-03:00", now), "ontem");
+    assert.equal(relativeDay("2026-11-18T10:00:00-03:00", now), "há 3 dias");
+    assert.equal(relativeDay("2026-10-01T10:00:00-03:00", now), "");
+    assert.equal(relativeDay("2026-11-25T10:00:00-03:00", now), "");
+    assert.equal(relativeDay("sem data", now), "");
+  });
+  it("origem do evento pelo prefixo do id", () => {
+    assert.equal(timelineSource("schedule:1"), "schedule");
+    assert.equal(timelineSource("delivery:1:x"), "delivery");
+    assert.equal(timelineSource("impediment:1:opened"), "impediment");
+    assert.equal(timelineSource("audit:9"), "audit");
+    assert.equal(timelineSource("zzz"), "other");
   });
 });

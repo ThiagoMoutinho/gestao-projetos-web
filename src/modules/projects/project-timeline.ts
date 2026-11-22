@@ -162,3 +162,23 @@ export function mergeTimeline(...groups: ReadonlyArray<ReadonlyArray<TimelineEve
     .filter((event) => !Number.isNaN(Date.parse(event.at)) && !seen.has(event.id) && seen.add(event.id))
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
 }
+
+/** Origem do evento, deduzida do prefixo do id (schedule, delivery, impediment, audit); usada só para escolher o ícone. */
+export type TimelineSource = "schedule" | "delivery" | "impediment" | "audit" | "other";
+
+export function timelineSource(id: string): TimelineSource {
+  const prefix = id.split(":")[0];
+  return prefix === "schedule" || prefix === "delivery" || prefix === "impediment" || prefix === "audit" ? prefix : "other";
+}
+
+/** "hoje", "ontem" ou "há N dias" (até 30 dias); vazio depois disso ou sem data válida (a data completa já vem no detalhe do evento). */
+export function relativeDay(instant: string, now: Date = new Date()): string {
+  const day = civilDay(instant);
+  const today = civilDay(now);
+  if (!day || !today) return "";
+  const diff = daysBetween(day, today);
+  if (diff < 0 || diff > 30) return "";
+  if (diff === 0) return "hoje";
+  if (diff === 1) return "ontem";
+  return `há ${diff} dias`;
+}
