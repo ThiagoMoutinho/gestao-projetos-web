@@ -635,19 +635,19 @@
   }
 }
 
-/* Pulse Glow do avatar da conta: a cada 3 min a borda do avatar acende na cor de destaque da paleta (azul no azul institucional), no estilo do hover do perfil, de forma suave (~2 s) e volta ao normal, sem movimento.
+/* Pulse Glow do avatar da conta: a cada 30 s (por enquanto) a borda do avatar acende em ciano vidro (igual em todas as paletas), no estilo do hover do perfil, de forma suave (~2 s) e volta ao normal, sem movimento.
    Uma única animação CSS (sem timers), só opacidade, numa camada sob o avatar visível nos 2 px da borda; não muda tamanho nem layout.
-   O brilho ocorre no fim de cada ciclo de 180 s: ao reiniciar o ciclo (data-pulse="off" por um instante, feito em user-menu.tsx quando o usuário volta à aba),
-   a contagem recomeça e o próximo brilho só vem 3 min depois. */
+   O brilho ocorre no fim de cada ciclo de 30 s: ao reiniciar o ciclo (data-pulse="off" por um instante, feito em user-menu.tsx quando o usuário volta à aba),
+   a contagem recomeça e o próximo brilho só vem 30 s depois. */
 @keyframes avatar-ring-run {
   0%,
-  98.9%,
+  93.3%,
   100% {
     opacity: 0;
   }
 
-  99.45%,
-  99.6% {
+  96.6%,
+  97.5% {
     opacity: 1;
   }
 }
@@ -655,19 +655,21 @@
 /* Halo externo suave na mesma cor, no mesmo ciclo. O drop-shadow fica no invólucro porque o avatar é recortado (clip-path). */
 @keyframes avatar-halo-pulse {
   0%,
-  98.9%,
+  93.3%,
   100% {
     filter: drop-shadow(0 0 0 transparent);
   }
 
-  99.45%,
-  99.6% {
-    filter: drop-shadow(0 0 4px oklch(from var(--primary) 0.78 min(calc(c * 1.15), 0.2) h / 0.55));
+  96.6%,
+  97.5% {
+    filter: drop-shadow(0 0 4px color-mix(in oklch, var(--pulse-base, var(--primary)) 60%, transparent));
   }
 }
 
 .avatar-halo {
-  animation: avatar-halo-pulse 180s ease-in-out infinite;
+  /* Ciano vidro: o mesmo brilho em todas as paletas (não depende da cor de destaque). */
+  --pulse-base: #1fb8e6;
+  animation: avatar-halo-pulse 30s ease-in-out infinite;
 }
 
 [data-open] .avatar-halo,
@@ -685,6 +687,12 @@
 .avatar-ring {
   position: relative;
   isolation: isolate;
+  /* Cor da borda em repouso (a mesma do bg do avatar: bg-bar-muted no claro e o tom da paleta no escuro): o brilho começa nela. */
+  --ring-start: var(--bar-muted);
+}
+
+.dark .avatar-ring {
+  --ring-start: color-mix(in oklch, var(--primary) 45%, white);
 }
 
 .avatar-ring::before {
@@ -694,14 +702,9 @@
   z-index: -1;
   pointer-events: none;
   opacity: 0;
-  /* Borda "vidro brilhante" na cor da paleta: corpo saturado e luminoso, com reflexo claro na metade de cima (estilo moldura do Messenger). */
-  background:
-    linear-gradient(to bottom, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 58%),
-    color-mix(in oklch, var(--primary) 70%, white);
-  background:
-    linear-gradient(to bottom, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 58%),
-    linear-gradient(160deg, oklch(from var(--primary) 0.86 min(c, 0.14) h), oklch(from var(--primary) 0.68 min(calc(c * 1.15), 0.2) h));
-  animation: avatar-ring-run 180s ease-in-out infinite;
+  /* Degradê "vidro": começa na cor que a borda já tem e termina no ciano. Só variáveis e color-mix (sem cor relativa, que navegadores antigos ignoram). */
+  background: linear-gradient(160deg, var(--ring-start), var(--pulse-base, var(--primary)));
+  animation: avatar-ring-run 30s ease-in-out infinite;
 }
 
 /* Com o menu aberto o botão já tem destaque próprio: sem brilho. */

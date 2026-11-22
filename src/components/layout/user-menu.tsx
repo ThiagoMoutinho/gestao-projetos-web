@@ -123,7 +123,7 @@ export function UserMenu({ user }: { user: AppUser }) {
   const unread = useUnreadCount(open);
   const haloRef = useRef<HTMLSpanElement>(null);
 
-  // Pulse Glow: quando o usuário volta à aba ou à janela, a contagem de 3 min do brilho recomeça (a animação é só CSS; aqui apenas a reiniciamos).
+  // Pulse Glow: quando o usuário volta à aba ou à página, a contagem de 30 s do brilho recomeça (a animação é só CSS; aqui apenas a reiniciamos).
   useEffect(() => {
     function restartPulse() {
       const el = haloRef.current;
@@ -141,11 +141,9 @@ export function UserMenu({ user }: { user: AppUser }) {
     }
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pageshow", restartPulse);
-    window.addEventListener("focus", restartPulse);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pageshow", restartPulse);
-      window.removeEventListener("focus", restartPulse);
     };
   }, []);
   const profile = roleLabel(user.role);
