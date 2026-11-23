@@ -90,7 +90,7 @@ export function TeamCard({ projectId, members, canManageFunctions = false }: { p
         icon={Users}
         tone="blue"
         moreLabel={`Ver todos os participantes (${new Set((members ?? []).map((member) => member.userId)).size})`}
-        expandable={members !== null && members.length > 0}
+        // "Ver todos os participantes" só aparece quando a lista do card passa do limite de altura (a relação completa fica no painel).
         drawer={
           members !== null && members.length > 0
             ? {

@@ -19,6 +19,7 @@ import { civilDay } from "./eap-deadline";
 import { type ProjectDetail, type ScheduleView } from "./eap-present";
 import { EapSchedule } from "./eap-schedule";
 import { SectionCard } from "./overview-panel";
+import { draftFromMembers } from "./team-editing";
 import {
   HISTORY_ENTITY_LABEL,
   HISTORY_STATUS,
@@ -890,60 +891,72 @@ export function Participants({ members }: { members: ProjectDetail["members"] })
       </p>
     );
   }
-  const people = [...new Map(members.map((member) => [member.userId, member])).values()];
+  // Participantes = os adicionados em "Adicionar participante" no Editar equipe (fora o dono e o responsável principal de cada papel-chave,
+  // que já aparecem em Responsáveis). Mesma regra do formulário, para o card e o formulário nunca divergirem.
+  const added = new Set(draftFromMembers(members).others.map((row) => row.memberId));
+  const people = [...new Map(members.filter((member) => added.has(member.id)).map((member) => [member.userId, member])).values()];
   return (
-    <section aria-label="Participantes" className="flex min-w-0 flex-col gap-3">
-      <ul className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-card dark:divide-border dark:border-border">
-        {PARTICIPANT_ROLES.map(({ role, label, icon: Icon }) => {
-          const found = [...new Set(members.filter((member) => member.role === role).map((member) => member.name))];
-          return (
-            <li key={role} data-cut-unit className="flex min-w-0 items-center gap-3 px-3.5 py-3">
-              {found.length > 0 ? (
-                <PersonAvatar name={found[0]} toneClass={ROLE_TONE[role]} className="size-10 text-xs" />
-              ) : (
-                <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground">
-                  <Icon className="size-4" />
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Icon className="size-3.5" aria-hidden="true" />
-                  {label}
-                </p>
-                <p className={cn("mt-0.5 truncate text-sm", found.length > 0 ? "font-semibold" : "text-muted-foreground")}>{found.length > 0 ? found[0] : "Não definido"}</p>
-              </div>
-              {found.length > 1 ? <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground">+{found.length - 1}</span> : null}
-              {found.length === 0 && role === "PATROCINADOR" ? (
-                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground" title="O papel de patrocinador ainda não existe no sistema.">
-                  Em breve
-                </span>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+    <section aria-label="Participantes" className="flex min-w-0 flex-col gap-5">
+      <div className="flex flex-col gap-3.5">
+        <p data-cut-unit className="text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+          Responsáveis
+        </p>
+        <ul className="flex flex-col gap-4">
+          {PARTICIPANT_ROLES.map(({ role, label, icon: Icon }) => {
+            const found = [...new Set(members.filter((member) => member.role === role).map((member) => member.name))];
+            return (
+              <li key={role} data-cut-unit className="flex min-w-0 items-center gap-3.5">
+                {found.length > 0 ? (
+                  <PersonAvatar name={found[0]} toneClass={ROLE_TONE[role]} className="size-11 text-sm ring-1 ring-black/5 ring-inset dark:ring-white/10" />
+                ) : (
+                  <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground">
+                    <Icon className="size-4" />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Icon className="size-3.5" aria-hidden="true" />
+                    {label}
+                  </p>
+                  <p className={cn("mt-0.5 truncate text-sm leading-snug", found.length > 0 ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                    {found.length > 0 ? found[0] : "Não definido"}
+                  </p>
+                </div>
+                {found.length > 1 ? <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground">+{found.length - 1}</span> : null}
+                {found.length === 0 && role === "PATROCINADOR" ? (
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground" title="O papel de patrocinador ainda não existe no sistema.">
+                    Em breve
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
       {people.length > 0 ? (
-        <>
-          <p data-cut-unit className="mt-1 flex items-center gap-2 px-0.5 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-            Participantes
-            <span className="rounded-full bg-muted px-1.5 py-px font-semibold tracking-normal text-foreground">{people.length}</span>
-          </p>
-          {/* A lista preenche o espaço que o card tem (a linha do grid pode ser mais alta); o que não couber fica no painel de detalhes. Linhas separadas por espaço: o corte do card só acontece entre elas. */}
-          <ul aria-label="Participantes do projeto" className="flex flex-col gap-1.5">
-            {people.map((person) => {
-              const roles = [...new Set(members.filter((member) => member.userId === person.userId).map((member) => member.roleLabel))];
-              return (
-                <li key={person.userId} data-cut-unit data-cut-end className="flex min-w-0 items-center gap-3 rounded-xl border border-border/60 bg-card px-3.5 py-2 dark:border-border">
-                  <PersonAvatar name={person.name} className="size-8 text-[10px]" />
+        // O rótulo e a linha separadora fazem parte do primeiro participante: se o limite do card cortar a lista, não sobra um título solto.
+        <ul aria-label="Participantes do projeto" className="flex flex-col gap-3.5">
+          {people.map((person, index) => {
+            const roles = [...new Set(members.filter((member) => member.userId === person.userId && added.has(member.id)).map((member) => member.roleLabel))];
+            return (
+              <li key={person.userId} data-cut-unit data-cut-end className={cn("flex min-w-0 flex-col gap-3.5", index === 0 && "border-t border-border/50 pt-5 dark:border-border")}>
+                {index === 0 ? (
+                  <p className="flex items-center gap-2 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                    Participantes
+                    <span className="rounded-full bg-muted px-1.5 py-px font-semibold tracking-normal text-foreground">{people.length}</span>
+                  </p>
+                ) : null}
+                <div className="flex min-w-0 items-center gap-3">
+                  <PersonAvatar name={person.name} className="size-9 text-xs" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{person.name}</p>
+                    <p className="truncate text-sm leading-snug font-medium text-foreground">{person.name}</p>
                     <p className="truncate text-xs text-muted-foreground">{roles.join(" · ")}</p>
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        </>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       ) : null}
     </section>
   );
