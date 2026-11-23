@@ -113,7 +113,7 @@ export function ProjectTimelineCard({ project, refreshKey }: { project: ProjectD
       icon={History}
       tone="purple"
       moreLabel={`Ver histórico completo (${events.length})`}
-      expandable={events.length > TIMELINE_FIRST_PAGE}
+      expandable={events.length > CARD_PREVIEW}
       drawer={
         state.status === "ready" && events.length > 0
           ? {
@@ -136,44 +136,36 @@ export function ProjectTimelineCard({ project, refreshKey }: { project: ProjectD
       ) : events.length === 0 ? (
         <p className="text-xs text-muted-foreground">Nenhum evento registrado neste projeto.</p>
       ) : (
-        <TimelineList events={events.slice(0, TIMELINE_FIRST_PAGE)} partial={state.partial} />
+        <TimelineList events={events.slice(0, CARD_PREVIEW)} partial={state.partial} />
       )}
     </SectionCard>
   );
 }
 
+/** Quantos eventos recentes o card mostra; o histórico completo (com filtro e carregamento de 15 em 15) fica no painel lateral. */
+const CARD_PREVIEW = 6;
+
 /**
- * Padrão dos cartões da Visão Geral: o cartão cresce até o limite do widget e, passando dele, "Ver histórico completo" expande o
- * próprio cartão (sem rolagem interna). Carregamento progressivo: 15 eventos por vez, com "Mostrar mais" ao fim da lista.
+ * Eventos recentes do card: linha cronológica vertical que termina no último evento (sem trecho solto), ícone por tipo na cor do
+ * tom, título em destaque, descrição em texto secundário e, à direita, a situação e há quanto tempo foi.
  */
-function TimelineList({ events, partial, progressive = false }: { events: TimelineEvent[]; partial: boolean; progressive?: boolean }) {
-  const [loaded, setLoaded] = useState(0);
-  const total = events.length;
-  const shown = progressive ? visibleCount(loaded, total) : total;
-  const hasMore = progressive && shown < total;
-  const visible = events.slice(0, shown);
+function TimelineList({ events, partial }: { events: TimelineEvent[]; partial: boolean }) {
   return (
     <>
-      <ol className="flex flex-col gap-4" aria-label="Eventos do projeto, do mais recente para o mais antigo">
-        {visible.map((event, index) => {
+      <ol className="flex flex-col gap-5" aria-label="Eventos recentes do projeto, do mais recente para o mais antigo">
+        {events.map((event, index) => {
           const Icon = SOURCE_ICON[timelineSource(event.id)];
           const when = relativeDay(event.at);
-          const last = index === visible.length - 1 && !hasMore;
+          const last = index === events.length - 1;
           return (
-            <li
-              key={event.id}
-              data-cut-unit
-              className={cn("relative flex items-start justify-between gap-3", index >= TIMELINE_FIRST_PAGE && "motion-fade")}
-            >
-              {last ? null : <span className="absolute top-8 -bottom-4 left-3.5 w-px -translate-x-1/2 bg-border" aria-hidden="true" />}
-              <div className="flex min-w-0 items-start gap-3">
-                <span className={cn("relative flex size-7 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
-                  <Icon className="size-3.5" />
-                </span>
-                <div className="min-w-0 pt-0.5">
-                  <p className="text-sm font-medium leading-snug break-words">{event.title}</p>
-                  {event.detail ? <p className="text-xs text-muted-foreground break-words">{event.detail}</p> : null}
-                </div>
+            <li key={event.id} data-cut-unit className="relative flex items-start gap-3.5">
+              {last ? null : <span className="absolute top-9 -bottom-5 left-[17px] w-px bg-border" aria-hidden="true" />}
+              <span className={cn("relative flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
+                <Icon className="size-4" />
+              </span>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <p className="text-sm leading-snug font-semibold break-words text-foreground">{event.title}</p>
+                {event.detail ? <p className="mt-0.5 text-xs leading-relaxed break-words text-muted-foreground">{event.detail}</p> : null}
               </div>
               {event.badge || when ? (
                 <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
@@ -185,16 +177,6 @@ function TimelineList({ events, partial, progressive = false }: { events: Timeli
           );
         })}
       </ol>
-      {hasMore ? (
-        <div data-cut-unit>
-          <Button type="button" variant="outline" size="sm" onClick={() => setLoaded(nextVisibleCount(shown, total))}>
-            Mostrar mais {Math.min(TIMELINE_FIRST_PAGE, total - shown)} eventos
-          </Button>
-          <p role="status" aria-live="polite" className="mt-1.5 text-[11px] text-muted-foreground">
-            Mostrando {shown} de {total} eventos.
-          </p>
-        </div>
-      ) : null}
       {partial ? <p className="text-[11px] text-muted-foreground">Algumas fontes não puderam ser consultadas: a linha do tempo pode estar incompleta.</p> : null}
     </>
   );
@@ -274,8 +256,8 @@ function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial:
                 const Icon = SOURCE_ICON[timelineSource(event.id)];
                 const last = index === day.events.length - 1;
                 return (
-                  <li key={event.id} className="relative flex items-start gap-3.5 pb-5 last:pb-0">
-                    {last ? null : <span className="absolute top-9 bottom-0 left-[17px] w-px bg-border" aria-hidden="true" />}
+                  <li key={event.id} className="relative flex items-start gap-3.5">
+                    {last ? null : <span className="absolute top-9 -bottom-5 left-[17px] w-px bg-border" aria-hidden="true" />}
                     <span className={cn("relative flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
                       <Icon className="size-4" />
                     </span>
