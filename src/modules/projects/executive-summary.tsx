@@ -21,6 +21,7 @@ import type { GetExecutiveSummaryValidation200 } from "@/lib/api/generated/model
 import { cn } from "@/lib/utils";
 
 import { useAction } from "./institutional-shared";
+import { DrawerChip, DrawerSection } from "./overview-detail-drawer";
 import { Fact, SectionCard } from "./overview-panel";
 import { projectStatusLabel } from "./project-status";
 
@@ -63,8 +64,8 @@ const METRIC_TONE = {
 /** Indicador do cartão: ícone em bloco colorido, número em destaque e rótulo. */
 function Metric({ icon: Icon, tone, label, value }: { icon: typeof Layers; tone: keyof typeof METRIC_TONE; label: string; value: string }) {
   return (
-    <div data-cut-unit className="flex min-w-0 items-center gap-2.5 rounded-lg bg-muted/50 px-3 py-2.5">
-      <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", METRIC_TONE[tone])} aria-hidden="true">
+    <div data-cut-unit className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border/60 bg-card px-3 py-2.5 dark:border-border">
+      <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full", METRIC_TONE[tone])} aria-hidden="true">
         <Icon className="size-4" />
       </span>
       <div className="min-w-0">
@@ -75,7 +76,15 @@ function Metric({ icon: Icon, tone, label, value }: { icon: typeof Layers; tone:
   );
 }
 
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
+function Block({ title, children, framed = false, hint = "" }: { title: string; children: React.ReactNode; framed?: boolean; hint?: string }) {
+  if (framed) {
+    // No painel de detalhes: seção no padrão da EAP (faixa de título e conteúdo), igual aos outros painéis.
+    return (
+      <DrawerSection title={title} subtitle={hint}>
+        <div className="flex flex-col gap-2.5">{children}</div>
+      </DrawerSection>
+    );
+  }
   return (
     <section className="flex flex-col gap-1.5">
       <h3 className="text-xs font-semibold text-foreground/80">{title}</h3>
@@ -95,7 +104,7 @@ function validationText(item: ValidationItem) {
  * `part` separa o essencial (síntese e indicadores, sempre visíveis no cartão) do complementar (próximas entregas e
  * movimentações, que aparecem quando o cartão é expandido).
  */
-function SummaryContent({ data, part = "all", generatedAt }: { data: Indicators; part?: "all" | "core" | "extra"; generatedAt?: string }) {
+function SummaryContent({ data, part = "all", generatedAt, framed = false }: { data: Indicators; part?: "all" | "core" | "extra"; generatedAt?: string; framed?: boolean }) {
   const core = part !== "extra";
   const extra = part !== "core";
   if (!data.hasData) {
@@ -142,7 +151,7 @@ function SummaryContent({ data, part = "all", generatedAt }: { data: Indicators;
       ) : null}
       {extra ? (
         <>
-          <Block title="Próximas entregas">
+          <Block title="Próximas entregas" framed={framed} hint="Entregas previstas e seus prazos.">
             {data.nextDeliveries.length === 0 ? (
               <p className="text-xs text-muted-foreground">Nenhuma entrega futura prevista.</p>
             ) : (
@@ -162,7 +171,7 @@ function SummaryContent({ data, part = "all", generatedAt }: { data: Indicators;
               </ul>
             )}
           </Block>
-          <Block title="Movimentações relevantes">
+          <Block title="Movimentações relevantes" framed={framed} hint="Últimas decisões e atualizações do projeto.">
             {data.movements.length === 0 ? (
               <p className="text-xs text-muted-foreground">Nenhuma movimentação relevante registrada.</p>
             ) : (
@@ -407,7 +416,6 @@ export function ExecutiveSummaryCard({
   const [state, setState] = useState<State>({ status: "loading" });
   const [version, setVersion] = useState(0);
   const [dialog, setDialog] = useState<Mode | null>(null);
-  const [expanded, setExpanded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyHeight, setHistoryHeight] = useState(0);
   const historyBox = useRef<HTMLDivElement>(null);
@@ -448,15 +456,31 @@ export function ExecutiveSummaryCard({
   const data = state.status === "ready" ? state.data : null;
   const governance = data?.governance ?? null;
 
+  // Conteúdo complementar (antes aparecia em "Ver mais"): vai para o painel lateral de detalhes.
+  const detail = data ? (
+    <div className="flex flex-col gap-3">
+      <SummaryContent data={data} part="extra" framed />
+      <DrawerSection title="Responsáveis e registro" subtitle="Quem responde pelo projeto e quando foi atualizado.">
+        <dl className="grid gap-2 sm:grid-cols-3">
+          <Fact label="Responsável principal" value={ownerName} />
+          <Fact label="Fornecedor" value={suppliers === null ? "Indisponível" : suppliers.length === 0 ? "Não informado" : suppliers.join(", ")} />
+          <Fact label="Última atualização" value={updatedAt} />
+        </dl>
+      </DrawerSection>
+      {governance?.lastValidation?.observation ? (
+        <p className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs break-words text-muted-foreground">
+          <span className="font-semibold text-primary">Observação da última validação:</span> {governance.lastValidation.observation}
+        </p>
+      ) : null}
+    </div>
+  ) : null;
+
   const validation = governance ? (
     <section aria-label="Validação do PMO" className="flex flex-col gap-1.5 rounded-md border border-primary/20 bg-primary/5 p-3">
       <h3 className="flex items-center gap-1.5 text-xs font-semibold text-primary">
         <ShieldCheck className="size-3.5" aria-hidden="true" /> Validação do PMO (registro oficial)
       </h3>
       <p className="text-xs">{governance.lastValidation ? validationText(governance.lastValidation) : "Ainda não há resumo validado pelo PMO."}</p>
-      {expanded && governance.lastValidation?.observation ? (
-        <p className="text-xs break-words text-muted-foreground">Observação: {governance.lastValidation.observation}</p>
-      ) : null}
       <p className="text-xs text-muted-foreground">
         Ciclo atual: {cycleDay(governance.cycle.start)} a {cycleDay(governance.cycle.end)} ·{" "}
         {governance.currentCycleRegularValidated ? "validado" : governance.periodic ? `pendente (fecha na quarta, ${cycleDay(governance.cycle.end)})` : "projeto fora das cobranças periódicas"}
@@ -507,15 +531,35 @@ export function ExecutiveSummaryCard({
       subtitle="Panorama consolidado do projeto e validação do PMO."
       icon={FileText}
       tone="blue"
-      expanded={expanded}
       extraHeight={historyHeight}
+      moreLabel="Ver detalhes"
       expandable={data !== null}
-      onExpandedChange={(next) => {
-        setExpanded(next);
-        if (!next) {
-          setHistoryOpen(false);
-        }
-      }}
+      drawer={
+        data
+          ? {
+              title: "Resumo executivo",
+              description: "Panorama consolidado do projeto: entregas, movimentações e responsáveis.",
+              meta: (
+                <>
+                  <DrawerChip strong>
+                    <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
+                    {projectStatusLabel(data.situation.status)} · {percent(data.progress.basisPoints)}
+                  </DrawerChip>
+                  <DrawerChip icon={RefreshCw}>
+                    <span className="font-semibold text-foreground">{data.reschedules.total}</span> reprogramações
+                  </DrawerChip>
+                  <DrawerChip icon={Layers}>
+                    <span className="font-semibold text-foreground">{data.homologation.awaiting}</span> aguardando homologação
+                  </DrawerChip>
+                  <DrawerChip icon={TriangleAlert}>
+                    <span className="font-semibold text-foreground">{data.overdue.total}</span> em atraso
+                  </DrawerChip>
+                </>
+              ),
+              content: detail,
+            }
+          : undefined
+      }
       action={
         data ? (
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium dark:border-border">
@@ -537,16 +581,6 @@ export function ExecutiveSummaryCard({
       ) : (
         <>
           <SummaryContent data={state.data} part="core" generatedAt={state.data.generatedAt} />
-          {expanded ? (
-            <>
-              <SummaryContent data={state.data} part="extra" />
-              <dl className="grid gap-2 sm:grid-cols-3">
-                <Fact label="Responsável principal" value={ownerName} />
-                <Fact label="Fornecedor" value={suppliers === null ? "Indisponível" : suppliers.length === 0 ? "Não informado" : suppliers.join(", ")} />
-                <Fact label="Última atualização" value={updatedAt} />
-              </dl>
-            </>
-          ) : null}
         </>
       )}
       {data ? (
