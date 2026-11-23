@@ -9,7 +9,7 @@ import { meaningfulText } from "./field-display";
 import { CONTEXT_KEYS, fieldOf, LABELS } from "./institutional-about";
 import { parseSectors } from "./institutional-sectors";
 import type { Overview } from "./institutional-shared";
-import { DrawerCard as ContentCard, DrawerCount as Count, DrawerEmpty, DrawerNav } from "./overview-detail-drawer";
+import { DrawerCount as Count, DrawerEmpty, DrawerNav, DrawerSectionHead } from "./overview-detail-drawer";
 
 type TabId = "ficha" | "sistema" | "contexto" | "resultados";
 
@@ -20,15 +20,46 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "resultados", label: "Resultados", icon: Target },
 ];
 
+const CONTEXT_CAPTION: Record<string, string> = { PROBLEM: "A dor que o projeto resolve.", PURPOSE: "Para que o projeto existe.", SCOPE: "O que está dentro (e fora) da entrega." };
 const CONTEXT_ICON: Record<string, LucideIcon> = { PROBLEM: CircleAlert, PURPOSE: Compass, SCOPE: Layers };
 
 const NOT_INFORMED = <DrawerEmpty />;
+
+/** Fato da ficha: ícone discreto, rótulo e valor em destaque. */
+function Fact({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Icon className="size-3.5" aria-hidden="true" />
+        {label}
+      </dt>
+      <dd className="text-base leading-snug font-semibold break-words text-foreground">{children}</dd>
+    </div>
+  );
+}
+
+/** Superfície única de cada parte do painel: as seções ficam dentro dela, separadas por divisórias sutis (sem vários cartões). */
+function Surface({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1 overflow-hidden rounded-2xl border border-border/70 bg-card py-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border">{children}</div>
+  );
+}
+
+/** Seção da superfície: cabeçalho padrão (ícone, título, legenda, contador) com separador e o conteúdo abaixo. */
+function Block({ icon, title, caption, aside, children }: { icon: LucideIcon; title: string; caption?: string; aside?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="px-5 py-4">
+      <DrawerSectionHead icon={icon} title={title} caption={caption} aside={aside} />
+      {children}
+    </section>
+  );
+}
 
 /** Texto longo em markdown, com leitura confortável; campo vazio vira um aviso discreto. */
 function Prose({ text }: { text: string | null }) {
   if (!text) return NOT_INFORMED;
   return (
-    <div className="text-[13.5px] leading-[1.75] text-foreground/90">
+    <div className="max-w-prose text-sm leading-[1.8] text-foreground/90 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-foreground">
       <RichText markdown={text} />
     </div>
   );
@@ -36,8 +67,8 @@ function Prose({ text }: { text: string | null }) {
 
 /**
  * Painel de detalhes do card "Sobre o projeto". Mostra uma parte por vez, a escolhida na barra fixa do topo (Ficha, Sistema,
- * Contexto ou Resultados), com os textos completos e cartões com ícone. Os textos vêm prontos do card (mesmos dados e regras),
- * sem nova consulta.
+ * Contexto ou Resultados). Cada parte é uma superfície única com seções e divisórias, no mesmo modelo do Resumo executivo. Os
+ * textos vêm prontos do card (mesmos dados e regras), sem nova consulta.
  */
 export function AboutDrawerContent({ data, description, summary, expected }: { data: Overview; description: string | null; summary: string | null; expected: string[] }) {
   const nav = useRef<HTMLDivElement>(null);
@@ -57,16 +88,20 @@ export function AboutDrawerContent({ data, description, summary, expected }: { d
     <div className="flex flex-col gap-4">
       <DrawerNav wrapperRef={nav} label="Partes do painel" active={tab} onSelect={choose} items={TABS.map(({ id, label, icon }) => ({ id, label, icon }))} />
 
-      <div key={tab} role="group" aria-label={TABS.find((item) => item.id === tab)?.label} className="motion-fade flex flex-col gap-4">
+      <div key={tab} role="group" aria-label={TABS.find((item) => item.id === tab)?.label} className="motion-fade">
         {tab === "ficha" ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ContentCard icon={Building2} title={LABELS.REQUESTING_AREA}>
-              {area ? <p className="text-base font-semibold break-words text-foreground">{area}</p> : NOT_INFORMED}
-            </ContentCard>
-            <ContentCard icon={Briefcase} title={LABELS.RESPONSIBLE_COMPANY}>
-              {company ? <p className="text-base font-semibold break-words text-foreground">{company}</p> : NOT_INFORMED}
-            </ContentCard>
-            <ContentCard icon={Users} title={LABELS.BENEFITED_SECTORS} className="sm:col-span-2" aside={sectors.length > 0 ? <Count value={sectors.length} /> : null}>
+          <Surface>
+            <Block icon={Building2} title="Ficha institucional" caption="Quem solicitou e quem entrega.">
+              <dl className="grid gap-x-6 gap-y-4 rounded-xl bg-muted/40 px-5 py-4 dark:bg-muted/25 sm:grid-cols-2">
+                <Fact icon={Building2} label={LABELS.REQUESTING_AREA}>
+                  {area ?? NOT_INFORMED}
+                </Fact>
+                <Fact icon={Briefcase} label={LABELS.RESPONSIBLE_COMPANY}>
+                  {company ?? NOT_INFORMED}
+                </Fact>
+              </dl>
+            </Block>
+            <Block icon={Users} title={LABELS.BENEFITED_SECTORS} caption="Áreas que usam o sistema." aside={sectors.length > 0 ? <Count value={sectors.length} /> : null}>
               {sectors.length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
                   {sectors.map((sector) => (
@@ -78,48 +113,52 @@ export function AboutDrawerContent({ data, description, summary, expected }: { d
               ) : (
                 NOT_INFORMED
               )}
-            </ContentCard>
-          </div>
+            </Block>
+          </Surface>
         ) : null}
 
         {tab === "sistema" ? (
-          <ContentCard icon={Info} title={LABELS.SYSTEM_DESCRIPTION}>
-            <Prose text={description} />
-          </ContentCard>
+          <Surface>
+            <Block icon={Info} title={LABELS.SYSTEM_DESCRIPTION} caption="O que é o sistema e como funciona.">
+              <Prose text={description} />
+            </Block>
+          </Surface>
         ) : null}
 
-        {tab === "contexto"
-          ? CONTEXT_KEYS.map((key) => (
-              <ContentCard key={key} icon={CONTEXT_ICON[key] ?? FileText} title={LABELS[key]}>
+        {tab === "contexto" ? (
+          <Surface>
+            {CONTEXT_KEYS.map((key) => (
+              <Block key={key} icon={CONTEXT_ICON[key] ?? FileText} title={LABELS[key]} caption={CONTEXT_CAPTION[key]}>
                 <Prose text={meaningfulText(fieldOf(data, key).published?.value)} />
-              </ContentCard>
-            ))
-          : null}
+              </Block>
+            ))}
+          </Surface>
+        ) : null}
 
         {tab === "resultados" ? (
-          <>
+          <Surface>
             {summary ? (
-              <ContentCard icon={FileText} title={LABELS.RESULTS_SUMMARY}>
+              <Block icon={FileText} title={LABELS.RESULTS_SUMMARY} caption="O que foi alcançado até agora.">
                 <Prose text={summary} />
-              </ContentCard>
+              </Block>
             ) : null}
-            <ContentCard icon={Target} title="Principais resultados esperados" aside={expected.length > 0 ? <Count value={expected.length} /> : null}>
+            <Block icon={Target} title="Principais resultados esperados" caption="Metas a acompanhar." aside={expected.length > 0 ? <Count value={expected.length} /> : null}>
               {expected.length > 0 ? (
-                <ol className="flex flex-col gap-2">
+                <ol className="flex flex-col gap-3">
                   {expected.map((text, index) => (
-                    <li key={`${index}-${text}`} className="flex items-start gap-3 rounded-xl bg-muted/50 px-3.5 py-3 dark:bg-muted/30">
-                      <span className="mt-px flex size-6 shrink-0 items-center justify-center rounded-full bg-status-done-soft text-label font-semibold text-status-done-ink" aria-hidden="true">
+                    <li key={`${index}-${text}`} className="flex items-start gap-3.5">
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-status-done-soft text-xs font-semibold text-status-done-ink ring-1 ring-status-done/20 ring-inset" aria-hidden="true">
                         {index + 1}
                       </span>
-                      <p className="min-w-0 text-[13px] leading-relaxed break-words text-foreground/90">{text}</p>
+                      <p className="min-w-0 pt-0.5 text-sm leading-relaxed break-words text-foreground/90">{text}</p>
                     </li>
                   ))}
                 </ol>
               ) : (
                 NOT_INFORMED
               )}
-            </ContentCard>
-          </>
+            </Block>
+          </Surface>
         ) : null}
       </div>
     </div>

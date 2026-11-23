@@ -1,6 +1,31 @@
 "use client";
 
-import { BadgeCheck, CalendarClock, ChevronDown, FileText, Gauge, History as HistoryIcon, Layers, LayoutDashboard, OctagonAlert, PackageCheck, RefreshCw, ShieldCheck, TriangleAlert, UserRound } from "lucide-react";
+import {
+  BadgeCheck,
+  Ban,
+  CalendarClock,
+  CalendarDays,
+  ChevronDown,
+  CircleCheck,
+  CircleX,
+  Clock,
+  FilePenLine,
+  FileText,
+  Gauge,
+  History as HistoryIcon,
+  Layers,
+  LayoutDashboard,
+  OctagonAlert,
+  PackageCheck,
+  RefreshCw,
+  ShieldCheck,
+  TrendingUp,
+  TriangleAlert,
+  Undo2,
+  UserRound,
+  UserRoundCog,
+  type LucideIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,8 +46,10 @@ import type { GetExecutiveSummaryValidation200 } from "@/lib/api/generated/model
 import { cn } from "@/lib/utils";
 
 import { useAction } from "./institutional-shared";
-import { DrawerCard, DrawerCount, DrawerEmpty, DrawerNav } from "./overview-detail-drawer";
+import { civilDay } from "./eap-deadline";
+import { DrawerCard, DrawerCount, DrawerEmpty, DrawerNav, DrawerSectionHead } from "./overview-detail-drawer";
 import { Fact, SectionCard } from "./overview-panel";
+import { nextVisibleCount, TIMELINE_PAGE, visibleCount } from "./progressive-list";
 import { projectStatusLabel } from "./project-status";
 
 /** Indicadores automáticos (o resumo ao vivo e o snapshot de uma validação têm os mesmos campos). */
@@ -44,6 +71,8 @@ const DOT: Record<Indicators["situation"]["status"], string> = {
 const zone = { timeZone: "America/Belem" } as const;
 const REFERENCE = new Intl.DateTimeFormat("pt-BR", { ...zone, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const CIVIL_DAY = new Intl.DateTimeFormat("pt-BR", { ...zone, day: "2-digit", month: "2-digit", year: "numeric" });
+const HOUR = new Intl.DateTimeFormat("pt-BR", { ...zone, hour: "2-digit", minute: "2-digit" });
+const LONG_DAY = new Intl.DateTimeFormat("pt-BR", { ...zone, day: "numeric", month: "long", year: "numeric" });
 const MOMENT = new Intl.DateTimeFormat("pt-BR", { ...zone, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
 /** Datas civis do ciclo (AAAA-MM-DD) em dd/mm, sem converter fuso. */
@@ -108,15 +137,112 @@ function DeliveriesList({ data, comfortable = false }: { data: Indicators; comfo
   );
 }
 
-/** Movimentações relevantes (lista); `comfortable` é a versão do painel de detalhes. */
+type Movement = Indicators["movements"][number];
+
+/** Ícone, título e tom de cada tipo de movimentação (tokens de status do sistema; o texto do evento continua o da API). */
+const MOVEMENT_VISUAL: Record<string, { icon: LucideIcon; title: string; tone: string }> = {
+  CANCELLATION: { icon: CircleX, title: "Item cancelado", tone: "bg-status-critical-soft text-status-critical-ink ring-status-critical/25" },
+  REACTIVATION: { icon: RefreshCw, title: "Item reativado", tone: "bg-status-done-soft text-status-done-ink ring-status-done/25" },
+  STATUS: { icon: TrendingUp, title: "Andamento alterado", tone: "bg-status-attention-soft text-status-attention-ink ring-status-attention/25" },
+  COMPLETION: { icon: CircleCheck, title: "Item concluído", tone: "bg-status-done-soft text-status-done-ink ring-status-done/25" },
+  REOPENING: { icon: Undo2, title: "Item reaberto", tone: "bg-status-attention-soft text-status-attention-ink ring-status-attention/25" },
+  IMPEDIMENT_OPENED: { icon: OctagonAlert, title: "Impedimento registrado", tone: "bg-status-critical-soft text-status-critical-ink ring-status-critical/25" },
+  IMPEDIMENT_RESOLVED: { icon: ShieldCheck, title: "Impedimento resolvido", tone: "bg-status-done-soft text-status-done-ink ring-status-done/25" },
+  DELIVERY: { icon: PackageCheck, title: "Entrega registrada", tone: "bg-primary/10 text-primary ring-primary/25" },
+  ACCEPTANCE: { icon: BadgeCheck, title: "Entrega aceita", tone: "bg-status-done-soft text-status-done-ink ring-status-done/25" },
+  ADJUSTMENTS_REQUESTED: { icon: FilePenLine, title: "Ajustes solicitados", tone: "bg-status-attention-soft text-status-attention-ink ring-status-attention/25" },
+  REJECTION: { icon: Ban, title: "Entrega rejeitada", tone: "bg-status-critical-soft text-status-critical-ink ring-status-critical/25" },
+  RESCHEDULE: { icon: CalendarClock, title: "Reprogramação", tone: "bg-status-validation-soft text-status-validation-ink ring-status-validation/25" },
+  PLANNING_DEFINED: { icon: CalendarClock, title: "Planejamento atualizado", tone: "bg-status-validation-soft text-status-validation-ink ring-status-validation/25" },
+  OWNER_TRANSFERRED: { icon: UserRoundCog, title: "Titularidade transferida", tone: "bg-primary/10 text-primary ring-primary/25" },
+};
+const MOVEMENT_FALLBACK = { icon: HistoryIcon, title: "Movimentação", tone: "bg-muted text-muted-foreground ring-border" };
+
+/** Agrupa por dia civil (as movimentações já vêm do mais recente ao mais antigo). */
+function groupMovementsByDay(movements: ReadonlyArray<Movement>) {
+  const groups: Array<{ key: string; label: string; items: Movement[] }> = [];
+  for (const movement of movements) {
+    const key = civilDay(movement.at);
+    if (!key) continue;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(movement);
+    else groups.push({ key, label: LONG_DAY.format(new Date(movement.at)), items: [movement] });
+  }
+  return groups;
+}
+
+/** Linha do tempo das movimentações (painel de detalhes): por data, com ícone por tipo, título em destaque e texto secundário. Mostra 15 por vez. */
+function MovementsTimeline({ movements }: { movements: ReadonlyArray<Movement> }) {
+  const [loaded, setLoaded] = useState(0);
+  const total = movements.length;
+  const shown = visibleCount(loaded, total);
+  const groups = groupMovementsByDay(movements.slice(0, shown));
+  return (
+    <>
+      <div className="flex flex-col">
+        {groups.map((group, groupIndex) => (
+          <section key={group.key} aria-label={group.label} className={cn(groupIndex > 0 && "mt-5 border-t border-border/50 pt-5 dark:border-border")}>
+            <h4 className="mb-4 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-label font-semibold tracking-[0.04em] text-foreground/80 uppercase dark:bg-muted/60">
+              <CalendarDays className="size-3.5 text-primary" aria-hidden="true" />
+              {group.label}
+            </h4>
+            <ol className="flex flex-col">
+              {group.items.map((movement, index) => {
+                const visual = MOVEMENT_VISUAL[movement.kind] ?? MOVEMENT_FALLBACK;
+                const Icon = visual.icon;
+                const last = index === group.items.length - 1;
+                return (
+                  <li key={movement.id} className="relative flex items-start gap-3.5 pb-5 last:pb-0">
+                    {last ? null : <span className="absolute top-9 -bottom-0 left-[17px] w-px bg-border" aria-hidden="true" />}
+                    <span className={cn("relative flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", visual.tone)} aria-hidden="true">
+                      <Icon className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className="text-sm leading-snug font-semibold text-foreground">{visual.title}</p>
+                      <p className="mt-0.5 text-[13px] leading-relaxed break-words text-foreground/80">{movement.summary}</p>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <UserRound className="size-3" aria-hidden="true" />
+                          {movement.automatic ? "Automático" : (movement.actorName ?? "Usuário não identificado")}
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <time dateTime={movement.at} className="inline-flex items-center gap-1">
+                          <Clock className="size-3" aria-hidden="true" />
+                          {HOUR.format(new Date(movement.at))}
+                        </time>
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ))}
+      </div>
+      {shown < total ? (
+        <div className="mt-5 flex flex-col items-start gap-1.5">
+          <Button type="button" variant="outline" size="sm" onClick={() => setLoaded(nextVisibleCount(shown, total))}>
+            Mostrar mais {Math.min(TIMELINE_PAGE, total - shown)} movimentações
+          </Button>
+          <p role="status" aria-live="polite" className="text-[11px] text-muted-foreground">
+            Mostrando {shown} de {total} movimentações.
+          </p>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/** Movimentações relevantes: lista compacta no card; no painel de detalhes (`comfortable`), linha do tempo por data. */
 function MovementsList({ data, comfortable = false }: { data: Indicators; comfortable?: boolean }) {
   if (data.movements.length === 0) {
     return comfortable ? <DrawerEmpty>Nenhuma movimentação relevante registrada.</DrawerEmpty> : <p className="text-xs text-muted-foreground">Nenhuma movimentação relevante registrada.</p>;
   }
+  if (comfortable) return <MovementsTimeline movements={data.movements} />;
   return (
-    <ul className={cn("flex flex-col", comfortable ? "gap-2" : "gap-1.5")}>
+    <ul className="flex flex-col gap-1.5">
       {data.movements.map((movement) => (
-        <li key={movement.id} className={cn(comfortable ? "rounded-xl bg-muted/50 px-3.5 py-2.5 text-[13px] dark:bg-muted/30" : "text-xs")}>
+        <li key={movement.id} className="text-xs">
           <span className="break-words">{movement.summary}</span>
           <span className="block text-[11px] text-muted-foreground">
             {movement.automatic ? "Automático" : (movement.actorName ?? "Usuário não identificado")} · {MOMENT.format(new Date(movement.at))}
@@ -225,43 +351,76 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
       />
       <div key={tab} role="group" aria-label={tab === "visao" ? "Visão geral" : tab === "entregas" ? "Entregas" : "Movimentações"} className="motion-fade flex flex-col gap-4">
         {tab === "visao" ? (
-          <>
-            <DrawerCard
-              icon={Gauge}
-              title="Situação e progresso"
-              aside={
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-2.5 py-1 text-label font-medium dark:border-border">
-                  <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
-                  {projectStatusLabel(data.situation.status)}
-                </span>
-              }
-            >
+          // Uma superfície só, organizada por seções e divisórias (em vez de vários cartões independentes).
+          <div className="flex flex-col gap-1 overflow-hidden rounded-2xl border border-border/70 bg-card py-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border">
+            <section aria-labelledby="resumo-situacao" className="px-5 py-4">
+              <DrawerSectionHead
+                id="resumo-situacao"
+                icon={Gauge}
+                title="Situação e progresso"
+                caption="Andamento consolidado do projeto."
+                aside={
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-2.5 py-1 text-label font-medium dark:border-border">
+                    <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
+                    {projectStatusLabel(data.situation.status)}
+                  </span>
+                }
+              />
               <div className="mb-2.5 flex items-end justify-between gap-3">
-                <p className="text-3xl leading-none font-semibold">{percent(data.progress.basisPoints)}</p>
+                <p className="text-4xl leading-none font-semibold tracking-tight">{percent(data.progress.basisPoints)}</p>
                 <p className="text-xs text-muted-foreground">Progresso consolidado</p>
               </div>
               <Progress value={data.progress.basisPoints === null ? 0 : Math.round(data.progress.basisPoints / 100)} aria-label="Progresso consolidado do projeto" className="**:data-[slot=progress-track]:h-2" />
-            </DrawerCard>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <Metric icon={RefreshCw} tone="blue" label="Reprogramações" value={String(data.reschedules.total)} />
-              <Metric icon={Layers} tone="blue" label="Aguardando homologação" value={String(data.homologation.awaiting)} />
-              <Metric icon={TriangleAlert} tone="red" label="Em correção" value={String(data.homologation.inCorrections)} />
-              <Metric icon={CalendarClock} tone="red" label="Itens em atraso" value={String(data.overdue.total)} />
-              <Metric icon={OctagonAlert} tone="red" label="Impedimentos" value={String(data.impediments)} />
-            </div>
-            <DrawerCard icon={UserRound} title="Responsáveis e registro">
-              <dl className="grid gap-2 sm:grid-cols-3">
-                <Fact label="Responsável principal" value={ownerName} />
-                <Fact label="Fornecedor" value={suppliers === null ? "Indisponível" : suppliers.length === 0 ? "Não informado" : suppliers.join(", ")} />
-                <Fact label="Última atualização" value={updatedAt} />
+            </section>
+
+            <section aria-labelledby="resumo-indicadores" className="px-5 py-4">
+              <DrawerSectionHead id="resumo-indicadores" icon={LayoutDashboard} title="Indicadores do projeto" caption="Contagens que pedem atenção." />
+              {/* Cinco indicadores numa faixa (celular: 3 + 2), separados por divisórias sutis. */}
+              <ul aria-label="Indicadores do projeto" className="grid grid-cols-3 sm:grid-cols-5">
+                {(
+                  [
+                    { icon: RefreshCw, value: data.reschedules.total, label: "Reprogramações" },
+                    { icon: Layers, value: data.homologation.awaiting, label: "Aguardando homologação" },
+                    { icon: TriangleAlert, value: data.homologation.inCorrections, label: "Em correção" },
+                    { icon: CalendarClock, value: data.overdue.total, label: "Itens em atraso" },
+                    { icon: OctagonAlert, value: data.impediments, label: "Impedimentos" },
+                  ] as const
+                ).map(({ icon: Icon, value, label }) => (
+                  <li
+                    key={label}
+                    className="flex flex-col items-center gap-1 border-l border-border/60 px-2 py-3 text-center dark:border-border [&:nth-child(3n+1)]:border-l-0 [&:nth-child(n+4)]:border-t sm:[&:nth-child(3n+1)]:border-l sm:[&:nth-child(5n+1)]:border-l-0 sm:[&:nth-child(n+4)]:border-t-0"
+                  >
+                    <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-2xl leading-none font-semibold">{value}</span>
+                    <span className="text-[11px] leading-tight text-muted-foreground">{label}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section aria-labelledby="resumo-registro" className="px-5 py-4">
+              <DrawerSectionHead id="resumo-registro" icon={UserRound} title="Responsáveis e registro" caption="Quem responde e quando foi atualizado." />
+              <dl className="flex flex-col gap-3">
+                {[
+                  { label: "Responsável principal", value: ownerName },
+                  { label: "Fornecedor", value: suppliers === null ? "Indisponível" : suppliers.length === 0 ? "Não informado" : suppliers.join(", ") },
+                  { label: "Última atualização", value: updatedAt },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex items-baseline justify-between gap-x-6 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd className="min-w-0 text-sm font-semibold break-words text-foreground">{value}</dd>
+                  </div>
+                ))}
               </dl>
-            </DrawerCard>
+            </section>
+
             {observation ? (
-              <DrawerCard icon={ShieldCheck} title="Observação da última validação">
+              <section aria-labelledby="resumo-observacao" className="px-5 py-4">
+                <DrawerSectionHead id="resumo-observacao" icon={ShieldCheck} title="Observação da última validação" />
                 <p className="text-[13px] leading-relaxed break-words text-foreground/90">{observation}</p>
-              </DrawerCard>
+              </section>
             ) : null}
-          </>
+          </div>
         ) : null}
         {tab === "entregas" ? (
           <DrawerCard icon={PackageCheck} title="Próximas entregas" aside={data.nextDeliveries.length > 0 ? <DrawerCount value={data.nextDeliveries.length} /> : null}>

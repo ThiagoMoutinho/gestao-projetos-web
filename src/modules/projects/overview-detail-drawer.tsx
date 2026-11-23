@@ -70,6 +70,40 @@ export function DrawerCard({
   );
 }
 
+/**
+ * Cabeçalho padrão de seção dos painéis da Visão Geral: ícone em superfície suave, título, legenda curta e um detalhe à direita
+ * (contador, status), com a linha separadora entre ele e o conteúdo. Usado dentro de uma superfície única (Sobre o projeto e
+ * Resumo executivo); o `DrawerCard` traz o mesmo cabeçalho para os cartões.
+ */
+export function DrawerSectionHead({
+  icon: Icon,
+  title,
+  caption,
+  aside,
+  id,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  caption?: string;
+  aside?: React.ReactNode;
+  id?: string;
+}) {
+  return (
+    <header className="mb-4 flex items-center gap-3 border-b border-border/60 pb-4 dark:border-border">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15 ring-inset" aria-hidden="true">
+        <Icon className="size-[18px]" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 id={id} className="text-[15px] leading-tight font-semibold text-foreground">
+          {title}
+        </h3>
+        {caption ? <p className="mt-0.5 text-xs text-muted-foreground">{caption}</p> : null}
+      </div>
+      {aside}
+    </header>
+  );
+}
+
 /** Contador discreto do cabeçalho de um `DrawerCard`. */
 export function DrawerCount({ value }: { value: number }) {
   return <span className="rounded-full bg-muted px-2 py-0.5 text-label font-semibold text-foreground">{value}</span>;
