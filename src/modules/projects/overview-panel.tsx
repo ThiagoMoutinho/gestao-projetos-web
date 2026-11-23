@@ -82,6 +82,8 @@ function SectionCardFrame({
   onExpandedChange,
   expansion,
   drawer,
+  drawerOpen: controlledDrawerOpen,
+  onDrawerOpenChange,
   footer,
   children,
 }: {
@@ -112,9 +114,17 @@ function SectionCardFrame({
    * em vez de expandir o cartão. O botão só aparece quando o conteúdo passa do limite ou quando `expandable` é verdadeiro.
    */
   drawer?: { title: string; description: string; content: React.ReactNode; meta?: React.ReactNode; footer?: React.ReactNode };
+  /** Controle externo do painel (por exemplo, para abri-lo já num item escolhido na lista do cartão). */
+  drawerOpen?: boolean;
+  onDrawerOpenChange?: (open: boolean) => void;
   children: React.ReactNode;
 }) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [ownDrawerOpen, setOwnDrawerOpen] = useState(false);
+  const drawerOpen = controlledDrawerOpen ?? ownDrawerOpen;
+  const setDrawerOpen = (next: boolean) => {
+    setOwnDrawerOpen(next);
+    onDrawerOpenChange?.(next);
+  };
   const [body, setBody] = useState<HTMLDivElement | null>(null);
   const [own, setOwn] = useState(false);
   const expanded = controlled ?? own;

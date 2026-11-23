@@ -1,9 +1,8 @@
 "use client";
 
-import { ExternalLink, FileText, Plus } from "lucide-react";
+import { CircleHelp, ExternalLink, FileText, Layers, Plus, Ticket as Ticket2 } from "lucide-react";
 import { useId, useState } from "react";
 
-import { AnimatedHeight } from "@/components/ui/animated-height";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
@@ -12,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { FieldError, useFieldErrors } from "@/components/field-error";
 import { OptionCombobox } from "@/components/option-combobox";
 import { createEapEvidence, updateEapEvidence } from "@/lib/api/generated/eap/eap";
-import { cn } from "@/lib/utils";
 
 import { EvidenceFormFields, EvidenceKindIcon, type EvidenceFieldUi } from "./evidence-form";
 import {
@@ -29,8 +27,9 @@ import {
   type EvidenceFilter,
   type EvidenceKind,
 } from "./evidence-kinds";
-import { SeeMore, stamp, useAction, type Overview } from "./institutional-shared";
-import { Panel } from "./overview-panel";
+import { stamp, useAction, type Overview } from "./institutional-shared";
+import { DrawerCard, DrawerCount, DrawerEmpty, DrawerNav } from "./overview-detail-drawer";
+import { SectionCard } from "./overview-panel";
 
 type OverviewEvidence = Overview["evidences"][number];
 
@@ -53,6 +52,21 @@ function originOf(evidence: OverviewEvidence, origins: EvidenceOrigins) {
   }
   return "Projeto";
 }
+
+/** Ícone de cada filtro da barra do painel: o do próprio tipo de evidência (Todos e Sem classificação têm o seu). Criados uma vez, fora da renderização. */
+const kindIcon = (kind: EvidenceKind) =>
+  function KindFilterIcon({ className }: { className?: string }) {
+    return <EvidenceKindIcon kind={kind} className={className} />;
+  };
+const FILTER_ICON: Record<EvidenceFilter, React.ComponentType<{ className?: string }>> = {
+  ALL: Layers,
+  DOCUMENT: kindIcon("DOCUMENT"),
+  MINUTES: kindIcon("MINUTES"),
+  REPORT: kindIcon("REPORT"),
+  GLPI_TICKET: kindIcon("GLPI_TICKET"),
+  OTHER: kindIcon("OTHER"),
+  UNCLASSIFIED: CircleHelp,
+};
 
 function Ticket({ label, ticket }: { label: string; ticket: { ticketId: string; url: string | null } | null }) {
   return (
@@ -237,7 +251,6 @@ export function EvidencesAndTickets({
   onChanged: () => void;
 }) {
   const [filter, setFilter] = useState<EvidenceFilter>("ALL");
-  const [showAll, setShowAll] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createKey, setCreateKey] = useState(0);
   const [classifying, setClassifying] = useState<OverviewEvidence | null>(null);
@@ -246,125 +259,124 @@ export function EvidencesAndTickets({
   const evidences = data.evidences;
   const hasUnclassified = evidences.some((evidence) => evidence.kind === null);
   const filters = EVIDENCE_FILTERS.filter(([value]) => value !== "UNCLASSIFIED" || hasUnclassified);
-  const visible = evidences.filter((evidence) => matchesEvidenceFilter(evidence, filter)).reverse();
-  const shown = showAll ? visible : visible.slice(0, PREVIEW);
+  const newestFirst = [...evidences].reverse();
+  const visible = newestFirst.filter((evidence) => matchesEvidenceFilter(evidence, filter));
+
+  const tickets = (
+    <dl className="grid gap-2 sm:grid-cols-2">
+      <Ticket label="Chamado de origem" ticket={data.origin.glpiTicket} />
+      <Ticket label="Chamado do PMO" ticket={data.origin.pmoGlpiTicket} />
+    </dl>
+  );
+
+  const list = (items: OverviewEvidence[]) => (
+    <ul className="flex flex-col divide-y">
+      {items.map((evidence) => {
+        const origin = originOf(evidence, origins);
+        const title = evidenceDisplayTitle(evidence);
+        return (
+          <li key={evidence.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <EvidenceKindIcon kind={evidence.kind} className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold break-words">{title}</p>
+              <p className="text-xs text-muted-foreground">
+                {evidenceKindLabel(evidence.kind)} · Registrada em {stamp(evidence.createdAt)}
+                {origin ? " · Vinculado a: " + origin : ""}
+              </p>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <a
+                  href={evidence.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${evidenceActionLabel(evidence.kind)}: ${title}`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  {evidenceActionLabel(evidence.kind)} <ExternalLink className="size-3" aria-hidden="true" />
+                </a>
+                {canAdd && evidence.kind === null && !evidence.deliveryId ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClassifying(evidence);
+                      setClassifyOpen(true);
+                    }}
+                    className="text-xs font-semibold text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  >
+                    Classificar
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
-    <Panel
-      title="Evidências do projeto"
-      subtitle="Documentos, atas, relatórios e chamados do projeto"
-      action={
-        canAdd ? (
-          <Button
-            type="button"
-            size="xs"
-            variant="secondary"
-            onClick={() => {
-              setCreateKey((value) => value + 1);
-              setCreating(true);
-            }}
-          >
-            <Plus aria-hidden="true" /> Evidência
-          </Button>
-        ) : undefined
-      }
-    >
-      <dl className="grid gap-2 sm:grid-cols-2">
-        <Ticket label="Chamado de origem" ticket={data.origin.glpiTicket} />
-        <Ticket label="Chamado do PMO" ticket={data.origin.pmoGlpiTicket} />
-      </dl>
-      {evidences.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Nenhuma evidência registrada no projeto.</p>
-      ) : (
-        <>
-          <div role="group" aria-label="Filtrar evidências por tipo" className="flex flex-wrap gap-1.5">
-            {filters.map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={filter === value}
-                onClick={() => {
-                  setFilter(value);
-                  setShowAll(false);
-                }}
-                className={cn(
-                  "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none motion-reduce:transition-none",
-                  filter === value
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-muted-foreground hover:bg-muted dark:border-border",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <AnimatedHeight>
-            {visible.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma evidência neste filtro.</p>
-            ) : (
-              <ul className="flex flex-col divide-y">
-                {shown.map((evidence) => {
-                  const origin = originOf(evidence, origins);
-                  const title = evidenceDisplayTitle(evidence);
-                  return (
-                    <li key={evidence.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-                      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <EvidenceKindIcon kind={evidence.kind} className="size-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold break-words">{title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {evidenceKindLabel(evidence.kind)} · Registrada em {stamp(evidence.createdAt)}
-                          {origin ? " · Vinculado a: " + origin : ""}
-                        </p>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <a
-                            href={evidence.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`${evidenceActionLabel(evidence.kind)}: ${title}`}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary underline-offset-2 hover:underline"
-                          >
-                            {evidenceActionLabel(evidence.kind)} <ExternalLink className="size-3" aria-hidden="true" />
-                          </a>
-                          {canAdd && evidence.kind === null && !evidence.deliveryId ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setClassifying(evidence);
-                                setClassifyOpen(true);
-                              }}
-                              className="text-xs font-semibold text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-                            >
-                              Classificar
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </AnimatedHeight>
-          {visible.length > PREVIEW ? (
-            <SeeMore onClick={() => setShowAll((value) => !value)} expanded={showAll} className="mt-0 self-start">
-              {showAll ? "Ver menos" : `Ver todas (${visible.length})`}
-            </SeeMore>
-          ) : null}
-        </>
-      )}
+    <>
+      <SectionCard
+        title="Evidências do projeto"
+        subtitle="Documentos, atas, relatórios e chamados do projeto"
+        icon={FileText}
+        tone="blue"
+        moreLabel={`Ver todas (${evidences.length})`}
+        expandable={evidences.length > 0}
+        drawer={{
+          title: "Evidências do projeto",
+          description: "Documentos, atas, relatórios e chamados do projeto.",
+          content: (
+            <div className="flex flex-col gap-4">
+              {evidences.length > 0 ? (
+                <DrawerNav
+                  label="Filtrar evidências por tipo"
+                  active={filter}
+                  onSelect={(id) => setFilter(id as EvidenceFilter)}
+                  items={filters
+                    .map(([value, label]) => ({
+                      id: value,
+                      label,
+                      icon: FILTER_ICON[value],
+                      count: evidences.filter((evidence) => matchesEvidenceFilter(evidence, value)).length,
+                    }))
+                    // Só os tipos que têm evidências (mais "Todos" e o filtro escolhido): sem pílulas zeradas poluindo a barra.
+                    .filter((item) => item.id === "ALL" || item.id === filter || item.count > 0)}
+                />
+              ) : null}
+              <DrawerCard icon={Ticket2} title="Chamados">
+                {tickets}
+              </DrawerCard>
+              <DrawerCard icon={FileText} title="Evidências" aside={<DrawerCount value={visible.length} />}>
+                {visible.length === 0 ? <DrawerEmpty>{evidences.length === 0 ? "Nenhuma evidência registrada no projeto." : "Nenhuma evidência neste filtro."}</DrawerEmpty> : list(visible)}
+              </DrawerCard>
+            </div>
+          ),
+        }}
+        action={
+          canAdd ? (
+            <Button
+              type="button"
+              size="xs"
+              variant="secondary"
+              onClick={() => {
+                setCreateKey((value) => value + 1);
+                setCreating(true);
+              }}
+            >
+              <Plus aria-hidden="true" /> Evidência
+            </Button>
+          ) : undefined
+        }
+      >
+        {tickets}
+        {evidences.length === 0 ? <p className="text-xs text-muted-foreground">Nenhuma evidência registrada no projeto.</p> : list(newestFirst.slice(0, PREVIEW))}
+      </SectionCard>
       <EvidenceDialog key={`new-${createKey}`} projectId={projectId} evidence={null} open={creating} onClose={() => setCreating(false)} onDone={onChanged} />
       {classifying ? (
-        <EvidenceDialog
-          key={classifying.id}
-          projectId={projectId}
-          evidence={classifying}
-          open={classifyOpen}
-          onClose={() => setClassifyOpen(false)}
-          onDone={onChanged}
-        />
+        <EvidenceDialog key={classifying.id} projectId={projectId} evidence={classifying} open={classifyOpen} onClose={() => setClassifyOpen(false)} onDone={onChanged} />
       ) : null}
-    </Panel>
+    </>
   );
 }

@@ -27,6 +27,7 @@ import {
 } from "./eap-milestone-homologation";
 import { ExpandableText } from "./institutional-shared";
 import { civilDateInput, type ProjectDetail } from "./eap-present";
+import { DrawerCard, DrawerCount, DrawerEmpty, DrawerNav } from "./overview-detail-drawer";
 import { SectionCard } from "./overview-panel";
 import { mergeAllMilestones } from "./milestone-order";
 import { milestoneTypeLabel } from "./project-records";
@@ -404,14 +405,46 @@ export function MilestonesCard({
   const data = useMilestoneData(monitoring, project);
   const { lists, empty, ready, byId } = data;
   const [tab, setTab] = useState<Tab>("todos");
-  const [expanded, setExpanded] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [detailHeight, setDetailHeight] = useState(0);
   const prefetch = (id: string) => {
     const milestone = byId.get(id);
     if (milestone) {
       prefetchMilestoneHomologation(project.id, milestone, true);
     }
+  };
+  /** No cartão compacto, abrir o detalhe de um marco abre o painel lateral já nele. */
+  const openInDrawer = (id: string) => {
+    setOpenId(id);
+    setDrawerOpen(true);
+  };
+
+  const rows = (key: Tab, inDrawer: boolean) => {
+    const list = lists[key];
+    if (list.length === 0) {
+      return inDrawer ? <DrawerEmpty>{ready ? empty[key] : ""}</DrawerEmpty> : <CardMessage>{ready ? empty[key] : ""}</CardMessage>;
+    }
+    return (
+      <ul className="flex flex-col divide-y">
+        {list.map((entry) => {
+          const milestone = byId.get(entry.id);
+          return (
+            <EntryRow
+              key={entry.id}
+              entry={entry}
+              expanded={inDrawer && openId === entry.id}
+              onToggle={() => (inDrawer ? setOpenId(openId === entry.id ? null : entry.id) : openInDrawer(entry.id))}
+              onOpen={() => (inDrawer ? setOpenId(entry.id) : openInDrawer(entry.id))}
+              onPrefetch={() => prefetch(entry.id)}
+            >
+              {inDrawer && milestone ? (
+                <MilestoneHomologation projectId={project.id} milestone={milestone} access={access} names={data.names} showEvidence onMilestone={() => undefined} onChanged={onChanged} />
+              ) : null}
+            </EntryRow>
+          );
+        })}
+      </ul>
+    );
   };
 
   return (
@@ -421,79 +454,51 @@ export function MilestonesCard({
       icon={Flag}
       tone="green"
       moreLabel={`Ver todos (${lists[tab].length})`}
-      extraHeight={detailHeight}
-      expanded={expanded}
-      onExpandedChange={(next) => {
-        setExpanded(next);
-        if (!next) {
-          setOpenId(null);
-        }
+      expandable={ready && lists.todos.length > 0}
+      drawerOpen={drawerOpen}
+      onDrawerOpenChange={(next) => {
+        setDrawerOpen(next);
+        if (!next) setOpenId(null);
+      }}
+      drawer={{
+        title: "Marcos e Homologações",
+        description: "Entregas pendentes, próximas e já decididas, com o detalhe da homologação.",
+        content: (
+          <div className="flex flex-col gap-4">
+            <DrawerNav
+              label="Partes do painel"
+              active={tab}
+              onSelect={(id) => {
+                setTab(id as Tab);
+                setOpenId(null);
+              }}
+              items={TAB_LABELS.map(([value, label]) => ({ id: value, label, icon: Flag, count: lists[value].length }))}
+            />
+            <DrawerCard icon={Flag} title={TAB_LABELS.find(([value]) => value === tab)?.[1] ?? "Marcos"} aside={<DrawerCount value={lists[tab].length} />}>
+              {rows(tab, true)}
+            </DrawerCard>
+          </div>
+        ),
       }}
     >
       {monitoring.status === "loading" ? (
         <ListSkeleton />
       ) : monitoring.status === "error" ? (
-        <CardMessage>
-          Não foi possível consultar os marcos do projeto.
-        </CardMessage>
+        <CardMessage>Não foi possível consultar os marcos do projeto.</CardMessage>
       ) : (
-        <Tabs
-          value={tab}
-          onValueChange={(value) => setTab(value as Tab)}
-          className="min-h-0 flex-1"
-        >
+        <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="min-h-0 flex-1">
           <TabsList variant="line" className="w-full justify-start">
             {TAB_LABELS.map(([value, label]) => (
-              <TabsTrigger
-                key={value}
-                value={value}
-                className="flex-none gap-1.5 px-2 text-xs"
-              >
+              <TabsTrigger key={value} value={value} className="flex-none gap-1.5 px-2 text-xs">
                 {label} ({lists[value].length})
               </TabsTrigger>
             ))}
           </TabsList>
-          {TAB_LABELS.map(([key]) => {
-            const list = lists[key];
-            return (
-              <TabsContent key={key} value={key} className="mt-3">
-                {list.length === 0 ? (
-                  <CardMessage>{ready ? empty[key] : ""}</CardMessage>
-                ) : (
-                  <ul className="flex flex-col divide-y">
-                    {list.map((entry) => {
-                      const milestone = byId.get(entry.id);
-                      return (
-                        <EntryRow
-                          key={entry.id}
-                          entry={entry}
-                          expanded={openId === entry.id}
-                          onToggle={() =>
-                            setOpenId(openId === entry.id ? null : entry.id)
-                          }
-                          onOpen={() => setOpenId(entry.id)}
-                          onPrefetch={() => prefetch(entry.id)}
-                          onDetailHeight={setDetailHeight}
-                        >
-                          {milestone ? (
-                            <MilestoneHomologation
-                              projectId={project.id}
-                              milestone={milestone}
-                              access={access}
-                              names={data.names}
-                              showEvidence
-                              onMilestone={() => undefined}
-                              onChanged={onChanged}
-                            />
-                          ) : null}
-                        </EntryRow>
-                      );
-                    })}
-                  </ul>
-                )}
-              </TabsContent>
-            );
-          })}
+          {TAB_LABELS.map(([key]) => (
+            <TabsContent key={key} value={key} className="mt-3">
+              {rows(key, false)}
+            </TabsContent>
+          ))}
         </Tabs>
       )}
     </SectionCard>
