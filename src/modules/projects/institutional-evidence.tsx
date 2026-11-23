@@ -270,22 +270,22 @@ export function EvidencesAndTickets({
   );
 
   const list = (items: OverviewEvidence[]) => (
-    <ul className="flex flex-col divide-y">
+    <ul className="flex flex-col gap-4">
       {items.map((evidence) => {
         const origin = originOf(evidence, origins);
         const title = evidenceDisplayTitle(evidence);
         return (
-          <li key={evidence.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <li key={evidence.id} data-cut-unit className="flex items-start gap-3.5">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/15 ring-inset">
               <EvidenceKindIcon kind={evidence.kind} className="size-4" />
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold break-words">{title}</p>
-              <p className="text-xs text-muted-foreground">
+            <div className="min-w-0 flex-1 pt-0.5">
+              <p className="text-sm leading-snug font-semibold break-words text-foreground">{title}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                 {evidenceKindLabel(evidence.kind)} · Registrada em {stamp(evidence.createdAt)}
                 {origin ? " · Vinculado a: " + origin : ""}
               </p>
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <a
                   href={evidence.url}
                   target="_blank"
@@ -370,8 +370,17 @@ export function EvidencesAndTickets({
           ) : undefined
         }
       >
-        {tickets}
-        {evidences.length === 0 ? <p className="text-xs text-muted-foreground">Nenhuma evidência registrada no projeto.</p> : list(newestFirst.slice(0, PREVIEW))}
+        <div data-cut-unit>{tickets}</div>
+        {evidences.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhuma evidência registrada no projeto.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p data-cut-unit className="text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+              Mais recentes
+            </p>
+            {list(newestFirst.slice(0, PREVIEW))}
+          </div>
+        )}
       </SectionCard>
       <EvidenceDialog key={`new-${createKey}`} projectId={projectId} evidence={null} open={creating} onClose={() => setCreating(false)} onDone={onChanged} />
       {classifying ? (

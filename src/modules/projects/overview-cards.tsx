@@ -7,10 +7,12 @@ import {
   History,
   PackageCheck,
   ShieldCheck,
+  SquareArrowOutUpRight,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnimatedHeight } from "@/components/ui/animated-height";
 import { Presence } from "@/components/ui/presence";
@@ -120,9 +122,12 @@ function EntryRow({
   onOpen,
   onPrefetch,
   onDetailHeight,
+  href,
   children,
 }: {
   entry: Entry;
+  /** No cartão: em vez da seta que expande, um ícone que leva direto à página do projeto onde o marco é gerenciado (a EAP). */
+  href?: string;
   expanded: boolean;
   onToggle: () => void;
   onOpen: () => void;
@@ -152,11 +157,11 @@ function EntryRow({
   };
   const TypeIcon = (entry.type ? TYPE_ICON[entry.type] : null) ?? Flag;
   return (
-    <li className="py-2.5 first:pt-0 last:pb-0">
-      <div className="flex items-start gap-3">
+    <li data-cut-unit className="py-2.5 first:pt-0 last:pb-0">
+      <div className="flex items-start gap-3.5">
         <span
           className={cn(
-            "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg",
+            "flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-black/5 ring-inset dark:ring-white/10",
             TONE[entry.tone],
           )}
           aria-hidden="true"
@@ -166,11 +171,11 @@ function EntryRow({
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-xs font-semibold break-words">{entry.title}</p>
+              <p className="text-sm leading-snug font-semibold break-words">{entry.title}</p>
               <p
                 title={[entry.dateLabel, ...entry.meta].join(" · ")}
                 className={cn(
-                  "text-xs",
+                  "mt-0.5 text-xs leading-relaxed",
                   entry.overdue
                     ? "font-semibold text-destructive"
                     : "text-muted-foreground",
@@ -189,19 +194,30 @@ function EntryRow({
               >
                 {entry.statusLabel}
               </span>
-              <Button
-                type="button"
-                size="icon-xs"
-                variant="ghost"
-                aria-expanded={expanded}
-                aria-label={expanded ? "Ocultar detalhes" : "Ver detalhes"}
-                title={expanded ? "Ocultar detalhes" : "Ver detalhes"}
-                onClick={onToggle}
-                className="text-muted-foreground"
-                {...prefetch}
-              >
-                <ChevronDown className={cn("size-4 transition-transform duration-200 motion-reduce:transition-none", expanded && "rotate-180")} aria-hidden="true" />
-              </Button>
+              {href ? (
+                <Link
+                  href={href}
+                  aria-label={`Abrir ${entry.title} na EAP`}
+                  title="Abrir na EAP"
+                  className={cn(buttonVariants({ variant: "ghost", size: "icon-xs" }), "text-muted-foreground hover:text-primary")}
+                >
+                  <SquareArrowOutUpRight className="size-4" aria-hidden="true" />
+                </Link>
+              ) : (
+                <Button
+                  type="button"
+                  size="icon-xs"
+                  variant="ghost"
+                  aria-expanded={expanded}
+                  aria-label={expanded ? "Ocultar detalhes" : "Ver detalhes"}
+                  title={expanded ? "Ocultar detalhes" : "Ver detalhes"}
+                  onClick={onToggle}
+                  className="text-muted-foreground"
+                  {...prefetch}
+                >
+                  <ChevronDown className={cn("size-4 transition-transform duration-200 motion-reduce:transition-none", expanded && "rotate-180")} aria-hidden="true" />
+                </Button>
+              )}
             </div>
           </div>
           {entry.reason ? (
@@ -425,7 +441,7 @@ export function MilestonesCard({
       return inDrawer ? <DrawerEmpty>{ready ? empty[key] : ""}</DrawerEmpty> : <CardMessage>{ready ? empty[key] : ""}</CardMessage>;
     }
     return (
-      <ul className="flex flex-col divide-y">
+      <ul className={cn("flex flex-col", inDrawer ? "divide-y" : "gap-4 [&>li]:py-0")}>
         {list.map((entry) => {
           const milestone = byId.get(entry.id);
           return (
@@ -436,6 +452,7 @@ export function MilestonesCard({
               onToggle={() => (inDrawer ? setOpenId(openId === entry.id ? null : entry.id) : openInDrawer(entry.id))}
               onOpen={() => (inDrawer ? setOpenId(entry.id) : openInDrawer(entry.id))}
               onPrefetch={() => prefetch(entry.id)}
+              href={inDrawer ? undefined : `/projetos/${project.id}?aba=eap&marco=${entry.id}`}
             >
               {inDrawer && milestone ? (
                 <MilestoneHomologation projectId={project.id} milestone={milestone} access={access} names={data.names} showEvidence onMilestone={() => undefined} onChanged={onChanged} />

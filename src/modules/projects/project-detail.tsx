@@ -25,11 +25,14 @@ export function ProjectDetail({
   project,
   actor,
   openEap = false,
+  openMilestoneId,
   openSchedule = false,
 }: {
   project: ProjectDetailData;
   actor: { userId: string; globalRole: string };
   openEap?: boolean;
+  /** Marco a abrir já no painel da EAP (link "Abrir na EAP" do cartão Marcos e Homologações). */
+  openMilestoneId?: string;
   openSchedule?: boolean;
 }) {
   const access: EapAccess = buildEapAccess({
@@ -109,6 +112,7 @@ export function ProjectDetail({
             projectId={project.id}
             projectName={project.name}
             phases={project.phases}
+            initialMilestoneId={openMilestoneId}
             access={access}
             people={people}
           />

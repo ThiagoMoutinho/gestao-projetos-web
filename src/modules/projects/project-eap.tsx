@@ -41,17 +41,23 @@ export function ProjectEap({
   projectId,
   projectName,
   phases,
+  initialMilestoneId,
   access,
   people,
 }: {
   projectId: string;
   projectName: string;
   phases: ProjectPhaseView[] | null;
+  /** Marco já selecionado ao abrir a EAP (o painel de detalhes dele abre sozinho). Ignorado se o marco não existir neste projeto. */
+  initialMilestoneId?: string;
   access: EapAccess;
   people: EapPerson[] | null;
 }) {
   const [items, setItems] = useState(phases);
-  const [selection, setSelection] = useState<EapSelection | null>(null);
+  const [selection, setSelection] = useState<EapSelection | null>(() => {
+    const phase = initialMilestoneId ? phases?.find((entry) => entry.milestones?.some((milestone) => milestone.id === initialMilestoneId)) : undefined;
+    return phase && initialMilestoneId ? { kind: "milestone", phaseId: phase.id, milestoneId: initialMilestoneId } : null;
+  });
   const [pending, setPending] = useState<EapSelection | "close" | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<EapListFilter>(idleEapFilter);

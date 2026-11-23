@@ -20,10 +20,10 @@ export default async function ProjectPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ aba?: string }>;
+  searchParams: Promise<{ aba?: string; marco?: string }>;
 }) {
   const { id } = await params;
-  const { aba } = await searchParams;
+  const { aba, marco } = await searchParams;
   let project: Awaited<ReturnType<typeof loadProjectDetail>> | null = null;
   let message: string | null = null;
   let denied = false;
@@ -58,6 +58,7 @@ export default async function ProjectPage({
     <ProjectDetail
       project={project}
       openEap={aba === "eap"}
+      openMilestoneId={aba === "eap" ? marco : undefined}
       openSchedule={aba === "cronograma"}
       actor={{
         userId: user.id,
