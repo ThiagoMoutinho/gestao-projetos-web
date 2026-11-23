@@ -914,6 +914,17 @@ html.theme-transition *::after {
 }
 
 /*
+ * Painel lateral (Sheet) aberto: a biblioteca trava a rolagem da página mantendo a barra de rolagem da janela como trilho
+ * desativado (`overflow-y: scroll` e `scrollbar-gutter: stable`). Em navegadores com barra clássica isso deixa uma faixa em
+ * branco, com a largura da barra, entre o painel e a borda da tela. Com o painel aberto, a página passa a `overflow-y: hidden`
+ * (a rolagem continua travada e a posição é mantida) e o painel encosta na borda da tela, como o da EAP deve ficar.
+ */
+html:has([data-slot="sheet-content"]) {
+  overflow-y: hidden !important;
+  scrollbar-gutter: auto !important;
+}
+
+/*
  * Barra de rolagem discreta e padronizada em todo o sistema: diálogos, painéis laterais, menus, popovers e qualquer área com
  * rolagem (.overflow-y-auto / .overflow-auto / .overflow-x-auto) usam a barra fina (cor suave, sem trilho), igual ao diálogo
  * "Sobre o projeto". A rolagem continua funcionando; só ficam de fora as áreas com .no-scrollbar, que escondem a barra de propósito.

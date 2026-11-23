@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { Check, Flag, Folder } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -32,23 +32,30 @@ export function eapKindLabel(kind: EapItemKind) {
 /** Cabeçalho fixo do painel: ícone do tipo, chamada (eyebrow), título e uma linha de aviso opcional. */
 export function EapPanelHeader({
   kind,
+  icon,
+  tone,
   eyebrow,
   title,
   hint,
   actions,
 }: {
-  kind: EapItemKind;
+  /** Tipo do item da EAP (define ícone e cor). Os painéis fora da EAP (ex.: detalhes da Visão Geral) informam `icon` e `tone`. */
+  kind?: EapItemKind;
+  icon?: ComponentType<{ className?: string }>;
+  /** Cores do quadradinho do ícone (classes), quando não há `kind`. */
+  tone?: string;
   eyebrow: string;
   /** Elemento do título (o `SheetTitle` do painel de criação ou um `h2`), com as classes de tamanho já aplicadas. */
   title: ReactNode;
   hint?: ReactNode;
   actions: ReactNode;
 }) {
-  const Icon = KIND_ICON[kind];
+  const Icon = icon ?? (kind ? KIND_ICON[kind] : Folder);
+  const toneClass = tone ?? (kind ? KIND_TONE[kind] : KIND_TONE.phase);
   return (
     <header className="flex min-h-[112px] shrink-0 items-start justify-between gap-4 border-b border-border px-6 pt-5 pb-4">
       <div className="flex min-w-0 items-start gap-3.5">
-        <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl ring-1 ring-inset", KIND_TONE[kind])} aria-hidden="true">
+        <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl ring-1 ring-inset", toneClass)} aria-hidden="true">
           <Icon className="size-5" />
         </span>
         <div className="min-w-0">

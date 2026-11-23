@@ -182,3 +182,22 @@ export function relativeDay(instant: string, now: Date = new Date()): string {
   if (diff === 1) return "ontem";
   return `há ${diff} dias`;
 }
+
+const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+/** Agrupa eventos (já do mais recente ao mais antigo) por mês civil, mantendo a ordem: [{ key: "2026-11", label: "Novembro de 2026", events }]. */
+export function groupByMonth(events: ReadonlyArray<TimelineEvent>): Array<{ key: string; label: string; events: TimelineEvent[] }> {
+  const groups: Array<{ key: string; label: string; events: TimelineEvent[] }> = [];
+  for (const event of events) {
+    const day = civilDay(event.at);
+    if (!day) continue;
+    const key = day.slice(0, 7);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) {
+      last.events.push(event);
+    } else {
+      groups.push({ key, label: `${MONTHS[Number(key.slice(5, 7)) - 1]} de ${key.slice(0, 4)}`, events: [event] });
+    }
+  }
+  return groups;
+}

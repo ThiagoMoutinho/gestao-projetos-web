@@ -4,17 +4,21 @@ import { CalendarClock, CircleDot, ClipboardList, History, PackageCheck, Triangl
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listScheduleHistory } from "@/lib/api/generated/cronograma/cronograma";
 import { listEapAudit, listEapMilestoneDeliveries, listEapTaskImpediments } from "@/lib/api/generated/eap/eap";
 import { cn } from "@/lib/utils";
 
 import type { ProjectDetail } from "./eap-present";
+import { DrawerNav, DrawerSection } from "./overview-detail-drawer";
 import { SectionCard } from "./overview-panel";
+import { nextVisibleCount, TIMELINE_PAGE as TIMELINE_FIRST_PAGE, visibleCount } from "./progressive-list";
 import {
   auditEvents,
   deliveryEvents,
   impedimentEvents,
+  groupByMonth,
   mergeTimeline,
   relativeDay,
   scheduleEvents,
@@ -108,8 +112,17 @@ export function ProjectTimelineCard({ project, refreshKey }: { project: ProjectD
       subtitle="Reprogramações, decisões de marcos, entregas e impedimentos"
       icon={History}
       tone="purple"
-      unbounded
-      showToggle={false}
+      moreLabel={`Ver histórico completo (${events.length})`}
+      expandable={events.length > TIMELINE_FIRST_PAGE}
+      drawer={
+        state.status === "ready" && events.length > 0
+          ? {
+              title: "Linha do tempo do projeto",
+              description: "Todos os eventos, do mais recente para o mais antigo; 15 por vez.",
+              content: <TimelineDrawerContent events={events} partial={state.partial} />,
+            }
+          : undefined
+      }
       action={state.status === "ready" ? <Badge variant="secondary">{events.length} {events.length === 1 ? "evento" : "eventos"}</Badge> : undefined}
     >
       {state.status === "loading" ? (
@@ -123,30 +136,36 @@ export function ProjectTimelineCard({ project, refreshKey }: { project: ProjectD
       ) : events.length === 0 ? (
         <p className="text-xs text-muted-foreground">Nenhum evento registrado neste projeto.</p>
       ) : (
-        <TimelineList events={events} partial={state.partial} />
+        <TimelineList events={events.slice(0, TIMELINE_FIRST_PAGE)} partial={state.partial} />
       )}
     </SectionCard>
   );
 }
 
-function TimelineList({ events, partial }: { events: TimelineEvent[]; partial: boolean }) {
+/**
+ * Padrão dos cartões da Visão Geral: o cartão cresce até o limite do widget e, passando dele, "Ver histórico completo" expande o
+ * próprio cartão (sem rolagem interna). Carregamento progressivo: 15 eventos por vez, com "Mostrar mais" ao fim da lista.
+ */
+function TimelineList({ events, partial, progressive = false }: { events: TimelineEvent[]; partial: boolean; progressive?: boolean }) {
+  const [loaded, setLoaded] = useState(0);
+  const total = events.length;
+  const shown = progressive ? visibleCount(loaded, total) : total;
+  const hasMore = progressive && shown < total;
+  const visible = events.slice(0, shown);
   return (
     <>
-      {/* Todos os eventos ficam na própria lista, que rola dentro do cartão (a altura do cartão não muda). */}
-      <div
-        tabIndex={0}
-        role="region"
-        aria-label="Eventos do projeto, do mais recente para o mais antigo"
-        className="max-h-[27rem] overflow-y-auto overscroll-contain pr-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:scroll-auto"
-      >
-      <ol className="flex flex-col">
-        {events.map((event, index) => {
+      <ol className="flex flex-col gap-4" aria-label="Eventos do projeto, do mais recente para o mais antigo">
+        {visible.map((event, index) => {
           const Icon = SOURCE_ICON[timelineSource(event.id)];
           const when = relativeDay(event.at);
-          const last = index === events.length - 1;
+          const last = index === visible.length - 1 && !hasMore;
           return (
-            <li key={event.id} className="relative flex items-start justify-between gap-3 pb-4 last:pb-0">
-              {last ? null : <span className="absolute top-8 bottom-0 left-3.5 w-px -translate-x-1/2 bg-border" aria-hidden="true" />}
+            <li
+              key={event.id}
+              data-cut-unit
+              className={cn("relative flex items-start justify-between gap-3", index >= TIMELINE_FIRST_PAGE && "motion-fade")}
+            >
+              {last ? null : <span className="absolute top-8 -bottom-4 left-3.5 w-px -translate-x-1/2 bg-border" aria-hidden="true" />}
               <div className="flex min-w-0 items-start gap-3">
                 <span className={cn("relative flex size-7 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
                   <Icon className="size-3.5" />
@@ -166,7 +185,94 @@ function TimelineList({ events, partial }: { events: TimelineEvent[]; partial: b
           );
         })}
       </ol>
-      </div>
+      {hasMore ? (
+        <div data-cut-unit>
+          <Button type="button" variant="outline" size="sm" onClick={() => setLoaded(nextVisibleCount(shown, total))}>
+            Mostrar mais {Math.min(TIMELINE_FIRST_PAGE, total - shown)} eventos
+          </Button>
+          <p role="status" aria-live="polite" className="mt-1.5 text-[11px] text-muted-foreground">
+            Mostrando {shown} de {total} eventos.
+          </p>
+        </div>
+      ) : null}
+      {partial ? <p className="text-[11px] text-muted-foreground">Algumas fontes não puderam ser consultadas: a linha do tempo pode estar incompleta.</p> : null}
+    </>
+  );
+}
+
+/** Rótulos curtos da barra de filtro do painel (cabem numa linha). */
+const NAV_LABEL: Record<TimelineSource, string> = {
+  schedule: "Reprogramações",
+  delivery: "Entregas",
+  impediment: "Impedimentos",
+  audit: "Registros",
+  other: "Outros",
+};
+
+const SOURCE_LABEL: Record<TimelineSource, string> = {
+  schedule: "Reprogramações",
+  delivery: "Entregas e decisões",
+  impediment: "Impedimentos",
+  audit: "Registros do projeto",
+  other: "Outros",
+};
+
+/** Origens presentes nos eventos, na ordem fixa dos rótulos, com a quantidade de cada uma. */
+function sourceCounts(events: TimelineEvent[]) {
+  const counts = new Map<TimelineSource, number>();
+  for (const event of events) counts.set(timelineSource(event.id), (counts.get(timelineSource(event.id)) ?? 0) + 1);
+  return (Object.keys(SOURCE_LABEL) as TimelineSource[]).filter((key) => counts.has(key)).map((key) => ({ key, count: counts.get(key) ?? 0 }));
+}
+
+/**
+ * Histórico completo, no mesmo estilo do painel do Sobre o projeto: barra fixa no topo com o filtro por tipo (pílulas com a
+ * quantidade) e, abaixo, uma seção por mês com a linha cronológica. Carregamento progressivo: 15 eventos por vez, que recomeça a
+ * cada filtro.
+ */
+function TimelineDrawerContent({ events, partial }: { events: TimelineEvent[]; partial: boolean }) {
+  const [kind, setKind] = useState<TimelineSource | "all">("all");
+  const counts = sourceCounts(events);
+  const filtered = kind === "all" ? events : events.filter((event) => timelineSource(event.id) === kind);
+  return (
+    <div className="flex flex-col gap-4">
+      {counts.length > 1 ? (
+        <DrawerNav
+          label="Filtrar eventos por tipo"
+          active={kind}
+          onSelect={(id) => setKind(id as TimelineSource | "all")}
+          items={[{ id: "all", label: "Todos", icon: History, count: events.length }, ...counts.map(({ key, count }) => ({ id: key, label: NAV_LABEL[key], icon: SOURCE_ICON[key], count }))]}
+        />
+      ) : null}
+      <TimelineMonths key={kind} events={filtered} partial={partial} />
+    </div>
+  );
+}
+
+function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial: boolean }) {
+  const [loaded, setLoaded] = useState(0);
+  const total = events.length;
+  const shown = visibleCount(loaded, total);
+  const monthTotals = new Map(groupByMonth(events).map((group) => [group.key, group.events.length]));
+  return (
+    <>
+      {groupByMonth(events.slice(0, shown)).map((group) => {
+        const all = monthTotals.get(group.key) ?? group.events.length;
+        return (
+          <DrawerSection key={group.key} title={group.label} subtitle={`${all} ${all === 1 ? "evento" : "eventos"} no mês`}>
+            <TimelineList events={group.events} partial={false} />
+          </DrawerSection>
+        );
+      })}
+      {shown < total ? (
+        <div className="flex flex-col items-start gap-1.5">
+          <Button type="button" variant="outline" size="sm" onClick={() => setLoaded(nextVisibleCount(shown, total))}>
+            Mostrar mais {Math.min(TIMELINE_FIRST_PAGE, total - shown)} eventos
+          </Button>
+          <p role="status" aria-live="polite" className="text-[11px] text-muted-foreground">
+            Mostrando {shown} de {total} eventos.
+          </p>
+        </div>
+      ) : null}
       {partial ? <p className="text-[11px] text-muted-foreground">Algumas fontes não puderam ser consultadas: a linha do tempo pode estar incompleta.</p> : null}
     </>
   );

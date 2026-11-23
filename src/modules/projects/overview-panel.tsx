@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { Card } from "@/components/ui/card";
 
 import { SeeMore } from "./institutional-shared";
+import { OverviewDetailDrawer } from "./overview-detail-drawer";
 import { useOverflow } from "./use-overflow";
 
 const SECTION_TONE = {
@@ -80,6 +81,7 @@ function SectionCardFrame({
   expanded: controlled,
   onExpandedChange,
   expansion,
+  drawer,
   footer,
   children,
 }: {
@@ -105,8 +107,14 @@ function SectionCardFrame({
   expansion?: React.ReactNode;
   /** Rodapé sempre visível (fora da área que pode ser cortada pelo limite de altura), por exemplo totais e ações essenciais. */
   footer?: React.ReactNode;
+  /**
+   * Detalhes em painel lateral (OverviewDetailDrawer): o cartão fica compacto e o botão de baixo ("Ver detalhes") abre o painel,
+   * em vez de expandir o cartão. O botão só aparece quando o conteúdo passa do limite ou quando `expandable` é verdadeiro.
+   */
+  drawer?: { title: string; description: string; content: React.ReactNode; meta?: React.ReactNode; footer?: React.ReactNode };
   children: React.ReactNode;
 }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [body, setBody] = useState<HTMLDivElement | null>(null);
   const [own, setOwn] = useState(false);
   const expanded = controlled ?? own;
@@ -157,6 +165,7 @@ function SectionCardFrame({
   }, [expanded, hasExpansion]);
 
   return (
+    <>
     <Card
       ref={card}
       className={`${OVERVIEW_CARD} ${expanded || unbounded ? "" : WIDGET_MAX_HEIGHT} gap-4 p-5`}
@@ -193,7 +202,15 @@ function SectionCardFrame({
           children
         )}
       </div>
-      {showToggle && (overflowing || expandable || expanded) ? (
+      {drawer ? (
+        overflowing || expandable ? (
+          <div className="shrink-0">
+            <SeeMore popup onClick={() => setDrawerOpen(true)} className="mt-0">
+              {moreLabel}
+            </SeeMore>
+          </div>
+        ) : null
+      ) : showToggle && (overflowing || expandable || expanded) ? (
         <div className="shrink-0">
           <SeeMore
             onClick={() => setExpanded(!expanded)}
@@ -206,6 +223,21 @@ function SectionCardFrame({
       ) : null}
       {footer ? <div className="mt-auto shrink-0">{footer}</div> : null}
     </Card>
+    {drawer ? (
+      <OverviewDetailDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        title={drawer.title}
+        description={drawer.description}
+        icon={Icon}
+        iconClassName={SECTION_TONE[tone]}
+        meta={drawer.meta}
+        footer={drawer.footer}
+      >
+        {drawer.content}
+      </OverviewDetailDrawer>
+    ) : null}
+    </>
   );
 }
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { auditEvents, deliveryEvents, impedimentEvents, mergeTimeline, relativeDay, scheduleEvents, timelineSource } from "./project-timeline.ts";
+import { auditEvents, deliveryEvents, impedimentEvents, groupByMonth, mergeTimeline, relativeDay, scheduleEvents, timelineSource } from "./project-timeline.ts";
 import type { HistoryItem } from "./schedule-history.ts";
 
 const history = (overrides: Partial<HistoryItem>): HistoryItem =>
@@ -111,5 +111,21 @@ describe("relativeDay e timelineSource", () => {
     assert.equal(timelineSource("impediment:1:opened"), "impediment");
     assert.equal(timelineSource("audit:9"), "audit");
     assert.equal(timelineSource("zzz"), "other");
+  });
+});
+
+describe("groupByMonth", () => {
+  const ev = (id: string, at: string) => ({ id, at, title: id, detail: "", tone: "neutral" as const, badge: null });
+  it("agrupa por mês mantendo a ordem e dá nome ao mês", () => {
+    const groups = groupByMonth([ev("a", "2026-11-20T12:00:00-03:00"), ev("b", "2026-11-02T12:00:00-03:00"), ev("c", "2026-10-30T12:00:00-03:00"), ev("d", "2025-12-01T12:00:00-03:00")]);
+    assert.deepEqual(groups.map((g) => [g.key, g.label, g.events.map((e) => e.id)]), [
+      ["2026-11", "Novembro de 2026", ["a", "b"]],
+      ["2026-10", "Outubro de 2026", ["c"]],
+      ["2025-12", "Dezembro de 2025", ["d"]],
+    ]);
+  });
+  it("ignora evento sem data válida e aceita lista vazia", () => {
+    assert.deepEqual(groupByMonth([]), []);
+    assert.deepEqual(groupByMonth([ev("x", "sem data")]), []);
   });
 });

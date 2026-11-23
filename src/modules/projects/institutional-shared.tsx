@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight, ChevronUp, Undo2 } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -224,6 +224,8 @@ export function ExpandableText({
   markdown = false,
   fill = false,
   chevron = false,
+  open: controlledOpen,
+  onOverflowChange,
 }: {
   text: string;
   className?: string;
@@ -232,8 +234,17 @@ export function ExpandableText({
   fill?: boolean;
   /** Mostra a seta ao lado de "Ver mais/Ver menos", como nos botões de expandir dos cartões. */
   chevron?: boolean;
+  /** Controle externo: com ele, o texto abre e fecha junto com o cartão e o "Ver mais" próprio não aparece. */
+  open?: boolean;
+  /** Avisa o cartão quando o texto passa (ou deixa de passar) do espaço da prévia. */
+  onOverflowChange?: (overflows: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOpen] = useState(false);
+  const open = controlledOpen ?? ownOpen;
+  const report = useRef(onOverflowChange);
+  useEffect(() => {
+    report.current = onOverflowChange;
+  });
   const [overflows, setOverflows] = useState(false);
   const [limit, setLimit] = useState(0);
   const [full, setFull] = useState(0);
@@ -270,10 +281,9 @@ export function ExpandableText({
       setLimit(max);
       setFull(element.scrollHeight);
       // No modo fill, o espaço disponível é a altura atual da área de texto (que já inclui o que sobra no cartão).
-      setOverflows(
-        element.scrollHeight >
-          (fill ? Math.max(box.clientHeight, max) : max) + 2,
-      );
+      const next = element.scrollHeight > (fill ? Math.max(box.clientHeight, max) : max) + 2;
+      setOverflows(next);
+      report.current?.(next);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -283,7 +293,7 @@ export function ExpandableText({
   }, [text, lines, fill]);
 
   const collapsed = overflows && !open;
-  const showButton = overflows || open;
+  const showButton = controlledOpen === undefined && (overflows || open);
   return (
     <div className={fill ? "flex min-h-0 flex-1 flex-col" : undefined}>
       <div
@@ -349,8 +359,11 @@ export function SeeMore({
   children = "Ver mais",
   className,
   expanded,
+  popup = false,
 }: {
   onClick: () => void;
+  /** O botão abre um painel (diálogo): expõe isso ao leitor de tela. */
+  popup?: boolean;
   children?: React.ReactNode;
   className?: string;
   /** Quando informado, expõe o estado ao leitor de tela e troca o ícone. */
@@ -361,6 +374,7 @@ export function SeeMore({
       type="button"
       onClick={onClick}
       aria-expanded={expanded}
+      aria-haspopup={popup ? "dialog" : undefined}
       className={cn(
         "mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
         className,
