@@ -70,18 +70,16 @@ const FILTER_ICON: Record<EvidenceFilter, React.ComponentType<{ className?: stri
 
 function Ticket({ label, ticket }: { label: string; ticket: { ticketId: string; url: string | null } | null }) {
   return (
-    <div className="min-w-0 rounded-md bg-muted/50 px-3 py-2">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="truncate text-xs font-semibold">
+    <div className="min-w-0">
+      <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Ticket2 className="size-3.5" aria-hidden="true" />
+        {label}
+      </dt>
+      <dd className="mt-0.5 truncate text-sm font-semibold text-foreground">
         {!ticket ? (
           <span className="font-normal text-muted-foreground">Não informado</span>
         ) : ticket.url ? (
-          <a
-            href={ticket.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
-          >
+          <a href={ticket.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline">
             GLPI #{ticket.ticketId} <ExternalLink className="size-3" aria-hidden="true" />
           </a>
         ) : (
@@ -263,7 +261,7 @@ export function EvidencesAndTickets({
   const visible = newestFirst.filter((evidence) => matchesEvidenceFilter(evidence, filter));
 
   const tickets = (
-    <dl className="grid gap-2 sm:grid-cols-2">
+    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
       <Ticket label="Chamado de origem" ticket={data.origin.glpiTicket} />
       <Ticket label="Chamado do PMO" ticket={data.origin.pmoGlpiTicket} />
     </dl>
