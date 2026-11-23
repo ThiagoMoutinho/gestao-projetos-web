@@ -9,7 +9,7 @@ export type WidgetState = { id: WidgetId; wide: boolean };
  * sem relação com a linha do grid, e pode evoluir para tamanhos e personalização por usuário.
  */
 export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
-  sobre: 520,
+  sobre: 720,
   resultados: 480,
   situacao: 360,
   evolucoes: 340,
