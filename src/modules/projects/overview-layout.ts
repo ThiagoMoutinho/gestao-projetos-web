@@ -13,7 +13,7 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
   resultados: 480,
   situacao: 360,
   evolucoes: 340,
-  marcos: 430,
+  marcos: 680,
   resumo: 580,
   historico: 580,
   // Planejamento cresce com as seções que o usuário abre; Evidências guarda o próprio limite.
