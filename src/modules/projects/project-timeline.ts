@@ -201,3 +201,16 @@ export function groupByMonth(events: ReadonlyArray<TimelineEvent>): Array<{ key:
   }
   return groups;
 }
+
+/** Agrupa eventos (já do mais recente ao mais antigo) por dia civil, mantendo a ordem: [{ key: "2026-11-19", events }]. */
+export function groupByDay(events: ReadonlyArray<TimelineEvent>): Array<{ key: string; events: TimelineEvent[] }> {
+  const groups: Array<{ key: string; events: TimelineEvent[] }> = [];
+  for (const event of events) {
+    const key = civilDay(event.at);
+    if (!key) continue;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.events.push(event);
+    else groups.push({ key, events: [event] });
+  }
+  return groups;
+}

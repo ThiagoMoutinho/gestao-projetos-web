@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { auditEvents, deliveryEvents, impedimentEvents, groupByMonth, mergeTimeline, relativeDay, scheduleEvents, timelineSource } from "./project-timeline.ts";
+import { auditEvents, deliveryEvents, impedimentEvents, groupByDay, groupByMonth, mergeTimeline, relativeDay, scheduleEvents, timelineSource } from "./project-timeline.ts";
 import type { HistoryItem } from "./schedule-history.ts";
 
 const history = (overrides: Partial<HistoryItem>): HistoryItem =>
@@ -127,5 +127,20 @@ describe("groupByMonth", () => {
   it("ignora evento sem data válida e aceita lista vazia", () => {
     assert.deepEqual(groupByMonth([]), []);
     assert.deepEqual(groupByMonth([ev("x", "sem data")]), []);
+  });
+});
+
+describe("groupByDay", () => {
+  const ev = (id: string, at: string) => ({ id, at, title: id, detail: "", tone: "neutral" as const, badge: null });
+  it("agrupa por dia mantendo a ordem", () => {
+    const groups = groupByDay([ev("a", "2026-11-19T15:00:00-03:00"), ev("b", "2026-11-19T10:00:00-03:00"), ev("c", "2026-11-11T09:00:00-03:00")]);
+    assert.deepEqual(groups.map((g) => [g.key, g.events.map((e) => e.id)]), [
+      ["2026-11-19", ["a", "b"]],
+      ["2026-11-11", ["c"]],
+    ]);
+  });
+  it("ignora evento sem data válida e aceita lista vazia", () => {
+    assert.deepEqual(groupByDay([]), []);
+    assert.deepEqual(groupByDay([ev("x", "sem data")]), []);
   });
 });

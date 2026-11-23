@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, CalendarDays, CircleDot, ClipboardList, History, PackageCheck, TriangleAlert, type LucideIcon } from "lucide-react";
+import { CalendarClock, CalendarDays, CircleDot, Clock, ClipboardList, History, PackageCheck, TriangleAlert, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ import {
   auditEvents,
   deliveryEvents,
   impedimentEvents,
-  groupByMonth,
+  groupByDay,
   mergeTimeline,
   relativeDay,
   scheduleEvents,
@@ -226,7 +226,7 @@ function sourceCounts(events: TimelineEvent[]) {
 
 /**
  * Histórico completo, no mesmo estilo do painel do Sobre o projeto: barra fixa no topo com o filtro por tipo (pílulas com a
- * quantidade) e, abaixo, um cartão por mês (modelo do Sobre o projeto) com a linha cronológica. Carregamento progressivo: 15 eventos por vez, que recomeça a
+ * quantidade) e, abaixo, a linha do tempo agrupada por data. Carregamento progressivo: 15 eventos por vez, que recomeça a
  * cada filtro.
  */
 function TimelineDrawerContent({ events, partial }: { events: TimelineEvent[]; partial: boolean }) {
@@ -248,21 +248,55 @@ function TimelineDrawerContent({ events, partial }: { events: TimelineEvent[]; p
   );
 }
 
+const DAY_LABEL = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Belem", day: "numeric", month: "long", year: "numeric" });
+const HOUR = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Belem", hour: "2-digit", minute: "2-digit" });
+
+/**
+ * Histórico do painel: um cartão com os eventos agrupados por data (etiqueta com calendário e separador discreto entre os dias),
+ * linha cronológica vertical, ícone por tipo, título em destaque e descrição em texto secundário. Mostra 15 por vez.
+ */
 function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial: boolean }) {
   const [loaded, setLoaded] = useState(0);
   const total = events.length;
   const shown = visibleCount(loaded, total);
-  const monthTotals = new Map(groupByMonth(events).map((group) => [group.key, group.events.length]));
+  const days = groupByDay(events.slice(0, shown));
   return (
     <>
-      {groupByMonth(events.slice(0, shown)).map((group) => {
-        const all = monthTotals.get(group.key) ?? group.events.length;
-        return (
-          <DrawerCard key={group.key} icon={CalendarDays} title={group.label} aside={<DrawerCount value={all} />}>
-            <TimelineList events={group.events} partial={false} />
-          </DrawerCard>
-        );
-      })}
+      <DrawerCard icon={History} title="Eventos do projeto" aside={<DrawerCount value={total} />}>
+        {days.map((day, dayIndex) => (
+          <section key={day.key} aria-label={DAY_LABEL.format(new Date(day.events[0].at))} className={cn(dayIndex > 0 && "mt-5 border-t border-border/50 pt-5 dark:border-border")}>
+            <h4 className="mb-4 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-label font-semibold tracking-[0.04em] text-foreground/80 uppercase dark:bg-muted/60">
+              <CalendarDays className="size-3.5 text-primary" aria-hidden="true" />
+              {DAY_LABEL.format(new Date(day.events[0].at))}
+            </h4>
+            <ol className="flex flex-col">
+              {day.events.map((event, index) => {
+                const Icon = SOURCE_ICON[timelineSource(event.id)];
+                const last = index === day.events.length - 1;
+                return (
+                  <li key={event.id} className="relative flex items-start gap-3.5 pb-5 last:pb-0">
+                    {last ? null : <span className="absolute top-9 bottom-0 left-[17px] w-px bg-border" aria-hidden="true" />}
+                    <span className={cn("relative flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
+                      <Icon className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className="text-sm leading-snug font-semibold text-foreground">{event.title}</p>
+                      {event.detail ? <p className="mt-0.5 text-[13px] leading-relaxed break-words text-muted-foreground">{event.detail}</p> : null}
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
+                      {event.badge ? <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", PILL[event.badge.tone])}>{event.badge.label}</span> : null}
+                      <time dateTime={event.at} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="size-3" aria-hidden="true" />
+                        {HOUR.format(new Date(event.at))}
+                      </time>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ))}
+      </DrawerCard>
       {shown < total ? (
         <div className="flex flex-col items-start gap-1.5">
           <Button type="button" variant="outline" size="sm" onClick={() => setLoaded(nextVisibleCount(shown, total))}>
