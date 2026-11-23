@@ -4,13 +4,12 @@ import { BookOpen, Briefcase, Building2, CircleAlert, Compass, FileText, Info, L
 import { useRef, useState } from "react";
 
 import { RichText } from "@/components/ui/rich-text";
-import { cn } from "@/lib/utils";
 
 import { meaningfulText } from "./field-display";
 import { CONTEXT_KEYS, fieldOf, LABELS } from "./institutional-about";
 import { parseSectors } from "./institutional-sectors";
 import type { Overview } from "./institutional-shared";
-import { DrawerNav } from "./overview-detail-drawer";
+import { DrawerCard as ContentCard, DrawerCount as Count, DrawerEmpty, DrawerNav } from "./overview-detail-drawer";
 
 type TabId = "ficha" | "sistema" | "contexto" | "resultados";
 
@@ -23,25 +22,7 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
 
 const CONTEXT_ICON: Record<string, LucideIcon> = { PROBLEM: CircleAlert, PURPOSE: Compass, SCOPE: Layers };
 
-const NOT_INFORMED = <p className="w-fit rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground">Não informado</p>;
-
-/** Cartão de conteúdo do painel: cabeçalho com ícone em superfície suave e o conteúdo abaixo. */
-function ContentCard({ icon: Icon, title, aside, children, className }: { icon: LucideIcon; title: string; aside?: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return (
-    <section className={cn("rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border", className)}>
-      <header className="mb-3.5 flex items-center gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20 ring-inset" aria-hidden="true">
-          <Icon className="size-4.5" />
-        </span>
-        <h3 className="min-w-0 flex-1 text-sm font-semibold text-foreground">{title}</h3>
-        {aside}
-      </header>
-      {children}
-    </section>
-  );
-}
-
-const Count = ({ value }: { value: number }) => <span className="rounded-full bg-muted px-2 py-0.5 text-label font-semibold text-foreground">{value}</span>;
+const NOT_INFORMED = <DrawerEmpty />;
 
 /** Texto longo em markdown, com leitura confortável; campo vazio vira um aviso discreto. */
 function Prose({ text }: { text: string | null }) {

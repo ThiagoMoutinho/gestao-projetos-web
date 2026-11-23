@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, ChevronDown, FileText, Layers, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { BadgeCheck, CalendarClock, ChevronDown, FileText, Gauge, History as HistoryIcon, Layers, LayoutDashboard, OctagonAlert, PackageCheck, RefreshCw, ShieldCheck, TriangleAlert, UserRound } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import type { GetExecutiveSummaryValidation200 } from "@/lib/api/generated/model
 import { cn } from "@/lib/utils";
 
 import { useAction } from "./institutional-shared";
-import { DrawerChip, DrawerSection } from "./overview-detail-drawer";
+import { DrawerCard, DrawerCount, DrawerEmpty, DrawerNav } from "./overview-detail-drawer";
 import { Fact, SectionCard } from "./overview-panel";
 import { projectStatusLabel } from "./project-status";
 
@@ -76,20 +76,54 @@ function Metric({ icon: Icon, tone, label, value }: { icon: typeof Layers; tone:
   );
 }
 
-function Block({ title, children, framed = false, hint = "" }: { title: string; children: React.ReactNode; framed?: boolean; hint?: string }) {
-  if (framed) {
-    // No painel de detalhes: seção no padrão da EAP (faixa de título e conteúdo), igual aos outros painéis.
-    return (
-      <DrawerSection title={title} subtitle={hint}>
-        <div className="flex flex-col gap-2.5">{children}</div>
-      </DrawerSection>
-    );
-  }
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-1.5">
       <h3 className="text-xs font-semibold text-foreground/80">{title}</h3>
       {children}
     </section>
+  );
+}
+
+/** Próximas entregas (lista); `comfortable` é a versão do painel de detalhes, em linhas maiores. */
+function DeliveriesList({ data, comfortable = false }: { data: Indicators; comfortable?: boolean }) {
+  if (data.nextDeliveries.length === 0) {
+    return comfortable ? <DrawerEmpty>Nenhuma entrega futura prevista.</DrawerEmpty> : <p className="text-xs text-muted-foreground">Nenhuma entrega futura prevista.</p>;
+  }
+  return (
+    <ul className={cn("flex flex-col", comfortable ? "gap-2" : "gap-1")}>
+      {data.nextDeliveries.map((delivery) => (
+        <li key={delivery.id} className={cn("flex items-baseline justify-between gap-3", comfortable ? "rounded-xl bg-muted/50 px-3.5 py-2.5 text-[13px] dark:bg-muted/30" : "text-xs")}>
+          <span className="min-w-0 truncate" title={delivery.title}>
+            {delivery.title}
+            {delivery.phaseName ? <span className="text-muted-foreground"> · {delivery.phaseName}</span> : null}
+          </span>
+          <span className={cn("shrink-0 font-medium", delivery.overdue ? "text-destructive" : "text-muted-foreground")}>
+            {CIVIL_DAY.format(new Date(delivery.plannedAt))}
+            {delivery.overdue ? " · vencido" : ""}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Movimentações relevantes (lista); `comfortable` é a versão do painel de detalhes. */
+function MovementsList({ data, comfortable = false }: { data: Indicators; comfortable?: boolean }) {
+  if (data.movements.length === 0) {
+    return comfortable ? <DrawerEmpty>Nenhuma movimentação relevante registrada.</DrawerEmpty> : <p className="text-xs text-muted-foreground">Nenhuma movimentação relevante registrada.</p>;
+  }
+  return (
+    <ul className={cn("flex flex-col", comfortable ? "gap-2" : "gap-1.5")}>
+      {data.movements.map((movement) => (
+        <li key={movement.id} className={cn(comfortable ? "rounded-xl bg-muted/50 px-3.5 py-2.5 text-[13px] dark:bg-muted/30" : "text-xs")}>
+          <span className="break-words">{movement.summary}</span>
+          <span className="block text-[11px] text-muted-foreground">
+            {movement.automatic ? "Automático" : (movement.actorName ?? "Usuário não identificado")} · {MOMENT.format(new Date(movement.at))}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -104,7 +138,7 @@ function validationText(item: ValidationItem) {
  * `part` separa o essencial (síntese e indicadores, sempre visíveis no cartão) do complementar (próximas entregas e
  * movimentações, que aparecem quando o cartão é expandido).
  */
-function SummaryContent({ data, part = "all", generatedAt, framed = false }: { data: Indicators; part?: "all" | "core" | "extra"; generatedAt?: string; framed?: boolean }) {
+function SummaryContent({ data, part = "all", generatedAt }: { data: Indicators; part?: "all" | "core" | "extra"; generatedAt?: string }) {
   const core = part !== "extra";
   const extra = part !== "core";
   if (!data.hasData) {
@@ -151,45 +185,96 @@ function SummaryContent({ data, part = "all", generatedAt, framed = false }: { d
       ) : null}
       {extra ? (
         <>
-          <Block title="Próximas entregas" framed={framed} hint="Entregas previstas e seus prazos.">
-            {data.nextDeliveries.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma entrega futura prevista.</p>
-            ) : (
-              <ul className="flex flex-col gap-1">
-                {data.nextDeliveries.map((delivery) => (
-                  <li key={delivery.id} className="flex items-baseline justify-between gap-3 text-xs">
-                    <span className="min-w-0 truncate" title={delivery.title}>
-                      {delivery.title}
-                      {delivery.phaseName ? <span className="text-muted-foreground"> · {delivery.phaseName}</span> : null}
-                    </span>
-                    <span className={cn("shrink-0 font-medium", delivery.overdue ? "text-destructive" : "text-muted-foreground")}>
-                      {CIVIL_DAY.format(new Date(delivery.plannedAt))}
-                      {delivery.overdue ? " · vencido" : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <Block title="Próximas entregas">
+            <DeliveriesList data={data} />
           </Block>
-          <Block title="Movimentações relevantes" framed={framed} hint="Últimas decisões e atualizações do projeto.">
-            {data.movements.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma movimentação relevante registrada.</p>
-            ) : (
-              <ul className="flex flex-col gap-1.5">
-                {data.movements.map((movement) => (
-                  <li key={movement.id} className="text-xs">
-                    <span className="break-words">{movement.summary}</span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      {movement.automatic ? "Automático" : (movement.actorName ?? "Usuário não identificado")} · {MOMENT.format(new Date(movement.at))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <Block title="Movimentações relevantes">
+            <MovementsList data={data} />
           </Block>
         </>
       ) : null}
     </>
+  );
+}
+
+type SummaryTab = "visao" | "entregas" | "movimentacoes";
+
+/**
+ * Painel de detalhes do Resumo executivo, no modelo do Sobre o projeto: barra fixa (Visão geral, Entregas, Movimentações) que
+ * mostra uma parte por vez, em cartões com ícone. Os dados vêm do resumo já carregado pelo card (sem nova consulta).
+ */
+function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observation }: { data: Indicators; ownerName: string; suppliers: string[] | null; updatedAt: string; observation: string | null }) {
+  const [tab, setTab] = useState<SummaryTab>("visao");
+  const nav = useRef<HTMLDivElement>(null);
+  function choose(id: string) {
+    setTab(id as SummaryTab);
+    nav.current?.closest<HTMLElement>("[role=region]")?.scrollTo({ top: 0 });
+  }
+  return (
+    <div className="flex flex-col gap-4">
+      <DrawerNav
+        wrapperRef={nav}
+        label="Partes do painel"
+        active={tab}
+        onSelect={choose}
+        items={[
+          { id: "visao", label: "Visão geral", icon: LayoutDashboard },
+          { id: "entregas", label: "Entregas", icon: PackageCheck, count: data.nextDeliveries.length },
+          { id: "movimentacoes", label: "Movimentações", icon: HistoryIcon, count: data.movements.length },
+        ]}
+      />
+      <div key={tab} role="group" aria-label={tab === "visao" ? "Visão geral" : tab === "entregas" ? "Entregas" : "Movimentações"} className="motion-fade flex flex-col gap-4">
+        {tab === "visao" ? (
+          <>
+            <DrawerCard
+              icon={Gauge}
+              title="Situação e progresso"
+              aside={
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-2.5 py-1 text-label font-medium dark:border-border">
+                  <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
+                  {projectStatusLabel(data.situation.status)}
+                </span>
+              }
+            >
+              <div className="mb-2.5 flex items-end justify-between gap-3">
+                <p className="text-3xl leading-none font-semibold">{percent(data.progress.basisPoints)}</p>
+                <p className="text-xs text-muted-foreground">Progresso consolidado</p>
+              </div>
+              <Progress value={data.progress.basisPoints === null ? 0 : Math.round(data.progress.basisPoints / 100)} aria-label="Progresso consolidado do projeto" className="**:data-[slot=progress-track]:h-2" />
+            </DrawerCard>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Metric icon={RefreshCw} tone="blue" label="Reprogramações" value={String(data.reschedules.total)} />
+              <Metric icon={Layers} tone="blue" label="Aguardando homologação" value={String(data.homologation.awaiting)} />
+              <Metric icon={TriangleAlert} tone="red" label="Em correção" value={String(data.homologation.inCorrections)} />
+              <Metric icon={CalendarClock} tone="red" label="Itens em atraso" value={String(data.overdue.total)} />
+              <Metric icon={OctagonAlert} tone="red" label="Impedimentos" value={String(data.impediments)} />
+            </div>
+            <DrawerCard icon={UserRound} title="Responsáveis e registro">
+              <dl className="grid gap-2 sm:grid-cols-3">
+                <Fact label="Responsável principal" value={ownerName} />
+                <Fact label="Fornecedor" value={suppliers === null ? "Indisponível" : suppliers.length === 0 ? "Não informado" : suppliers.join(", ")} />
+                <Fact label="Última atualização" value={updatedAt} />
+              </dl>
+            </DrawerCard>
+            {observation ? (
+              <DrawerCard icon={ShieldCheck} title="Observação da última validação">
+                <p className="text-[13px] leading-relaxed break-words text-foreground/90">{observation}</p>
+              </DrawerCard>
+            ) : null}
+          </>
+        ) : null}
+        {tab === "entregas" ? (
+          <DrawerCard icon={PackageCheck} title="Próximas entregas" aside={data.nextDeliveries.length > 0 ? <DrawerCount value={data.nextDeliveries.length} /> : null}>
+            <DeliveriesList data={data} comfortable />
+          </DrawerCard>
+        ) : null}
+        {tab === "movimentacoes" ? (
+          <DrawerCard icon={HistoryIcon} title="Movimentações relevantes" aside={data.movements.length > 0 ? <DrawerCount value={data.movements.length} /> : null}>
+            <MovementsList data={data} comfortable />
+          </DrawerCard>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -458,21 +543,7 @@ export function ExecutiveSummaryCard({
 
   // Conteúdo complementar (antes aparecia em "Ver mais"): vai para o painel lateral de detalhes.
   const detail = data ? (
-    <div className="flex flex-col gap-3">
-      <SummaryContent data={data} part="extra" framed />
-      <DrawerSection title="Responsáveis e registro" subtitle="Quem responde pelo projeto e quando foi atualizado.">
-        <dl className="grid gap-2 sm:grid-cols-3">
-          <Fact label="Responsável principal" value={ownerName} />
-          <Fact label="Fornecedor" value={suppliers === null ? "Indisponível" : suppliers.length === 0 ? "Não informado" : suppliers.join(", ")} />
-          <Fact label="Última atualização" value={updatedAt} />
-        </dl>
-      </DrawerSection>
-      {governance?.lastValidation?.observation ? (
-        <p className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs break-words text-muted-foreground">
-          <span className="font-semibold text-primary">Observação da última validação:</span> {governance.lastValidation.observation}
-        </p>
-      ) : null}
-    </div>
+    <SummaryDrawerContent data={data} ownerName={ownerName} suppliers={suppliers} updatedAt={updatedAt} observation={governance?.lastValidation?.observation ?? null} />
   ) : null;
 
   const validation = governance ? (
@@ -539,23 +610,6 @@ export function ExecutiveSummaryCard({
           ? {
               title: "Resumo executivo",
               description: "Panorama consolidado do projeto: entregas, movimentações e responsáveis.",
-              meta: (
-                <>
-                  <DrawerChip strong>
-                    <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
-                    {projectStatusLabel(data.situation.status)} · {percent(data.progress.basisPoints)}
-                  </DrawerChip>
-                  <DrawerChip icon={RefreshCw}>
-                    <span className="font-semibold text-foreground">{data.reschedules.total}</span> reprogramações
-                  </DrawerChip>
-                  <DrawerChip icon={Layers}>
-                    <span className="font-semibold text-foreground">{data.homologation.awaiting}</span> aguardando homologação
-                  </DrawerChip>
-                  <DrawerChip icon={TriangleAlert}>
-                    <span className="font-semibold text-foreground">{data.overdue.total}</span> em atraso
-                  </DrawerChip>
-                </>
-              ),
               content: detail,
             }
           : undefined

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, CircleDot, ClipboardList, History, PackageCheck, TriangleAlert, type LucideIcon } from "lucide-react";
+import { CalendarClock, CalendarDays, CircleDot, ClipboardList, History, PackageCheck, TriangleAlert, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { listEapAudit, listEapMilestoneDeliveries, listEapTaskImpediments } from
 import { cn } from "@/lib/utils";
 
 import type { ProjectDetail } from "./eap-present";
-import { DrawerNav, DrawerSection } from "./overview-detail-drawer";
+import { DrawerCard, DrawerCount, DrawerNav } from "./overview-detail-drawer";
 import { SectionCard } from "./overview-panel";
 import { nextVisibleCount, TIMELINE_PAGE as TIMELINE_FIRST_PAGE, visibleCount } from "./progressive-list";
 import {
@@ -226,7 +226,7 @@ function sourceCounts(events: TimelineEvent[]) {
 
 /**
  * Histórico completo, no mesmo estilo do painel do Sobre o projeto: barra fixa no topo com o filtro por tipo (pílulas com a
- * quantidade) e, abaixo, uma seção por mês com a linha cronológica. Carregamento progressivo: 15 eventos por vez, que recomeça a
+ * quantidade) e, abaixo, um cartão por mês (modelo do Sobre o projeto) com a linha cronológica. Carregamento progressivo: 15 eventos por vez, que recomeça a
  * cada filtro.
  */
 function TimelineDrawerContent({ events, partial }: { events: TimelineEvent[]; partial: boolean }) {
@@ -258,9 +258,9 @@ function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial:
       {groupByMonth(events.slice(0, shown)).map((group) => {
         const all = monthTotals.get(group.key) ?? group.events.length;
         return (
-          <DrawerSection key={group.key} title={group.label} subtitle={`${all} ${all === 1 ? "evento" : "eventos"} no mês`}>
+          <DrawerCard key={group.key} icon={CalendarDays} title={group.label} aside={<DrawerCount value={all} />}>
             <TimelineList events={group.events} partial={false} />
-          </DrawerSection>
+          </DrawerCard>
         );
       })}
       {shown < total ? (

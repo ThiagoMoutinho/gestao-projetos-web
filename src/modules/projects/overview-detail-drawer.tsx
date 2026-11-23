@@ -39,6 +39,47 @@ export function DrawerChip({
   );
 }
 
+/** Cartão de conteúdo do painel (modelo do Sobre o projeto): cabeçalho com ícone em superfície suave, título e, à direita, um detalhe opcional. */
+export function DrawerCard({
+  icon: Icon,
+  title,
+  aside,
+  children,
+  className,
+  divided = true,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  /** Linha separadora entre o cabeçalho (ícone e título) e o conteúdo; padrão em todos os cartões (`false` a remove). */
+  divided?: boolean;
+}) {
+  return (
+    <section className={cn("rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border", className)}>
+      <header className={cn("flex items-center gap-3", divided ? "mb-4 border-b border-border/60 pb-4 dark:border-border" : "mb-3.5")}>
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20 ring-inset" aria-hidden="true">
+          <Icon className="size-4.5" />
+        </span>
+        <h3 className="min-w-0 flex-1 text-sm font-semibold text-foreground">{title}</h3>
+        {aside}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+/** Contador discreto do cabeçalho de um `DrawerCard`. */
+export function DrawerCount({ value }: { value: number }) {
+  return <span className="rounded-full bg-muted px-2 py-0.5 text-label font-semibold text-foreground">{value}</span>;
+}
+
+/** Estado vazio discreto ("Não informado", "Não definido"…). */
+export function DrawerEmpty({ children = "Não informado" }: { children?: React.ReactNode }) {
+  return <p className="w-fit rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground">{children}</p>;
+}
+
 export type DrawerNavItem = { id: string; label: string; icon: ComponentType<{ className?: string }>; count?: number };
 
 /**
