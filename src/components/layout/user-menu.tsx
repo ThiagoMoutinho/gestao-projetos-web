@@ -52,7 +52,7 @@ function SquircleDefs() {
 }
 
 const THEME_ICON: Record<string, LucideIcon> = { igepps: Building2, light: Sun, dark: Moon };
-const THEME_SHORT: Record<string, string> = { igepps: "IGEPPS", light: "Claro", dark: "Escuro" };
+const THEME_SHORT: Record<string, string> = { igepps: "Igepps", light: "Claro", dark: "Escuro" };
 
 /** Fundo das iniciais quando não há foto: degradê da paleta. */
 const FALLBACK_BG =
