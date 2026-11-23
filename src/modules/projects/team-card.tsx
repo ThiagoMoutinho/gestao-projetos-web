@@ -35,6 +35,7 @@ import { roleLabel } from "@/modules/auth/roles";
 import type { ProjectMemberView } from "./eap-present";
 import { SectionCard } from "./overview-panel";
 import { Participants } from "./planning-overview";
+import { TeamDrawerContent } from "./team-drawer";
 import { MemberFunctionDialog, type MemberFunction } from "./member-function-dialog";
 import { MemberFunctionsManager } from "./member-functions-manager";
 import { projectRoleLabel } from "./project-records";
@@ -88,9 +89,17 @@ export function TeamCard({ projectId, members, canManageFunctions = false }: { p
         subtitle="Responsáveis pelos compromissos do projeto"
         icon={Users}
         tone="blue"
-        moreLabel={`Ver todos os participantes (${members?.length ?? 0})`}
+        moreLabel={`Ver todos os participantes (${new Set((members ?? []).map((member) => member.userId)).size})`}
         expandable={members !== null && members.length > 0}
-        expansion={members !== null && members.length > 0 ? <Participants members={members} all /> : undefined}
+        drawer={
+          members !== null && members.length > 0
+            ? {
+                title: "Equipe",
+                description: "Participantes e responsabilidades do projeto.",
+                content: <TeamDrawerContent members={members} />,
+              }
+            : undefined
+        }
         action={
           canEdit ? (
             <Button type="button" variant="outline" size="icon" aria-label="Editar: Equipe" onClick={() => setOpen(true)}>

@@ -862,19 +862,27 @@ function personTone(key: string) {
   return PERSON_TONES[hash % PERSON_TONES.length];
 }
 
-function PersonAvatar({ name, className }: { name: string; className?: string }) {
+export function PersonAvatar({ name, className, toneClass }: { name: string; className?: string; /** Tom fixo (ex.: o do papel); sem ele, o tom vem do nome. */ toneClass?: string }) {
   return (
-    <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center rounded-full font-semibold", personTone(name), className)}>
+    <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center rounded-full font-semibold", toneClass ?? personTone(name), className)}>
       {initialsOf(name)}
     </span>
   );
 }
 
+/** Tom do avatar de cada papel principal (os mesmos do painel de detalhes). */
+const ROLE_TONE: Record<string, string> = {
+  GESTOR: "bg-primary/10 text-primary",
+  PATROCINADOR: "bg-status-validation-soft text-status-validation-ink",
+  RESPONSAVEL_TECNICO: "bg-status-running-soft text-status-running-ink",
+  FORNECEDOR: "bg-status-done-soft text-status-done-ink",
+};
+
 /**
- * Cartão Equipe: responsáveis principais em linhas com ícone do papel e, abaixo, um resumo dos participantes (rostos e quantidade
- * por papel). Com `all` (cartão expandido), acrescenta a lista completa de participantes.
+ * Cartão Equipe: os responsáveis principais numa lista única (avatar na cor do papel, papel e nome) e, abaixo, as pessoas do projeto, que
+ * preenchem o espaço restante do card (o que não couber fica no painel). A relação completa, com busca, fica no painel lateral de detalhes (team-drawer.tsx).
  */
-export function Participants({ members, all = false }: { members: ProjectDetail["members"]; all?: boolean }) {
+export function Participants({ members }: { members: ProjectDetail["members"] }) {
   if (members === null) {
     return (
       <p role="alert" className="text-xs text-muted-foreground">
@@ -882,36 +890,30 @@ export function Participants({ members, all = false }: { members: ProjectDetail[
       </p>
     );
   }
-  const people = [...new Map(members.map((member) => [member.email || member.id, member])).values()];
-  const byRole = new Map<string, number>();
-  for (const member of members) byRole.set(member.roleLabel, (byRole.get(member.roleLabel) ?? 0) + 1);
-  const faces = people.slice(0, 6);
+  const people = [...new Map(members.map((member) => [member.userId, member])).values()];
   return (
-    <section aria-label="Participantes" className="flex min-w-0 flex-col gap-4">
-      <ul className="flex flex-col gap-2">
+    <section aria-label="Participantes" className="flex min-w-0 flex-col gap-3">
+      <ul className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-card dark:divide-border dark:border-border">
         {PARTICIPANT_ROLES.map(({ role, label, icon: Icon }) => {
           const found = [...new Set(members.filter((member) => member.role === role).map((member) => member.name))];
-          const structural = role === "PATROCINADOR";
           return (
-            <li key={role} data-cut-unit className="flex min-w-0 items-center gap-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 dark:border-border">
+            <li key={role} data-cut-unit className="flex min-w-0 items-center gap-3 px-3.5 py-3">
               {found.length > 0 ? (
-                <PersonAvatar name={found[0]} className="size-9 text-xs" />
+                <PersonAvatar name={found[0]} toneClass={ROLE_TONE[role]} className="size-10 text-xs" />
               ) : (
-                <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground">
+                <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground">
                   <Icon className="size-4" />
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-                  <Icon className="size-3" aria-hidden="true" />
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Icon className="size-3.5" aria-hidden="true" />
                   {label}
                 </p>
-                <p className={cn("truncate text-sm", found.length > 0 ? "font-semibold" : "text-muted-foreground")}>
-                  {found.length > 0 ? found.join(", ") : "Não definido"}
-                </p>
+                <p className={cn("mt-0.5 truncate text-sm", found.length > 0 ? "font-semibold" : "text-muted-foreground")}>{found.length > 0 ? found[0] : "Não definido"}</p>
               </div>
               {found.length > 1 ? <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground">+{found.length - 1}</span> : null}
-              {found.length === 0 && structural ? (
+              {found.length === 0 && role === "PATROCINADOR" ? (
                 <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground" title="O papel de patrocinador ainda não existe no sistema.">
                   Em breve
                 </span>
@@ -921,48 +923,28 @@ export function Participants({ members, all = false }: { members: ProjectDetail[
         })}
       </ul>
       {people.length > 0 ? (
-        <div data-cut-unit className="flex min-w-0 flex-col gap-2 rounded-xl bg-muted/40 px-3 py-2.5 dark:bg-muted/25">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-              Participantes <span className="ml-1 rounded-full bg-card px-2 py-0.5 text-foreground normal-case">{people.length}</span>
-            </p>
-            <div className="flex items-center" aria-hidden="true">
-              {faces.slice(0, 5).map((person) => (
-                <PersonAvatar key={person.id} name={person.name} className="-ml-2 size-7 text-[10px] ring-2 ring-card first:ml-0" />
-              ))}
-              {people.length > 5 ? (
-                <span className="-ml-2 flex size-7 items-center justify-center rounded-full bg-card text-[10px] font-semibold text-muted-foreground ring-2 ring-card">+{people.length - 5}</span>
-              ) : null}
-            </div>
-          </div>
-          <ul className="flex flex-wrap gap-1.5" aria-label="Participantes por papel">
-            {[...byRole.entries()].map(([label, count]) => (
-              <li key={label} className="rounded-full border border-border/60 bg-card px-2 py-0.5 text-label text-muted-foreground dark:border-border">
-                {label} · <span className="font-semibold text-foreground">{count}</span>
-              </li>
-            ))}
+        <>
+          <p data-cut-unit className="mt-1 flex items-center gap-2 px-0.5 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+            Participantes
+            <span className="rounded-full bg-muted px-1.5 py-px font-semibold tracking-normal text-foreground">{people.length}</span>
+          </p>
+          {/* A lista preenche o espaço que o card tem (a linha do grid pode ser mais alta); o que não couber fica no painel de detalhes. Linhas separadas por espaço: o corte do card só acontece entre elas. */}
+          <ul aria-label="Participantes do projeto" className="flex flex-col gap-1.5">
+            {people.map((person) => {
+              const roles = [...new Set(members.filter((member) => member.userId === person.userId).map((member) => member.roleLabel))];
+              return (
+                <li key={person.userId} data-cut-unit data-cut-end className="flex min-w-0 items-center gap-3 rounded-xl border border-border/60 bg-card px-3.5 py-2 dark:border-border">
+                  <PersonAvatar name={person.name} className="size-8 text-[10px]" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{person.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{roles.join(" · ")}</p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
-        </div>
+        </>
       ) : null}
-      {all && members.length > 0 ? <AllParticipants members={members} /> : null}
     </section>
-  );
-}
-
-/** Lista completa de participantes do projeto (todos os papéis); aparece com o cartão Equipe expandido. */
-function AllParticipants({ members }: { members: NonNullable<ProjectDetail["members"]> }) {
-  return (
-    <ul aria-label="Todos os participantes do projeto" className="motion-fade flex flex-col divide-y rounded-xl border border-border/60 dark:border-border">
-      {members.map((member) => (
-        <li key={member.id} className="flex min-w-0 items-center gap-3 px-3 py-2.5">
-          <PersonAvatar name={member.name} className="size-8 text-label" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{member.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{member.email}</p>
-          </div>
-          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground">{member.roleLabel}</span>
-        </li>
-      ))}
-    </ul>
   );
 }
