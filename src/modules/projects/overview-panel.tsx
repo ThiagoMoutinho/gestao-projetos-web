@@ -212,6 +212,8 @@ function SectionCardFrame({
           children
         )}
       </div>
+      {/* Com drawer: rodapé (ex.: validação do PMO) fica acima de "Ver detalhes", como no painel executivo. */}
+      {drawer && footer ? <div className="shrink-0">{footer}</div> : null}
       {drawer ? (
         overflowing || expandable ? (
           <div className="shrink-0">
@@ -231,7 +233,7 @@ function SectionCardFrame({
           </SeeMore>
         </div>
       ) : null}
-      {footer ? <div className="mt-auto shrink-0">{footer}</div> : null}
+      {!drawer && footer ? <div className="mt-auto shrink-0">{footer}</div> : null}
     </Card>
     {drawer ? (
       <OverviewDetailDrawer

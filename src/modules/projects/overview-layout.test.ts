@@ -6,10 +6,10 @@ import { DEFAULT_WIDGETS, moveWidget, introduceNewWidgets, NEW_WIDGETS, normaliz
 const ids = (list: { id: string }[]) => list.map((item) => item.id);
 
 describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
-  it("o padrão segue a ordem de leitura: Sobre | Equipe, Resumo | Linha do tempo, Marcos | Evidências, Conformidade (total) e Prazo e cronograma (total)", () => {
+  it("o padrão segue a ordem de leitura: Sobre | Equipe, Resumo (total), Linha do tempo | Marcos, Evidências, Conformidade (total) e Prazo e cronograma (total)", () => {
     assert.deepEqual(ids(DEFAULT_WIDGETS), ["sobre", "equipe", "resumo", "historico", "marcos", "evidencias", "conformidade", "planejamento"]);
     const placed = placeWidgets(DEFAULT_WIDGETS);
-    assert.deepEqual(placed.map((item) => item.span), [6, 6, 6, 6, 6, 6, 12, 12]);
+    assert.deepEqual(placed.map((item) => item.span), [6, 6, 12, 6, 6, 6, 12, 12]);
       });
 
   it("Resultados, Situação e Evoluções ficam fora do padrão, mas continuam em layouts salvos que os incluem", () => {
@@ -71,7 +71,7 @@ describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
 
   it("calcula a linha de cada widget no grid de 12 colunas", () => {
     const rows = rowsOf(placeWidgets(DEFAULT_WIDGETS));
-    assert.deepEqual([...rows.entries()], [["sobre", 0], ["equipe", 0], ["resumo", 1], ["historico", 1], ["marcos", 2], ["evidencias", 2], ["conformidade", 3], ["planejamento", 4]]);
+    assert.deepEqual([...rows.entries()], [["sobre", 0], ["equipe", 0], ["resumo", 1], ["historico", 2], ["marcos", 2], ["evidencias", 3], ["conformidade", 4], ["planejamento", 5]]);
     const shifted = rowsOf(placeWidgets([{ id: "situacao", wide: false }, { id: "sobre", wide: false }, { id: "resultados", wide: false }]));
     assert.notEqual(shifted.get("sobre"), shifted.get("resultados"));
   });

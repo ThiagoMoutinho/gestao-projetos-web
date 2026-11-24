@@ -5,18 +5,22 @@ import {
   Ban,
   CalendarClock,
   CalendarDays,
+  Check,
   ChevronDown,
   CircleCheck,
   CircleX,
   Clock,
   FilePenLine,
   FileText,
+  Flag,
   Gauge,
   History as HistoryIcon,
+  Info,
   Layers,
   LayoutDashboard,
   OctagonAlert,
   PackageCheck,
+  Plus,
   RefreshCw,
   ShieldCheck,
   TrendingUp,
@@ -26,7 +30,7 @@ import {
   UserRoundCog,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -68,6 +72,17 @@ const DOT: Record<Indicators["situation"]["status"], string> = {
   SUSPENSO: "bg-muted-foreground",
 };
 
+/** Badge de situação no cabeçalho (fundo suave + ponto), como na referência visual. */
+const SITUATION_BADGE: Record<Indicators["situation"]["status"], string> = {
+  NAO_INICIADO: "bg-muted text-muted-foreground",
+  EM_EXECUCAO: "bg-primary/10 text-primary",
+  EM_ATENCAO: "bg-status-attention-soft text-status-attention-ink",
+  CRITICO: "bg-status-critical-soft text-status-critical-ink",
+  EM_VALIDACAO: "bg-status-validation-soft text-status-validation-ink",
+  CONCLUIDO: "bg-status-done-soft text-status-done-ink",
+  SUSPENSO: "bg-muted text-muted-foreground",
+};
+
 const zone = { timeZone: "America/Belem" } as const;
 const REFERENCE = new Intl.DateTimeFormat("pt-BR", { ...zone, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const CIVIL_DAY = new Intl.DateTimeFormat("pt-BR", { ...zone, day: "2-digit", month: "2-digit", year: "numeric" });
@@ -85,24 +100,74 @@ function percent(basisPoints: number | null) {
   return basisPoints === null ? "Indisponível" : `${(Math.round(basisPoints / 10) / 10).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
-const METRIC_TONE = {
-  blue: "bg-primary/10 text-primary",
-  red: "bg-status-critical-soft text-status-critical-ink",
-} as const;
-
-/** Indicador do cartão: ícone em bloco colorido, número em destaque e rótulo. */
-function Metric({ icon: Icon, tone, label, value }: { icon: typeof Layers; tone: keyof typeof METRIC_TONE; label: string; value: string }) {
+/** Progresso circular (valor em basis points da API; 10_000 = 100%). */
+function CircularProgress({ basisPoints, label }: { basisPoints: number | null; label: string }) {
+  const pct = basisPoints === null ? 0 : Math.min(100, Math.max(0, Math.round(basisPoints / 100)));
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
   return (
-    <div data-cut-unit className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border/60 bg-card px-3 py-2.5 dark:border-border">
-      <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full", METRIC_TONE[tone])} aria-hidden="true">
-        <Icon className="size-4" />
+    <div className="relative size-[92px] shrink-0" role="img" aria-label={label}>
+      <svg viewBox="0 0 96 96" className="size-full -rotate-90" aria-hidden="true">
+        <circle cx="48" cy="48" r={radius} fill="none" stroke="currentColor" strokeWidth="8" className="text-muted" />
+        <circle
+          cx="48"
+          cy="48"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={basisPoints === null ? circumference : offset}
+          className="text-primary transition-[stroke-dashoffset] duration-300 ease-out motion-reduce:transition-none"
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[15px] font-semibold tracking-tight tabular-nums text-foreground">
+        {percent(basisPoints)}
       </span>
-      <div className="min-w-0">
-        <p className="text-base leading-none font-semibold">{value}</p>
-        <p className="mt-1 text-[11px] leading-tight text-muted-foreground">{label}</p>
-      </div>
     </div>
   );
+}
+
+/** Indicador operacional compacto: valor em destaque, rótulo curto e ícone discreto. */
+function OpsMetric({
+  icon: Icon,
+  label,
+  value,
+  emphasize = false,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  emphasize?: boolean;
+}) {
+  const hot = emphasize && value > 0;
+  return (
+    <div className="flex min-w-0 flex-col items-center gap-1.5 px-2.5 py-3 text-center">
+      <Icon className={cn("size-4", hot ? "text-destructive" : "text-muted-foreground")} aria-hidden="true" />
+      <p className={cn("text-xl leading-none font-semibold tabular-nums", hot ? "text-destructive" : "text-foreground")}>{value}</p>
+      <p className="max-w-[7.5rem] text-[11px] leading-snug text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+/** Resumo curto da situação (dados da API; sem inventar valores). */
+function shortSituation(data: Indicators) {
+  const status = projectStatusLabel(data.situation.status);
+  const delay =
+    data.situation.delayDays > 0
+      ? `, com o maior atraso em ${data.situation.delayDays} ${data.situation.delayDays === 1 ? "dia" : "dias"}`
+      : "";
+  const overdue =
+    data.overdue.total === 0
+      ? "Nenhum item em atraso"
+      : `${data.overdue.total} ${data.overdue.total === 1 ? "item em atraso" : "itens em atraso"} (${data.overdue.tasks} ${data.overdue.tasks === 1 ? "tarefa" : "tarefas"}, ${data.overdue.milestones} ${data.overdue.milestones === 1 ? "marco" : "marcos"})`;
+  const impediment =
+    data.impediments === 0
+      ? "nenhum impedimento"
+      : `${data.impediments} ${data.impediments === 1 ? "tarefa com impedimento" : "tarefas com impedimento"}`;
+  return `Situação atual: ${status}${delay}. ${overdue} e ${impediment}.`;
 }
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
@@ -259,45 +324,140 @@ function validationText(item: ValidationItem) {
   return `${kind} por ${who} em ${REFERENCE.format(new Date(item.validatedAt))} · ciclo ${cycleDay(item.cycleStart)} a ${cycleDay(item.cycleEnd)}${item.unchanged ? " · sem alterações" : ""}`;
 }
 
+/** Detalhes estruturados da situação (expansível no cartão; preserva todos os campos da API). */
+function SituationDetails({ data }: { data: Indicators }) {
+  const facts = [
+    { label: "Situação do projeto", value: projectStatusLabel(data.situation.status) },
+    {
+      label: "Maior atraso",
+      value: data.situation.delayDays > 0 ? `${data.situation.delayDays} ${data.situation.delayDays === 1 ? "dia" : "dias"}` : "Sem atraso",
+    },
+    { label: "Tarefas atrasadas", value: String(data.overdue.tasks) },
+    { label: "Marcos atrasados", value: String(data.overdue.milestones) },
+    { label: "Tarefas com impedimento", value: String(data.impediments) },
+    { label: "Reprogramações", value: String(data.reschedules.total) },
+    { label: "Entregas aguardando homologação", value: String(data.homologation.awaiting) },
+  ] as const;
+  return (
+    <div className="flex flex-col gap-3 border-t border-border/50 pt-3">
+      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {facts.map((fact) => (
+          <div key={fact.label} className="flex items-baseline justify-between gap-3 text-xs">
+            <dt className="text-muted-foreground">{fact.label}</dt>
+            <dd className="font-medium tabular-nums text-foreground">{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div>
+        <p className="mb-1.5 text-[11px] font-semibold text-muted-foreground">Próximas entregas</p>
+        <DeliveriesList data={data} />
+      </div>
+    </div>
+  );
+}
+
+/** Faixa "Situação atual" — sempre no rodapé do cartão (fora da área cortável). */
+function SituationBar({ data }: { data: Indicators }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <section className="rounded-xl bg-muted/40 px-3.5 py-3 dark:bg-muted/25">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-start gap-2.5 text-left focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <p className="min-w-0 flex-1 text-xs leading-relaxed text-foreground/90">{shortSituation(data)}</p>
+        <ChevronDown
+          className={cn(
+            "mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none",
+            open && "rotate-180",
+          )}
+          aria-hidden="true"
+        />
+      </button>
+      <Presence open={open}>
+        <div id={id} className="pt-1">
+          <SituationDetails data={data} />
+        </div>
+      </Presence>
+    </section>
+  );
+}
+
 /**
  * Síntese, indicadores, próximas entregas e movimentações: usado no resumo ao vivo e no snapshot de uma validação.
  * `part` separa o essencial (síntese e indicadores, sempre visíveis no cartão) do complementar (próximas entregas e
  * movimentações, que aparecem quando o cartão é expandido).
  */
-function SummaryContent({ data, part = "all", generatedAt }: { data: Indicators; part?: "all" | "core" | "extra"; generatedAt?: string }) {
+function SummaryContent({ data, part = "all" }: { data: Indicators; part?: "all" | "core" | "extra"; generatedAt?: string }) {
   const core = part !== "extra";
   const extra = part !== "core";
   if (!data.hasData) {
     return core ? <p className="text-xs text-muted-foreground">{data.narrative[0]?.text}</p> : null;
   }
+
+  const phasesLabel =
+    data.progress.phasesTotal === 1
+      ? `${data.progress.phasesCalculated} de ${data.progress.phasesTotal} fase calculada`
+      : `${data.progress.phasesCalculated} de ${data.progress.phasesTotal} fases calculadas`;
+
   return (
     <>
       {core ? (
-        <>
-          <p className="text-xs leading-relaxed text-foreground/85">{data.narrative.map((line) => line.text).join(" ")}</p>
-          {part === "core" ? (
-            <p className="text-[11px] text-muted-foreground">Dados de {generatedAt ? REFERENCE.format(new Date(generatedAt)) : ""}. Indicadores calculados automaticamente a cada consulta; a validação oficial do PMO fica registrada abaixo.</p>
-          ) : null}
-          {part === "core" ? (
-            <>
-              <div data-cut-unit className="flex flex-col gap-1.5 rounded-lg bg-muted/50 px-3 py-2.5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-[11px] text-muted-foreground">Progresso consolidado</p>
-                  <p className="text-base leading-none font-semibold">{percent(data.progress.basisPoints)}</p>
-                </div>
-                <Progress
-                  value={data.progress.basisPoints === null ? 0 : Math.round(data.progress.basisPoints / 100)}
-                  aria-label="Progresso consolidado do projeto"
-                  className="**:data-[slot=progress-track]:h-1.5"
+        part === "core" ? (
+          <div className="@container">
+            {/* Progresso + indicadores operacionais (situação fica no rodapé, sempre visível). */}
+            <div className="flex flex-col gap-4 @min-[560px]:flex-row @min-[560px]:items-center @min-[560px]:gap-5">
+              <div className="flex min-w-0 items-center gap-4">
+                <CircularProgress
+                  basisPoints={data.progress.basisPoints}
+                  label={`Progresso consolidado: ${percent(data.progress.basisPoints)}`}
                 />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">Progresso consolidado</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{phasesLabel}.</p>
+                  {data.situation.delayDays > 0 ? (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-[11px] font-medium text-destructive">
+                      <Clock className="size-3.5" aria-hidden="true" />
+                      Maior atraso: {data.situation.delayDays} {data.situation.delayDays === 1 ? "dia" : "dias"}
+                    </span>
+                  ) : null}
+                </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-3">
-                <Metric icon={RefreshCw} tone="blue" label="Reprogramações" value={String(data.reschedules.total)} />
-                <Metric icon={Layers} tone="blue" label="Aguardando homologação" value={String(data.homologation.awaiting)} />
-                <Metric icon={TriangleAlert} tone="red" label="Em correção" value={String(data.homologation.inCorrections)} />
-              </div>
-            </>
-          ) : (
+              <ul
+                aria-label="Indicadores operacionais"
+                className="grid min-w-0 flex-1 grid-cols-2 overflow-hidden rounded-xl border border-border/70 bg-card @min-[480px]:grid-cols-4 dark:border-border"
+              >
+                {(
+                  [
+                    { icon: RefreshCw, label: "Reprogramações", value: data.reschedules.total },
+                    { icon: Layers, label: "Aguardando homologação", value: data.homologation.awaiting },
+                    { icon: TriangleAlert, label: "Impedimento", value: data.impediments, emphasize: true },
+                    { icon: Flag, label: "Entregas futuras", value: data.nextDeliveries.length },
+                  ] as const
+                ).map((item, index) => (
+                  <li
+                    key={item.label}
+                    className={cn(
+                      "border-border/60 dark:border-border",
+                      index % 2 === 1 && "border-l",
+                      index >= 2 && "border-t @min-[480px]:border-t-0",
+                      index > 0 && "@min-[480px]:border-l",
+                    )}
+                  >
+                    <OpsMetric icon={item.icon} label={item.label} value={item.value} emphasize={"emphasize" in item && item.emphasize} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs leading-relaxed text-foreground/85">{data.narrative.map((line) => line.text).join(" ")}</p>
             <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <Fact label="Progresso consolidado" value={percent(data.progress.basisPoints)} />
               <Fact label="Itens em atraso" value={String(data.overdue.total)} />
@@ -306,8 +466,8 @@ function SummaryContent({ data, part = "all", generatedAt }: { data: Indicators;
               <Fact label="Aguardando homologação" value={String(data.homologation.awaiting)} />
               <Fact label="Em correção" value={String(data.homologation.inCorrections)} />
             </dl>
-          )}
-        </>
+          </>
+        )
       ) : null}
       {extra ? (
         <>
@@ -705,54 +865,119 @@ export function ExecutiveSummaryCard({
   ) : null;
 
   const validation = governance ? (
-    <section aria-label="Validação do PMO" className="flex flex-col gap-1.5 rounded-md border border-primary/20 bg-primary/5 p-3">
-      <h3 className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-        <ShieldCheck className="size-3.5" aria-hidden="true" /> Validação do PMO (registro oficial)
+    <section aria-label="Validação do PMO" className="flex flex-col gap-2.5">
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+        <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
+        Validação do PMO (registro oficial)
       </h3>
-      <p className="text-xs">{governance.lastValidation ? validationText(governance.lastValidation) : "Ainda não há resumo validado pelo PMO."}</p>
-      <p className="text-xs text-muted-foreground">
-        Ciclo atual: {cycleDay(governance.cycle.start)} a {cycleDay(governance.cycle.end)} ·{" "}
-        {governance.currentCycleRegularValidated ? "validado" : governance.periodic ? `pendente (fecha na quarta, ${cycleDay(governance.cycle.end)})` : "projeto fora das cobranças periódicas"}
-      </p>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        {governance.canValidate ? (
-          !governance.currentCycleRegularValidated ? (
-            <>
-              <Button type="button" size="xs" onClick={() => setDialog("regular")}>
-                Validar resumo
-              </Button>
-              {governance.unchangedSinceLastValidation ? (
-                <Button type="button" size="xs" variant="outline" onClick={() => setDialog("withoutChanges")}>
-                  Validar sem alterações
+
+      {/* Uma faixa: consulta | ciclo | ações — botões à direita, como na referência. */}
+      <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border dark:shadow-none">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-6 gap-y-3">
+            <div className="flex min-w-[11rem] flex-1 items-start gap-2.5">
+              <CalendarDays className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-[11px] leading-none text-muted-foreground">Última validação</p>
+                {governance.lastValidation ? (
+                  <>
+                    <p className="mt-1.5 text-sm leading-none font-semibold tabular-nums text-foreground">
+                      {REFERENCE.format(new Date(governance.lastValidation.validatedAt))}
+                    </p>
+                    <p className="mt-1.5 text-[11px] leading-none text-muted-foreground">
+                      Por {governance.lastValidation.validatedByName ?? "PMO"}
+                      {governance.lastValidation.kind === "EXTRAORDINARY" ? " · Extraordinária" : ""}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1.5 text-sm text-muted-foreground">Ainda não há resumo validado pelo PMO.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex min-w-[11rem] flex-1 items-start gap-2.5">
+              <CalendarDays className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-[11px] leading-none text-muted-foreground">Ciclo atual</p>
+                <p className="mt-1.5 text-sm leading-none font-semibold tabular-nums text-foreground">
+                  {cycleDay(governance.cycle.start)} a {cycleDay(governance.cycle.end)}
+                </p>
+                <div className="mt-1.5">
+                  {governance.currentCycleRegularValidated ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-status-done-soft px-2 py-0.5 text-[11px] font-semibold text-status-done-ink">
+                      <Check className="size-3" strokeWidth={2.5} aria-hidden="true" />
+                      Validado
+                    </span>
+                  ) : governance.periodic ? (
+                    <span className="inline-flex items-center rounded-full bg-status-attention-soft px-2 py-0.5 text-[11px] font-semibold text-status-attention-ink">
+                      Pendente
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                      Fora do ciclo
+                    </span>
+                  )}
+                </div>
+                {!governance.currentCycleRegularValidated && governance.periodic ? (
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">Fecha na quarta, {cycleDay(governance.cycle.end)}</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {governance.canValidate ? (
+              !governance.currentCycleRegularValidated ? (
+                <>
+                  <Button type="button" onClick={() => setDialog("regular")}>
+                    Validar resumo
+                  </Button>
+                  {governance.unchangedSinceLastValidation ? (
+                    <Button type="button" variant="outline" onClick={() => setDialog("withoutChanges")}>
+                      Validar sem alterações
+                    </Button>
+                  ) : null}
+                </>
+              ) : (
+                <Button type="button" onClick={() => setDialog("extraordinary")}>
+                  <Plus className="size-4" aria-hidden="true" />
+                  Validação extraordinária
                 </Button>
-              ) : null}
-            </>
-          ) : (
-            <Button type="button" size="xs" variant="outline" onClick={() => setDialog("extraordinary")}>
-              Validação extraordinária
+              )
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              aria-expanded={historyOpen}
+              onClick={() => {
+                // Abrir o histórico não muda o estado do cartão ("Ver mais"/"Ver menos"): ele só ganha a altura do histórico (extraHeight).
+                setHistoryOpen(!historyOpen);
+              }}
+            >
+              <HistoryIcon className="size-4" aria-hidden="true" />
+              Histórico de validações
             </Button>
-          )
-        ) : null}
-        <button
-          type="button"
-          aria-expanded={historyOpen}
-          onClick={() => {
-            // Abrir o histórico não muda o estado do cartão ("Ver mais"/"Ver menos"): ele só ganha a altura do histórico (extraHeight).
-            setHistoryOpen(!historyOpen);
-          }}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          <ChevronDown className={cn("size-4 transition-transform duration-200 motion-reduce:transition-none", historyOpen && "rotate-180")} aria-hidden="true" />
-          Histórico de validações
-        </button>
-      </div>
-      <Presence open={historyOpen}>
-        <div ref={historyBox} className="pt-1">
-          <History projectId={projectId} open={historyOpen} refreshKey={`${refreshKey}:${version}`} />
+          </div>
         </div>
-      </Presence>
+
+        <Presence open={historyOpen}>
+          <div ref={historyBox} className="mt-3 border-t border-border/50 pt-3">
+            <History projectId={projectId} open={historyOpen} refreshKey={`${refreshKey}:${version}`} />
+          </div>
+        </Presence>
+      </div>
     </section>
   ) : null;
+
+  const footer =
+    data && data.hasData ? (
+      <div className="flex flex-col gap-3">
+        <SituationBar data={data} />
+        {validation}
+      </div>
+    ) : (
+      validation
+    );
 
   return (
     <SectionCard
@@ -774,26 +999,31 @@ export function ExecutiveSummaryCard({
       }
       action={
         data ? (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium dark:border-border">
+          <span className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium", SITUATION_BADGE[data.situation.status])}>
             <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
             {projectStatusLabel(data.situation.status)}
           </span>
         ) : null
       }
-      footer={validation}
+      footer={footer}
     >
       {state.status === "loading" ? (
-        <div className="flex flex-col gap-2" aria-busy="true">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-5/6" />
-          <Skeleton className="h-14 w-full" />
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <div className="flex items-center gap-4">
+            <Skeleton className="size-[92px] shrink-0 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-36" />
+              <Skeleton className="h-6 w-32 rounded-full" />
+            </div>
+          </div>
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-12 w-full rounded-xl" />
         </div>
       ) : state.status === "error" ? (
         <p className="text-xs text-muted-foreground">Não foi possível gerar o resumo do projeto agora.</p>
       ) : (
-        <>
-          <SummaryContent data={state.data} part="core" generatedAt={state.data.generatedAt} />
-        </>
+        <SummaryContent data={state.data} part="core" />
       )}
       {data ? (
         <ValidationDialog projectId={projectId} open={dialog !== null} mode={dialog ?? "regular"} summary={data} onClose={() => setDialog(null)} onDone={reload} />

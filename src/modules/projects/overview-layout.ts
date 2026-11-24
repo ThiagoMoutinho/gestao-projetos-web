@@ -14,7 +14,7 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
   situacao: 360,
   evolucoes: 340,
   marcos: 680,
-  resumo: 580,
+  resumo: 720,
   historico: 580,
   // Planejamento cresce com as seções que o usuário abre; Evidências guarda o próprio limite.
   planejamento: 100000,
@@ -26,13 +26,14 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
 
 /**
  * Layout padrão, na ordem de leitura da gestão institucional, por linhas: Sobre o projeto | Equipe (identidade e responsáveis),
- * Resumo executivo | Linha do tempo (acompanhamento), Marcos | Evidências (entregas), Conformidade de Entrega (largura total, logo abaixo
- * de Marcos, porque homologa o marco final) e Prazo e cronograma (planejamento, largura total). Médio ocupa 6 das 12 colunas e Grande ocupa as 12. Vale para projeto sem layout salvo e para "Restaurar padrão".
+ * Resumo executivo (largura total, painel de acompanhamento), Linha do tempo | Marcos, Evidências, Conformidade de Entrega (largura total)
+ * e Prazo e cronograma (planejamento, largura total). Médio ocupa 6 das 12 colunas e Grande ocupa as 12. Vale para projeto sem layout salvo e para "Restaurar padrão".
  */
 export const DEFAULT_WIDGETS: WidgetState[] = [
   { id: "sobre", wide: false },
   { id: "equipe", wide: false },
-  { id: "resumo", wide: false },
+  // Painel executivo: faixa de progresso, indicadores e validação do PMO na mesma linha.
+  { id: "resumo", wide: true },
   { id: "historico", wide: false },
   { id: "marcos", wide: false },
   { id: "evidencias", wide: false },
