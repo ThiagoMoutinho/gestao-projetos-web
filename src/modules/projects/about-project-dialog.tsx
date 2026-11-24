@@ -128,7 +128,8 @@ export function AboutProjectDialog({
         <EditDialogHeader
           icon={Info}
           title={canEdit ? "Editar sobre o projeto" : "Sobre o projeto"}
-          description="Identificação, sistema, contexto e resultados para o IGEPPS. Cada campo é salvo ao sair dele e a alteração fica registrada no histórico do projeto."
+          description="Identificação, sistema, contexto e resultados."
+          details="Identificação, sistema, contexto e resultados para o IGEPPS. Cada campo é salvo ao sair dele e a alteração fica registrada no histórico do projeto."
           onClose={onClose}
           closeDisabled={saving > 0}
         />

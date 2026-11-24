@@ -375,8 +375,11 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
 
             <section aria-labelledby="resumo-indicadores" className="px-5 py-4">
               <DrawerSectionHead id="resumo-indicadores" icon={LayoutDashboard} title="Indicadores do projeto" caption="Contagens que pedem atenção." />
-              {/* Cinco indicadores numa faixa (celular: 3 + 2), separados por divisórias sutis. */}
-              <ul aria-label="Indicadores do projeto" className="grid grid-cols-3 sm:grid-cols-5">
+              {/* Cinco indicadores numa faixa com borda ao redor (celular: 3 + 2), separados por divisórias sutis. */}
+              <ul
+                aria-label="Indicadores do projeto"
+                className="grid grid-cols-3 overflow-hidden rounded-xl border border-border/70 sm:grid-cols-5 dark:border-border"
+              >
                 {(
                   [
                     { icon: RefreshCw, value: data.reschedules.total, label: "Reprogramações" },
@@ -388,7 +391,7 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
                 ).map(({ icon: Icon, value, label }) => (
                   <li
                     key={label}
-                    className="flex flex-col items-center gap-1 border-l border-border/60 px-2 py-3 text-center dark:border-border [&:nth-child(3n+1)]:border-l-0 [&:nth-child(n+4)]:border-t sm:[&:nth-child(3n+1)]:border-l sm:[&:nth-child(5n+1)]:border-l-0 sm:[&:nth-child(n+4)]:border-t-0"
+                    className="flex flex-col items-center justify-center gap-1 border-border/60 px-2 py-3 text-center dark:border-border [&:nth-child(n+2)]:border-l [&:nth-child(n+4)]:border-t [&:nth-child(4)]:border-l-0 sm:[&:nth-child(4)]:border-l sm:[&:nth-child(n+4)]:border-t-0"
                   >
                     <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
                     <span className="text-2xl leading-none font-semibold">{value}</span>
@@ -494,12 +497,8 @@ function ValidationDialog({
         <EditDialogHeader
           icon={BadgeCheck}
           title={extraordinary ? "Validação extraordinária" : mode === "withoutChanges" ? "Validar sem alterações" : "Validar resumo executivo"}
-          description={
-            <>
-              Você registra, como oficial, os indicadores calculados em {REFERENCE.format(new Date(summary.generatedAt))} (ciclo {cycleDay(summary.governance.cycle.start)} a{" "}
-              {cycleDay(summary.governance.cycle.end)}). Se eles mudarem antes da confirmação, o sistema pede uma nova revisão.
-            </>
-          }
+          description={`Indicadores de ${REFERENCE.format(new Date(summary.generatedAt))} (ciclo ${cycleDay(summary.governance.cycle.start)} a ${cycleDay(summary.governance.cycle.end)}).`}
+          details="Você registra, como oficial, os indicadores calculados nesta referência. Se eles mudarem antes da confirmação, o sistema pede uma nova revisão."
           onClose={onClose}
           closeDisabled={busy}
         />

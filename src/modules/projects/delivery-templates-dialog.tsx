@@ -105,7 +105,8 @@ export function DeliveryTemplatesDialog({ open, onClose }: { open: boolean; onCl
         <EditDialogHeader
           icon={ListChecks}
           title="Modelos de checklist da Conformidade de Entrega"
-          description="Publicar cria uma nova revisão. Versões de entrega já criadas mantêm o checklist copiado e não são alteradas."
+          description="Revisões publicadas para novas entregas."
+          details="Publicar cria uma nova revisão. Versões de entrega já criadas mantêm o checklist copiado e não são alteradas."
           onClose={onClose}
           closeDisabled={busy}
         />

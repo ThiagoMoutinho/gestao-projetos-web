@@ -126,12 +126,8 @@ export function ValidatorDialog({
         <EditDialogHeader
           icon={UserCheck}
           title="Validador do documento"
-          description={
-            <>
-              {current.item.title} · versão {current.versionLabel}. Quem enviou o documento não pode aprovar o próprio envio. A alteração fica
-              registrada no histórico e na auditoria do projeto.
-            </>
-          }
+          description={`${current.item.title} · versão ${current.versionLabel}.`}
+          details="Quem enviou o documento não pode aprovar o próprio envio. A alteração fica registrada no histórico e na auditoria do projeto."
           onClose={onClose}
           closeDisabled={busy}
         />

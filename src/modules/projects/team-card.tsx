@@ -420,7 +420,8 @@ function TeamEditDialog({
           <EditDialogHeader
             icon={Users}
             title="Editar equipe"
-            description="Escolha os responsáveis e os participantes entre os usuários ativos do sistema. Cada alteração fica registrada no histórico do projeto."
+            description="Responsáveis e participantes do projeto."
+            details="Escolha os responsáveis e os participantes entre os usuários ativos do sistema. Cada alteração fica registrada no histórico do projeto."
             onClose={requestClose}
             closeDisabled={saving}
           />

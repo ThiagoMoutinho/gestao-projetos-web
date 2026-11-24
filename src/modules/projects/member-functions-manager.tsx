@@ -171,7 +171,8 @@ function ManagerBody({ onClose, onChanged }: { onClose: () => void; onChanged: (
       <EditDialogHeader
         icon={Tag}
         title="Funções de participante"
-        description="Veja as opções do seletor de função: os papéis fixos (só consulta por enquanto) e as funções do catálogo do instituto, que você pode editar, desativar ou excluir. A exclusão definitiva só vale para funções nunca atribuídas."
+        description="Papéis fixos e funções do catálogo do Instituto."
+        details="Veja as opções do seletor de função: os papéis fixos (só consulta por enquanto) e as funções do catálogo do instituto, que você pode editar, desativar ou excluir. A exclusão definitiva só vale para funções nunca atribuídas."
         onClose={onClose}
       />
       <EditDialogBody className="gap-5">

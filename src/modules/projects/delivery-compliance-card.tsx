@@ -390,7 +390,8 @@ function NewVersionDialog({ open, projectId, onClose, onDone }: { open: boolean;
         <EditDialogHeader
           icon={PackagePlus}
           title="Nova versão da entrega"
-          description="O checklist é copiado da revisão publicada do modelo da natureza escolhida. Modelos posteriores não alteram esta versão."
+          description="Checklist copiado do modelo publicado."
+          details="O checklist é copiado da revisão publicada do modelo da natureza escolhida. Modelos posteriores não alteram esta versão."
           onClose={onClose}
           closeDisabled={busy}
         />
@@ -473,7 +474,8 @@ function DecisionDialog({ decision, projectId, onClose, onDone }: { decision: De
           icon={ClipboardCheck}
           tone={current.kind === "reject" ? "destructive" : current.kind === "waive" ? "attention" : "primary"}
           title={copy.title}
-          description={<>{current.item.title}. {copy.description}</>}
+          description={current.item.title}
+          details={copy.description}
           onClose={onClose}
           closeDisabled={busy}
         />

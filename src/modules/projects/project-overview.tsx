@@ -108,8 +108,8 @@ export function ProjectOverview({
 
   return (
     <OverviewActionsSlotContext.Provider value={actionsSlot}>
-    <div className="flex flex-col gap-[18px]">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-wrap items-center justify-between gap-3 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <div
             className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
@@ -118,9 +118,8 @@ export function ProjectOverview({
             {initials(project.name)}
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold tracking-[0.12em] text-primary uppercase">Visão geral do projeto</p>
             <h1 className="truncate text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">{project.name}</h1>
-            <p className="truncate text-[11.5px] text-muted-foreground">
+            <p className="mt-1 truncate text-[11.5px] text-muted-foreground">
               {[reference, `Responsável: ${project.ownerName}`, project.managers && project.managers.length > 0 ? `Gestor: ${managers}` : null].filter(Boolean).join(" · ")}
             </p>
           </div>

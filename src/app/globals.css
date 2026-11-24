@@ -739,28 +739,14 @@
 
 /*
  * Indicador deslizante do item ativo (sidebar-active-indicator.tsx): um único fundo atrás dos itens, que estica ao
- * mudar de item. Na aparência IGEPPS (menu escuro) usa o tom claro do marcador com o texto na cor do menu; no Claro e no
- * Escuro usa a cor primária com o texto de contraste dela. Só vale depois que o indicador mediu o item
- * (`data-active-indicator`); antes disso fica o estilo padrão do item ativo acima.
+ * mudar de item. Fundo em azul claro translúcido (tom do marcador), texto na cor do menu — sem o bloco escuro da
+ * marca. O traço de 3 px continua na cor do marcador.
+ * Só vale depois que o indicador mediu o item (`data-active-indicator`); antes disso fica o estilo padrão acima.
  */
 :root {
-  --sidebar-indicator: var(--sidebar-marker, var(--sidebar-primary));
-  --sidebar-indicator-foreground: var(--sidebar-primary-foreground);
-}
-:root:not(.light):not(.dark) {
-  --sidebar-indicator-foreground: var(--sidebar);
-}
-/* Traço lateral do item ativo: segue a cor primária da paleta, ajustada para contrastar com o fundo do indicador.
-   Fundo claro (IGEPPS e Escuro): primária levemente mais fechada. Fundo escuro (Claro): primária bem clareada. */
-:root {
-  --sidebar-indicator-bar: color-mix(in oklch, var(--primary) 78%, black);
-}
-:root.light {
-  --sidebar-indicator-bar: color-mix(in oklch, var(--primary) 30%, white);
-}
-/* No Escuro a primária é tão clara quanto o fundo do indicador; precisa de um tom bem mais fechado. */
-:root.dark {
-  --sidebar-indicator-bar: color-mix(in oklch, var(--primary) 45%, black);
+  --sidebar-indicator: color-mix(in oklch, var(--sidebar-marker, var(--primary)) 26%, transparent);
+  --sidebar-indicator-foreground: var(--sidebar-foreground);
+  --sidebar-indicator-bar: var(--sidebar-marker, var(--primary));
 }
 [data-active-indicator] [data-sidebar="menu-button"] {
   z-index: 1;
@@ -1134,11 +1120,11 @@ header.sticky :focus-visible {
   }
 }
 
-/* Claro (menu branco): o item ativo do menu lateral segue o azul da barra superior (a cor da marca da paleta), não o primário. */
+/* Claro (menu branco): traço na cor da barra e fundo em azul claro suave. */
 .light,
 .light[data-palette] {
   --sidebar-marker: var(--brand);
-  --sidebar-indicator: var(--brand);
+  --sidebar-indicator: color-mix(in oklch, var(--brand) 14%, transparent);
 }
 
 /*

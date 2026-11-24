@@ -151,10 +151,9 @@ export function SidebarActiveIndicator() {
       aria-hidden="true"
       data-state="hidden"
       data-slot="sidebar-active-indicator"
-      className="pointer-events-none absolute top-0 left-0 z-0 rounded-[10px] bg-(--sidebar-indicator) opacity-0 shadow-[0_6px_16px_-8px_rgb(0_0_0/0.45)] transition-opacity duration-200 data-[state=visible]:opacity-100 motion-reduce:transition-none"
+      className="pointer-events-none absolute top-0 left-0 z-0 rounded-[10px] bg-(--sidebar-indicator) opacity-0 transition-opacity duration-200 data-[state=visible]:opacity-100 motion-reduce:transition-none"
     >
-      {/* Traço lateral: anda junto com o fundo (elástico), encostado na lateral esquerda do item como o marcador antigo
-          (mesma geometria), numa cor de contraste levemente acinzentada (`--sidebar-indicator-bar`). */}
+      {/* Traço lateral: anda junto com o fundo, encostado na lateral esquerda do item, na cor do marcador. */}
       <span data-slot="sidebar-active-bar" className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-[3px] bg-(--sidebar-indicator-bar)" />
     </span>
   );

@@ -72,7 +72,8 @@ export function MemberFunctionDialog({
         <EditDialogHeader
           icon={Tag}
           title="Nova função de participante"
-          description="Cadastre uma função que não existe na lista (por exemplo, Stakeholder). Ela fica disponível para todos os projetos."
+          description="Cadastre uma função para todos os projetos."
+          details="Cadastre uma função que não existe na lista (por exemplo, Stakeholder). Ela fica disponível para todos os projetos."
           onClose={close}
           closeDisabled={saving}
         />

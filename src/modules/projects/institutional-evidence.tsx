@@ -194,6 +194,13 @@ function EvidenceDialog({
           title={evidence ? "Classificar evidência" : "Registrar evidência do projeto"}
           description={
             draft.kind === "GLPI_TICKET"
+              ? "Chamado já existente no GLPI."
+              : evidence
+                ? "Tipo da evidência."
+                : "Tipo, título e link do documento."
+          }
+          details={
+            draft.kind === "GLPI_TICKET"
               ? "Informe o número e o link de um chamado já existente no GLPI. Nenhum chamado é aberto ou sincronizado."
               : evidence
                 ? "Escolha o tipo da evidência. O histórico da alteração fica registrado."

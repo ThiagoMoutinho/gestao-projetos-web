@@ -603,7 +603,8 @@ function PlanningDialog({
         <EditDialogHeader
           icon={CalendarRange}
           title="Definir planejamento do projeto"
-          description="Datas gravadas no próprio projeto. A linha de base original é preservada e toda alteração de data exige justificativa e fica no histórico."
+          description="Datas planejadas do projeto."
+          details="Datas gravadas no próprio projeto. A linha de base original é preservada e toda alteração de data exige justificativa e fica no histórico."
           onClose={onClose}
         />
         <EditDialogBody>

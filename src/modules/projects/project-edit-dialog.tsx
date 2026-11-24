@@ -79,7 +79,8 @@ export function ProjectEditDialog({ project, open, onOpenChange }: { project: Ed
         <EditDialogHeader
           icon={FolderPen}
           title="Editar projeto"
-          description="Dados cadastrais do projeto. A situação é calculada pela EAP e o encerramento tem fluxo próprio."
+          description="Dados cadastrais do projeto."
+          details="Dados cadastrais do projeto. A situação é calculada pela EAP e o encerramento tem fluxo próprio."
           onClose={() => reset(false)}
           closeDisabled={busy}
         />
