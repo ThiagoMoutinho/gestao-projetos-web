@@ -107,7 +107,7 @@ function CircularProgress({ basisPoints, label }: { basisPoints: number | null; 
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (pct / 100) * circumference;
   return (
-    <div className="relative size-[92px] shrink-0" role="img" aria-label={label}>
+    <div className="relative size-20 shrink-0" role="img" aria-label={label}>
       <svg viewBox="0 0 96 96" className="size-full -rotate-90" aria-hidden="true">
         <circle cx="48" cy="48" r={radius} fill="none" stroke="currentColor" strokeWidth="8" className="text-muted" />
         <circle
@@ -123,7 +123,7 @@ function CircularProgress({ basisPoints, label }: { basisPoints: number | null; 
           className="text-primary transition-[stroke-dashoffset] duration-300 ease-out motion-reduce:transition-none"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-[15px] font-semibold tracking-tight tabular-nums text-foreground">
+      <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold tracking-tight tabular-nums text-foreground">
         {percent(basisPoints)}
       </span>
     </div>
@@ -132,7 +132,6 @@ function CircularProgress({ basisPoints, label }: { basisPoints: number | null; 
 
 /** Indicador operacional compacto: valor em destaque, rótulo curto e ícone discreto. */
 function OpsMetric({
-  icon: Icon,
   label,
   value,
   emphasize = false,
@@ -144,10 +143,9 @@ function OpsMetric({
 }) {
   const hot = emphasize && value > 0;
   return (
-    <div className="flex min-w-0 flex-col items-center gap-1.5 px-2.5 py-3 text-center">
-      <Icon className={cn("size-4", hot ? "text-destructive" : "text-muted-foreground")} aria-hidden="true" />
-      <p className={cn("text-xl leading-none font-semibold tabular-nums", hot ? "text-destructive" : "text-foreground")}>{value}</p>
-      <p className="max-w-[7.5rem] text-[11px] leading-snug text-muted-foreground">{label}</p>
+    <div className="flex min-w-0 flex-col items-start gap-1">
+      <p className={cn("text-2xl leading-none font-semibold tabular-nums", hot ? "text-destructive" : "text-foreground")}>{value}</p>
+      <p className={cn("text-[11px] leading-snug", hot ? "text-destructive" : "text-muted-foreground")}>{label}</p>
     </div>
   );
 }
@@ -326,33 +324,25 @@ function validationText(item: ValidationItem) {
 
 /** Detalhes estruturados da situação (expansível no cartão; preserva todos os campos da API). */
 function SituationDetails({ data }: { data: Indicators }) {
+  // Só o que o cartão ainda não mostra: reprogramações, homologação, impedimentos e a lista de entregas ficam nos indicadores
+  // do cartão e no painel de detalhes (aba Entregas), sem repetir aqui.
   const facts = [
-    { label: "Situação do projeto", value: projectStatusLabel(data.situation.status) },
     {
       label: "Maior atraso",
       value: data.situation.delayDays > 0 ? `${data.situation.delayDays} ${data.situation.delayDays === 1 ? "dia" : "dias"}` : "Sem atraso",
     },
     { label: "Tarefas atrasadas", value: String(data.overdue.tasks) },
     { label: "Marcos atrasados", value: String(data.overdue.milestones) },
-    { label: "Tarefas com impedimento", value: String(data.impediments) },
-    { label: "Reprogramações", value: String(data.reschedules.total) },
-    { label: "Entregas aguardando homologação", value: String(data.homologation.awaiting) },
   ] as const;
   return (
-    <div className="flex flex-col gap-3 border-t border-border/50 pt-3">
-      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {facts.map((fact) => (
-          <div key={fact.label} className="flex items-baseline justify-between gap-3 text-xs">
-            <dt className="text-muted-foreground">{fact.label}</dt>
-            <dd className="font-medium tabular-nums text-foreground">{fact.value}</dd>
-          </div>
-        ))}
-      </dl>
-      <div>
-        <p className="mb-1.5 text-[11px] font-semibold text-muted-foreground">Próximas entregas</p>
-        <DeliveriesList data={data} />
-      </div>
-    </div>
+    <dl className="grid grid-cols-1 gap-2 pt-2.5 sm:grid-cols-3">
+      {facts.map((fact) => (
+        <div key={fact.label} className="flex items-baseline justify-between gap-3 text-xs sm:flex-col sm:items-start sm:gap-0.5">
+          <dt className="text-muted-foreground">{fact.label}</dt>
+          <dd className="font-medium tabular-nums text-foreground">{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -361,7 +351,7 @@ function SituationBar({ data }: { data: Indicators }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
-    <section className="rounded-xl bg-muted/40 px-3.5 py-3 dark:bg-muted/25">
+    <section>
       <button
         type="button"
         aria-expanded={open}
@@ -370,7 +360,7 @@ function SituationBar({ data }: { data: Indicators }) {
         className="flex w-full items-start gap-2.5 text-left focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <p className="min-w-0 flex-1 text-xs leading-relaxed text-foreground/90">{shortSituation(data)}</p>
+        <p className={cn("min-w-0 flex-1 text-xs leading-relaxed text-foreground/90", !open && "max-sm:line-clamp-1")}>{shortSituation(data)}</p>
         <ChevronDown
           className={cn(
             "mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none",
@@ -411,7 +401,7 @@ function SummaryContent({ data, part = "all" }: { data: Indicators; part?: "all"
         part === "core" ? (
           <div className="@container">
             {/* Progresso + indicadores operacionais (situação fica no rodapé, sempre visível). */}
-            <div className="flex flex-col gap-4 @min-[560px]:flex-row @min-[560px]:items-center @min-[560px]:gap-5">
+            <div className="flex flex-col gap-4 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:gap-8">
               <div className="flex min-w-0 items-center gap-4">
                 <CircularProgress
                   basisPoints={data.progress.basisPoints}
@@ -430,7 +420,7 @@ function SummaryContent({ data, part = "all" }: { data: Indicators; part?: "all"
               </div>
               <ul
                 aria-label="Indicadores operacionais"
-                className="grid min-w-0 flex-1 grid-cols-2 overflow-hidden rounded-xl border border-border/70 bg-card @min-[480px]:grid-cols-4 dark:border-border"
+                className="grid min-w-0 flex-1 grid-cols-2 gap-x-3 gap-y-3 @min-[360px]:grid-cols-4"
               >
                 {(
                   [
@@ -439,16 +429,8 @@ function SummaryContent({ data, part = "all" }: { data: Indicators; part?: "all"
                     { icon: TriangleAlert, label: "Impedimento", value: data.impediments, emphasize: true },
                     { icon: Flag, label: "Entregas futuras", value: data.nextDeliveries.length },
                   ] as const
-                ).map((item, index) => (
-                  <li
-                    key={item.label}
-                    className={cn(
-                      "border-border/60 dark:border-border",
-                      index % 2 === 1 && "border-l",
-                      index >= 2 && "border-t @min-[480px]:border-t-0",
-                      index > 0 && "@min-[480px]:border-l",
-                    )}
-                  >
+                ).map((item) => (
+                  <li key={item.label}>
                     <OpsMetric icon={item.icon} label={item.label} value={item.value} emphasize={"emphasize" in item && item.emphasize} />
                   </li>
                 ))}
@@ -512,7 +494,7 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
       <div key={tab} role="group" aria-label={tab === "visao" ? "Visão geral" : tab === "entregas" ? "Entregas" : "Movimentações"} className="motion-fade flex flex-col gap-4">
         {tab === "visao" ? (
           // Uma superfície só, organizada por seções e divisórias (em vez de vários cartões independentes).
-          <div className="flex flex-col gap-1 overflow-hidden rounded-2xl border border-border/70 bg-card py-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border">
+          <div className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border [&>section+section]:border-t [&>section+section]:border-border/50 dark:[&>section+section]:border-border">
             <section aria-labelledby="resumo-situacao" className="px-5 py-4">
               <DrawerSectionHead
                 id="resumo-situacao"
@@ -538,7 +520,7 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
               {/* Cinco indicadores numa faixa com borda ao redor (celular: 3 + 2), separados por divisórias sutis. */}
               <ul
                 aria-label="Indicadores do projeto"
-                className="grid grid-cols-3 overflow-hidden rounded-xl border border-border/70 sm:grid-cols-5 dark:border-border"
+                className="grid grid-cols-3 gap-y-4 sm:grid-cols-5"
               >
                 {(
                   [
@@ -548,13 +530,9 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
                     { icon: CalendarClock, value: data.overdue.total, label: "Itens em atraso" },
                     { icon: OctagonAlert, value: data.impediments, label: "Impedimentos" },
                   ] as const
-                ).map(({ icon: Icon, value, label }) => (
-                  <li
-                    key={label}
-                    className="flex flex-col items-center justify-center gap-1 border-border/60 px-2 py-3 text-center dark:border-border [&:nth-child(n+2)]:border-l [&:nth-child(n+4)]:border-t [&:nth-child(4)]:border-l-0 sm:[&:nth-child(4)]:border-l sm:[&:nth-child(n+4)]:border-t-0"
-                  >
-                    <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-2xl leading-none font-semibold">{value}</span>
+                ).map(({ value, label }) => (
+                  <li key={label} className="flex flex-col items-start gap-1 px-1">
+                    <span className="text-2xl leading-none font-semibold tabular-nums">{value}</span>
                     <span className="text-[11px] leading-tight text-muted-foreground">{label}</span>
                   </li>
                 ))}
@@ -657,7 +635,7 @@ function ValidationDialog({
         <EditDialogHeader
           icon={BadgeCheck}
           title={extraordinary ? "Validação extraordinária" : mode === "withoutChanges" ? "Validar sem alterações" : "Validar resumo executivo"}
-          description={`Indicadores de ${REFERENCE.format(new Date(summary.generatedAt))} (ciclo ${cycleDay(summary.governance.cycle.start)} a ${cycleDay(summary.governance.cycle.end)}).`}
+          description={`Ciclo de ${cycleDay(summary.governance.cycle.start)} a ${cycleDay(summary.governance.cycle.end)}.`}
           details="Você registra, como oficial, os indicadores calculados nesta referência. Se eles mudarem antes da confirmação, o sistema pede uma nova revisão."
           onClose={onClose}
           closeDisabled={busy}
@@ -865,67 +843,58 @@ export function ExecutiveSummaryCard({
   ) : null;
 
   const validation = governance ? (
-    <section aria-label="Validação do PMO" className="flex flex-col gap-2.5">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-        <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
-        Validação do PMO (registro oficial)
-      </h3>
+    <section aria-label="Validação do PMO" className="flex flex-col gap-3 border-t border-border/60 pt-4 dark:border-border">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
+          <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <span className="truncate">Validação do PMO</span>
+        </h3>
+        {governance.currentCycleRegularValidated ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-status-done-soft px-2 py-0.5 text-[11px] font-semibold text-status-done-ink">
+            <Check className="size-3" strokeWidth={2.5} aria-hidden="true" />
+            Ciclo validado
+          </span>
+        ) : governance.periodic ? (
+          <span className="inline-flex shrink-0 items-center rounded-full bg-status-attention-soft px-2 py-0.5 text-[11px] font-semibold text-status-attention-ink">Ciclo pendente</span>
+        ) : (
+          <span className="inline-flex shrink-0 items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Fora do ciclo</span>
+        )}
+      </div>
 
-      {/* Uma faixa: consulta | ciclo | ações — botões à direita, como na referência. */}
-      <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border dark:shadow-none">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-6 gap-y-3">
-            <div className="flex min-w-[11rem] flex-1 items-start gap-2.5">
-              <CalendarDays className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-[11px] leading-none text-muted-foreground">Última validação</p>
+      <div>
+        <div className="flex flex-col gap-3">
+          <dl className="flex flex-col gap-1 text-xs">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+              <dt className="text-muted-foreground">Última validação</dt>
+              <dd className="min-w-0 text-right font-medium text-foreground">
                 {governance.lastValidation ? (
                   <>
-                    <p className="mt-1.5 text-sm leading-none font-semibold tabular-nums text-foreground">
-                      {REFERENCE.format(new Date(governance.lastValidation.validatedAt))}
-                    </p>
-                    <p className="mt-1.5 text-[11px] leading-none text-muted-foreground">
-                      Por {governance.lastValidation.validatedByName ?? "PMO"}
-                      {governance.lastValidation.kind === "EXTRAORDINARY" ? " · Extraordinária" : ""}
-                    </p>
+                    <span className="tabular-nums">{REFERENCE.format(new Date(governance.lastValidation.validatedAt))}</span>
+                    <span className="font-normal text-muted-foreground">
+                      {" "}
+                      · {governance.lastValidation.validatedByName ?? "PMO"}
+                      {governance.lastValidation.kind === "EXTRAORDINARY" ? " · extraordinária" : ""}
+                    </span>
                   </>
                 ) : (
-                  <p className="mt-1.5 text-sm text-muted-foreground">Ainda não há resumo validado pelo PMO.</p>
+                  <span className="font-normal text-muted-foreground">Ainda não há resumo validado pelo PMO.</span>
                 )}
-              </div>
+              </dd>
             </div>
-
-            <div className="flex min-w-[11rem] flex-1 items-start gap-2.5">
-              <CalendarDays className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-[11px] leading-none text-muted-foreground">Ciclo atual</p>
-                <p className="mt-1.5 text-sm leading-none font-semibold tabular-nums text-foreground">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+              <dt className="text-muted-foreground">Ciclo atual</dt>
+              <dd className="min-w-0 text-right font-medium text-foreground">
+                <span className="tabular-nums">
                   {cycleDay(governance.cycle.start)} a {cycleDay(governance.cycle.end)}
-                </p>
-                <div className="mt-1.5">
-                  {governance.currentCycleRegularValidated ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-status-done-soft px-2 py-0.5 text-[11px] font-semibold text-status-done-ink">
-                      <Check className="size-3" strokeWidth={2.5} aria-hidden="true" />
-                      Validado
-                    </span>
-                  ) : governance.periodic ? (
-                    <span className="inline-flex items-center rounded-full bg-status-attention-soft px-2 py-0.5 text-[11px] font-semibold text-status-attention-ink">
-                      Pendente
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                      Fora do ciclo
-                    </span>
-                  )}
-                </div>
+                </span>
                 {!governance.currentCycleRegularValidated && governance.periodic ? (
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">Fecha na quarta, {cycleDay(governance.cycle.end)}</p>
+                  <span className="font-normal text-muted-foreground"> · fecha na quarta</span>
                 ) : null}
-              </div>
+              </dd>
             </div>
-          </div>
+          </dl>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {governance.canValidate ? (
               !governance.currentCycleRegularValidated ? (
                 <>
@@ -947,7 +916,7 @@ export function ExecutiveSummaryCard({
             ) : null}
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               aria-expanded={historyOpen}
               onClick={() => {
                 // Abrir o histórico não muda o estado do cartão ("Ver mais"/"Ver menos"): ele só ganha a altura do histórico (extraHeight).
@@ -1010,7 +979,7 @@ export function ExecutiveSummaryCard({
       {state.status === "loading" ? (
         <div className="flex flex-col gap-4" aria-busy="true">
           <div className="flex items-center gap-4">
-            <Skeleton className="size-[92px] shrink-0 rounded-full" />
+            <Skeleton className="size-20 shrink-0 rounded-full" />
             <div className="flex flex-1 flex-col gap-2">
               <Skeleton className="h-4 w-40" />
               <Skeleton className="h-3 w-36" />
