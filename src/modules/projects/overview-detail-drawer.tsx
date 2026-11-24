@@ -182,6 +182,7 @@ export function OverviewDetailDrawer({
   description,
   icon,
   iconClassName,
+  eyebrow = "Visão geral do projeto",
   meta,
   footer,
   children,
@@ -193,6 +194,8 @@ export function OverviewDetailDrawer({
   icon: ComponentType<{ className?: string }>;
   /** Cores do quadradinho do ícone (as mesmas do cabeçalho do cartão). */
   iconClassName: string;
+  /** Chamada acima do título (padrão: "Visão geral do projeto"). */
+  eyebrow?: string;
   /** Faixa de contexto fixa sob o cabeçalho (contadores, indicadores): use `DrawerChip`. */
   meta?: React.ReactNode;
   /** Rodapé fixo: só para ações relevantes. */
@@ -218,7 +221,7 @@ export function OverviewDetailDrawer({
           <EapPanelHeader
             icon={icon}
             tone={iconClassName}
-            eyebrow="Visão geral do projeto"
+            eyebrow={eyebrow}
             title={<SheetTitle className="max-w-[460px] truncate text-[19px] leading-[1.35] font-semibold text-foreground">{title}</SheetTitle>}
             hint={<SheetDescription className="mt-[7px] block text-xs text-muted-foreground">{description}</SheetDescription>}
             actions={

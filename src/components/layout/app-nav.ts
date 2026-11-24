@@ -59,7 +59,7 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
         href: "/entregas",
         label: "Entregas e Homologações",
         icon: PackageCheck,
-        enabled: false,
+        enabled: true,
       },
     ],
   },
