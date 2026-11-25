@@ -216,7 +216,7 @@ function TimelineDrawerContent({ events, partial }: { events: TimelineEvent[]; p
   const counts = sourceCounts(events);
   const filtered = kind === "all" ? events : events.filter((event) => timelineSource(event.id) === kind);
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {counts.length > 1 ? (
         <DrawerNav
           label="Filtrar eventos por tipo"
@@ -236,6 +236,7 @@ const HOUR = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Belem", hour:
 /**
  * Histórico do painel: um cartão com os eventos agrupados por data (etiqueta com calendário e separador discreto entre os dias),
  * linha cronológica vertical, ícone por tipo, título em destaque e descrição em texto secundário. Mostra 15 por vez.
+ * Espaçamento amplo entre dias e entre eventos para leitura rápida no sheet.
  */
 function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial: boolean }) {
   const [loaded, setLoaded] = useState(0);
@@ -244,10 +245,14 @@ function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial:
   const days = groupByDay(events.slice(0, shown));
   return (
     <>
-      <DrawerCard icon={History} title="Eventos do projeto" aside={<DrawerCount value={total} />}>
+      <DrawerCard icon={History} title="Eventos do projeto" aside={<DrawerCount value={total} />} className="p-6">
         {days.map((day, dayIndex) => (
-          <section key={day.key} aria-label={DAY_LABEL.format(new Date(day.events[0].at))} className={cn(dayIndex > 0 && "mt-5 border-t border-border/50 pt-5 dark:border-border")}>
-            <h4 className="mb-4 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-label font-semibold tracking-[0.04em] text-foreground/80 uppercase dark:bg-muted/60">
+          <section
+            key={day.key}
+            aria-label={DAY_LABEL.format(new Date(day.events[0].at))}
+            className={cn(dayIndex > 0 && "mt-8 border-t border-border/50 pt-7 dark:border-border")}
+          >
+            <h4 className="mb-5 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-label font-semibold tracking-[0.04em] text-foreground/80 uppercase dark:bg-muted/60">
               <CalendarDays className="size-3.5 text-primary" aria-hidden="true" />
               {DAY_LABEL.format(new Date(day.events[0].at))}
             </h4>
@@ -256,17 +261,17 @@ function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial:
                 const Icon = SOURCE_ICON[timelineSource(event.id)];
                 const last = index === day.events.length - 1;
                 return (
-                  <li key={event.id} className="relative flex items-start gap-3.5">
-                    {last ? null : <span className="absolute top-9 -bottom-5 left-[17px] w-px bg-border" aria-hidden="true" />}
-                    <span className={cn("relative flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
+                  <li key={event.id} className="relative flex items-start gap-4 pb-7 last:pb-0">
+                    {last ? null : <span className="absolute top-10 bottom-0 left-[17px] w-px bg-border/80" aria-hidden="true" />}
+                    <span className={cn("relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
                       <Icon className="size-4" />
                     </span>
-                    <div className="min-w-0 flex-1 pt-0.5">
+                    <div className="min-w-0 flex-1 space-y-1.5 pt-0.5">
                       <p className="text-sm leading-snug font-semibold text-foreground">{event.title}</p>
-                      {event.detail ? <p className="mt-0.5 text-[13px] leading-relaxed break-words text-muted-foreground">{event.detail}</p> : null}
+                      {event.detail ? <p className="text-[13px] leading-relaxed break-words text-muted-foreground">{event.detail}</p> : null}
                     </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
-                      {event.badge ? <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", PILL[event.badge.tone])}>{event.badge.label}</span> : null}
+                    <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5 pl-2">
+                      {event.badge ? <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium", PILL[event.badge.tone])}>{event.badge.label}</span> : null}
                       <time dateTime={event.at} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="size-3" aria-hidden="true" />
                         {HOUR.format(new Date(event.at))}
