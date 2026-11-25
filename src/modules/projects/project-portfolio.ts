@@ -83,13 +83,27 @@ export type ProjectListRow = {
   registeredStatus: ProjectStatus;
   plannedStartAt: string | null;
   plannedEndAt: string | null;
+  /** Última alteração do cadastro do projeto (não é movimentação do acompanhamento). */
   updatedAt: string;
+  /**
+   * Instante da movimentação relevante mais recente do acompanhamento (situação, conclusão, impedimento, entrega, homologação,
+   * reprogramação, definição de planejamento ou troca de responsável). Acessos e visualizações não contam. null = nenhuma
+   * movimentação registrada; use `movementAvailable` para saber se a consulta funcionou.
+   */
+  lastMovementAt: string | null;
+  movementAvailable: boolean;
   ownerId: string;
   ownerName: string | null;
   managers: string[] | null;
   /** Todos os participantes vinculados ao projeto (uma entrada por pessoa, com seus papéis); null quando a consulta falhou. */
   team: TeamMember[] | null;
   suppliers: string[] | null;
+  /**
+   * Empresa do projeto: a "Empresa responsável" da ficha institucional (publicada) ou, sem ela, os fornecedores
+   * participantes. Lista vazia = nenhuma vinculada; null = não foi possível consultar.
+   */
+  companies: string[] | null;
+  companySource: CompanySource | null;
   /** Andamento consolidado pela regra da API (média das fases com valor), em pontos-base. */
   progressBasisPoints: number | null;
   progressAvailable: boolean;
@@ -102,6 +116,37 @@ export type ProjectListRow = {
   viewerIsOwner: boolean;
   viewerRoles: string[];
 };
+
+/** Origem do nome da empresa: ficha institucional (nome cadastrado) ou participantes com papel Fornecedor. */
+export type CompanySource = "profile" | "supplier";
+
+/** Mesmo critério de texto útil da ficha (meaningfulText): ao menos duas letras ou dígitos. */
+function usefulText(value: string | null | undefined) {
+  const text = (value ?? "").trim();
+  return text.replace(/[^\p{L}\p{N}]/gu, "").length >= 2 ? text : null;
+}
+
+/**
+ * Empresa exibida na lista: prioriza o nome institucional cadastrado na ficha (Empresa responsável, versão publicada);
+ * sem ele, usa os fornecedores vinculados como participantes. `profile` undefined = a ficha não pôde ser consultada.
+ */
+export function resolveCompanies(
+  profile: string | null | undefined,
+  suppliers: string[] | null,
+): { companies: string[] | null; companySource: CompanySource | null } {
+  const institutional = usefulText(profile);
+  if (institutional) {
+    return { companies: [institutional], companySource: "profile" };
+  }
+  if (suppliers && suppliers.length > 0) {
+    return { companies: [...suppliers], companySource: "supplier" };
+  }
+  // Sem nenhuma das duas consultas não dá para afirmar que não há empresa.
+  if (suppliers === null && profile === undefined) {
+    return { companies: null, companySource: null };
+  }
+  return { companies: [], companySource: null };
+}
 
 /** Edição do cadastro (mesma regra da API): PMO, coordenação, ADMIN, dono ou gestão do projeto. */
 export function canEditProject(globalRole: string, row: Pick<ProjectListRow, "viewerIsOwner" | "viewerRoles">) {
@@ -140,11 +185,11 @@ export function matchesView(row: Pick<ProjectListRow, "status">, view: Portfolio
   return view === "concluded" ? row.status === "CONCLUIDO" : row.status !== "CONCLUIDO";
 }
 
-export type PortfolioFilters = { query: string; status: ProjectStatus | ""; supplier: string; owner: string };
+export type PortfolioFilters = { query: string; status: ProjectStatus | ""; company: string; owner: string };
 
-export const idlePortfolioFilters: PortfolioFilters = { query: "", status: "", supplier: "", owner: "" };
+export const idlePortfolioFilters: PortfolioFilters = { query: "", status: "", company: "", owner: "" };
 
-export type PortfolioSort = { key: "name" | "deadline" | "updated"; direction: "asc" | "desc" };
+export type PortfolioSort = { key: "urgency" | "delay" | "progress" | "name" | "deadline" | "updated"; direction: "asc" | "desc" };
 
 /** Indicadores pela situação calculada de cada projeto acessível (a lista já vem filtrada pela API). */
 export const INDICATORS: ReadonlyArray<{ key: "total" | ProjectStatus; label: string }> = [
@@ -217,7 +262,29 @@ export function delayCell(row: Pick<ProjectListRow, "status" | "situation">): { 
   return row.status === "EM_ATENCAO" ? { kind: "risk", text: "Risco" } : { kind: "ontime", text: "No prazo" };
 }
 
-export const SORT_LABEL: Record<PortfolioSort["key"], string> = { name: "nome", deadline: "previsão", updated: "última atualização" };
+export const SORT_LABEL: Record<PortfolioSort["key"], string> = {
+  urgency: "urgência",
+  delay: "atraso",
+  progress: "progresso",
+  name: "nome",
+  deadline: "previsão",
+  updated: "última atualização",
+};
+
+/** Gravidade da situação para a ordenação por urgência (menor = mais urgente); sem situação calculada vai por último. */
+const URGENCY_RANK: Record<string, number> = {
+  CRITICO: 0,
+  EM_ATENCAO: 1,
+  EM_EXECUCAO: 2,
+  EM_VALIDACAO: 3,
+  NAO_INICIADO: 4,
+  SUSPENSO: 5,
+  CONCLUIDO: 6,
+};
+
+function urgencyOf(row: Pick<ProjectListRow, "status" | "situation">) {
+  return { delay: row.situation?.delayDays ?? 0, rank: row.status ? (URGENCY_RANK[row.status] ?? 7) : 8 };
+}
 
 /** Projetos cuja situação não pôde ser calculada: os indicadores por situação não os incluem. */
 export function unavailableSituations(rows: ReadonlyArray<Pick<ProjectListRow, "status">>) {
@@ -243,14 +310,14 @@ export function filterPortfolio(rows: ReadonlyArray<ProjectListRow>, filters: Po
     return (
       matchesQuery &&
       (filters.status === "" || row.status === filters.status) &&
-      (filters.supplier === "" || (row.suppliers ?? []).includes(filters.supplier)) &&
-      (filters.owner === "" || row.ownerName === filters.owner)
+      (filters.company === "" || (row.companies ?? []).includes(filters.company)) &&
+      (filters.owner === "" || (row.managers ?? []).includes(filters.owner))
     );
   });
 }
 
 export function isFiltering(filters: PortfolioFilters) {
-  return filters.query.trim() !== "" || filters.status !== "" || filters.supplier !== "" || filters.owner !== "";
+  return filters.query.trim() !== "" || filters.status !== "" || filters.company !== "" || filters.owner !== "";
 }
 
 /** Opções reais dos filtros: só aparecem valores presentes nos projetos acessíveis. */
@@ -258,15 +325,37 @@ export function filterOptions(rows: ReadonlyArray<ProjectListRow>) {
   const sorted = (values: Iterable<string>) => [...new Set(values)].sort((left, right) => left.localeCompare(right, "pt-BR"));
   return {
     statuses: [...new Set(rows.flatMap((row) => (row.status ? [row.status] : [])))],
-    suppliers: sorted(rows.flatMap((row) => row.suppliers ?? [])),
-    owners: sorted(rows.flatMap((row) => (row.ownerName ? [row.ownerName] : []))),
+    companies: sorted(rows.flatMap((row) => row.companies ?? [])),
+    owners: sorted(rows.flatMap((row) => row.managers ?? [])),
   };
 }
 
-/** Ordena por nome, prazo vigente ou última atualização; projetos sem prazo ficam por último. */
+/** Ordena por urgência, atraso, progresso, nome, prazo vigente ou última atualização; projetos sem prazo ficam por último. */
 export function sortPortfolio(rows: ReadonlyArray<ProjectListRow>, sort: PortfolioSort) {
   const factor = sort.direction === "asc" ? 1 : -1;
   return [...rows].sort((left, right) => {
+    if (sort.key === "urgency") {
+      // "desc" = mais urgentes primeiro: maior atraso, depois a situação mais grave, depois o nome.
+      const a = urgencyOf(left);
+      const b = urgencyOf(right);
+      const byUrgency = b.delay - a.delay || a.rank - b.rank;
+      return (sort.direction === "desc" ? byUrgency : -byUrgency) || left.name.localeCompare(right.name, "pt-BR");
+    }
+    if (sort.key === "delay") {
+      // "desc" = maior atraso primeiro; sem situação calculada vai por último.
+      const a = left.situation?.delayDays ?? -1;
+      const b = right.situation?.delayDays ?? -1;
+      return factor * (a - b) || left.name.localeCompare(right.name, "pt-BR");
+    }
+    if (sort.key === "progress") {
+      // "asc" = menor progresso primeiro; sem andamento calculado vai por último nas duas direções.
+      const a = left.progressAvailable ? left.progressBasisPoints : null;
+      const b = right.progressAvailable ? right.progressBasisPoints : null;
+      if (a === null || b === null) {
+        return a !== null ? -1 : b !== null ? 1 : left.name.localeCompare(right.name, "pt-BR");
+      }
+      return factor * (a - b) || left.name.localeCompare(right.name, "pt-BR");
+    }
     if (sort.key === "deadline") {
       if (!left.plannedEndAt || !right.plannedEndAt) {
         return left.plannedEndAt ? -1 : right.plannedEndAt ? 1 : left.name.localeCompare(right.name, "pt-BR");
@@ -274,7 +363,11 @@ export function sortPortfolio(rows: ReadonlyArray<ProjectListRow>, sort: Portfol
       return factor * left.plannedEndAt.localeCompare(right.plannedEndAt) || left.name.localeCompare(right.name, "pt-BR");
     }
     if (sort.key === "updated") {
-      return factor * left.updatedAt.localeCompare(right.updatedAt);
+      // Pela última movimentação real; sem movimentação (ou sem consulta) vai por último nas duas direções.
+      if (!left.lastMovementAt || !right.lastMovementAt) {
+        return left.lastMovementAt ? -1 : right.lastMovementAt ? 1 : left.name.localeCompare(right.name, "pt-BR");
+      }
+      return factor * left.lastMovementAt.localeCompare(right.lastMovementAt) || left.name.localeCompare(right.name, "pt-BR");
     }
     return factor * left.name.localeCompare(right.name, "pt-BR");
   });
@@ -340,3 +433,104 @@ export type ProjectMonitoringSignals = {
   awaitingHomologation: number;
   inCorrections: number;
 };
+
+/** Quantidade de projetos em cada visualização (abas), sem considerar busca e filtros. */
+export function viewCounts(rows: ReadonlyArray<Pick<ProjectListRow, "status">>): Record<PortfolioView, number> {
+  return {
+    active: rows.filter((row) => matchesView(row, "active")).length,
+    concluded: rows.filter((row) => matchesView(row, "concluded")).length,
+    archived: rows.filter((row) => matchesView(row, "archived")).length,
+    all: rows.length,
+  };
+}
+
+/**
+ * Saúde do portfólio, calculada só dos projetos acessíveis: ativos, críticos, atraso médio dos projetos atrasados
+ * (dias inteiros, null sem atrasos) e concluídos.
+ */
+export function portfolioHealth(rows: ReadonlyArray<Pick<ProjectListRow, "status" | "situation">>) {
+  const active = rows.filter((row) => matchesView(row, "active"));
+  const delays = active.map((row) => row.situation?.delayDays ?? 0).filter((days) => days > 0);
+  return {
+    total: rows.length,
+    active: active.length,
+    critical: active.filter((row) => row.status === "CRITICO").length,
+    /** Ativos críticos ou em atenção: o "precisam de ação" do resumo. */
+    needsAction: active.filter((row) => row.status === "CRITICO" || row.status === "EM_ATENCAO").length,
+    delayed: delays.length,
+    concluded: rows.filter((row) => row.status === "CONCLUIDO").length,
+    averageDelay: delays.length === 0 ? null : Math.round(delays.reduce((sum, days) => sum + days, 0) / delays.length),
+  };
+}
+
+function csvField(value: string) {
+  return /[";\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/**
+ * Planilha CSV (separador ";" e BOM, para abrir direto no Excel em português) dos projetos exibidos na lista.
+ * `labels` traduz a situação; datas civis vão como AAAA-MM-DD; dados não consultados saem como "Indisponível".
+ */
+export function portfolioCsv(rows: ReadonlyArray<ProjectListRow>, labels: { status: (status: ProjectStatus) => string; progress: (basisPoints: number) => string }) {
+  const header = ["Projeto", "GLPI", "Situação", "Progresso (%)", "Atraso (dias)", "Início previsto", "Término previsto", "Empresa", "Gestor", "Responsável", "Equipe", "Última movimentação"];
+  const lines = rows.map((row) => [
+    row.name,
+    row.glpiTicketId ?? "",
+    row.status ? labels.status(row.status) : "Indisponível",
+    !row.progressAvailable ? "Indisponível" : row.progressBasisPoints === null ? "" : labels.progress(row.progressBasisPoints),
+    row.situation ? String(row.situation.delayDays) : "Indisponível",
+    row.plannedStartAt?.slice(0, 10) ?? "",
+    row.plannedEndAt?.slice(0, 10) ?? "",
+    row.companies === null ? "Indisponível" : row.companies.join(", ") || "Não informada",
+    row.managers === null ? "Indisponível" : row.managers.join(", "),
+    row.ownerName ?? "",
+    row.team === null ? "Indisponível" : row.team.map((person) => person.name).join(", "),
+    !row.movementAvailable ? "Indisponível" : (row.lastMovementAt?.slice(0, 10) ?? "Sem movimentação"),
+  ]);
+  return "\uFEFF" + [header, ...lines].map((line) => line.map(csvField).join(";")).join("\r\n");
+}
+
+/**
+ * "Última atualização" da lista: rótulo relativo (hoje, ontem, há N dias/semanas/meses) pelo dia civil local, para leitura
+ * rápida; a data completa fica no título. Datas futuras (relógios divergentes) contam como hoje.
+ */
+export function updatedLabel(updatedAt: string, now: Date = new Date()) {
+  const updated = new Date(updatedAt);
+  if (Number.isNaN(updated.getTime())) {
+    return { text: "Indisponível", days: null as number | null };
+  }
+  const day = (value: Date) => Date.UTC(value.getFullYear(), value.getMonth(), value.getDate());
+  const days = Math.max(0, Math.round((day(now) - day(updated)) / 86_400_000));
+  let text: string;
+  if (days === 0) text = "Hoje";
+  else if (days === 1) text = "Ontem";
+  else if (days < 14) text = `Há ${days} dias`;
+  else if (days < 60) text = `Há ${Math.floor(days / 7)} semanas`;
+  else if (days < 365) text = `Há ${Math.floor(days / 30)} meses`;
+  else text = Math.floor(days / 365) === 1 ? "Há 1 ano" : `Há ${Math.floor(days / 365)} anos`;
+  return { text, days };
+}
+
+/** Movimentações do resumo executivo (a API já traz só os tipos relevantes e sem acessos), do mais recente ao mais antigo. */
+type MovementLike = { at: string; governance: boolean };
+
+/**
+ * Instante da movimentação relevante mais recente do acompanhamento. As de governança (edição do cadastro, participantes,
+ * ficha institucional e validação do resumo) não contam como andamento do projeto. null = nenhuma movimentação.
+ */
+export function lastMovementFrom(movements: ReadonlyArray<MovementLike>): string | null {
+  let latest: string | null = null;
+  for (const movement of movements) {
+    if (movement.governance || Number.isNaN(new Date(movement.at).getTime())) continue;
+    if (latest === null || new Date(movement.at).getTime() > new Date(latest).getTime()) latest = movement.at;
+  }
+  return latest;
+}
+
+/**
+ * Data do prazo vigente exibida na lista: o dia consolidado da EAP (tarefas e marcos, a mesma referência da Visão Geral) volta
+ * ao meio-dia de Belém para seguir o formato das demais datas; sem itens com data, vale a data gravada no próprio projeto.
+ */
+export function currentPlanDate(consolidatedDay: string | null, projectDate: string | null): string | null {
+  return consolidatedDay ? `${consolidatedDay}T12:00:00.000-03:00` : projectDate;
+}

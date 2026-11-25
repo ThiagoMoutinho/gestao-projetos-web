@@ -6,7 +6,6 @@ import {
   ArrowUpDown,
   Archive,
   CalendarDays,
-  Check,
   Download,
   FolderKanban,
   LayoutDashboard,
@@ -17,22 +16,17 @@ import {
   EllipsisVertical,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck,
-  CircleCheck,
-  CircleDashed,
-  Activity,
-  OctagonAlert,
-  Search,
+  Check,
   TriangleAlert,
+  Search,
+  Plus,
   X,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition, type MouseEvent, type ReactNode } from "react";
 
 import { OptionCombobox } from "@/components/option-combobox";
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -64,6 +58,8 @@ import {
   isFiltering,
   ownerInitials,
   paginate,
+  portfolioCsv,
+  portfolioHealth,
   PORTFOLIO_VIEWS,
   SORT_LABEL,
   sortPortfolio,
@@ -72,6 +68,8 @@ import {
   TEAM_ROLE_LABEL,
   teamPreview,
   unavailableSituations,
+  updatedLabel,
+  viewCounts,
   type PortfolioFilters,
   type PortfolioSort,
   type PortfolioView,
@@ -111,75 +109,145 @@ function PageHeader({ eapPrompt = false, actions }: { eapPrompt?: boolean; actio
   );
 }
 
-/** Aparência de cada cartão de situação: ícone em bloco na cor da situação (tokens --status-*) e a cor da barra de participação. */
-const SITUATION_CARD: Record<string, { icon: LucideIcon; tile: string; bar: string }> = {
-  total: { icon: FolderKanban, tile: "bg-primary/10 text-primary", bar: "var(--primary)" },
-  CRITICO: { icon: OctagonAlert, tile: "bg-status-critical-soft text-status-critical-ink", bar: STATUS_COLOR.CRITICO },
-  EM_ATENCAO: { icon: TriangleAlert, tile: "bg-status-attention-soft text-status-attention-ink", bar: STATUS_COLOR.EM_ATENCAO },
-  EM_EXECUCAO: { icon: Activity, tile: "bg-status-running-soft text-status-running-ink", bar: STATUS_COLOR.EM_EXECUCAO },
-  EM_VALIDACAO: { icon: ClipboardCheck, tile: "bg-status-validation-soft text-status-validation-ink", bar: STATUS_COLOR.EM_VALIDACAO },
-  NAO_INICIADO: { icon: CircleDashed, tile: "bg-status-idle-soft text-status-idle-ink", bar: STATUS_COLOR.NAO_INICIADO },
-  CONCLUIDO: { icon: CircleCheck, tile: "bg-status-done-soft text-status-done-ink", bar: STATUS_COLOR.CONCLUIDO },
+/**
+ * Ordenações do menu "Ordenar", cada uma com a direção que responde à pergunta do PMO (mais urgentes, maior atraso,
+ * menor progresso...) ou atualização mais recente.
+ */
+const SORT_OPTIONS: ReadonlyArray<{ id: string; sort: PortfolioSort; label: string }> = [
+  { id: "urgency", sort: { key: "urgency", direction: "desc" }, label: "Mais urgentes" },
+  { id: "delay", sort: { key: "delay", direction: "desc" }, label: "Maior atraso" },
+  { id: "progress", sort: { key: "progress", direction: "asc" }, label: "Menor progresso" },
+  { id: "name", sort: { key: "name", direction: "asc" }, label: "Nome (A–Z)" },
+  { id: "deadline", sort: { key: "deadline", direction: "asc" }, label: "Previsão mais próxima" },
+  { id: "updated", sort: { key: "updated", direction: "desc" }, label: "Atualizados recentemente" },
+];
+
+function sortPreset(sort: PortfolioSort) {
+  return SORT_OPTIONS.find((option) => option.sort.key === sort.key && option.sort.direction === sort.direction) ?? null;
+}
+
+function sortText(sort: PortfolioSort) {
+  const preset = sortPreset(sort);
+  if (preset) return preset.label.toLowerCase();
+  return `${SORT_LABEL[sort.key]} (${sort.direction === "asc" ? "crescente" : "decrescente"})`;
+}
+
+/** Rótulo de "N projetos atrasados" e similares. */
+function count(value: number, one: string, many: string) {
+  return `${value} ${value === 1 ? one : many}`;
+}
+
+/** Tom do chip da situação selecionada (tokens de status do sistema). */
+const CHIP_TONE: Record<string, string> = {
+  CRITICO: "border-status-critical/45 bg-status-critical-soft text-status-critical-ink hover:bg-status-critical-soft",
+  EM_ATENCAO: "border-status-attention/45 bg-status-attention-soft text-status-attention-ink hover:bg-status-attention-soft",
+  EM_EXECUCAO: "border-status-running/45 bg-status-running-soft text-status-running-ink hover:bg-status-running-soft",
+  EM_VALIDACAO: "border-status-validation/45 bg-status-validation-soft text-status-validation-ink hover:bg-status-validation-soft",
+  NAO_INICIADO: "border-status-idle/45 bg-status-idle-soft text-status-idle-ink hover:bg-status-idle-soft",
+  CONCLUIDO: "border-status-done/45 bg-status-done-soft text-status-done-ink hover:bg-status-done-soft",
 };
 
 /**
- * Cartões de situação do topo: contagem e participação de cada situação no portfólio, calculadas dos próprios projetos.
- * Cada cartão é um filtro (botão com aria-pressed); o ativo volta para Todos ao ser clicado de novo.
+ * Resumo do portfólio: à esquerda, os projetos ativos (com o total) e quantos precisam de ação (críticos e em atenção);
+ * à direita, a barra com a participação de cada situação e os chips, que filtram a lista (o ativo volta para Todos).
+ * Situações sem projetos ficam esmaecidas.
  */
-function SituationCards({
+function PortfolioHealth({
   chips,
+  health,
   isActive,
   onSelect,
 }: {
   chips: ReadonlyArray<{ key: string; label: string; value: number }>;
+  health: ReturnType<typeof portfolioHealth>;
   isActive: (key: string) => boolean;
   onSelect: (key: string, active: boolean) => void;
 }) {
   const total = chips.find((chip) => chip.key === "total")?.value ?? 0;
+  const situations = chips.filter((chip) => chip.key !== "total");
+  const filtered = filterActive(situations, isActive);
+  const distribution = situations
+    .filter((chip) => chip.value > 0)
+    .map((chip) => `${chip.label}: ${chip.value} (${statusShare(chip.value, total)}%)`)
+    .join(", ");
   return (
-    <section aria-label="Situação dos projetos" className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-7">
-      {chips.map((chip) => {
-        const meta = SITUATION_CARD[chip.key];
-        const Icon = meta.icon;
-        const active = isActive(chip.key);
-        const share = chip.key === "total" ? null : statusShare(chip.value, total);
-        const noun = chip.value === 1 ? "projeto" : "projetos";
-        return (
-          <button
-            key={chip.key}
-            type="button"
-            aria-pressed={active}
-            aria-label={`${chip.label}: ${chip.value} ${noun}${share === null ? "" : `, ${share}% do portfólio`}`}
-            title={share === null ? `${chip.value} ${noun} no portfólio` : `${share}% do portfólio`}
-            onClick={() => onSelect(chip.key, active)}
-            className={cn(
-              "relative flex min-w-0 items-center gap-2.5 overflow-hidden rounded-xl border bg-card px-3 py-2.5 text-left shadow-xs transition-[border-color,box-shadow,background-color] duration-200 hover:border-primary/40 hover:shadow-sm motion-reduce:transition-none",
-              focusRing,
-              active ? "border-primary bg-primary/[0.05] ring-1 ring-primary" : "border-border",
-            )}
-          >
-            <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", meta.tile)} aria-hidden="true">
-              <Icon className="size-4" />
-            </span>
-            <span className="grid min-w-0 flex-1 leading-tight">
-              <span className="flex items-baseline gap-1.5">
-                <span className="text-lg font-semibold tracking-tight text-foreground tabular-nums">{chip.value}</span>
-                {share === null ? null : <span className="text-label text-muted-foreground tabular-nums">{share}%</span>}
-              </span>
-              <span className="truncate text-label text-muted-foreground">{chip.label}</span>
-            </span>
-            {active ? <Check className="size-4 shrink-0 text-primary" aria-hidden="true" /> : null}
-            <span className="absolute inset-x-0 bottom-0 h-[3px] bg-muted" aria-hidden="true">
+    <section
+      aria-label="Resumo do portfólio"
+      className="grid gap-x-8 gap-y-3 rounded-2xl border border-border/70 bg-card px-5 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] md:grid-cols-[minmax(13rem,auto)_minmax(0,1fr)] md:items-center dark:border-border"
+    >
+      <div className="flex flex-col items-start gap-2">
+        <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <span className="text-4xl leading-none font-semibold tracking-tight text-foreground tabular-nums">{health.active}</span>
+          <span className="text-body text-muted-foreground">
+            {health.active === 1 ? "projeto ativo" : "projetos ativos"} · {health.total} no total
+          </span>
+        </p>
+        {health.needsAction > 0 ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-status-critical-soft px-2.5 py-1 text-label font-semibold text-status-critical-ink">
+            <TriangleAlert className="size-3.5" aria-hidden="true" />
+            {health.needsAction === 1 ? "1 precisa de ação" : `${health.needsAction} precisam de ação`}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-status-done-soft px-2.5 py-1 text-label font-semibold text-status-done-ink">
+            <Check className="size-3.5" aria-hidden="true" />
+            Nenhum projeto exige ação
+          </span>
+        )}
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-3">
+        <div role="img" aria-label={distribution ? `Distribuição por situação: ${distribution}` : "Sem projetos"} className="flex h-2.5 gap-1">
+          {total === 0 ? <span className="h-full flex-1 rounded-full bg-muted" /> : null}
+          {situations.map((chip) =>
+            chip.value > 0 ? (
               <span
-                className="block h-full transition-[width] duration-300 ease-out motion-reduce:transition-none"
-                style={{ width: `${share ?? (total > 0 ? 100 : 0)}%`, backgroundColor: meta.bar }}
+                key={chip.key}
+                title={`${chip.label}: ${count(chip.value, "projeto", "projetos")} (${statusShare(chip.value, total)}%)`}
+                className={cn(
+                  "h-full min-w-2 rounded-full transition-[flex-grow,opacity] duration-200 ease-out motion-reduce:transition-none",
+                  filtered && !isActive(chip.key) && "opacity-35",
+                )}
+                style={{ flexGrow: chip.value, flexBasis: 0, backgroundColor: STATUS_COLOR[chip.key as ProjectStatus] }}
               />
-            </span>
-          </button>
-        );
-      })}
+            ) : null,
+          )}
+        </div>
+        <ul aria-label="Filtrar por situação" className="flex flex-wrap gap-x-1 gap-y-2">
+          {situations.map((chip) => {
+            const active = isActive(chip.key);
+            const empty = chip.value === 0 && !active;
+            const share = statusShare(chip.value, total);
+            return (
+              <li key={chip.key}>
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  disabled={empty}
+                  aria-label={`Filtrar ${chip.label}: ${count(chip.value, "projeto", "projetos")}`}
+                  title={chip.value > 0 ? `${share}% dos projetos` : undefined}
+                  onClick={() => onSelect(chip.key, active)}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-card px-2 text-label text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
+                    focusRing,
+                    active && CHIP_TONE[chip.key],
+                  )}
+                >
+                  <span className="size-2 shrink-0 rounded-[3px]" style={{ backgroundColor: STATUS_COLOR[chip.key as ProjectStatus] }} aria-hidden="true" />
+                  {chip.label}
+                  <span className={cn("font-semibold tabular-nums", active ? "text-current" : "text-foreground")}>{chip.value}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </section>
   );
+}
+
+/** Há uma situação filtrada pela legenda (as demais faixas da barra ficam esmaecidas). */
+function filterActive(chips: ReadonlyArray<{ key: string }>, isActive: (key: string) => boolean) {
+  return chips.some((chip) => isActive(chip.key));
 }
 
 /** Etiquetas dos filtros em uso, cada uma com o botão de remover (a situação vem dos cartões do topo). */
@@ -204,16 +272,6 @@ function ActiveFilters({ tags }: { tags: ReadonlyArray<{ key: string; text: stri
   );
 }
 
-/** Controle desabilitado com explicação: o span recebe foco/hover, pois botão desabilitado não dispara o Tooltip. */
-function SoonTooltip({ children, text = "Em breve" }: { children: ReactNode; text?: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger render={<span tabIndex={0} className={cn("inline-flex rounded-md", focusRing)} />}>{children}</TooltipTrigger>
-      <TooltipContent>{text}</TooltipContent>
-    </Tooltip>
-  );
-}
-
 export function ProjectList({
   projects,
   eapPrompt = false,
@@ -229,19 +287,21 @@ export function ProjectList({
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [view, setView] = useState<PortfolioView>("active");
   const [filters, setFilters] = useState<PortfolioFilters>(idlePortfolioFilters);
-  const [sort, setSort] = useState<PortfolioSort>({ key: "name", direction: "asc" });
+  const [sort, setSort] = useState<PortfolioSort>({ key: "urgency", direction: "desc" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const chips = useMemo(() => statusChips(projects), [projects]);
   const statusLabel = useMemo(() => new Map(chips.map((chip) => [chip.key, chip.label])), [chips]);
   const unavailable = useMemo(() => unavailableSituations(projects), [projects]);
+  const health = useMemo(() => portfolioHealth(projects), [projects]);
+  const counts = useMemo(() => viewCounts(projects), [projects]);
   const options = useMemo(() => filterOptions(projects), [projects]);
   const visible = useMemo(() => sortPortfolio(filterPortfolio(projects, filters, view), sort), [projects, filters, view, sort]);
   const paged = paginate(visible, page, pageSize);
   const filtering = isFiltering(filters);
   const firstShown = visible.length === 0 ? 0 : (paged.current - 1) * pageSize + 1;
   // Chave da lista: muda com visualização, filtros (exceto a digitação da busca), ordenação e página, e reinicia o fade.
-  const listKey = [view, filters.status, filters.supplier, filters.owner, sort.key, sort.direction, paged.current, pageSize].join("|");
+  const listKey = [view, filters.status, filters.company, filters.owner, sort.key, sort.direction, paged.current, pageSize].join("|");
 
   function updateFilters(next: Partial<PortfolioFilters>) {
     setFilters((current) => ({ ...current, ...next }));
@@ -270,6 +330,22 @@ export function ProjectList({
     }
   }
 
+  /** Baixa a lista exibida (visualização, filtros e ordenação atuais) em CSV para o Excel. */
+  function exportList() {
+    const csv = portfolioCsv(visible, { status: projectStatusLabel, progress: formatBasis });
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `projetos-${new Date().toLocaleDateString("sv-SE")}.csv`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  function changeSort(next: PortfolioSort) {
+    setSort(next);
+    setPage(1);
+  }
+
   function toggleSort(key: PortfolioSort["key"]) {
     setSort((current) =>
       current.key === key ? { key, direction: current.direction === "asc" ? "desc" : "asc" } : { key, direction: key === "name" ? "asc" : "desc" },
@@ -288,18 +364,41 @@ export function ProjectList({
       <PageHeader
         eapPrompt={eapPrompt}
         actions={
-          <SoonTooltip>
-            <Button type="button" variant="outline" disabled>
+          <div className="flex flex-wrap items-center gap-2">
+            <Tabs value="list">
+              <TabsList aria-label="Modo de exibição" className="h-10">
+                <TabsTrigger value="list" className="gap-1.5 px-3 text-label">
+                  <List aria-hidden="true" />
+                  Lista
+                </TabsTrigger>
+                <Tooltip>
+                  <TooltipTrigger render={<span className="inline-flex h-full" />}>
+                    <TabsTrigger value="board" disabled aria-label="Quadro (em breve)" className="gap-1.5 px-3 text-label">
+                      <LayoutGrid aria-hidden="true" />
+                      Quadro
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Quadro · em breve</TooltipContent>
+                </Tooltip>
+              </TabsList>
+            </Tabs>
+            <Button type="button" variant="outline" className="h-10" onClick={exportList} disabled={visible.length === 0} title="Baixar a lista exibida em planilha (CSV)">
               <Download aria-hidden="true" />
               Exportar
             </Button>
-          </SoonTooltip>
+            {/* Cadastro de projeto ainda não implementado: o botão fica visível, sem ação. */}
+            <Button type="button" className="h-10" title="Cadastro de projeto em breve">
+              <Plus aria-hidden="true" />
+              Novo projeto
+            </Button>
+          </div>
         }
       />
 
-      <SituationCards
+      <PortfolioHealth
         chips={chips}
-        isActive={(key) => (key === "total" ? view === "all" && filters.status === "" : key === "CONCLUIDO" ? view === "concluded" : filters.status === key)}
+        health={health}
+        isActive={(key) => (key === "CONCLUIDO" ? view === "concluded" : filters.status === key)}
         onSelect={selectChip}
       />
       {unavailable > 0 ? (
@@ -310,108 +409,92 @@ export function ProjectList({
         </p>
       ) : null}
 
-      <section aria-label="Lista de projetos" className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-        <Tabs value={view} onValueChange={(next) => changeView(next as PortfolioView)} className="min-w-0 px-4 pt-2">
-          <TabsList variant="line" aria-label="Visualização dos projetos" className="h-auto w-full justify-start gap-5 overflow-x-auto rounded-none border-b border-border p-0">
-            {PORTFOLIO_VIEWS.map((item) => (
-              <TabsTrigger
-                key={item.key}
-                value={item.key}
-                disabled={!item.available}
-                title={item.description}
-                className="h-9 flex-none rounded-none px-0.5 text-label font-medium text-muted-foreground hover:text-foreground data-active:text-primary after:bg-primary group-data-horizontal/tabs:after:bottom-0"
-              >
-                {TAB_LABEL[item.key]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-        <div className="flex flex-col gap-3 p-4">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <label className="relative min-w-[14rem] flex-1">
-              <span className="sr-only">Pesquisar por nome, GLPI ou identificador do projeto</span>
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-              <Input
-                value={filters.query}
-                onChange={(event) => updateFilters({ query: event.target.value })}
-                placeholder="Pesquisar por nome, GLPI ou identificador..."
-                className="h-10 rounded-[7px] pl-9 text-xs"
-              />
-            </label>
-            {options.suppliers.length > 0 ? (
-              <div className="w-full sm:w-52">
-                <FilterSelect
-                  label="Fornecedor"
-                  value={filters.supplier}
-                  onChange={(supplier) => updateFilters({ supplier })}
-                  options={options.suppliers.map((name) => ({ value: name, label: name }))}
-                />
-              </div>
-            ) : null}
-            {options.owners.length > 0 ? (
-              <div className="w-full sm:w-52">
-                <FilterSelect
-                  label="Gestor"
-                  value={filters.owner}
-                  onChange={(owner) => updateFilters({ owner })}
-                  options={options.owners.map((name) => ({ value: name, label: name }))}
-                />
-              </div>
-            ) : null}
-            {filtering ? (
-              <Button type="button" variant="ghost" size="sm" className="text-primary hover:text-primary" onClick={() => updateFilters(idlePortfolioFilters)}>
-                Limpar filtros
-              </Button>
-            ) : null}
-            <Tabs value="list" className="ml-auto">
-              <TabsList aria-label="Modo de exibição">
-                <TabsTrigger value="list">
-                  <List aria-hidden="true" />
-                  Lista
+      <section aria-label="Lista de projetos" className="@container min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border">
+        <div className="flex flex-wrap items-center gap-2.5 p-4 @min-[980px]:flex-nowrap">
+          {/* A rolagem horizontal (só em telas estreitas) fica no contêiner, com a barra oculta; a lista de abas nunca rola. */}
+          <Tabs
+            value={view}
+            onValueChange={(next) => changeView(next as PortfolioView)}
+            className="max-w-full shrink-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            <TabsList aria-label="Visualização dos projetos" className="h-10 w-max overflow-visible">
+              {PORTFOLIO_VIEWS.map((item) => (
+                <TabsTrigger key={item.key} value={item.key} disabled={!item.available} title={item.description} className="group/view flex-none gap-1.5 px-2.5 text-label">
+                  {TAB_LABEL[item.key]}
+                  <span className="rounded-full bg-foreground/[0.07] px-1.5 py-0.5 text-[11px] leading-none font-semibold tabular-nums group-data-active/view:bg-primary/12 group-data-active/view:text-primary">
+                    {counts[item.key]}
+                  </span>
                 </TabsTrigger>
-                <Tooltip>
-                  <TooltipTrigger render={<span className="inline-flex" />}>
-                    <TabsTrigger value="board" disabled>
-                      <LayoutGrid aria-hidden="true" />
-                      Quadro
-                    </TabsTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>Em breve</TooltipContent>
-                </Tooltip>
-              </TabsList>
-            </Tabs>
-          </div>
+              ))}
+            </TabsList>
+          </Tabs>
+          <label className="relative min-w-[13rem] flex-1 @min-[980px]:min-w-[9rem]">
+            <span className="sr-only">Pesquisar por nome, GLPI ou identificador do projeto</span>
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Input
+              value={filters.query}
+              onChange={(event) => updateFilters({ query: event.target.value })}
+              placeholder="Nome ou GLPI..."
+              className="h-10 rounded-[7px] pl-9 text-xs"
+            />
+          </label>
+          {options.companies.length > 0 ? (
+            <div className="w-full sm:w-44 @min-[980px]:w-36 @min-[980px]:shrink-0">
+              <FilterSelect
+                label="Empresa"
+                value={filters.company}
+                onChange={(company) => updateFilters({ company })}
+                options={options.companies.map((name) => ({ value: name, label: name }))}
+              />
+            </div>
+          ) : null}
+          {options.owners.length > 0 ? (
+            <div className="w-full sm:w-44 @min-[980px]:w-36 @min-[980px]:shrink-0">
+              <FilterSelect
+                label="Gestor"
+                value={filters.owner}
+                onChange={(owner) => updateFilters({ owner })}
+                options={options.owners.map((name) => ({ value: name, label: name }))}
+              />
+            </div>
+          ) : null}
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button type="button" variant="outline" className="h-10 shrink-0 text-label" title={`Ordenado por ${sortText(sort)}`} />}>
+              <ArrowUpDown aria-hidden="true" />
+              Ordenar
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 rounded-lg p-1.5">
+              {SORT_OPTIONS.map((option) => {
+                const selected = sortPreset(sort)?.id === option.id;
+                return (
+                  <DropdownMenuItem key={option.id} className={menuItem} onClick={() => changeSort(option.sort)}>
+                    {option.label}
+                    {selected ? <Check className="ml-auto size-3.5 text-primary" aria-hidden="true" /> : null}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="flex min-h-11 flex-wrap items-center gap-2 border-t border-border bg-muted/30 px-4 py-2 text-label text-muted-foreground">
+          {filtering ? <span>Filtros:</span> : null}
           <ActiveFilters
             tags={[
-              ...(filters.status ? [{ key: "status", text: `Situação: ${statusLabel.get(filters.status) ?? filters.status}`, onRemove: () => updateFilters({ status: "" }) }] : []),
-              ...(filters.supplier ? [{ key: "supplier", text: `Fornecedor: ${filters.supplier}`, onRemove: () => updateFilters({ supplier: "" }) }] : []),
+              ...(filters.status ? [{ key: "status", text: statusLabel.get(filters.status) ?? filters.status, onRemove: () => updateFilters({ status: "" }) }] : []),
+              ...(filters.company ? [{ key: "company", text: `Empresa: ${filters.company}`, onRemove: () => updateFilters({ company: "" }) }] : []),
               ...(filters.owner ? [{ key: "owner", text: `Gestor: ${filters.owner}`, onRemove: () => updateFilters({ owner: "" }) }] : []),
               ...(filters.query.trim() ? [{ key: "query", text: `Busca: ${filters.query.trim()}`, onRemove: () => updateFilters({ query: "" }) }] : []),
             ]}
           />
-          <div className="flex items-center justify-between gap-3 text-label text-muted-foreground">
-            <span aria-live="polite">
-              {visible.length === 1 ? "1 projeto encontrado" : `${visible.length} projetos encontrados`} · ordenados por {SORT_LABEL[sort.key]} (
-              {sort.direction === "asc" ? "crescente" : "decrescente"})
-            </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="sm" className="text-label text-muted-foreground" />}>
-                <ArrowUpDown aria-hidden="true" />
-                Ordenar por
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 rounded-lg p-1.5">
-                {(["name", "deadline", "updated"] as const).map((key) => (
-                  <DropdownMenuItem key={key} className={menuItem} onClick={() => toggleSort(key)}>
-                    <span className="capitalize">{SORT_LABEL[key]}</span>
-                    {sort.key === key ? (
-                      sort.direction === "asc" ? <ArrowUp className="ml-auto size-3.5" aria-hidden="true" /> : <ArrowDown className="ml-auto size-3.5" aria-hidden="true" />
-                    ) : null}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <span aria-live="polite">
+            {visible.length} de {counts[view]} {counts[view] === 1 ? "projeto" : "projetos"} · ordenados por {sortText(sort)}
+          </span>
+          {filtering ? (
+            <Button type="button" variant="ghost" size="xs" className="ml-auto text-primary hover:text-primary" onClick={() => updateFilters(idlePortfolioFilters)}>
+              Limpar filtros
+            </Button>
+          ) : null}
         </div>
 
         {projects.length === 0 || visible.length === 0 ? (
@@ -434,18 +517,17 @@ export function ProjectList({
           </div>
         ) : (
           <div className="relative w-full min-w-0 overflow-x-auto border-t border-border">
-            <table className="w-full min-w-[1040px] text-left">
+            <table className="w-full min-w-[1000px] text-left">
               <thead className="bg-muted/50 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
                 <tr className="border-b border-border">
                   <SortHeader label="Projeto" sortKey="name" sort={sort} onSort={toggleSort} className="pl-4" />
-                  <th scope="col" className="px-2.5 py-4">Fornecedor</th>
-                  <th scope="col" className="px-1.5 py-4 text-center">Equipe</th>
-                  <th scope="col" className="px-2.5 py-4">Situação</th>
-                  <th scope="col" className="px-2.5 py-4">Progresso</th>
-                  <th scope="col" className="px-2.5 py-4">Início</th>
-                  <SortHeader label="Previsão" sortKey="deadline" sort={sort} onSort={toggleSort} />
-                  <th scope="col" className="px-2.5 py-4">Atraso</th>
-                  <th scope="col" className="w-12 px-3 py-3"><span className="sr-only">Ações</span></th>
+                  <th scope="col" className="px-2.5 py-3">Empresa</th>
+                  <th scope="col" className="px-2.5 py-3">Equipe</th>
+                  <th scope="col" className="px-2.5 py-3">Situação</th>
+                  <th scope="col" className="px-2.5 py-3">Progresso</th>
+                  <SortHeader label="Prazo" sortKey="urgency" sort={sort} onSort={toggleSort} />
+                  <SortHeader label="Última atualização" sortKey="updated" sort={sort} onSort={toggleSort} />
+                  <th scope="col" className="w-11 px-2.5 py-3"><span className="sr-only">Ações</span></th>
                 </tr>
               </thead>
               <tbody key={listKey} className="motion-fade">
@@ -527,7 +609,7 @@ function detailsText(project: ProjectListRow) {
   } else {
     delivery = "Sem entregas pendentes";
   }
-  return { delivery, updated: `Atualizado em ${dateText(project.updatedAt)}` };
+  return { delivery };
 }
 
 function ProjectRow({
@@ -551,19 +633,20 @@ function ProjectRow({
     onOpen();
   }
   const attention = project.status === "EM_ATENCAO" || project.status === "CRITICO";
-  const delay = delayCell(project);
   const details = detailsText(project);
 
   return (
     <tr
       onClick={handleClick}
-      style={attention && project.status ? { boxShadow: `inset 3px 0 0 ${STATUS_COLOR[project.status]}` } : undefined}
       className={cn(
         "cursor-pointer border-b border-border/60 align-middle text-body transition-colors duration-200 last:border-b-0 hover:bg-primary/5 motion-reduce:transition-none",
         opening && "bg-primary/5",
       )}
     >
-      <td className="min-w-[13rem] py-4 pr-3 pl-4">
+      <td
+        className="min-w-[12rem] py-3.5 pr-3 pl-4"
+        style={attention && project.status ? { boxShadow: `inset 3px 0 0 ${STATUS_COLOR[project.status]}` } : undefined}
+      >
         <Tooltip>
           <TooltipTrigger
             render={
@@ -574,7 +657,6 @@ function ProjectRow({
           </TooltipTrigger>
           <TooltipContent side="bottom" align="start" className="flex-col items-start gap-0.5">
             <span>{details.delivery}</span>
-            <span className="opacity-80">{details.updated}</span>
           </TooltipContent>
         </Tooltip>
         <span className="mt-0.5 flex items-center gap-1.5 text-label text-muted-foreground">
@@ -583,17 +665,13 @@ function ProjectRow({
           {attention ? <span className="sr-only">Exige atenção.</span> : null}
         </span>
       </td>
-      <td className="w-44 max-w-44 px-2.5 py-4">
-        {project.suppliers === null ? (
-          <Muted value={null} />
-        ) : (
-          <Truncated text={project.suppliers.join(", ") || "Não informado"} />
-        )}
+      <td className="w-36 max-w-44 min-w-[8rem] px-2.5 py-3.5">
+        <CompanyCell project={project} />
       </td>
-      <td className="w-32 px-1.5 py-4 text-center">
-        <TeamCell project={project} />
+      <td className="w-32 px-2.5 py-3.5">
+        <ManagerTeamCell project={project} />
       </td>
-      <td className="px-2.5 py-4">
+      <td className="px-2.5 py-3.5">
         {project.status === null || project.situation === null ? (
           <Muted value={null} />
         ) : (
@@ -616,7 +694,7 @@ function ProjectRow({
           </span>
         )}
       </td>
-      <td className="min-w-[7.5rem] px-2.5 py-4">
+      <td className="min-w-[8.5rem] px-2.5 py-3.5">
         {!project.progressAvailable ? (
           <Muted value={null} />
         ) : project.eapEmpty ? (
@@ -628,31 +706,19 @@ function ProjectRow({
             <Progress
               value={basisToPercent(project.progressBasisPoints)}
               aria-label={`Andamento de ${project.name}`}
-              className="w-16 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted"
+              className="w-20 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted"
             />
             <span className="text-label font-semibold text-foreground tabular-nums">{formatBasis(project.progressBasisPoints)}%</span>
           </span>
         )}
       </td>
-      <td className="px-2.5 py-4 whitespace-nowrap text-foreground">
-        {project.plannedStartAt ? dateText(project.plannedStartAt) : <span className="text-label text-muted-foreground">Não definido</span>}
+      <td className="px-2.5 py-3.5 whitespace-nowrap">
+        <DeadlineCell project={project} />
       </td>
-      <td className="px-2.5 py-4 whitespace-nowrap text-foreground">
-        {project.plannedEndAt ? dateText(project.plannedEndAt) : <span className="text-label text-muted-foreground">Não definido</span>}
+      <td className="px-2.5 py-3.5 whitespace-nowrap">
+        <UpdatedCell project={project} />
       </td>
-      <td className="px-2.5 py-4 whitespace-nowrap">
-        <span
-          className={cn(
-            "text-body",
-            delay.kind === "delay" && "font-semibold text-destructive",
-            delay.kind === "risk" && "font-medium text-warning-foreground",
-            (delay.kind === "ontime" || delay.kind === "unavailable") && "text-muted-foreground",
-          )}
-        >
-          {delay.text}
-        </span>
-      </td>
-      <td className="px-3 py-2.5">
+      <td className="px-2.5 py-2.5">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={`Ações de ${project.name}`} />}
@@ -718,7 +784,7 @@ function SortHeader({
         variant="ghost"
         size="xs"
         onClick={() => onSort(sortKey)}
-        className={cn("-ml-2 h-auto px-2 py-1 text-label tracking-[0.06em] uppercase hover:text-foreground", active ? "text-primary" : "text-muted-foreground")}
+        className={cn("-ml-2 h-auto px-2 py-1 text-left text-label leading-tight tracking-[0.06em] whitespace-normal uppercase hover:text-foreground", active ? "text-primary" : "text-muted-foreground")}
       >
         {label}
         <Icon className={cn("size-3", !active && "opacity-60")} aria-hidden="true" />
@@ -751,53 +817,151 @@ function FilterSelect({
   );
 }
 
-/** Equipe do projeto: até 3 avatares sobrepostos, +N para o restante; o tooltip lista nome e papel e o clique abre os detalhes. */
-function TeamCell({ project }: { project: ProjectListRow }) {
-  if (project.team === null) {
+/**
+ * Prazo numa coluna só: o atraso (ou risco / no prazo) em destaque e, abaixo, a previsão de término ou o aviso de que ela
+ * não foi cadastrada. O início previsto fica no título.
+ */
+function DeadlineCell({ project }: { project: ProjectListRow }) {
+  const delay = delayCell(project);
+  const headline =
+    delay.kind === "delay" ? `${delay.text} de atraso` : delay.kind === "risk" ? "Risco de atraso" : delay.text;
+  return (
+    <span className="flex flex-col items-start gap-1" title={project.plannedStartAt ? `Início previsto: ${dateText(project.plannedStartAt)}` : "Início previsto não definido"}>
+      <span
+        className={cn(
+          "text-body",
+          delay.kind === "delay" && "font-semibold text-destructive",
+          delay.kind === "risk" && "font-semibold text-warning-foreground",
+          delay.kind === "ontime" && "font-medium text-foreground",
+          delay.kind === "unavailable" && "text-label text-muted-foreground",
+        )}
+      >
+        {headline}
+      </span>
+      {project.plannedEndAt ? (
+        <span className="text-label text-muted-foreground">Previsão {dateText(project.plannedEndAt)}</span>
+      ) : (
+        <span className="text-label text-muted-foreground">Previsão não definida</span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Empresa do projeto: o nome institucional da ficha ou, sem ele, os fornecedores participantes. Até duas linhas, com o
+ * nome completo e a origem no título.
+ */
+function CompanyCell({ project }: { project: ProjectListRow }) {
+  if (project.companies === null) {
     return <Muted value={null} />;
   }
-  if (project.team.length === 0) {
+  if (project.companies.length === 0) {
+    return <span className="text-label text-muted-foreground">Não informada</span>;
+  }
+  const names = project.companies.join(", ");
+  const origin =
+    project.companySource === "profile"
+      ? "Empresa responsável cadastrada na ficha do projeto."
+      : "Fornecedor participante do projeto (a ficha ainda não tem a empresa responsável).";
+  return (
+    <span className="line-clamp-2 text-body break-words text-foreground" title={`${names}\n${origin}`}>
+      {names}
+    </span>
+  );
+}
+
+/**
+ * Equipe em avatares sobrepostos, com o gestor primeiro e marcado por um anel na cor da paleta (sem gestor vinculado, o
+ * dono do projeto). Até 4 avatares e "+N"; o tooltip lista todos com os papéis.
+ */
+function ManagerTeamCell({ project }: { project: ProjectListRow }) {
+  if (project.team === null && project.ownerName === null) {
+    return <Muted value={null} />;
+  }
+  const team = project.team ?? [];
+  const manager = team.find((person) => person.roles.includes("GESTOR"));
+  const lead =
+    manager ?? team.find((person) => person.id === project.ownerId) ?? (project.ownerName ? { id: project.ownerId, name: project.ownerName, roles: ["DONO_PROJETO"] } : team[0]);
+  if (!lead) {
     return <span className="text-body text-muted-foreground" aria-label="Sem participantes cadastrados">—</span>;
   }
-  const { visible, extra } = teamPreview(project.team);
+  const leadRole = manager ? "Gestor" : (TEAM_ROLE_LABEL[lead.roles[0]] ?? lead.roles[0]);
+  const { visible, extra } = teamPreview(team.filter((person) => person.id !== lead.id), 3);
+  const people = team.length > 0 ? team : [lead];
+  const avatar = "flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ring-2 ring-card";
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <Link
             href={`/projetos/${project.id}`}
-            aria-label={`Equipe de ${project.name}: ${project.team.length} ${project.team.length === 1 ? "participante" : "participantes"}. Abrir detalhes do projeto.`}
-            className={cn("inline-flex rounded-full", focusRing)}
+            aria-label={`${leadRole}: ${lead.name}. Equipe de ${project.name}: ${people.length} ${people.length === 1 ? "participante" : "participantes"}.`}
+            className={cn("flex w-fit items-center -space-x-1.5 rounded-full", focusRing)}
           />
         }
       >
-        <AvatarGroup className="-space-x-1">
-          {visible.map((person) => (
-            <Avatar key={person.id}>
-              <AvatarFallback className={cn("text-label font-semibold", AVATAR_PALETTE[avatarColorIndex(person.id, AVATAR_PALETTE.length)])}>{ownerInitials(person.name)}</AvatarFallback>
-            </Avatar>
-          ))}
-          {extra > 0 ? <AvatarGroupCount className="bg-muted text-label text-muted-foreground">+{extra}</AvatarGroupCount> : null}
-        </AvatarGroup>
-      </TooltipTrigger>
-      <TooltipContent side="top" align="start" className="flex-col items-start gap-1">
-        {project.team.map((person) => (
-          <span key={person.id}>
-            <span className="font-medium">{person.name}</span>
-            <span className="opacity-80"> · {person.roles.map((role) => TEAM_ROLE_LABEL[role] ?? role).join(", ")}</span>
+        <span className={cn(avatar, "relative z-10 ring-primary/60", AVATAR_PALETTE[avatarColorIndex(lead.id, AVATAR_PALETTE.length)])}>{ownerInitials(lead.name)}</span>
+        {visible.map((person) => (
+          <span key={person.id} className={cn(avatar, AVATAR_PALETTE[avatarColorIndex(person.id, AVATAR_PALETTE.length)])}>
+            {ownerInitials(person.name)}
           </span>
         ))}
+        {extra > 0 ? <span className={cn(avatar, "bg-muted text-muted-foreground")}>+{extra}</span> : null}
+      </TooltipTrigger>
+      <TooltipContent side="top" align="start" className="flex-col items-start gap-1">
+        <span className="font-semibold">
+          {leadRole}: {lead.name}
+        </span>
+        {people
+          .filter((person) => person.id !== lead.id)
+          .map((person) => (
+            <span key={person.id}>
+              <span className="font-medium">{person.name}</span>
+              <span className="opacity-80"> · {person.roles.map((role) => TEAM_ROLE_LABEL[role] ?? role).join(", ")}</span>
+            </span>
+          ))}
       </TooltipContent>
     </Tooltip>
   );
 }
 
-/** Texto em uma linha com reticências; o conteúdo completo fica no tooltip (foco por teclado incluído). */
-function Truncated({ text }: { text: string }) {
+/** Data e hora exatas (fuso de Belém, como no restante do sistema), para a informação complementar. */
+const MOMENT = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Belem", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+/**
+ * Última atualização = última movimentação real do acompanhamento (situação, conclusão, impedimento, entrega, homologação,
+ * reprogramação, planejamento), nunca acessos ou visualizações. Rótulo relativo em destaque e a data exata abaixo; o tooltip traz
+ * data e hora. O texto relativo depende do relógio de quem consulta, por isso pode diferir do servidor perto da virada do dia.
+ */
+function UpdatedCell({ project }: { project: ProjectListRow }) {
+  if (!project.movementAvailable) {
+    return <Muted value={null} />;
+  }
+  if (project.lastMovementAt === null) {
+    return (
+      <span className="text-label text-muted-foreground" title="Nenhuma movimentação relevante registrada no acompanhamento do projeto.">
+        Sem movimentação
+      </span>
+    );
+  }
+  const at = project.lastMovementAt;
+  const label = updatedLabel(at);
+  if (label.days === null) {
+    return <Muted value={null} />;
+  }
+  const stale = label.days > 30;
   return (
     <Tooltip>
-      <TooltipTrigger render={<span tabIndex={0} className={cn("block min-w-0 truncate rounded-sm text-body text-foreground", focusRing)} />}>{text}</TooltipTrigger>
-      <TooltipContent side="top" align="start">{text}</TooltipContent>
+      <TooltipTrigger render={<span className="flex w-fit flex-col items-start gap-1" />}>
+        <span suppressHydrationWarning className={cn("text-body font-medium", stale ? "text-warning-foreground" : "text-foreground")}>
+          {label.text}
+        </span>
+        <span className="text-label text-muted-foreground">{dateText(at)}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="start" className="flex-col items-start gap-0.5">
+        <span className="font-semibold">Última movimentação do projeto</span>
+        <span>{MOMENT.format(new Date(at)).replace(", ", " às ")}</span>
+      </TooltipContent>
     </Tooltip>
   );
 }

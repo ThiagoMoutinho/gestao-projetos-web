@@ -19,10 +19,17 @@ import {
   canEditProject,
   delayCell,
   ownerInitials,
+  updatedLabel,
   statusChips,
   statusShare,
   matchesView,
   PORTFOLIO_VIEWS,
+  portfolioCsv,
+  portfolioHealth,
+  resolveCompanies,
+  viewCounts,
+  currentPlanDate,
+  lastMovementFrom,
   type ProjectListRow,
 } from "./project-portfolio.ts";
 
@@ -36,11 +43,15 @@ function project(overrides: Partial<ProjectListRow> & Pick<ProjectListRow, "id" 
     plannedStartAt: null,
     plannedEndAt: null,
     updatedAt: "2026-10-01T12:00:00.000Z",
+    lastMovementAt: null,
+    movementAvailable: true,
     ownerId: "owner",
     ownerName: "Ana",
     managers: [],
     team: [],
     suppliers: [],
+    companies: [],
+    companySource: null,
     progressBasisPoints: null,
     progressAvailable: true,
     eapEmpty: false,
@@ -54,9 +65,9 @@ function project(overrides: Partial<ProjectListRow> & Pick<ProjectListRow, "id" 
 }
 
 const rows = [
-  project({ id: "a1", name: "Intranet", glpiTicketId: "4521", status: "EM_ATENCAO", suppliers: ["Fornecedora X"], plannedEndAt: "2026-12-01T15:00:00.000Z", updatedAt: "2026-10-20T12:00:00.000Z" }),
-  project({ id: "b2", name: "Portal de Serviços", status: "CONCLUIDO", ownerName: "Bruno", plannedEndAt: "2026-08-01T15:00:00.000Z" }),
-  project({ id: "c3", name: "Área de Benefícios", status: "CRITICO", suppliers: null, ownerName: null, updatedAt: "2026-10-25T12:00:00.000Z" }),
+  project({ id: "a1", name: "Intranet", glpiTicketId: "4521", status: "EM_ATENCAO", managers: ["Ana"], suppliers: ["Fornecedora X"], companies: ["Fornecedora X"], companySource: "supplier", plannedEndAt: "2026-12-01T15:00:00.000Z", updatedAt: "2026-10-20T12:00:00.000Z", lastMovementAt: "2026-10-20T12:00:00.000Z" }),
+  project({ id: "b2", name: "Portal de Serviços", status: "CONCLUIDO", ownerName: "Bruno", managers: ["Bruno"], plannedEndAt: "2026-08-01T15:00:00.000Z" }),
+  project({ id: "c3", name: "Área de Benefícios", status: "CRITICO", suppliers: null, companies: null, ownerName: null, updatedAt: "2026-10-25T12:00:00.000Z", lastMovementAt: "2026-10-25T12:00:00.000Z" }),
 ];
 
 describe("Portfólio de projetos", () => {
@@ -78,8 +89,8 @@ describe("Portfólio de projetos", () => {
     assert.deepEqual(names({ query: "#4521" }), ["Intranet"]);
     assert.deepEqual(names({ query: "b2" }), ["Portal de Serviços"]);
     assert.deepEqual(names({ status: "CONCLUIDO" }), ["Portal de Serviços"]);
-    assert.deepEqual(names({ supplier: "Fornecedora X", status: "EM_ATENCAO" }), ["Intranet"]);
-    assert.deepEqual(names({ supplier: "Fornecedora X", status: "CONCLUIDO" }), []);
+    assert.deepEqual(names({ company: "Fornecedora X", status: "EM_ATENCAO" }), ["Intranet"]);
+    assert.deepEqual(names({ company: "Fornecedora X", status: "CONCLUIDO" }), []);
     assert.deepEqual(names({ owner: "Bruno" }), ["Portal de Serviços"]);
     assert.equal(isFiltering(idlePortfolioFilters), false);
     assert.equal(isFiltering({ ...idlePortfolioFilters, query: "  " }), false);
@@ -88,9 +99,9 @@ describe("Portfólio de projetos", () => {
 
   it("opções dos filtros usam só valores reais, sem inventar fornecedores ou responsáveis", () => {
     const options = filterOptions(rows);
-    assert.deepEqual(options.suppliers, ["Fornecedora X"]);
+    assert.deepEqual(options.companies, ["Fornecedora X"]);
     assert.deepEqual(options.owners, ["Ana", "Bruno"]);
-    assert.deepEqual(filterOptions([project({ id: "z", name: "Z", suppliers: null, ownerName: null })]).suppliers, []);
+    assert.deepEqual(filterOptions([project({ id: "z", name: "Z", suppliers: null, companies: null, ownerName: null })]).companies, []);
   });
 
   it("ordena por nome, prazo vigente (sem prazo por último) e atualização", () => {
@@ -98,7 +109,9 @@ describe("Portfólio de projetos", () => {
     assert.deepEqual(order({ key: "name", direction: "asc" }), ["c3", "a1", "b2"]);
     assert.deepEqual(order({ key: "deadline", direction: "asc" }), ["b2", "a1", "c3"]);
     assert.deepEqual(order({ key: "deadline", direction: "desc" }), ["a1", "b2", "c3"]);
+    // Pela última movimentação real; o b2 não tem movimentação e fica por último nas duas direções.
     assert.deepEqual(order({ key: "updated", direction: "desc" }), ["c3", "a1", "b2"]);
+    assert.deepEqual(order({ key: "updated", direction: "asc" }), ["a1", "c3", "b2"]);
   });
 
   it("próxima entrega é o marco ainda a entregar mais próximo; marco entregue aguarda validação e não entra", () => {
@@ -214,5 +227,99 @@ describe("participação da situação no portfólio", () => {
     assert.equal(statusShare(5, 0), 0);
     assert.equal(statusShare(-1, 10), 0);
     assert.equal(statusShare(15, 10), 100);
+  });
+});
+
+describe("painel da lista de projetos", () => {
+  const late = (days: number) => ({ status: "CRITICO" as const, delayDays: days, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false });
+  const rows = [
+    project({ id: "a", name: "Alfa", status: "CRITICO", situation: late(4) }),
+    project({ id: "b", name: "Beta", status: "CRITICO", situation: late(10) }),
+    project({ id: "c", name: "Gama", status: "EM_ATENCAO", situation: { ...late(0), status: "EM_ATENCAO" }, plannedEndAt: "2026-12-01" }),
+    project({ id: "d", name: "Delta", status: "EM_EXECUCAO", situation: { ...late(0), status: "EM_EXECUCAO" } }),
+    project({ id: "e", name: "Épsilon", status: "CONCLUIDO", situation: { ...late(3), status: "CONCLUIDO" } }),
+  ];
+
+  it("conta os projetos de cada aba sem filtros", () => {
+    assert.deepEqual(viewCounts(rows), { active: 4, concluded: 1, archived: 0, all: 5 });
+  });
+
+  it("calcula a saúde do portfólio só com os ativos", () => {
+    assert.deepEqual(portfolioHealth(rows), { total: 5, active: 4, critical: 2, needsAction: 3, delayed: 2, concluded: 1, averageDelay: 7 });
+    assert.equal(portfolioHealth([]).averageDelay, null);
+  });
+
+  it("ordena por urgência: maior atraso, depois a situação mais grave, depois o nome", () => {
+    const order = (direction: "asc" | "desc") => sortPortfolio(rows, { key: "urgency", direction }).map((row) => row.id);
+    assert.deepEqual(order("desc"), ["b", "a", "e", "c", "d"]);
+    assert.deepEqual(order("asc"), ["d", "c", "e", "a", "b"]);
+  });
+
+  it("gera o CSV com separador ponto e vírgula, BOM e campos protegidos", () => {
+    const csv = portfolioCsv([project({ id: "x", name: 'Portal "novo"; fase 1', glpiTicketId: "123", suppliers: ["Norte"], companies: ["Norte"], status: "CRITICO", situation: late(2) })], {
+      status: () => "Crítico",
+      progress: () => "50,0",
+    });
+    const [head, line] = csv.slice(1).split("\r\n");
+    assert.equal(csv[0], "\uFEFF");
+    assert.ok(head.startsWith("Projeto;GLPI;Situação"));
+    assert.ok(line.startsWith('"Portal ""novo""; fase 1";123;Crítico;'));
+  });
+});
+
+describe("empresa e ordenações da lista", () => {
+  it("prioriza a empresa responsável da ficha e usa os fornecedores só na falta dela", () => {
+    assert.deepEqual(resolveCompanies("  IGEPPS Tecnologia ", ["Norte"]), { companies: ["IGEPPS Tecnologia"], companySource: "profile" });
+    assert.deepEqual(resolveCompanies("-", ["Norte", "Rio"]), { companies: ["Norte", "Rio"], companySource: "supplier" });
+    assert.deepEqual(resolveCompanies(null, []), { companies: [], companySource: null });
+    assert.deepEqual(resolveCompanies(undefined, []), { companies: [], companySource: null });
+    assert.deepEqual(resolveCompanies(undefined, null), { companies: null, companySource: null });
+    assert.deepEqual(resolveCompanies(null, null), { companies: [], companySource: null });
+  });
+
+  it("ordena por maior atraso e por menor progresso (sem dado por último)", () => {
+    const late = (days: number) => ({ status: "CRITICO" as const, delayDays: days, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false });
+    const rows = [
+      project({ id: "a", name: "A", situation: late(2), progressBasisPoints: 5000 }),
+      project({ id: "b", name: "B", situation: late(9), progressBasisPoints: 1200 }),
+      project({ id: "c", name: "C", situation: null, progressBasisPoints: null }),
+      project({ id: "d", name: "D", situation: late(0), progressBasisPoints: 9000, progressAvailable: false }),
+    ];
+    assert.deepEqual(sortPortfolio(rows, { key: "delay", direction: "desc" }).map((row) => row.id), ["b", "a", "d", "c"]);
+    assert.deepEqual(sortPortfolio(rows, { key: "progress", direction: "asc" }).map((row) => row.id), ["b", "a", "c", "d"]);
+  });
+
+  it("última atualização em rótulo relativo pelo dia civil", () => {
+    const now = new Date(2026, 10, 24, 10, 0);
+    const at = (y: number, m: number, d: number) => new Date(y, m, d, 23, 30).toISOString();
+    assert.equal(updatedLabel(at(2026, 10, 24), now).text, "Hoje");
+    assert.equal(updatedLabel(at(2026, 10, 23), now).text, "Ontem");
+    assert.equal(updatedLabel(at(2026, 10, 19), now).text, "Há 5 dias");
+    assert.equal(updatedLabel(at(2026, 9, 27), now).text, "Há 4 semanas");
+    assert.equal(updatedLabel(at(2026, 6, 1), now).text, "Há 4 meses");
+    assert.equal(updatedLabel(at(2025, 9, 1), now).text, "Há 1 ano");
+    assert.equal(updatedLabel(at(2026, 11, 1), now).text, "Hoje");
+    assert.deepEqual(updatedLabel("x", now), { text: "Indisponível", days: null });
+  });
+
+  it("última movimentação: a mais recente, ignorando governança e datas inválidas", () => {
+    assert.equal(lastMovementFrom([]), null);
+    assert.equal(
+      lastMovementFrom([
+        { at: "2026-11-20T10:00:00.000Z", governance: false },
+        { at: "2026-11-23T10:00:00.000Z", governance: true },
+        { at: "2026-11-22T09:00:00.000Z", governance: false },
+        { at: "invalida", governance: false },
+      ]),
+      "2026-11-22T09:00:00.000Z",
+    );
+    assert.equal(lastMovementFrom([{ at: "2026-11-23T10:00:00.000Z", governance: true }]), null);
+  });
+
+  it("prazo vigente: o consolidado da EAP vale; sem ele, a data gravada no projeto", () => {
+    assert.equal(currentPlanDate("2026-10-26", null), "2026-10-26T12:00:00.000-03:00");
+    assert.equal(currentPlanDate("2026-10-26", "2026-12-01T15:00:00.000Z"), "2026-10-26T12:00:00.000-03:00");
+    assert.equal(currentPlanDate(null, "2026-12-01T15:00:00.000Z"), "2026-12-01T15:00:00.000Z");
+    assert.equal(currentPlanDate(null, null), null);
   });
 });

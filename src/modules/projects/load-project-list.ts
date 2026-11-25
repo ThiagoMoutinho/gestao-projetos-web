@@ -1,16 +1,21 @@
 import { ApiError } from "@/lib/api/fetcher";
-import { getScheduleMonitoring } from "@/lib/api/generated/cronograma/cronograma";
+import { getExecutiveSummary, getScheduleMonitoring } from "@/lib/api/generated/cronograma/cronograma";
 import { listEapPhases } from "@/lib/api/generated/eap/eap";
 import type { GetScheduleMonitoring200ItemsItem } from "@/lib/api/generated/model/getScheduleMonitoring200ItemsItem";
 import type { ListProjects200DataItem } from "@/lib/api/generated/model/listProjects200DataItem";
 import { listProjectMembers } from "@/lib/api/generated/participantes/participantes";
 import { getProject, listProjects } from "@/lib/api/generated/projetos/projetos";
+import { getProjectOverview } from "@/lib/api/generated/visão-institucional/visão-institucional";
 
 import { civilDateInput } from "./eap-present";
+import { consolidateSchedule } from "./planning-panel";
 import {
   awaitingValidationFrom,
   nextDeliveryFrom,
   buildTeam,
+  currentPlanDate,
+  lastMovementFrom,
+  resolveCompanies,
   type PortfolioMilestone,
   type ProjectListRow,
   type ProjectMonitoringSignals,
@@ -50,12 +55,15 @@ export async function loadPortfolioSnapshot(): Promise<PortfolioSnapshot> {
 async function loadProjectRow(
   project: ListProjects200DataItem,
 ): Promise<{ row: ProjectListRow; signals: ProjectMonitoringSignals | null }> {
-  const [ownerName, people, progress, monitoring] = await Promise.all([
+  const [ownerName, people, progress, monitoring, companyProfile, movement] = await Promise.all([
     readOwnerName(project.id),
     readPeople(project.id),
     readProgress(project.id),
     readMonitoring(project.id),
+    readResponsibleCompany(project.id),
+    readLastMovement(project.id),
   ]);
+  const company = resolveCompanies(companyProfile, people?.suppliers ?? null);
 
   const row: ProjectListRow = {
     id: project.id,
@@ -65,14 +73,19 @@ async function loadProjectRow(
     status: monitoring?.situation.status ?? null,
     situation: monitoring?.situation ?? null,
     registeredStatus: project.status,
-    plannedStartAt: project.plannedStartAt,
-    plannedEndAt: project.plannedEndAt,
+    // Prazo vigente como na Visão Geral: o consolidado da EAP e, sem datas nos itens, o gravado no projeto.
+    plannedStartAt: currentPlanDate(monitoring?.schedule.start ?? null, project.plannedStartAt),
+    plannedEndAt: currentPlanDate(monitoring?.schedule.end ?? null, project.plannedEndAt),
     updatedAt: project.updatedAt,
+    lastMovementAt: movement?.at ?? null,
+    movementAvailable: movement !== null,
     ownerId: project.ownerId,
     ownerName,
     managers: people?.managers ?? null,
     team: people?.team ?? null,
     suppliers: people?.suppliers ?? null,
+    companies: company.companies,
+    companySource: company.companySource,
     progressBasisPoints: progress?.basisPoints ?? null,
     progressAvailable: progress !== null,
     eapEmpty: progress?.phaseCount === 0,
@@ -97,6 +110,32 @@ async function readOwnerName(projectId: string) {
     const name = detail.data.owner.name.trim();
 
     return name || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * "Empresa responsável" da ficha institucional (versão publicada; o rascunho ainda não validado não entra).
+ * null = campo vazio; undefined = a ficha não pôde ser consultada.
+ */
+async function readResponsibleCompany(projectId: string): Promise<string | null | undefined> {
+  try {
+    const overview = await getProjectOverview(projectId);
+    return overview.status === 200 ? (overview.data.profile.responsibleCompany.published?.value ?? null) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Última movimentação relevante do acompanhamento, das movimentações do resumo executivo (só alterações reais: situação,
+ * conclusão, impedimentos, entregas, homologação, reprogramação e planejamento; acessos não contam). null = consulta indisponível.
+ */
+async function readLastMovement(projectId: string): Promise<{ at: string | null } | null> {
+  try {
+    const summary = await getExecutiveSummary(projectId);
+    return summary.status === 200 ? { at: lastMovementFrom(summary.data.movements) } : null;
   } catch {
     return null;
   }
@@ -155,6 +194,7 @@ async function readMonitoring(projectId: string) {
     const { status, delayDays, pendingValidation, closureRequirementsMissing, readyForClosure } = monitoring.data.situation;
     return {
       situation: { status, delayDays, pendingValidation, closureRequirementsMissing, readyForClosure },
+      schedule: consolidateSchedule(monitoring.data.items).current,
       nextDelivery: nextDeliveryFrom(monitoring.data.items),
       awaitingValidation: awaitingValidationFrom(monitoring.data.items),
       signals: {
