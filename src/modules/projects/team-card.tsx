@@ -89,8 +89,10 @@ export function TeamCard({ projectId, members, canManageFunctions = false }: { p
         subtitle="Responsáveis pelos compromissos do projeto"
         icon={Users}
         tone="blue"
+        // O botão aparece sempre que há equipe (para consultar e-mails e funções no painel), caiba ou não a lista no cartão.
+        expandable={members !== null && members.length > 0}
         moreLabel={`Ver todos os participantes (${new Set((members ?? []).map((member) => member.userId)).size})`}
-        // "Ver todos os participantes" só aparece quando a lista do card passa do limite de altura (a relação completa fica no painel).
+        // A relação completa, com busca, fica no painel.
         drawer={
           members !== null && members.length > 0
             ? {

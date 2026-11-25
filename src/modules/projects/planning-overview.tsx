@@ -934,28 +934,33 @@ export function Participants({ members }: { members: ProjectDetail["members"] })
         </ul>
       </div>
       {people.length > 0 ? (
-        // O rótulo e a linha separadora fazem parte do primeiro participante: se o limite do card cortar a lista, não sobra um título solto.
-        <ul aria-label="Participantes do projeto" className="flex flex-col gap-3.5">
-          {people.map((person, index) => {
-            const roles = [...new Set(members.filter((member) => member.userId === person.userId && added.has(member.id)).map((member) => member.roleLabel))];
-            return (
-              <li key={person.userId} data-cut-unit data-cut-end className={cn("flex min-w-0 flex-col gap-3.5", index === 0 && "border-t border-border/50 pt-5 dark:border-border")}>
-                {index === 0 ? (
-                  <p className="flex items-center gap-2 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-                    Participantes
-                    <span className="rounded-full bg-muted px-1.5 py-px font-semibold tracking-normal text-foreground">{people.length}</span>
-                  </p>
-                ) : null}
-                <div className="flex min-w-0 items-center gap-3">
-                  <PersonAvatar name={person.name} className="size-9 text-xs" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm leading-snug font-medium text-foreground">{person.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{roles.join(" · ")}</p>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
+        // Participantes lado a lado, em linhas de duas pessoas (uma coluna no cartão estreito). Cada linha é uma unidade de corte do cartão, e o
+        // rótulo com a linha separadora faz parte da primeira: se o limite do card cortar a lista, não sobra um título solto.
+        <ul aria-label="Participantes do projeto" className="@container flex min-w-0 flex-col gap-3.5 border-t border-border/50 pt-5 dark:border-border">
+          {Array.from({ length: Math.ceil(people.length / 2) }, (_, row) => people.slice(row * 2, row * 2 + 2)).map((pair, row) => (
+            <li key={pair[0].userId} data-cut-unit data-cut-end className="flex min-w-0 flex-col gap-3.5">
+              {row === 0 ? (
+                <p className="flex items-center gap-2 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                  Participantes
+                  <span className="rounded-full bg-muted px-1.5 py-px font-semibold tracking-normal text-foreground">{people.length}</span>
+                </p>
+              ) : null}
+              <div className="grid grid-cols-1 gap-x-6 gap-y-3.5 @min-[360px]:grid-cols-2">
+                {pair.map((person) => {
+                  const roles = [...new Set(members.filter((member) => member.userId === person.userId && added.has(member.id)).map((member) => member.roleLabel))];
+                  return (
+                    <div key={person.userId} className="flex min-w-0 items-center gap-3">
+                      <PersonAvatar name={person.name} className="size-9 text-xs" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm leading-snug font-medium text-foreground">{person.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{roles.join(" · ")}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </li>
+          ))}
         </ul>
       ) : null}
     </section>
