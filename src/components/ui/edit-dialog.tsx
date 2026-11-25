@@ -42,7 +42,10 @@ export function EditDialogHeader({
   title: ReactNode;
   /** Frase curta do objetivo do diálogo (preferir uma linha). */
   description?: ReactNode;
-  /** Orientação complementar: aparece no ícone de informação, não alonga o cabeçalho. */
+  /**
+   * Só quando houver regra não óbvia (efeito colateral, restrição, fluxo especial).
+   * Aparece no ícone de informação ao lado de Fechar; não use para repetir título/descrição.
+   */
   details?: ReactNode;
   onClose: () => void;
   closeDisabled?: boolean;

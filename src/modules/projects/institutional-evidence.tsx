@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { FieldError, useFieldErrors } from "@/components/field-error";
 import { OptionCombobox } from "@/components/option-combobox";
 import { createEapEvidence, updateEapEvidence } from "@/lib/api/generated/eap/eap";
+import { cn } from "@/lib/utils";
 
 import { EvidenceFormFields, EvidenceKindIcon, type EvidenceFieldUi } from "./evidence-form";
 import {
@@ -30,6 +31,16 @@ import {
 import { stamp, useAction, type Overview } from "./institutional-shared";
 import { DrawerCard, DrawerCount, DrawerEmpty, DrawerNav } from "./overview-detail-drawer";
 import { SectionCard } from "./overview-panel";
+
+/** Tom visual por tipo de evidência (ícone e badge). */
+const KIND_TONE: Record<EvidenceKind | "UNCLASSIFIED", string> = {
+  DOCUMENT: "bg-primary/10 text-primary ring-primary/20",
+  MINUTES: "bg-status-validation-soft text-status-validation-ink ring-status-validation/25",
+  REPORT: "bg-status-running-soft text-status-running-ink ring-status-running/25",
+  GLPI_TICKET: "bg-status-attention-soft text-status-attention-ink ring-status-attention/25",
+  OTHER: "bg-muted text-muted-foreground ring-border",
+  UNCLASSIFIED: "bg-muted text-muted-foreground ring-border",
+};
 
 type OverviewEvidence = Overview["evidences"][number];
 
@@ -70,17 +81,17 @@ const FILTER_ICON: Record<EvidenceFilter, React.ComponentType<{ className?: stri
 
 function Ticket({ label, ticket }: { label: string; ticket: { ticketId: string; url: string | null } | null }) {
   return (
-    <div className="min-w-0">
-      <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <div className="min-w-0 rounded-xl bg-muted/35 px-3.5 py-3 dark:bg-muted/20">
+      <dt className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <Ticket2 className="size-3.5" aria-hidden="true" />
         {label}
       </dt>
-      <dd className="mt-0.5 truncate text-sm font-semibold text-foreground">
+      <dd className="mt-1.5 truncate text-sm font-semibold text-foreground">
         {!ticket ? (
           <span className="font-normal text-muted-foreground">Não informado</span>
         ) : ticket.url ? (
           <a href={ticket.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline">
-            GLPI #{ticket.ticketId} <ExternalLink className="size-3" aria-hidden="true" />
+            GLPI #{ticket.ticketId} <ExternalLink className="size-3.5" aria-hidden="true" />
           </a>
         ) : (
           `GLPI #${ticket.ticketId}`
@@ -201,10 +212,8 @@ function EvidenceDialog({
           }
           details={
             draft.kind === "GLPI_TICKET"
-              ? "Informe o número e o link de um chamado já existente no GLPI. Nenhum chamado é aberto ou sincronizado."
-              : evidence
-                ? "Escolha o tipo da evidência. O histórico da alteração fica registrado."
-                : "Informe o tipo, um título e o link do documento (por exemplo, no SharePoint)."
+              ? "Informe o número e o link de um chamado já existente. Nenhum chamado é aberto ou sincronizado no GLPI."
+              : undefined
           }
           onClose={onClose}
           closeDisabled={busy}
@@ -268,29 +277,56 @@ export function EvidencesAndTickets({
   const visible = newestFirst.filter((evidence) => matchesEvidenceFilter(evidence, filter));
 
   const tickets = (
-    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+    <dl className="grid gap-2.5 sm:grid-cols-2">
       <Ticket label="Chamado de origem" ticket={data.origin.glpiTicket} />
       <Ticket label="Chamado do PMO" ticket={data.origin.pmoGlpiTicket} />
     </dl>
   );
 
-  const list = (items: OverviewEvidence[]) => (
-    <ul className="flex flex-col gap-4">
+  const summary = [
+    { label: "Total", value: evidences.length },
+    { label: "Documentos", value: evidences.filter((item) => item.kind === "DOCUMENT").length },
+    { label: "Atas", value: evidences.filter((item) => item.kind === "MINUTES").length },
+    { label: "GLPI", value: evidences.filter((item) => item.kind === "GLPI_TICKET").length },
+  ];
+
+  const list = (items: OverviewEvidence[], comfortable = false) => (
+    <ul className={cn("flex flex-col", comfortable ? "gap-3" : "gap-3.5")}>
       {items.map((evidence) => {
         const origin = originOf(evidence, origins);
         const title = evidenceDisplayTitle(evidence);
+        const toneKey = evidence.kind ?? "UNCLASSIFIED";
         return (
-          <li key={evidence.id} data-cut-unit className="flex items-start gap-3.5">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/15 ring-inset">
-              <EvidenceKindIcon kind={evidence.kind} className="size-4" />
+          <li
+            key={evidence.id}
+            data-cut-unit
+            className={cn(
+              "flex items-start gap-3.5",
+              comfortable && "rounded-xl bg-muted/30 px-3.5 py-3.5 dark:bg-muted/20",
+            )}
+          >
+            <span
+              className={cn(
+                "flex shrink-0 items-center justify-center rounded-xl ring-1 ring-inset",
+                comfortable ? "size-10" : "size-9",
+                KIND_TONE[toneKey],
+              )}
+              aria-hidden="true"
+            >
+              <EvidenceKindIcon kind={evidence.kind} className={comfortable ? "size-[18px]" : "size-4"} />
             </span>
-            <div className="min-w-0 flex-1 pt-0.5">
-              <p className="text-sm leading-snug font-semibold break-words text-foreground">{title}</p>
-              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                {evidenceKindLabel(evidence.kind)} · Registrada em {stamp(evidence.createdAt)}
-                {origin ? " · Vinculado a: " + origin : ""}
+            <div className={cn("min-w-0 flex-1", comfortable ? "space-y-1.5" : "space-y-1 pt-0.5")}>
+              <div className="flex items-start justify-between gap-3">
+                <p className={cn("leading-snug font-semibold break-words text-foreground", comfortable ? "text-[13px]" : "text-sm")}>{title}</p>
+                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {evidenceKindLabel(evidence.kind)}
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Registrada em {stamp(evidence.createdAt)}
+                {origin ? ` · Vinculado a: ${origin}` : ""}
               </p>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
                 <a
                   href={evidence.url}
                   target="_blank"
@@ -333,7 +369,7 @@ export function EvidencesAndTickets({
           title: "Evidências do projeto",
           description: "Documentos, atas, relatórios e chamados do projeto.",
           content: (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
               {evidences.length > 0 ? (
                 <DrawerNav
                   label="Filtrar evidências por tipo"
@@ -354,7 +390,11 @@ export function EvidencesAndTickets({
                 {tickets}
               </DrawerCard>
               <DrawerCard icon={FileText} title="Evidências" aside={<DrawerCount value={visible.length} />}>
-                {visible.length === 0 ? <DrawerEmpty>{evidences.length === 0 ? "Nenhuma evidência registrada no projeto." : "Nenhuma evidência neste filtro."}</DrawerEmpty> : list(visible)}
+                {visible.length === 0 ? (
+                  <DrawerEmpty>{evidences.length === 0 ? "Nenhuma evidência registrada no projeto." : "Nenhuma evidência neste filtro."}</DrawerEmpty>
+                ) : (
+                  list(visible, true)
+                )}
               </DrawerCard>
             </div>
           ),
@@ -364,7 +404,6 @@ export function EvidencesAndTickets({
             <Button
               type="button"
               size="xs"
-              variant="secondary"
               onClick={() => {
                 setCreateKey((value) => value + 1);
                 setCreating(true);
@@ -375,17 +414,29 @@ export function EvidencesAndTickets({
           ) : undefined
         }
       >
-        <div data-cut-unit>{tickets}</div>
-        {evidences.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Nenhuma evidência registrada no projeto.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <p data-cut-unit className="text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-              Mais recentes
-            </p>
-            {list(newestFirst.slice(0, PREVIEW))}
-          </div>
-        )}
+        <div className="flex min-h-0 flex-1 flex-col gap-3.5">
+          {evidences.length > 0 ? (
+            <ul data-cut-unit aria-label="Resumo de evidências" className="grid grid-cols-4 overflow-hidden rounded-xl bg-muted/35 dark:bg-muted/20">
+              {summary.map((item, index) => (
+                <li key={item.label} className={cn("flex flex-col gap-1 px-2.5 py-2.5", index > 0 && "border-l border-border/50 dark:border-border")}>
+                  <span className="text-lg leading-none font-semibold tabular-nums text-foreground">{item.value}</span>
+                  <span className="text-[10px] leading-tight text-muted-foreground">{item.label}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div data-cut-unit>{tickets}</div>
+          {evidences.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Nenhuma evidência registrada no projeto.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p data-cut-unit className="text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                Mais recentes
+              </p>
+              {list(newestFirst.slice(0, PREVIEW))}
+            </div>
+          )}
+        </div>
       </SectionCard>
       <EvidenceDialog key={`new-${createKey}`} projectId={projectId} evidence={null} open={creating} onClose={() => setCreating(false)} onDone={onChanged} />
       {classifying ? (

@@ -6,8 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog } from "@/components/ui/dialog";
-import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Presence } from "@/components/ui/presence";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getScheduleMonitoring, listScheduleHistory } from "@/lib/api/generated/cronograma/cronograma";
@@ -32,9 +30,9 @@ import { formatCivilDate } from "./eap-date-field";
 import type { ProjectDetail } from "./eap-present";
 import { EapStatusBadge } from "./eap-status-badge";
 import { baselineDeviation, consolidateSchedule, daysBetween } from "./planning-panel";
-import { EapSchedule } from "./eap-schedule";
 import { ScheduleHistoryList } from "./planning-overview";
 import { OVERVIEW_CARD } from "./overview-panel";
+import { ProjectPlanningDialog } from "./project-planning-dialog";
 
 /** Mesmo acabamento dos cartões da Visão Geral, com a altura do conteúdo (sem `min-h-full`, que esticava a página). */
 const CARD = OVERVIEW_CARD.replace("min-h-full ", "");
@@ -138,10 +136,11 @@ export function ProjectCronograma({ project, access, onBack, onOpenEap, onSaved 
         </div>
       </header>
 
-      <PlanningDialog
+      <ProjectPlanningDialog
         open={planning}
         onClose={() => setPlanning(false)}
         projectId={project.id}
+        title="Definir planejamento do projeto"
         schedule={
           data
             ? {
@@ -581,49 +580,3 @@ function DatesCard({ loading, consolidated, actual, recorded, canDefine, onDefin
   );
 }
 
-/** Definir planejamento: datas gravadas no próprio projeto, com a mesma regra de justificativa e histórico da EAP. */
-function PlanningDialog({
-  open,
-  onClose,
-  projectId,
-  schedule,
-  closed,
-  onSaved,
-}: {
-  open: boolean;
-  onClose: () => void;
-  projectId: string;
-  schedule: Parameters<typeof EapSchedule>[0]["schedule"];
-  closed: boolean;
-  onSaved: () => void;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={(value) => (!value ? onClose() : undefined)}>
-      <EditDialogContent className="sm:max-w-[640px]">
-        <EditDialogHeader
-          icon={CalendarRange}
-          title="Definir planejamento do projeto"
-          description="Datas planejadas do projeto."
-          details="Datas gravadas no próprio projeto. A linha de base original é preservada e toda alteração de data exige justificativa e fica no histórico."
-          onClose={onClose}
-        />
-        <EditDialogBody>
-        <EapSchedule
-          projectId={projectId}
-          target={{ entityType: "PROJECT" }}
-          schedule={schedule}
-          state={closed ? "DONE" : "OPEN"}
-          closed={closed}
-          canReschedule
-          onSaved={async () => onSaved()}
-        />
-        </EditDialogBody>
-        <EditDialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Fechar
-          </Button>
-        </EditDialogFooter>
-      </EditDialogContent>
-    </Dialog>
-  );
-}

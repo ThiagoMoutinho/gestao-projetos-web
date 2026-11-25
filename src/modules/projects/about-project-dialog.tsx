@@ -129,7 +129,7 @@ export function AboutProjectDialog({
           icon={Info}
           title={canEdit ? "Editar sobre o projeto" : "Sobre o projeto"}
           description="Identificação, sistema, contexto e resultados."
-          details="Identificação, sistema, contexto e resultados para o IGEPPS. Cada campo é salvo ao sair dele e a alteração fica registrada no histórico do projeto."
+          details={canEdit ? "Cada campo é salvo ao sair dele. Não há botão geral de salvar." : undefined}
           onClose={onClose}
           closeDisabled={saving > 0}
         />

@@ -168,7 +168,6 @@ export function PendingDecision({
             tone="destructive"
             title={rejectTitle}
             description="A versão validada anterior é mantida."
-            details="A versão validada anterior é mantida. A justificativa fica registrada na auditoria."
             onClose={() => setRejecting(false)}
             closeDisabled={busy}
           />
