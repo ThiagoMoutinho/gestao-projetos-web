@@ -79,16 +79,15 @@ export function DeliveriesPage({ snapshot, viewerRole }: { snapshot: DeliveriesS
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-6">
+      <header className="flex flex-wrap items-center justify-between gap-3 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground" aria-hidden="true">
             <PackageCheck className="size-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold tracking-[0.12em] text-primary uppercase">Acompanhamento institucional</p>
-            <h1 className="text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">Entregas e Homologações</h1>
-            <p className="text-body text-muted-foreground">Acompanhe as entregas dos projetos, as homologações e os modelos de checklist.</p>
+              <h1 className="text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">Entregas e Homologações</h1>
+            <p className="mt-1 truncate text-[11.5px] text-muted-foreground">Acompanhe as entregas dos projetos, as homologações e os modelos de checklist.</p>
           </div>
         </div>
         <Button type="button" onClick={() => setCreating(true)} disabled={snapshot.projects.length === 0}>

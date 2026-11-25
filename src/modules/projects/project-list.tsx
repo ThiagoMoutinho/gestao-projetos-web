@@ -91,15 +91,14 @@ const focusRing = "focus-visible:ring-2 focus-visible:ring-primary/25 focus-visi
 
 function PageHeader({ eapPrompt = false, actions }: { eapPrompt?: boolean; actions?: ReactNode }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3">
+    <header className="flex flex-wrap items-center justify-between gap-3 py-2">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground" aria-hidden="true">
           <FolderKanban className="size-6" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold tracking-[0.12em] text-primary uppercase">Portfólio institucional</p>
           <h1 className="text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">Projetos</h1>
-          <p className="text-body text-muted-foreground">Situação, prazo e responsáveis de cada projeto da CTIN.</p>
+          <p className="mt-1 truncate text-[11.5px] text-muted-foreground">Situação, prazo e responsáveis de cada projeto da CTIN.</p>
         </div>
       </div>
       {actions}
@@ -285,7 +284,7 @@ export function ProjectList({
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-[18px]">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <PageHeader
         eapPrompt={eapPrompt}
         actions={
