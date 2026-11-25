@@ -94,6 +94,10 @@ async function loadProjectRow(
     nextDeliveryAvailable: monitoring !== null,
     viewerIsOwner: project.isOwner,
     viewerRoles: [...project.roles],
+    activeImpediments: movement?.impediments ?? null,
+    overduePhases: monitoring?.overdue.phases ?? null,
+    overdueTasks: monitoring?.overdue.tasks ?? null,
+    overdueMilestones: monitoring?.overdue.milestones ?? null,
   };
 
   return { row, signals: monitoring?.signals ?? null };
@@ -129,13 +133,15 @@ async function readResponsibleCompany(projectId: string): Promise<string | null 
 }
 
 /**
- * Última movimentação relevante do acompanhamento, das movimentações do resumo executivo (só alterações reais: situação,
+ * Última movimentação relevante e contagem de impedimentos ativos, do resumo executivo (só alterações reais: situação,
  * conclusão, impedimentos, entregas, homologação, reprogramação e planejamento; acessos não contam). null = consulta indisponível.
  */
-async function readLastMovement(projectId: string): Promise<{ at: string | null } | null> {
+async function readLastMovement(projectId: string): Promise<{ at: string | null; impediments: number } | null> {
   try {
     const summary = await getExecutiveSummary(projectId);
-    return summary.status === 200 ? { at: lastMovementFrom(summary.data.movements) } : null;
+    return summary.status === 200
+      ? { at: lastMovementFrom(summary.data.movements), impediments: summary.data.impediments }
+      : null;
   } catch {
     return null;
   }
@@ -191,12 +197,13 @@ async function readMonitoring(projectId: string) {
     if (monitoring.status !== 200) {
       return null;
     }
-    const { status, delayDays, pendingValidation, closureRequirementsMissing, readyForClosure } = monitoring.data.situation;
+    const { status, delayDays, delayedItems, pendingValidation, closureRequirementsMissing, readyForClosure } = monitoring.data.situation;
     return {
-      situation: { status, delayDays, pendingValidation, closureRequirementsMissing, readyForClosure },
+      situation: { status, delayDays, delayedItems, pendingValidation, closureRequirementsMissing, readyForClosure },
       schedule: consolidateSchedule(monitoring.data.items).current,
       nextDelivery: nextDeliveryFrom(monitoring.data.items),
       awaitingValidation: awaitingValidationFrom(monitoring.data.items),
+      overdue: monitoring.data.overdue,
       signals: {
         openMilestones: openMilestonesFrom(monitoring.data.items),
         overdueTasks: monitoring.data.overdue.tasks,

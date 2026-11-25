@@ -709,11 +709,11 @@ function ScheduleHistoryBlock({ history, projectId }: { history: History; projec
   );
 }
 
-export function ScheduleHistoryList({ items }: { items: HistoryItem[] }) {
+export function ScheduleHistoryList({ items, comfortable = false }: { items: HistoryItem[]; /** Lista do painel lateral: cartões suaves sem divisórias. */ comfortable?: boolean }) {
   return (
-    <ul className="mt-2 flex flex-col divide-y">
+    <ul className={cn("flex flex-col", comfortable ? "gap-3" : "mt-2 divide-y")}>
       {items.map((item) => (
-        <ScheduleHistoryRow key={item.id} item={item} />
+        <ScheduleHistoryRow key={item.id} item={item} comfortable={comfortable} />
       ))}
     </ul>
   );
@@ -726,16 +726,27 @@ function changeText(change: HistoryItem["changes"][number]) {
 
 /** Ícone e cor de cada registro: pergunta (pendente), seta circular (reprogramação, vermelha se estendeu e verde se antecipou), X e losango. */
 function historyIcon(item: HistoryItem, delta: number | null) {
-  if (item.status === "PENDENTE") return { Icon: CircleHelp, tone: "bg-warning/20 text-warning-foreground" };
-  if (item.status === "REJEITADA") return { Icon: X, tone: "bg-status-critical-soft text-status-critical-ink" };
-  if (item.status === "CANCELADA" || item.status === "CANCELADA_CONFLITO") return { Icon: X, tone: "bg-muted text-muted-foreground" };
-  if (item.status === "DEFINIDA") return { Icon: Diamond, tone: "bg-primary/10 text-primary" };
-  if (delta !== null && delta < 0) return { Icon: RotateCcw, tone: "bg-success/15 text-success-foreground" };
-  if (delta !== null && delta > 0) return { Icon: RotateCw, tone: "bg-status-critical-soft text-status-critical-ink" };
-  return { Icon: RotateCw, tone: "bg-muted text-muted-foreground" };
+  if (item.status === "PENDENTE") return { Icon: CircleHelp, tone: "bg-status-attention-soft text-status-attention-ink", ring: "ring-status-attention/25" };
+  if (item.status === "REJEITADA") return { Icon: X, tone: "bg-status-critical-soft text-status-critical-ink", ring: "ring-status-critical/25" };
+  if (item.status === "CANCELADA" || item.status === "CANCELADA_CONFLITO") return { Icon: X, tone: "bg-muted text-muted-foreground", ring: "ring-border" };
+  if (item.status === "DEFINIDA") return { Icon: Diamond, tone: "bg-primary/10 text-primary", ring: "ring-primary/20" };
+  if (delta !== null && delta < 0) return { Icon: RotateCcw, tone: "bg-status-done-soft text-status-done-ink", ring: "ring-status-done/25" };
+  if (delta !== null && delta > 0) return { Icon: RotateCw, tone: "bg-status-critical-soft text-status-critical-ink", ring: "ring-status-critical/25" };
+  return { Icon: RotateCw, tone: "bg-muted text-muted-foreground", ring: "ring-border" };
 }
 
-function ScheduleHistoryRow({ item }: { item: HistoryItem }) {
+/** Rótulo curto no cartão; o texto completo fica no detalhe expandido. */
+const STATUS_SHORT: Record<HistoryItem["status"], string> = {
+  EFETIVADA_DIRETAMENTE: "Efetivada",
+  DEFINIDA: "Definição",
+  PENDENTE: "Pendente",
+  APROVADA: "Aprovada",
+  REJEITADA: "Rejeitada",
+  CANCELADA: "Cancelada",
+  CANCELADA_CONFLITO: "Conflito",
+};
+
+function ScheduleHistoryRow({ item, comfortable = false }: { item: HistoryItem; comfortable?: boolean }) {
   const [open, setOpen] = useState(false);
   const status = HISTORY_STATUS[item.status];
   const lead = headlineChange(item);
@@ -746,84 +757,165 @@ function ScheduleHistoryRow({ item }: { item: HistoryItem }) {
   const actor =
     item.source === "REQUEST" ? personName(item.requestedBy, "solicitante não registrado") : personName(item.registeredBy, "autor não registrado");
   const rowIcon = historyIcon(item, delta);
-  return (
-    <li className="py-2.5" data-source={item.source} data-status={item.status}>
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <div className="flex items-start gap-3">
-          <span aria-hidden="true" className={cn("mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg", rowIcon.tone)}>
-            <rowIcon.Icon className="size-4" />
-          </span>
-          <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">
-                {lead ? `${proposed ? "Proposta: " : ""}${changeText(lead)}` : "Datas alteradas"}
-                {lead && lead.field === "START" ? <span className="ml-1 text-xs font-normal text-muted-foreground">(início)</span> : null}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {type}
-                {item.entityTitle ? ` · ${item.entityTitle}` : ""} · {day(item.occurredAt)} · {registeredLabel} {actor}
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              {delta !== null && delta !== 0 ? (
-                <span className={cn("text-xs font-semibold", delta > 0 ? "text-destructive" : "text-success-foreground")}>
-                  {delta > 0 ? "+" : "−"}{Math.abs(delta)} d
+  const title = lead ? `${proposed ? "Proposta: " : ""}${changeText(lead)}` : "Datas alteradas";
+  const entity = `${type}${item.entityTitle ? ` · ${item.entityTitle}` : ""}`;
+
+  if (!comfortable) {
+    return (
+      <li className="py-2.5" data-source={item.source} data-status={item.status}>
+        <Collapsible open={open} onOpenChange={setOpen}>
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" className={cn("mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg", rowIcon.tone)}>
+              <rowIcon.Icon className="size-4" />
+            </span>
+            <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">
+                  {title}
+                  {lead && lead.field === "START" ? <span className="ml-1 text-xs font-normal text-muted-foreground">(início)</span> : null}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {entity} · {day(item.occurredAt)} · {registeredLabel} {actor}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {delta !== null && delta !== 0 ? (
+                  <span className={cn("text-xs font-semibold", delta > 0 ? "text-destructive" : "text-success-foreground")}>
+                    {delta > 0 ? "+" : "−"}
+                    {Math.abs(delta)} d
+                  </span>
+                ) : null}
+                <span title={status.hint} data-testid="history-status" className={cn("inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-medium", DEADLINE_TONE_CLASS[status.tone])}>
+                  {status.label}
                 </span>
-              ) : null}
-              <span
-                title={status.hint}
-                data-testid="history-status"
-                className={cn("inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-medium", DEADLINE_TONE_CLASS[status.tone])}
-              >
-                {status.label}
-              </span>
-              <CollapsibleTrigger className="group/detail flex items-center gap-1 rounded text-xs text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-                Detalhes
-                <ChevronDown className="size-3 transition-transform duration-200 group-data-panel-open/detail:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-              </CollapsibleTrigger>
+                <CollapsibleTrigger className="group/detail flex items-center gap-1 rounded text-xs text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                  Detalhes
+                  <ChevronDown className="size-3 transition-transform duration-200 group-data-panel-open/detail:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+                </CollapsibleTrigger>
+              </div>
             </div>
+          </div>
+          <CollapsibleContent>
+            <HistoryDetails item={item} proposed={proposed} status={status} />
+          </CollapsibleContent>
+        </Collapsible>
+      </li>
+    );
+  }
+
+  return (
+    <li className="rounded-xl bg-muted/30 px-3.5 py-3.5 dark:bg-muted/20" data-source={item.source} data-status={item.status}>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <div className="flex items-start gap-3.5">
+          <span aria-hidden="true" className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset", rowIcon.tone, rowIcon.ring)}>
+            <rowIcon.Icon className="size-[18px]" />
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13px] leading-snug font-semibold break-words text-foreground">
+                  {title}
+                  {lead && lead.field === "START" ? <span className="ml-1 text-xs font-normal text-muted-foreground">(início)</span> : null}
+                  {delta !== null && delta !== 0 ? (
+                    <span className={cn("ml-2 text-xs font-semibold", delta > 0 ? "text-status-critical-ink" : "text-status-done-ink")}>
+                      {delta > 0 ? "+" : "−"}
+                      {Math.abs(delta)} d
+                    </span>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {entity}
+                  <span className="text-muted-foreground/80"> · {day(item.occurredAt)}</span>
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {registeredLabel} {actor}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span title={status.hint} data-testid="history-status" className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium", DEADLINE_TONE_CLASS[status.tone])}>
+                  {STATUS_SHORT[item.status]}
+                </span>
+                <CollapsibleTrigger
+                  render={
+                    <Button
+                      type="button"
+                      size="icon-xs"
+                      variant="ghost"
+                      aria-expanded={open}
+                      aria-label={open ? "Ocultar detalhes" : "Ver detalhes"}
+                      title={open ? "Ocultar detalhes" : "Ver detalhes"}
+                      className="text-muted-foreground"
+                    />
+                  }
+                >
+                  <ChevronDown className={cn("size-4 transition-transform duration-200 motion-reduce:transition-none", open && "rotate-180")} aria-hidden="true" />
+                </CollapsibleTrigger>
+              </div>
+            </div>
+            {item.justification ? <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground italic">“{item.justification}”</p> : null}
           </div>
         </div>
         <CollapsibleContent>
-          <dl className="mt-2 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-1 rounded-md border bg-muted/30 px-3 py-2 text-xs">
-            {item.changes.map((change) => (
-              <Detail key={change.field} label={`${change.field === "END" ? "Término" : "Início"}${proposed ? " (proposto)" : ""}`}>
-                {changeText(change)}
-              </Detail>
-            ))}
-            <Detail label="Item">
-              {type}
-              {item.entityTitle ? ` · ${item.entityTitle}` : ""}
-            </Detail>
-            <Detail label="Categoria">{item.reasonCategory ?? "Não classificado"}</Detail>
-            <Detail label="Justificativa">{item.justification ?? "Justificativa não registrada"}</Detail>
-            {item.source === "REQUEST" ? (
-              <>
-                <Detail label="Solicitante">{personName(item.requestedBy, "Não registrado")}</Detail>
-                <Detail label="Solicitado em">{item.requestedAt ? dayTime(item.requestedAt) : "Não registrado"}</Detail>
-                <Detail label="Analisado por">{reviewerText(item)}</Detail>
-                {item.reviewedAt ? <Detail label="Decisão em">{dayTime(item.reviewedAt)}</Detail> : null}
-                {item.decisionNote ? <Detail label="Nota da decisão">{item.decisionNote}</Detail> : null}
-              </>
-            ) : (
-              <>
-                <Detail label="Registrado por">{personName(item.registeredBy, "Não registrado")}</Detail>
-                <Detail label="Registrado em">{dayTime(item.occurredAt)}</Detail>
-                {item.source === "LEGACY_DIRECT" ? (
-                  <>
-                    <Detail label="Solicitante">Não registrado (modelo anterior)</Detail>
-                    <Detail label="Analisado por">{reviewerText(item)}</Detail>
-                  </>
-                ) : null}
-              </>
-            )}
-            {item.escalatedToPmo ? <Detail label="PMO">Sinalizada ao PMO</Detail> : null}
-            <Detail label="Situação">{status.label}</Detail>
-            <Detail label="Observação">{status.hint}</Detail>
-          </dl>
+          <HistoryDetails item={item} proposed={proposed} status={status} comfortable />
         </CollapsibleContent>
       </Collapsible>
     </li>
+  );
+}
+
+function HistoryDetails({
+  item,
+  proposed,
+  status,
+  comfortable = false,
+}: {
+  item: HistoryItem;
+  proposed: boolean;
+  status: (typeof HISTORY_STATUS)[HistoryItem["status"]];
+  comfortable?: boolean;
+}) {
+  return (
+    <dl
+      className={cn(
+        "mt-3 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs",
+        comfortable ? "rounded-xl bg-background/80 px-3.5 py-3 ring-1 ring-border/60 dark:bg-background/40 dark:ring-border" : "rounded-md border bg-muted/30 px-3 py-2",
+      )}
+    >
+      {item.changes.map((change) => (
+        <Detail key={change.field} label={`${change.field === "END" ? "Término" : "Início"}${proposed ? " (proposto)" : ""}`}>
+          {changeText(change)}
+        </Detail>
+      ))}
+      <Detail label="Item">
+        {HISTORY_ENTITY_LABEL[item.entityType] ?? item.entityType}
+        {item.entityTitle ? ` · ${item.entityTitle}` : ""}
+      </Detail>
+      <Detail label="Categoria">{item.reasonCategory ?? "Não classificado"}</Detail>
+      <Detail label="Justificativa">{item.justification ?? "Justificativa não registrada"}</Detail>
+      {item.source === "REQUEST" ? (
+        <>
+          <Detail label="Solicitante">{personName(item.requestedBy, "Não registrado")}</Detail>
+          <Detail label="Solicitado em">{item.requestedAt ? dayTime(item.requestedAt) : "Não registrado"}</Detail>
+          <Detail label="Analisado por">{reviewerText(item)}</Detail>
+          {item.reviewedAt ? <Detail label="Decisão em">{dayTime(item.reviewedAt)}</Detail> : null}
+          {item.decisionNote ? <Detail label="Nota da decisão">{item.decisionNote}</Detail> : null}
+        </>
+      ) : (
+        <>
+          <Detail label="Registrado por">{personName(item.registeredBy, "Não registrado")}</Detail>
+          <Detail label="Registrado em">{dayTime(item.occurredAt)}</Detail>
+          {item.source === "LEGACY_DIRECT" ? (
+            <>
+              <Detail label="Solicitante">Não registrado (modelo anterior)</Detail>
+              <Detail label="Analisado por">{reviewerText(item)}</Detail>
+            </>
+          ) : null}
+        </>
+      )}
+      {item.escalatedToPmo ? <Detail label="PMO">Sinalizada ao PMO</Detail> : null}
+      <Detail label="Situação">{status.label}</Detail>
+      <Detail label="Observação">{status.hint}</Detail>
+    </dl>
   );
 }
 

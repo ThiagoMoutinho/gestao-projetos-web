@@ -26,6 +26,11 @@ import {
   PORTFOLIO_VIEWS,
   portfolioCsv,
   portfolioHealth,
+  portfolioDelayedReasons,
+  portfolioNeedsActionReasons,
+  isPortfolioDelayed,
+  isPortfolioNeedsAction,
+  PORTFOLIO_FOLLOW_UP_DAYS,
   resolveCompanies,
   viewCounts,
   currentPlanDate,
@@ -60,6 +65,10 @@ function project(overrides: Partial<ProjectListRow> & Pick<ProjectListRow, "id" 
     nextDeliveryAvailable: true,
     viewerIsOwner: false,
     viewerRoles: [],
+    activeImpediments: 0,
+    overduePhases: 0,
+    overdueTasks: 0,
+    overdueMilestones: 0,
     ...overrides,
   };
 }
@@ -179,7 +188,7 @@ describe("Portfólio de projetos", () => {
   });
 
   it("classifica a coluna Atraso", () => {
-    const situation = (delayDays: number) => ({ status: "EM_EXECUCAO" as const, delayDays, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false });
+    const situation = (delayDays: number) => ({ status: "EM_EXECUCAO" as const, delayDays, delayedItems: delayDays > 0 ? 1 : 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false });
     assert.deepEqual(delayCell({ status: "CRITICO", situation: { ...situation(12), status: "CRITICO" } }), { kind: "delay", text: "12 dias" });
     assert.deepEqual(delayCell({ status: "CRITICO", situation: { ...situation(1), status: "CRITICO" } }), { kind: "delay", text: "1 dia" });
     assert.deepEqual(delayCell({ status: "EM_ATENCAO", situation: { ...situation(0), status: "EM_ATENCAO" } }), { kind: "risk", text: "Risco" });
@@ -231,10 +240,17 @@ describe("participação da situação no portfólio", () => {
 });
 
 describe("painel da lista de projetos", () => {
-  const late = (days: number) => ({ status: "CRITICO" as const, delayDays: days, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false });
+  const late = (days: number) => ({
+    status: "CRITICO" as const,
+    delayDays: days,
+    delayedItems: days > 0 ? 1 : 0,
+    pendingValidation: 0,
+    closureRequirementsMissing: false,
+    readyForClosure: false,
+  });
   const rows = [
-    project({ id: "a", name: "Alfa", status: "CRITICO", situation: late(4) }),
-    project({ id: "b", name: "Beta", status: "CRITICO", situation: late(10) }),
+    project({ id: "a", name: "Alfa", status: "CRITICO", situation: late(4), overdueTasks: 1 }),
+    project({ id: "b", name: "Beta", status: "CRITICO", situation: late(10), overdueTasks: 2 }),
     project({ id: "c", name: "Gama", status: "EM_ATENCAO", situation: { ...late(0), status: "EM_ATENCAO" }, plannedEndAt: "2026-12-01" }),
     project({ id: "d", name: "Delta", status: "EM_EXECUCAO", situation: { ...late(0), status: "EM_EXECUCAO" } }),
     project({ id: "e", name: "Épsilon", status: "CONCLUIDO", situation: { ...late(3), status: "CONCLUIDO" } }),
@@ -245,8 +261,94 @@ describe("painel da lista de projetos", () => {
   });
 
   it("calcula a saúde do portfólio só com os ativos", () => {
+    // Gama está em atenção sem atraso efetivo → entra em needsAction, não em delayed.
     assert.deepEqual(portfolioHealth(rows), { total: 5, active: 4, critical: 2, needsAction: 3, delayed: 2, concluded: 1, averageDelay: 7 });
     assert.equal(portfolioHealth([]).averageDelay, null);
+  });
+
+  it("projeto crítico com atraso efetivo entra nos dois indicadores, sem duplicar dentro de cada um", () => {
+    const criticalOnTime = project({
+      id: "crit-prazo",
+      name: "Crítico no prazo",
+      status: "CRITICO",
+      situation: { status: "CRITICO", delayDays: 0, delayedItems: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
+      plannedEndAt: "2099-12-01",
+    });
+    assert.equal(isPortfolioNeedsAction(criticalOnTime), true);
+    assert.equal(isPortfolioDelayed(criticalOnTime), false);
+    assert.deepEqual(portfolioNeedsActionReasons(criticalOnTime), ["Situação crítica"]);
+  });
+
+  it("projeto em atenção sem atraso efetivo precisa de ação, mas não conta como em atraso", () => {
+    const attention = project({
+      id: "aten",
+      name: "Atenção sem atraso",
+      status: "EM_ATENCAO",
+      situation: { status: "EM_ATENCAO", delayDays: 0, delayedItems: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
+      plannedEndAt: "2099-12-01",
+    });
+    assert.equal(isPortfolioNeedsAction(attention), true);
+    assert.equal(isPortfolioDelayed(attention), false);
+  });
+
+  it("impedimento ativo exige ação sem gerar atraso automático", () => {
+    const impeded = project({
+      id: "imp",
+      name: "Com impedimento",
+      status: "EM_EXECUCAO",
+      situation: { status: "EM_EXECUCAO", delayDays: 0, delayedItems: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
+      activeImpediments: 2,
+      plannedEndAt: "2099-12-01",
+    });
+    assert.equal(isPortfolioNeedsAction(impeded), true);
+    assert.equal(isPortfolioDelayed(impeded), false);
+    assert.ok(portfolioNeedsActionReasons(impeded).includes("2 impedimentos ativos"));
+  });
+
+  it("falta de atualização no período configurado exige ação", () => {
+    const now = new Date("2026-11-25T12:00:00.000Z");
+    const stale = project({
+      id: "stale",
+      name: "Sem atualização",
+      status: "EM_EXECUCAO",
+      situation: { status: "EM_EXECUCAO", delayDays: 0, delayedItems: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
+      lastMovementAt: "2026-09-01T12:00:00.000Z",
+      plannedEndAt: "2099-12-01",
+    });
+    assert.ok(updatedLabel(stale.lastMovementAt as string, now).days! > PORTFOLIO_FOLLOW_UP_DAYS);
+    assert.equal(isPortfolioNeedsAction(stale, now), true);
+    assert.equal(isPortfolioDelayed(stale), false);
+  });
+
+  it("atraso efetivo por prazo final ou itens vencidos, sem contar concluídos", () => {
+    const byDeadline = project({
+      id: "fim",
+      name: "Prazo final vencido",
+      status: "EM_EXECUCAO",
+      situation: { status: "EM_EXECUCAO", delayDays: 0, delayedItems: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
+      plannedEndAt: "2020-01-01",
+    });
+    const byItems = project({
+      id: "itens",
+      name: "Itens vencidos",
+      status: "EM_EXECUCAO",
+      situation: { status: "EM_EXECUCAO", delayDays: 0, delayedItems: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
+      overdueTasks: 1,
+      overdueMilestones: 1,
+      plannedEndAt: "2099-12-01",
+    });
+    const doneLate = project({
+      id: "done",
+      name: "Concluído com atraso histórico",
+      status: "CONCLUIDO",
+      situation: { status: "CONCLUIDO", delayDays: 9, delayedItems: 1, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
+      plannedEndAt: "2020-01-01",
+      overdueTasks: 3,
+    });
+    assert.equal(isPortfolioDelayed(byDeadline, "2026-11-25"), true);
+    assert.equal(isPortfolioDelayed(byItems), true);
+    assert.equal(isPortfolioDelayed(doneLate), false);
+    assert.ok(portfolioDelayedReasons(byDeadline, "2026-11-25").includes("Prazo final do projeto ultrapassado"));
   });
 
   it("ordena por urgência: maior atraso, depois a situação mais grave, depois o nome", () => {
@@ -278,7 +380,7 @@ describe("empresa e ordenações da lista", () => {
   });
 
   it("ordena por maior atraso e por menor progresso (sem dado por último)", () => {
-    const late = (days: number) => ({ status: "CRITICO" as const, delayDays: days, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false });
+    const late = (days: number) => ({ status: "CRITICO" as const, delayDays: days, delayedItems: days > 0 ? 1 : 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false });
     const rows = [
       project({ id: "a", name: "A", situation: late(2), progressBasisPoints: 5000 }),
       project({ id: "b", name: "B", situation: late(9), progressBasisPoints: 1200 }),

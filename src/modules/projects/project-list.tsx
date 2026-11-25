@@ -1,26 +1,30 @@
 "use client";
 
 import {
+  AlertCircle,
+  Archive,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Archive,
   CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
   Download,
+  EllipsisVertical,
+  Folder,
   FolderKanban,
+  Layers,
   LayoutDashboard,
   LayoutGrid,
   List,
+  ListChecks,
   Network,
   Pencil,
-  EllipsisVertical,
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  TriangleAlert,
-  Search,
   Plus,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -28,6 +32,7 @@ import { useMemo, useState, useTransition, type MouseEvent, type ReactNode } fro
 
 import { OptionCombobox } from "@/components/option-combobox";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +41,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,6 +51,8 @@ import { formatCivilDate } from "./eap-date-field";
 import { civilDateInput } from "./eap-present";
 import { basisToPercent, formatBasis } from "./eap-progress";
 import { EapStatusBadge } from "./eap-status-badge";
+import { OVERVIEW_CARD } from "./overview-panel";
+import { AVATAR_PALETTE } from "./people-stack";
 import { ProjectEditDialog } from "./project-edit-dialog";
 import {
   avatarColorIndex,
@@ -59,7 +65,12 @@ import {
   ownerInitials,
   paginate,
   portfolioCsv,
+  isPortfolioDelayed,
+  isPortfolioNeedsAction,
+  portfolioDelayedReasons,
   portfolioHealth,
+  portfolioNeedsActionReasons,
+  PORTFOLIO_FOLLOW_UP_DAYS,
   PORTFOLIO_VIEWS,
   SORT_LABEL,
   sortPortfolio,
@@ -76,8 +87,13 @@ import {
   type ProjectListRow,
   type ProjectStatus,
 } from "./project-portfolio";
-import { AVATAR_PALETTE } from "./people-stack";
 import { PROJECT_STATUS_COLOR as STATUS_COLOR, projectStatusKind, projectStatusLabel } from "./project-status";
+
+/** Mesmo acabamento dos cartões da Visão Geral / EAP (sem `min-h-full`, que esticaria a página). */
+const CARD = OVERVIEW_CARD.replace("min-h-full ", "");
+
+/** Mesmo envelope de página da Visão Geral, EAP, Cronograma e Entregas. */
+const PAGE = "mx-auto flex w-full max-w-[90rem] min-w-0 flex-col gap-6";
 
 const PAGE_SIZES = ["10", "15", "25", "50"];
 
@@ -85,18 +101,69 @@ const menuItem = "gap-2.5 rounded-md px-2.5 py-2 text-label [&_svg]:size-4 [&_sv
 
 const TAB_LABEL: Record<PortfolioView, string> = { active: "Ativos", concluded: "Concluídos", archived: "Arquivados", all: "Todos" };
 
+const TAB_ICON: Record<PortfolioView, LucideIcon> = {
+  active: Folder,
+  concluded: CircleCheck,
+  archived: Archive,
+  all: Layers,
+};
+
+/**
+ * Abas de visualização no azul da marca (`--brand`), o mesmo tom do marcador
+ * do menu no Claro — sem o azul-marinho escuro (`--brand-deep`).
+ */
+function ViewTabs({
+  value,
+  onChange,
+}: {
+  value: PortfolioView;
+  onChange: (next: PortfolioView) => void;
+}) {
+  return (
+    <Tabs
+      value={value}
+      onValueChange={(next) => onChange(next as PortfolioView)}
+      className="max-w-full shrink-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      <TabsList aria-label="Visualização dos projetos" className="h-10 w-max gap-0.5 overflow-visible bg-muted p-1">
+        {PORTFOLIO_VIEWS.map((item) => {
+          const Icon = TAB_ICON[item.key];
+          return (
+            <TabsTrigger
+              key={item.key}
+              value={item.key}
+              disabled={!item.available}
+              className={cn(
+                "flex-none gap-1.5 px-3 text-label transition-[background-color,color,box-shadow] duration-200 ease-out motion-reduce:transition-none",
+                "data-active:bg-brand data-active:text-brand-foreground data-active:shadow-sm",
+                "dark:data-active:bg-brand dark:data-active:text-brand-foreground",
+              )}
+            >
+              <Icon aria-hidden="true" className="size-3.5" />
+              {TAB_LABEL[item.key]}
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
+    </Tabs>
+  );
+}
+
 const focusRing = "focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:outline-none";
 
 function PageHeader({ eapPrompt = false, actions }: { eapPrompt?: boolean; actions?: ReactNode }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 py-2">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground" aria-hidden="true">
+        <div
+          className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"
+          aria-hidden="true"
+        >
           <FolderKanban className="size-6" />
         </div>
         <div className="min-w-0">
           <h1 className="text-2xl leading-[1.25] font-semibold tracking-[-0.025em] text-foreground">Projetos</h1>
-          <p className="mt-1 truncate text-[11.5px] text-muted-foreground">Situação, prazo e responsáveis de cada projeto da CTIN.</p>
+          <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">Situação, prazo e responsáveis de cada projeto da CTIN.</p>
         </div>
       </div>
       {actions}
@@ -137,117 +204,154 @@ function count(value: number, one: string, many: string) {
   return `${value} ${value === 1 ? one : many}`;
 }
 
-/** Tom do chip da situação selecionada (tokens de status do sistema). */
-const CHIP_TONE: Record<string, string> = {
-  CRITICO: "border-status-critical/45 bg-status-critical-soft text-status-critical-ink hover:bg-status-critical-soft",
-  EM_ATENCAO: "border-status-attention/45 bg-status-attention-soft text-status-attention-ink hover:bg-status-attention-soft",
-  EM_EXECUCAO: "border-status-running/45 bg-status-running-soft text-status-running-ink hover:bg-status-running-soft",
-  EM_VALIDACAO: "border-status-validation/45 bg-status-validation-soft text-status-validation-ink hover:bg-status-validation-soft",
-  NAO_INICIADO: "border-status-idle/45 bg-status-idle-soft text-status-idle-ink hover:bg-status-idle-soft",
-  CONCLUIDO: "border-status-done/45 bg-status-done-soft text-status-done-ink hover:bg-status-done-soft",
-};
+/** Mesmos tons dos indicadores da Visão Geral. */
+const INDICATOR_TONE = {
+  primary: "bg-primary/12 text-primary ring-primary/25",
+  purple: "bg-status-validation-soft text-status-validation-ink ring-status-validation/30",
+  amber: "bg-warning/20 text-warning-foreground ring-warning/35",
+  green: "bg-success/15 text-success-foreground ring-success/30",
+} as const;
+
+/** Foco do resumo: um dos quatro cartões indicadores (clique de novo limpa o filtro). */
+type SummaryFocus = "active" | "needsAction" | "delayed" | "concluded";
+
+/** Mesmo cartão da Visão Geral / EAP (`Card` + `OVERVIEW_CARD`), selecionável para filtrar a lista. */
+function Indicator({
+  icon: Icon,
+  tone,
+  label,
+  selected,
+  disabled,
+  onSelect,
+  children,
+}: {
+  icon: LucideIcon;
+  tone: keyof typeof INDICATOR_TONE;
+  label: string;
+  selected: boolean;
+  disabled?: boolean;
+  onSelect: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-pressed={selected}
+      aria-disabled={disabled || undefined}
+      aria-label={`${label}${selected ? ", filtro ativo" : ""}`}
+      onClick={() => {
+        if (!disabled) onSelect();
+      }}
+      onKeyDown={(event) => {
+        if (disabled) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      className={cn(
+        OVERVIEW_CARD,
+        "min-h-[104px] flex-row items-center gap-3.5 px-4 py-4 outline-none transition-[border-color,background-color,box-shadow] duration-200 ease-out motion-reduce:transition-none",
+        !disabled && "cursor-pointer hover:border-primary/35 hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-primary/25",
+        disabled && "pointer-events-none opacity-50",
+        selected && "border-primary/45 bg-primary/[0.04] ring-1 ring-primary/25",
+      )}
+    >
+      <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset", INDICATOR_TONE[tone])} aria-hidden="true">
+        <Icon className="size-5" />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        {children}
+      </div>
+    </Card>
+  );
+}
 
 /**
- * Resumo do portfólio: à esquerda, os projetos ativos (com o total) e quantos precisam de ação (críticos e em atenção);
- * à direita, a barra com a participação de cada situação e os chips, que filtram a lista (o ativo volta para Todos).
- * Situações sem projetos ficam esmaecidas.
+ * Resumo do portfólio no padrão dos indicadores da Visão Geral. Cada cartão filtra a lista; clicar de novo remove o filtro.
  */
 function PortfolioHealth({
   chips,
   health,
-  isActive,
-  onSelect,
+  maxDelayDays,
+  focus,
+  onFocus,
 }: {
   chips: ReadonlyArray<{ key: string; label: string; value: number }>;
   health: ReturnType<typeof portfolioHealth>;
-  isActive: (key: string) => boolean;
-  onSelect: (key: string, active: boolean) => void;
+  maxDelayDays: number;
+  focus: SummaryFocus | null;
+  onFocus: (next: SummaryFocus) => void;
 }) {
   const total = chips.find((chip) => chip.key === "total")?.value ?? 0;
-  const situations = chips.filter((chip) => chip.key !== "total");
-  const filtered = filterActive(situations, isActive);
-  const distribution = situations
-    .filter((chip) => chip.value > 0)
-    .map((chip) => `${chip.label}: ${chip.value} (${statusShare(chip.value, total)}%)`)
-    .join(", ");
-  return (
-    <section
-      aria-label="Resumo do portfólio"
-      className="grid gap-x-8 gap-y-3 rounded-2xl border border-border/70 bg-card px-5 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] md:grid-cols-[minmax(13rem,auto)_minmax(0,1fr)] md:items-center dark:border-border"
-    >
-      <div className="flex flex-col items-start gap-2">
-        <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <span className="text-4xl leading-none font-semibold tracking-tight text-foreground tabular-nums">{health.active}</span>
-          <span className="text-body text-muted-foreground">
-            {health.active === 1 ? "projeto ativo" : "projetos ativos"} · {health.total} no total
-          </span>
-        </p>
-        {health.needsAction > 0 ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-status-critical-soft px-2.5 py-1 text-label font-semibold text-status-critical-ink">
-            <TriangleAlert className="size-3.5" aria-hidden="true" />
-            {health.needsAction === 1 ? "1 precisa de ação" : `${health.needsAction} precisam de ação`}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-status-done-soft px-2.5 py-1 text-label font-semibold text-status-done-ink">
-            <Check className="size-3.5" aria-hidden="true" />
-            Nenhum projeto exige ação
-          </span>
-        )}
-      </div>
+  const critical = chips.find((chip) => chip.key === "CRITICO")?.value ?? 0;
+  const attention = chips.find((chip) => chip.key === "EM_ATENCAO")?.value ?? 0;
+  const activeShare = total > 0 ? Math.round((health.active / total) * 100) : 0;
 
-      <div className="flex min-w-0 flex-col gap-3">
-        <div role="img" aria-label={distribution ? `Distribuição por situação: ${distribution}` : "Sem projetos"} className="flex h-2.5 gap-1">
-          {total === 0 ? <span className="h-full flex-1 rounded-full bg-muted" /> : null}
-          {situations.map((chip) =>
-            chip.value > 0 ? (
-              <span
-                key={chip.key}
-                title={`${chip.label}: ${count(chip.value, "projeto", "projetos")} (${statusShare(chip.value, total)}%)`}
-                className={cn(
-                  "h-full min-w-2 rounded-full transition-[flex-grow,opacity] duration-200 ease-out motion-reduce:transition-none",
-                  filtered && !isActive(chip.key) && "opacity-35",
-                )}
-                style={{ flexGrow: chip.value, flexBasis: 0, backgroundColor: STATUS_COLOR[chip.key as ProjectStatus] }}
-              />
-            ) : null,
+  return (
+    <section aria-label="Resumo do portfólio" className="@container">
+      <div className="grid gap-3 sm:grid-cols-2 @[66rem]:grid-cols-4">
+        <Indicator icon={ListChecks} tone="primary" label="Projetos ativos" selected={focus === "active"} disabled={health.active === 0} onSelect={() => onFocus("active")}>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[15px] font-bold text-foreground tabular-nums dark:text-foreground">{health.active}</p>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{health.total} no total</span>
+          </div>
+          <Progress value={activeShare} aria-hidden="true" className="mt-1 **:data-[slot=progress-track]:h-1.5" />
+          <p className="text-xs text-muted-foreground">{activeShare}% do portfólio acessível</p>
+        </Indicator>
+
+        <Indicator
+          icon={AlertCircle}
+          tone="purple"
+          label="Precisam de ação"
+          selected={focus === "needsAction"}
+          disabled={health.needsAction === 0}
+          onSelect={() => onFocus("needsAction")}
+        >
+          {health.needsAction > 0 ? (
+            <>
+              <p className="text-[15px] font-bold text-foreground tabular-nums dark:text-foreground">{health.needsAction}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {critical > 0 ? (
+                  <span className="rounded-full bg-status-critical-soft px-2 py-0.5 text-[10px] font-medium text-status-critical-ink">
+                    {count(critical, "crítico", "críticos")}
+                  </span>
+                ) : null}
+                {attention > 0 ? (
+                  <span className="rounded-full bg-status-attention-soft px-2 py-0.5 text-[10px] font-medium text-status-attention-ink">
+                    {count(attention, "em atenção", "em atenção")}
+                  </span>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <p className="text-[15px] font-bold text-muted-foreground">Nenhum</p>
           )}
-        </div>
-        <ul aria-label="Filtrar por situação" className="flex flex-wrap gap-x-1 gap-y-2">
-          {situations.map((chip) => {
-            const active = isActive(chip.key);
-            const empty = chip.value === 0 && !active;
-            const share = statusShare(chip.value, total);
-            return (
-              <li key={chip.key}>
-                <button
-                  type="button"
-                  aria-pressed={active}
-                  disabled={empty}
-                  aria-label={`Filtrar ${chip.label}: ${count(chip.value, "projeto", "projetos")}`}
-                  title={chip.value > 0 ? `${share}% dos projetos` : undefined}
-                  onClick={() => onSelect(chip.key, active)}
-                  className={cn(
-                    "inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-card px-2 text-label text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
-                    focusRing,
-                    active && CHIP_TONE[chip.key],
-                  )}
-                >
-                  <span className="size-2 shrink-0 rounded-[3px]" style={{ backgroundColor: STATUS_COLOR[chip.key as ProjectStatus] }} aria-hidden="true" />
-                  {chip.label}
-                  <span className={cn("font-semibold tabular-nums", active ? "text-current" : "text-foreground")}>{chip.value}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        </Indicator>
+
+        <Indicator icon={CalendarDays} tone="amber" label="Em atraso" selected={focus === "delayed"} disabled={health.delayed === 0} onSelect={() => onFocus("delayed")}>
+          <p className="text-[15px] font-bold text-foreground tabular-nums dark:text-foreground">{health.delayed}</p>
+          {maxDelayDays > 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Maior atraso: {maxDelayDays} {maxDelayDays === 1 ? "dia" : "dias"}
+              {health.averageDelay !== null ? ` · média ${health.averageDelay} d` : ""}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Nenhum projeto ativo atrasado</p>
+          )}
+        </Indicator>
+
+        <Indicator icon={Check} tone="green" label="Concluídos" selected={focus === "concluded"} disabled={health.concluded === 0} onSelect={() => onFocus("concluded")}>
+          <p className="text-[15px] font-bold text-foreground tabular-nums dark:text-foreground">{health.concluded}</p>
+          <p className="text-xs text-muted-foreground">
+            {health.concluded === 0 ? "Nenhum projeto concluído" : `${statusShare(health.concluded, total)}% do portfólio`}
+          </p>
+        </Indicator>
       </div>
     </section>
   );
-}
-
-/** Há uma situação filtrada pela legenda (as demais faixas da barra ficam esmaecidas). */
-function filterActive(chips: ReadonlyArray<{ key: string }>, isActive: (key: string) => boolean) {
-  return chips.some((chip) => isActive(chip.key));
 }
 
 /** Etiquetas dos filtros em uso, cada uma com o botão de remover (a situação vem dos cartões do topo). */
@@ -286,6 +390,7 @@ export function ProjectList({
   const [navigating, startNavigation] = useTransition();
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [view, setView] = useState<PortfolioView>("active");
+  const [summaryFocus, setSummaryFocus] = useState<SummaryFocus | null>(null);
   const [filters, setFilters] = useState<PortfolioFilters>(idlePortfolioFilters);
   const [sort, setSort] = useState<PortfolioSort>({ key: "urgency", direction: "desc" });
   const [page, setPage] = useState(1);
@@ -294,14 +399,33 @@ export function ProjectList({
   const statusLabel = useMemo(() => new Map(chips.map((chip) => [chip.key, chip.label])), [chips]);
   const unavailable = useMemo(() => unavailableSituations(projects), [projects]);
   const health = useMemo(() => portfolioHealth(projects), [projects]);
+  const maxDelayDays = useMemo(
+    () => projects.reduce((max, row) => Math.max(max, row.situation?.delayDays ?? 0), 0),
+    [projects],
+  );
   const counts = useMemo(() => viewCounts(projects), [projects]);
   const options = useMemo(() => filterOptions(projects), [projects]);
-  const visible = useMemo(() => sortPortfolio(filterPortfolio(projects, filters, view), sort), [projects, filters, view, sort]);
+  const visible = useMemo(() => {
+    let rows = filterPortfolio(projects, filters, view);
+    if (summaryFocus === "needsAction") {
+      rows = rows.filter((row) => isPortfolioNeedsAction(row));
+    } else if (summaryFocus === "delayed") {
+      rows = rows.filter((row) => isPortfolioDelayed(row));
+    }
+    return sortPortfolio(rows, sort);
+  }, [projects, filters, view, sort, summaryFocus]);
   const paged = paginate(visible, page, pageSize);
-  const filtering = isFiltering(filters);
+  const filtering = isFiltering(filters) || summaryFocus !== null;
   const firstShown = visible.length === 0 ? 0 : (paged.current - 1) * pageSize + 1;
   // Chave da lista: muda com visualização, filtros (exceto a digitação da busca), ordenação e página, e reinicia o fade.
-  const listKey = [view, filters.status, filters.company, filters.owner, sort.key, sort.direction, paged.current, pageSize].join("|");
+  const listKey = [view, summaryFocus, filters.status, filters.company, filters.owner, sort.key, sort.direction, paged.current, pageSize].join("|");
+
+  const SUMMARY_FILTER_LABEL: Record<SummaryFocus, string> = {
+    active: "Projetos ativos",
+    needsAction: "Precisam de ação",
+    delayed: "Em atraso",
+    concluded: "Concluídos",
+  };
 
   function updateFilters(next: Partial<PortfolioFilters>) {
     setFilters((current) => ({ ...current, ...next }));
@@ -310,24 +434,22 @@ export function ProjectList({
 
   function changeView(next: PortfolioView) {
     setView(next);
+    setSummaryFocus(null);
     setPage(1);
     if (next === "concluded") {
       setFilters((current) => ({ ...current, status: "" }));
     }
   }
 
-  /** Chip clicado: o ativo volta para Todos; Concluído abre a visualização de concluídos; os demais filtram os ativos. */
-  function selectChip(key: string, active: boolean) {
-    if (key === "total" || active) {
-      changeView("all");
-      updateFilters({ status: "" });
-    } else if (key === "CONCLUIDO") {
-      changeView("concluded");
-      updateFilters({ status: "" });
-    } else {
-      changeView("active");
-      updateFilters({ status: key as ProjectStatus });
+  /** Cartão do resumo: aplica o filtro correspondente; clicar de novo remove o foco. */
+  function toggleSummaryFocus(next: SummaryFocus) {
+    const clearing = summaryFocus === next;
+    setSummaryFocus(clearing ? null : next);
+    if (!clearing) {
+      setView(next === "concluded" ? "concluded" : "active");
+      setFilters((current) => ({ ...current, status: "" }));
     }
+    setPage(1);
   }
 
   /** Baixa a lista exibida (visualização, filtros e ordenação atuais) em CSV para o Excel. */
@@ -360,7 +482,7 @@ export function ProjectList({
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-6">
+    <div className={PAGE}>
       <PageHeader
         eapPrompt={eapPrompt}
         actions={
@@ -395,12 +517,7 @@ export function ProjectList({
         }
       />
 
-      <PortfolioHealth
-        chips={chips}
-        health={health}
-        isActive={(key) => (key === "CONCLUIDO" ? view === "concluded" : filters.status === key)}
-        onSelect={selectChip}
-      />
+      <PortfolioHealth chips={chips} health={health} maxDelayDays={maxDelayDays} focus={summaryFocus} onFocus={toggleSummaryFocus} />
       {unavailable > 0 ? (
         <p className="-mt-2 text-label text-muted-foreground">
           {unavailable === 1
@@ -409,55 +526,42 @@ export function ProjectList({
         </p>
       ) : null}
 
-      <section aria-label="Lista de projetos" className="@container min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border">
-        <div className="flex flex-wrap items-center gap-2.5 p-4 @min-[980px]:flex-nowrap">
+      <section aria-label="Lista de projetos" className={cn(CARD, "@container min-w-0 overflow-hidden rounded-2xl shadow-[0_1px_3px_rgba(16,24,40,0.05)]")}>
+        <div className="flex flex-wrap items-center gap-2.5 px-5 py-4 @min-[980px]:flex-nowrap">
           {/* A rolagem horizontal (só em telas estreitas) fica no contêiner, com a barra oculta; a lista de abas nunca rola. */}
-          <Tabs
-            value={view}
-            onValueChange={(next) => changeView(next as PortfolioView)}
-            className="max-w-full shrink-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            <TabsList aria-label="Visualização dos projetos" className="h-10 w-max overflow-visible">
-              {PORTFOLIO_VIEWS.map((item) => (
-                <TabsTrigger key={item.key} value={item.key} disabled={!item.available} title={item.description} className="group/view flex-none gap-1.5 px-2.5 text-label">
-                  {TAB_LABEL[item.key]}
-                  <span className="rounded-full bg-foreground/[0.07] px-1.5 py-0.5 text-[11px] leading-none font-semibold tabular-nums group-data-active/view:bg-primary/12 group-data-active/view:text-primary">
-                    {counts[item.key]}
-                  </span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          <label className="relative min-w-[13rem] flex-1 @min-[980px]:min-w-[9rem]">
-            <span className="sr-only">Pesquisar por nome, GLPI ou identificador do projeto</span>
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input
-              value={filters.query}
-              onChange={(event) => updateFilters({ query: event.target.value })}
-              placeholder="Nome ou GLPI..."
-              className="h-10 rounded-[7px] pl-9 text-xs"
-            />
-          </label>
-          {options.companies.length > 0 ? (
-            <div className="w-full sm:w-44 @min-[980px]:w-36 @min-[980px]:shrink-0">
-              <FilterSelect
-                label="Empresa"
-                value={filters.company}
-                onChange={(company) => updateFilters({ company })}
-                options={options.companies.map((name) => ({ value: name, label: name }))}
-              />
-            </div>
-          ) : null}
-          {options.owners.length > 0 ? (
-            <div className="w-full sm:w-44 @min-[980px]:w-36 @min-[980px]:shrink-0">
-              <FilterSelect
-                label="Gestor"
-                value={filters.owner}
-                onChange={(owner) => updateFilters({ owner })}
-                options={options.owners.map((name) => ({ value: name, label: name }))}
-              />
-            </div>
-          ) : null}
+          <ViewTabs value={view} onChange={changeView} />
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5 @min-[980px]:flex-nowrap">
+            {options.statuses.length > 0 ? (
+              <div className="w-full min-w-[12.5rem] sm:w-[13rem] @min-[980px]:w-[13rem] @min-[980px]:shrink-0">
+                <FilterSelect
+                  label="Situação"
+                  value={filters.status}
+                  onChange={(status) => updateFilters({ status: status as ProjectStatus | "" })}
+                  options={options.statuses.map((status) => ({ value: status, label: projectStatusLabel(status) }))}
+                />
+              </div>
+            ) : null}
+            {options.companies.length > 0 ? (
+              <div className="w-full min-w-[14rem] flex-1 basis-[14rem] @min-[980px]:min-w-[16rem]">
+                <FilterSelect
+                  label="Empresa"
+                  value={filters.company}
+                  onChange={(company) => updateFilters({ company })}
+                  options={options.companies.map((name) => ({ value: name, label: name }))}
+                />
+              </div>
+            ) : null}
+            {options.owners.length > 0 ? (
+              <div className="w-full min-w-[14rem] flex-1 basis-[14rem] @min-[980px]:min-w-[16rem]">
+                <FilterSelect
+                  label="Gestor"
+                  value={filters.owner}
+                  onChange={(owner) => updateFilters({ owner })}
+                  options={options.owners.map((name) => ({ value: name, label: name }))}
+                />
+              </div>
+            ) : null}
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button type="button" variant="outline" className="h-10 shrink-0 text-label" title={`Ordenado por ${sortText(sort)}`} />}>
               <ArrowUpDown aria-hidden="true" />
@@ -477,34 +581,45 @@ export function ProjectList({
           </DropdownMenu>
         </div>
 
-        <div className="flex min-h-11 flex-wrap items-center gap-2 border-t border-border bg-muted/30 px-4 py-2 text-label text-muted-foreground">
+        <div className="flex min-h-11 flex-wrap items-center gap-2 border-t border-border/70 bg-muted/35 px-5 py-2 text-label text-muted-foreground">
           {filtering ? <span>Filtros:</span> : null}
           <ActiveFilters
             tags={[
+              ...(summaryFocus
+                ? [{ key: "summary", text: SUMMARY_FILTER_LABEL[summaryFocus], onRemove: () => setSummaryFocus(null) }]
+                : []),
               ...(filters.status ? [{ key: "status", text: statusLabel.get(filters.status) ?? filters.status, onRemove: () => updateFilters({ status: "" }) }] : []),
               ...(filters.company ? [{ key: "company", text: `Empresa: ${filters.company}`, onRemove: () => updateFilters({ company: "" }) }] : []),
               ...(filters.owner ? [{ key: "owner", text: `Gestor: ${filters.owner}`, onRemove: () => updateFilters({ owner: "" }) }] : []),
-              ...(filters.query.trim() ? [{ key: "query", text: `Busca: ${filters.query.trim()}`, onRemove: () => updateFilters({ query: "" }) }] : []),
             ]}
           />
           <span aria-live="polite">
             {visible.length} de {counts[view]} {counts[view] === 1 ? "projeto" : "projetos"} · ordenados por {sortText(sort)}
           </span>
           {filtering ? (
-            <Button type="button" variant="ghost" size="xs" className="ml-auto text-primary hover:text-primary" onClick={() => updateFilters(idlePortfolioFilters)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="ml-auto text-primary hover:text-primary"
+              onClick={() => {
+                setSummaryFocus(null);
+                updateFilters(idlePortfolioFilters);
+              }}
+            >
               Limpar filtros
             </Button>
           ) : null}
         </div>
 
         {projects.length === 0 || visible.length === 0 ? (
-          <div className="px-4 pb-4">
+          <div className="motion-fade px-5 pt-1 pb-5">
             <ProjectEmpty
               title={projects.length === 0 ? "Nenhum projeto disponível" : "Nenhum projeto encontrado"}
               description={
                 projects.length === 0
                   ? "A consulta não retornou projetos para o seu acesso."
-                  : `A pesquisa e os filtros não encontraram projetos em ${TAB_LABEL[view]}.`
+                  : `Os filtros não encontraram projetos em ${TAB_LABEL[view]}.`
               }
               action={
                 filtering ? (
@@ -516,11 +631,11 @@ export function ProjectList({
             />
           </div>
         ) : (
-          <div className="relative w-full min-w-0 overflow-x-auto border-t border-border">
+          <div className="relative w-full min-w-0 overflow-x-auto border-t border-border/70">
             <table className="w-full min-w-[1000px] text-left">
-              <thead className="bg-muted/50 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-                <tr className="border-b border-border">
-                  <SortHeader label="Projeto" sortKey="name" sort={sort} onSort={toggleSort} className="pl-4" />
+              <thead className="bg-card text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                <tr className="border-b border-border/70">
+                  <SortHeader label="Projeto" sortKey="name" sort={sort} onSort={toggleSort} className="pl-5" />
                   <th scope="col" className="px-2.5 py-3">Empresa</th>
                   <th scope="col" className="px-2.5 py-3">Equipe</th>
                   <th scope="col" className="px-2.5 py-3">Situação</th>
@@ -537,6 +652,7 @@ export function ProjectList({
                     project={project}
                     opening={navigating && openingId === project.id}
                     canEdit={canEditProject(viewerRole, project)}
+                    focus={summaryFocus}
                     onOpen={(target) => open(project.id, target)}
                   />
                 ))}
@@ -546,7 +662,7 @@ export function ProjectList({
         )}
 
         {visible.length > 0 ? (
-          <nav aria-label="Paginação dos projetos" className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3.5 text-label text-muted-foreground">
+          <nav aria-label="Paginação dos projetos" className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 bg-muted/20 px-5 py-3.5 text-label text-muted-foreground">
             <div className="flex flex-wrap items-center gap-3">
               <div className="w-36">
                 <OptionCombobox
@@ -616,11 +732,14 @@ function ProjectRow({
   project,
   opening,
   canEdit,
+  focus,
   onOpen,
 }: {
   project: ProjectListRow;
   opening: boolean;
   canEdit: boolean;
+  /** Quando um cartão do resumo filtra a lista, mostra o motivo da classificação. */
+  focus: SummaryFocus | null;
   onOpen: (target?: "eap" | "cronograma") => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -634,23 +753,25 @@ function ProjectRow({
   }
   const attention = project.status === "EM_ATENCAO" || project.status === "CRITICO";
   const details = detailsText(project);
+  const focusReasons =
+    focus === "needsAction" ? portfolioNeedsActionReasons(project) : focus === "delayed" ? portfolioDelayedReasons(project) : [];
 
   return (
     <tr
       onClick={handleClick}
       className={cn(
-        "cursor-pointer border-b border-border/60 align-middle text-body transition-colors duration-200 last:border-b-0 hover:bg-primary/5 motion-reduce:transition-none",
+        "group/row cursor-pointer border-b border-border/50 align-middle text-body transition-colors duration-200 ease-out last:border-b-0 hover:bg-primary/[0.04] motion-reduce:transition-none",
         opening && "bg-primary/5",
       )}
     >
       <td
-        className="min-w-[12rem] py-3.5 pr-3 pl-4"
+        className="min-w-[12rem] py-4 pr-3 pl-5"
         style={attention && project.status ? { boxShadow: `inset 3px 0 0 ${STATUS_COLOR[project.status]}` } : undefined}
       >
         <Tooltip>
           <TooltipTrigger
             render={
-              <Link href={`/projetos/${project.id}`} className={cn("block font-semibold text-foreground hover:text-primary focus-visible:rounded-sm", focusRing)} />
+              <Link href={`/projetos/${project.id}`} className={cn("block text-[13.5px] leading-snug font-semibold text-foreground transition-colors hover:text-primary focus-visible:rounded-sm", focusRing)} />
             }
           >
             {project.name}
@@ -659,19 +780,28 @@ function ProjectRow({
             <span>{details.delivery}</span>
           </TooltipContent>
         </Tooltip>
-        <span className="mt-0.5 flex items-center gap-1.5 text-label text-muted-foreground">
+        <span className="mt-1 flex items-center gap-1.5 text-label text-muted-foreground">
           {opening ? <Spinner className="size-3" /> : null}
           {project.glpiTicketId ? `GLPI #${project.glpiTicketId}` : `ID ${project.id.slice(0, 8)}`}
           {attention ? <span className="sr-only">Exige atenção.</span> : null}
         </span>
+        {focusReasons.length > 0 ? (
+          <span className="mt-1.5 flex flex-wrap gap-1" aria-label="Motivo do indicador">
+            {focusReasons.map((reason) => (
+              <span key={reason} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {reason}
+              </span>
+            ))}
+          </span>
+        ) : null}
       </td>
-      <td className="w-36 max-w-44 min-w-[8rem] px-2.5 py-3.5">
+      <td className="w-36 max-w-44 min-w-[8rem] px-2.5 py-4">
         <CompanyCell project={project} />
       </td>
-      <td className="w-32 px-2.5 py-3.5">
+      <td className="w-32 px-2.5 py-4">
         <ManagerTeamCell project={project} />
       </td>
-      <td className="px-2.5 py-3.5">
+      <td className="px-2.5 py-4">
         {project.status === null || project.situation === null ? (
           <Muted value={null} />
         ) : (
@@ -694,7 +824,7 @@ function ProjectRow({
           </span>
         )}
       </td>
-      <td className="min-w-[8.5rem] px-2.5 py-3.5">
+      <td className="min-w-[8.5rem] px-2.5 py-4">
         {!project.progressAvailable ? (
           <Muted value={null} />
         ) : project.eapEmpty ? (
@@ -712,16 +842,16 @@ function ProjectRow({
           </span>
         )}
       </td>
-      <td className="px-2.5 py-3.5 whitespace-nowrap">
+      <td className="px-2.5 py-4 whitespace-nowrap">
         <DeadlineCell project={project} />
       </td>
-      <td className="px-2.5 py-3.5 whitespace-nowrap">
+      <td className="px-2.5 py-4 whitespace-nowrap">
         <UpdatedCell project={project} />
       </td>
       <td className="px-2.5 py-2.5">
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={`Ações de ${project.name}`} />}
+            render={<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground transition-colors group-hover/row:text-foreground" aria-label={`Ações de ${project.name}`} />}
           >
             <EllipsisVertical aria-hidden="true" />
           </DropdownMenuTrigger>
@@ -888,7 +1018,7 @@ function ManagerTeamCell({ project }: { project: ProjectListRow }) {
   const leadRole = manager ? "Gestor" : (TEAM_ROLE_LABEL[lead.roles[0]] ?? lead.roles[0]);
   const { visible, extra } = teamPreview(team.filter((person) => person.id !== lead.id), 3);
   const people = team.length > 0 ? team : [lead];
-  const avatar = "flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ring-2 ring-card";
+  const avatar = "flex size-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ring-2 ring-card";
   return (
     <Tooltip>
       <TooltipTrigger
@@ -949,7 +1079,7 @@ function UpdatedCell({ project }: { project: ProjectListRow }) {
   if (label.days === null) {
     return <Muted value={null} />;
   }
-  const stale = label.days > 30;
+  const stale = label.days > PORTFOLIO_FOLLOW_UP_DAYS;
   return (
     <Tooltip>
       <TooltipTrigger render={<span className="flex w-fit flex-col items-start gap-1" />}>
@@ -980,7 +1110,7 @@ function dateText(value: string) {
 
 export function ProjectListError({ message }: { message: string }) {
   return (
-    <div className="flex w-full min-w-0 flex-col gap-5">
+    <div className={PAGE}>
       <PageHeader />
       <ProjectEmpty
         title="Não foi possível consultar os projetos"

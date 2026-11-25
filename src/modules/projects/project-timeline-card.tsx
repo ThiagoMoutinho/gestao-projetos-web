@@ -263,7 +263,7 @@ function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial:
                 return (
                   <li key={event.id} className="relative flex items-start gap-4 pb-7 last:pb-0">
                     {last ? null : <span className="absolute top-10 bottom-0 left-[17px] w-px bg-border/80" aria-hidden="true" />}
-                    <span className={cn("relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
+                    <span className={cn("relative z-[1] flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-inset", MARK[event.tone])} aria-hidden="true">
                       <Icon className="size-4" />
                     </span>
                     <div className="min-w-0 flex-1 space-y-1.5 pt-0.5">

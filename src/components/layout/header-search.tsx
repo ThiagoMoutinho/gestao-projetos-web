@@ -70,8 +70,9 @@ function rememberRecent(id: string) {
 }
 
 /**
- * Busca por palavras, sem acento e em qualquer ordem, no nome e no código GLPI. Devolve uma nota para ordenar:
- * 3 = o nome começa com o termo, 2 = alguma palavra do nome começa com ele, 1 = apenas contém; 0 = não casa.
+ * Busca por palavras, sem acento e em qualquer ordem, no nome, no código GLPI e no identificador do projeto.
+ * Devolve uma nota para ordenar: 3 = o nome começa com o termo, 2 = palavra do nome ou o id começa com ele,
+ * 1 = apenas contém; 0 = não casa.
  */
 function score(project: AccessibleProject, tokens: string[]) {
   if (tokens.length === 0) {
@@ -79,7 +80,8 @@ function score(project: AccessibleProject, tokens: string[]) {
   }
   const name = plain(project.name);
   const glpi = project.glpiTicketId ? plain(project.glpiTicketId) : "";
-  const haystack = `${name} ${glpi}`;
+  const id = plain(project.id);
+  const haystack = `${name} ${glpi} ${id}`;
   if (!tokens.every((token) => haystack.includes(token.replace(/^#/, "")))) {
     return 0;
   }
@@ -87,7 +89,10 @@ function score(project: AccessibleProject, tokens: string[]) {
   if (name.startsWith(first)) {
     return 3;
   }
-  return name.split(/\s+/).some((word) => word.startsWith(first)) ? 2 : 1;
+  if (id.startsWith(first) || name.split(/\s+/).some((word) => word.startsWith(first))) {
+    return 2;
+  }
+  return 1;
 }
 
 /** Destaca no texto os trechos que casam com os termos digitados (sem acento), mantendo o texto original. */
@@ -180,10 +185,10 @@ function ResultItem({
           {project.glpiTicketId ? (
             <>
               GLPI #<Highlight text={project.glpiTicketId} tokens={tokens} />
+              <span aria-hidden="true"> · </span>
             </>
-          ) : (
-            "Sem chamado GLPI"
-          )}
+          ) : null}
+          ID <Highlight text={project.id} tokens={tokens} />
         </span>
       </span>
       <span className="flex shrink-0 items-center gap-2 max-sm:hidden">
@@ -264,9 +269,9 @@ function ResultsSkeleton() {
 }
 
 /**
- * Busca da barra superior: gatilho + Command Palette (CommandDialog). Somente projetos acessíveis ao usuário, por nome e
- * código GLPI (por palavras, sem acento, com o trecho encontrado em destaque). Com o campo vazio mostra os projetos
- * abertos por último. O atalho "/" abre e foca a busca, exceto quando o foco já está num campo de texto.
+ * Busca da barra superior: gatilho + Command Palette (CommandDialog). Somente projetos acessíveis ao usuário, por nome,
+ * código GLPI e identificador (por palavras, sem acento, com o trecho encontrado em destaque). Com o campo vazio mostra
+ * os projetos abertos por último. O atalho "/" abre e foca a busca, exceto quando o foco já está num campo de texto.
  */
 export function HeaderSearch() {
   const router = useRouter();
@@ -364,7 +369,7 @@ export function HeaderSearch() {
         className="h-[47px] w-full max-w-[600px] justify-start gap-3 border border-bar-border bg-bar-foreground/10 px-4 text-body font-normal text-bar-muted transition-colors duration-200 hover:bg-bar-foreground/15 hover:text-bar-foreground focus-visible:ring-bar-foreground/60 max-sm:size-[41px] max-sm:w-[41px] max-sm:justify-center max-sm:px-0 motion-reduce:transition-none"
       >
         <Search className="size-[17px] shrink-0" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate text-left max-sm:hidden">Buscar projetos por nome ou GLPI</span>
+        <span className="min-w-0 flex-1 truncate text-left max-sm:hidden">Buscar projetos por nome, GLPI ou identificador</span>
         <kbd className="rounded border border-bar-border px-2 py-0.5 font-sans text-label leading-none text-bar-muted max-sm:hidden">/</kbd>
       </Button>
 
@@ -372,7 +377,7 @@ export function HeaderSearch() {
         open={open}
         onOpenChange={changeOpen}
         title="Buscar projetos"
-        description="Pesquise os projetos que você pode acessar por nome ou código GLPI."
+        description="Pesquise os projetos que você pode acessar por nome, código GLPI ou identificador."
         className="dark sm:max-w-xl"
       >
         {/* O filtro e a ordem são feitos aqui (por palavras, sem acento); o cmdk cuida só do teclado e da seleção. */}
@@ -395,7 +400,7 @@ export function HeaderSearch() {
                   {remote.status === "error"
                     ? "A busca completa não respondeu agora; só os projetos foram consultados."
                     : searching
-                      ? "Confira o nome, o número do chamado GLPI ou outra palavra do texto."
+                      ? "Confira o nome, o número do chamado GLPI, o identificador ou outra palavra do texto."
                       : "Os projetos aos quais você tem acesso aparecerão aqui."}
                 </p>
               </div>

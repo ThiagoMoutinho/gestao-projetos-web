@@ -6,6 +6,8 @@ export type ProjectStatus = ListProjects200DataItemStatus;
 export type ProjectSituation = {
   status: ProjectStatus;
   delayDays: number;
+  /** Itens executáveis em atraso (tarefas/marcos), pela regra única da API. */
+  delayedItems: number;
   pendingValidation: number;
   closureRequirementsMissing: boolean;
   /** Todas as fases concluídas sem encerramento formal (sinal da API; não é uma situação). */
@@ -115,6 +117,14 @@ export type ProjectListRow = {
   /** Vínculo de quem consulta com o projeto (vem da lista da API), para liberar ações. */
   viewerIsOwner: boolean;
   viewerRoles: string[];
+  /**
+   * Sinais dos indicadores do portfólio. `null` = a consulta correspondente falhou (o indicador não inventa valor).
+   * Impedimentos vêm do resumo executivo; contagens de atraso por tipo, do monitoramento de prazos.
+   */
+  activeImpediments: number | null;
+  overduePhases: number | null;
+  overdueTasks: number | null;
+  overdueMilestones: number | null;
 };
 
 /** Origem do nome da empresa: ficha institucional (nome cadastrado) ou participantes com papel Fornecedor. */
@@ -445,21 +455,195 @@ export function viewCounts(rows: ReadonlyArray<Pick<ProjectListRow, "status">>):
 }
 
 /**
- * Saúde do portfólio, calculada só dos projetos acessíveis: ativos, críticos, atraso médio dos projetos atrasados
- * (dias inteiros, null sem atrasos) e concluídos.
+ * Dias sem movimentação relevante após os quais o projeto entra em "Precisam de ação" por falta de atualização.
+ * Mesmo limiar visual da coluna "Última atualização" da lista.
  */
-export function portfolioHealth(rows: ReadonlyArray<Pick<ProjectListRow, "status" | "situation">>) {
+export const PORTFOLIO_FOLLOW_UP_DAYS = 30;
+
+/** Dia civil local `AAAA-MM-DD` (Belém), para comparar prazos sem inventar fuso. */
+function civilToday(now: Date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Belem", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  return year && month && day ? `${year}-${month}-${day}` : now.toISOString().slice(0, 10);
+}
+
+function civilKey(value: string | null | undefined) {
+  return value?.slice(0, 10) || null;
+}
+
+/** Projeto ativo (não concluído formalmente) com prazo final vigente já ultrapassado. */
+export function projectDeadlinePast(row: Pick<ProjectListRow, "status" | "plannedEndAt">, today: string = civilToday()) {
+  if (!matchesView(row, "active")) {
+    return false;
+  }
+  const end = civilKey(row.plannedEndAt);
+  return end !== null && end < today;
+}
+
+/**
+ * Em atraso: projeto distinto, ativo, com descumprimento efetivo de prazo (itens abertos vencidos ou prazo final
+ * do projeto ultrapassado). Impedimento sozinho não conta. Concluídos ficam de fora.
+ */
+export function isPortfolioDelayed(
+  row: Pick<ProjectListRow, "status" | "situation" | "plannedEndAt" | "overduePhases" | "overdueTasks" | "overdueMilestones">,
+  today: string = civilToday(),
+) {
+  if (!matchesView(row, "active")) {
+    return false;
+  }
+  if ((row.situation?.delayDays ?? 0) > 0) {
+    return true;
+  }
+  if ((row.overduePhases ?? 0) > 0 || (row.overdueTasks ?? 0) > 0 || (row.overdueMilestones ?? 0) > 0) {
+    return true;
+  }
+  return projectDeadlinePast(row, today);
+}
+
+/** Sem atualização no período de acompanhamento (só quando a consulta de movimentação respondeu). */
+export function isPortfolioStale(
+  row: Pick<ProjectListRow, "status" | "lastMovementAt" | "movementAvailable">,
+  now: Date = new Date(),
+  followUpDays: number = PORTFOLIO_FOLLOW_UP_DAYS,
+) {
+  if (!matchesView(row, "active") || !row.movementAvailable || row.lastMovementAt === null) {
+    return false;
+  }
+  const days = updatedLabel(row.lastMovementAt, now).days;
+  return days !== null && days > followUpDays;
+}
+
+/**
+ * Precisam de ação: projeto distinto que exige intervenção do PMO (situação crítica/atenção, impedimento ativo,
+ * pendência crítica de homologação/encerramento ou falta de atualização). Um projeto com várias condições conta uma vez.
+ * Independente de "Em atraso": pode coincidir, mas não é a mesma contagem.
+ */
+export function isPortfolioNeedsAction(
+  row: Pick<
+    ProjectListRow,
+    "status" | "situation" | "activeImpediments" | "lastMovementAt" | "movementAvailable" | "awaitingValidation" | "nextDelivery"
+  >,
+  now: Date = new Date(),
+) {
+  if (!matchesView(row, "active")) {
+    return false;
+  }
+  if (row.status === "CRITICO" || row.status === "EM_ATENCAO") {
+    return true;
+  }
+  if ((row.activeImpediments ?? 0) > 0) {
+    return true;
+  }
+  if ((row.situation?.pendingValidation ?? 0) > 0 || row.situation?.closureRequirementsMissing === true) {
+    return true;
+  }
+  if (row.awaitingValidation !== null || (row.nextDelivery?.corrections ?? false)) {
+    return true;
+  }
+  return isPortfolioStale(row, now);
+}
+
+/** Motivos legíveis do indicador "Em atraso" (para a lista filtrada). */
+export function portfolioDelayedReasons(
+  row: Pick<ProjectListRow, "status" | "situation" | "plannedEndAt" | "overduePhases" | "overdueTasks" | "overdueMilestones">,
+  today: string = civilToday(),
+) {
+  if (!isPortfolioDelayed(row, today)) {
+    return [] as string[];
+  }
+  const reasons: string[] = [];
+  const delayDays = row.situation?.delayDays ?? 0;
+  if (delayDays > 0) {
+    reasons.push(delayDays === 1 ? "1 dia de atraso na execução" : `${delayDays} dias de atraso na execução`);
+  }
+  if ((row.overdueTasks ?? 0) > 0) {
+    reasons.push(row.overdueTasks === 1 ? "1 tarefa vencida" : `${row.overdueTasks} tarefas vencidas`);
+  }
+  if ((row.overduePhases ?? 0) > 0) {
+    reasons.push(row.overduePhases === 1 ? "1 fase vencida" : `${row.overduePhases} fases vencidas`);
+  }
+  if ((row.overdueMilestones ?? 0) > 0) {
+    reasons.push(row.overdueMilestones === 1 ? "1 marco vencido" : `${row.overdueMilestones} marcos vencidos`);
+  }
+  if (projectDeadlinePast(row, today)) {
+    reasons.push("Prazo final do projeto ultrapassado");
+  }
+  return reasons.length > 0 ? reasons : ["Prazo efetivamente vencido"];
+}
+
+/** Motivos legíveis do indicador "Precisam de ação". */
+export function portfolioNeedsActionReasons(
+  row: Pick<
+    ProjectListRow,
+    "status" | "situation" | "activeImpediments" | "lastMovementAt" | "movementAvailable" | "awaitingValidation" | "nextDelivery"
+  >,
+  now: Date = new Date(),
+) {
+  if (!isPortfolioNeedsAction(row, now)) {
+    return [] as string[];
+  }
+  const reasons: string[] = [];
+  if (row.status === "CRITICO") {
+    reasons.push("Situação crítica");
+  }
+  if (row.status === "EM_ATENCAO") {
+    reasons.push("Situação em atenção");
+  }
+  if ((row.activeImpediments ?? 0) > 0) {
+    reasons.push(row.activeImpediments === 1 ? "1 impedimento ativo" : `${row.activeImpediments} impedimentos ativos`);
+  }
+  if ((row.situation?.pendingValidation ?? 0) > 0 || row.awaitingValidation !== null) {
+    reasons.push("Homologação pendente");
+  }
+  if (row.nextDelivery?.corrections) {
+    reasons.push("Entrega devolvida para correções");
+  }
+  if (row.situation?.closureRequirementsMissing) {
+    reasons.push("Encerramento sem requisitos completos");
+  }
+  if (isPortfolioStale(row, now)) {
+    reasons.push(`Sem atualização há mais de ${PORTFOLIO_FOLLOW_UP_DAYS} dias`);
+  }
+  return reasons.length > 0 ? reasons : ["Requer acompanhamento do PMO"];
+}
+
+/**
+ * Saúde do portfólio: ativos, críticos, precisam de ação e em atraso com critérios independentes,
+ * atraso médio só dos atrasados (dias inteiros) e concluídos.
+ */
+export function portfolioHealth(
+  rows: ReadonlyArray<
+    Pick<
+      ProjectListRow,
+      | "status"
+      | "situation"
+      | "plannedEndAt"
+      | "activeImpediments"
+      | "overduePhases"
+      | "overdueTasks"
+      | "overdueMilestones"
+      | "lastMovementAt"
+      | "movementAvailable"
+      | "awaitingValidation"
+      | "nextDelivery"
+    >
+  >,
+  now: Date = new Date(),
+) {
+  const today = civilToday(now);
   const active = rows.filter((row) => matchesView(row, "active"));
-  const delays = active.map((row) => row.situation?.delayDays ?? 0).filter((days) => days > 0);
+  const delayedRows = active.filter((row) => isPortfolioDelayed(row, today));
+  const delayDays = delayedRows.map((row) => row.situation?.delayDays ?? 0).filter((days) => days > 0);
   return {
     total: rows.length,
     active: active.length,
     critical: active.filter((row) => row.status === "CRITICO").length,
-    /** Ativos críticos ou em atenção: o "precisam de ação" do resumo. */
-    needsAction: active.filter((row) => row.status === "CRITICO" || row.status === "EM_ATENCAO").length,
-    delayed: delays.length,
+    needsAction: active.filter((row) => isPortfolioNeedsAction(row, now)).length,
+    delayed: delayedRows.length,
     concluded: rows.filter((row) => row.status === "CONCLUIDO").length,
-    averageDelay: delays.length === 0 ? null : Math.round(delays.reduce((sum, days) => sum + days, 0) / delays.length),
+    averageDelay: delayDays.length === 0 ? null : Math.round(delayDays.reduce((sum, days) => sum + days, 0) / delayDays.length),
   };
 }
 

@@ -120,8 +120,9 @@ export function DrawerEmpty({ children = "Não informado" }: { children?: React.
 export type DrawerNavItem = { id: string; label: string; icon: ComponentType<{ className?: string }>; count?: number };
 
 /**
- * Barra de navegação fixa no topo da área rolável do painel (fica sobre o corpo, com fundo translúcido): pílulas com ícone, rótulo e,
- * se houver, a quantidade. No Sobre o projeto leva a cada seção; na Linha do tempo filtra os eventos por tipo.
+ * Barra de navegação fixa no topo da área rolável do painel: pílulas com ícone, rótulo e, se houver, a quantidade.
+ * Fundo opaco e z-index acima do conteúdo (ícones da timeline, cartões) para o scroll não atravessar o filtro.
+ * No Sobre o projeto leva a cada seção; na Linha do tempo filtra os eventos por tipo.
  */
 export function DrawerNav({
   items,
@@ -137,7 +138,7 @@ export function DrawerNav({
   wrapperRef?: React.Ref<HTMLDivElement>;
 }) {
   return (
-    <div ref={wrapperRef} className="sticky -top-5 z-10 -mx-6 -mt-5 border-b border-border bg-card/95 px-6 py-2.5 backdrop-blur supports-backdrop-filter:bg-card/80">
+    <div ref={wrapperRef} className="sticky -top-5 z-20 -mx-6 -mt-5 border-b border-border bg-card px-6 py-2.5">
       <nav aria-label={label} className="flex flex-wrap gap-1">
         {items.map(({ id, label: text, icon: Icon, count }) => (
           <button

@@ -10,7 +10,8 @@ import { SeeMore } from "./institutional-shared";
 import { OverviewDetailDrawer } from "./overview-detail-drawer";
 import { useOverflow } from "./use-overflow";
 
-const SECTION_TONE = {
+/** Tom do ícone nos cartões da Visão Geral (e páginas que reutilizam o mesmo cabeçalho). */
+export const SECTION_TONE = {
   blue: "bg-primary/12 text-primary ring-primary/25",
   green: "bg-success/15 text-success-foreground ring-success/30",
   purple: "bg-status-validation-soft text-status-validation-ink ring-status-validation/30",

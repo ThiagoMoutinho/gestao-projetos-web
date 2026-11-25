@@ -416,7 +416,11 @@ export function EvidencesAndTickets({
       >
         <div className="flex min-h-0 flex-1 flex-col gap-3.5">
           {evidences.length > 0 ? (
-            <ul data-cut-unit aria-label="Resumo de evidências" className="grid grid-cols-4 overflow-hidden rounded-xl bg-muted/35 dark:bg-muted/20">
+            <ul
+              data-cut-unit
+              aria-label="Resumo de evidências"
+              className="grid shrink-0 grid-cols-4 overflow-hidden rounded-xl bg-muted/35 dark:bg-muted/20"
+            >
               {summary.map((item, index) => (
                 <li key={item.label} className={cn("flex flex-col gap-1 px-2.5 py-2.5", index > 0 && "border-l border-border/50 dark:border-border")}>
                   <span className="text-lg leading-none font-semibold tabular-nums text-foreground">{item.value}</span>
@@ -425,7 +429,9 @@ export function EvidencesAndTickets({
               ))}
             </ul>
           ) : null}
-          <div data-cut-unit>{tickets}</div>
+          <div data-cut-unit className="shrink-0">
+            {tickets}
+          </div>
           {evidences.length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhuma evidência registrada no projeto.</p>
           ) : (

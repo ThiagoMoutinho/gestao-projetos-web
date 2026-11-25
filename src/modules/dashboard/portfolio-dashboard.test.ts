@@ -20,7 +20,7 @@ function row(overrides: Partial<Row> & Pick<Row, "id">): Row {
   return {
     name: overrides.id,
     status: "EM_EXECUCAO",
-    situation: { status: "EM_EXECUCAO", delayDays: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
+    situation: { status: "EM_EXECUCAO", delayDays: 0, delayedItems: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false },
     suppliers: [],
     updatedAt: "2026-11-01T12:00:00.000Z",
     ...overrides,
@@ -69,7 +69,7 @@ describe("distribuição por situação", () => {
 describe("projetos que exigem atenção", () => {
   it("lista críticos antes e, entre eles, o maior atraso primeiro", () => {
     const delayed = (id: string, status: "CRITICO" | "EM_ATENCAO", delayDays: number) =>
-      row({ id, status, situation: { status, delayDays, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false } });
+      row({ id, status, situation: { status, delayDays, delayedItems: delayDays > 0 ? 1 : 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: false } });
     const result = attentionProjects([delayed("x", "EM_ATENCAO", 40), delayed("y", "CRITICO", 2), delayed("z", "CRITICO", 9), row({ id: "ok" })], 2);
     assert.equal(result.total, 3);
     assert.deepEqual(result.items.map((item) => item.id), ["z", "y"]);
@@ -114,7 +114,7 @@ describe("próximos marcos", () => {
 
 describe("pendências do portfólio", () => {
   it("soma os sinais dos projetos em curso e conta monitoramentos indisponíveis", () => {
-    const ready = row({ id: "r", situation: { status: "EM_EXECUCAO", delayDays: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: true } });
+    const ready = row({ id: "r", situation: { status: "EM_EXECUCAO", delayDays: 0, delayedItems: 0, pendingValidation: 0, closureRequirementsMissing: false, readyForClosure: true } });
     const result = portfolioPending([row({ id: "a" }), row({ id: "b" }), ready, row({ id: "n" }), row({ id: "c", status: "CONCLUIDO" })], {
       a: signal({ overdueTasks: 2, awaitingHomologation: 1 }),
       b: signal({ overdueMilestones: 3, inCorrections: 1 }),

@@ -510,7 +510,7 @@ export function MilestonesCard({
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-3.5">
           {ready ? (
-            <ul aria-label="Resumo de marcos" className="grid grid-cols-3 overflow-hidden rounded-xl bg-muted/35 dark:bg-muted/20">
+            <ul aria-label="Resumo de marcos" className="grid shrink-0 grid-cols-3 overflow-hidden rounded-xl bg-muted/35 dark:bg-muted/20">
               {summary.map((item, index) => (
                 <li
                   key={item.label}
