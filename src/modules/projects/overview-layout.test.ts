@@ -6,11 +6,11 @@ import { DEFAULT_WIDGETS, moveWidget, introduceNewWidgets, NEW_WIDGETS, normaliz
 const ids = (list: { id: string }[]) => list.map((item) => item.id);
 
 describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
-  it("o padrão segue a ordem de leitura: Sobre | Equipe, Resumo (total), Linha do tempo | Marcos, Evidências, Conformidade (total) e Prazo e cronograma (total)", () => {
-    assert.deepEqual(ids(DEFAULT_WIDGETS), ["sobre", "equipe", "resumo", "historico", "marcos", "evidencias", "conformidade", "planejamento"]);
+  it("o padrão segue a ordem de leitura: Sobre | Equipe, Resumo (total), Linha do tempo | Marcos, Evidências e Prazo e cronograma (total)", () => {
+    assert.deepEqual(ids(DEFAULT_WIDGETS), ["sobre", "equipe", "resumo", "historico", "marcos", "evidencias", "planejamento"]);
     const placed = placeWidgets(DEFAULT_WIDGETS);
-    assert.deepEqual(placed.map((item) => item.span), [6, 6, 12, 6, 6, 6, 12, 12]);
-      });
+    assert.deepEqual(placed.map((item) => item.span), [6, 6, 12, 6, 6, 6, 12]);
+  });
 
   it("Resultados, Situação e Evoluções ficam fora do padrão, mas continuam em layouts salvos que os incluem", () => {
     assert.deepEqual(SECONDARY_WIDGETS, ["situacao", "evolucoes"]);
@@ -26,6 +26,15 @@ describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
     assert.equal(old.length, 2, "quem tirou widgets do quadro não os recebe de volta");
     assert.deepEqual(normalizeWidgets([{ id: "inexistente", wide: false }]), DEFAULT_WIDGETS);
     assert.deepEqual(normalizeWidgets([]), DEFAULT_WIDGETS);
+  });
+
+  it("ignora Conformidade de Entrega em layouts salvos (saiu da Visão Geral)", () => {
+    const result = normalizeWidgets([
+      { id: "sobre", wide: false },
+      { id: "conformidade", wide: true },
+      { id: "planejamento", wide: true },
+    ]);
+    assert.deepEqual(ids(result), ["sobre", "planejamento"]);
   });
 
   it("ignora ids desconhecidos ou repetidos, mantendo a ordem salva", () => {
@@ -71,35 +80,33 @@ describe("Layout da Visão Geral (grid de 12 colunas, por linhas)", () => {
 
   it("calcula a linha de cada widget no grid de 12 colunas", () => {
     const rows = rowsOf(placeWidgets(DEFAULT_WIDGETS));
-    assert.deepEqual([...rows.entries()], [["sobre", 0], ["equipe", 0], ["resumo", 1], ["historico", 2], ["marcos", 2], ["evidencias", 3], ["conformidade", 4], ["planejamento", 5]]);
+    assert.deepEqual(
+      [...rows.entries()],
+      [
+        ["sobre", 0],
+        ["equipe", 0],
+        ["resumo", 1],
+        ["historico", 2],
+        ["marcos", 2],
+        ["evidencias", 3],
+        ["planejamento", 4],
+      ],
+    );
     const shifted = rowsOf(placeWidgets([{ id: "situacao", wide: false }, { id: "sobre", wide: false }, { id: "resultados", wide: false }]));
     assert.notEqual(shifted.get("sobre"), shifted.get("resultados"));
   });
 
-  it("widget novo é oferecido uma vez: entra logo abaixo de Marcos sem separar o par da linha", () => {
-    assert.deepEqual(NEW_WIDGETS, ["conformidade"]);
-    const none = new Set<string>();
-    const paired = introduceNewWidgets(
-      [{ id: "sobre", wide: false }, { id: "equipe", wide: false }, { id: "marcos", wide: false }, { id: "evidencias", wide: false }, { id: "planejamento", wide: true }],
-      none,
-    );
-    assert.deepEqual(ids(paired.widgets), ["sobre", "equipe", "marcos", "evidencias", "conformidade", "planejamento"]);
-    assert.equal(paired.widgets[4].wide, true);
-    assert.deepEqual(paired.offered, ["conformidade"]);
-    // Marcos fecha a linha (o vizinho seguinte já está em outra linha): entra logo depois de Marcos.
-    const alone = introduceNewWidgets([{ id: "sobre", wide: false }, { id: "marcos", wide: false }, { id: "evidencias", wide: false }], none);
-    assert.deepEqual(ids(alone.widgets), ["sobre", "marcos", "conformidade", "evidencias"]);
-    // Sem Marcos: antes de Planejamento ou no fim.
-    assert.deepEqual(ids(introduceNewWidgets([{ id: "sobre", wide: false }, { id: "planejamento", wide: true }], none).widgets), ["sobre", "conformidade", "planejamento"]);
-    assert.deepEqual(ids(introduceNewWidgets([{ id: "sobre", wide: false }], none).widgets), ["sobre", "conformidade"]);
-  });
-
-  it("quem já recebeu o widget e o removeu não o recebe de volta; posição e largura escolhidas são mantidas", () => {
-    const removed = introduceNewWidgets([{ id: "sobre", wide: false }], new Set(["conformidade"]));
-    assert.deepEqual(ids(removed.widgets), ["sobre"]);
-    assert.deepEqual(removed.offered, ["conformidade"]);
-    const kept = introduceNewWidgets([{ id: "conformidade", wide: false }, { id: "marcos", wide: false }], new Set());
-    assert.deepEqual(kept.widgets, [{ id: "conformidade", wide: false }, { id: "marcos", wide: false }]);
-    assert.deepEqual(kept.offered, ["conformidade"], "presente no layout já conta como oferecido");
+  it("sem widgets novos a oferecer, o layout salvo permanece igual", () => {
+    assert.deepEqual(NEW_WIDGETS, []);
+    const layout = [
+      { id: "sobre" as const, wide: false },
+      { id: "equipe" as const, wide: false },
+      { id: "marcos" as const, wide: false },
+      { id: "evidencias" as const, wide: false },
+      { id: "planejamento" as const, wide: true },
+    ];
+    const result = introduceNewWidgets(layout, new Set());
+    assert.deepEqual(ids(result.widgets), ids(layout));
+    assert.deepEqual(result.offered, []);
   });
 });

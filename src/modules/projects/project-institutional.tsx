@@ -60,8 +60,8 @@ export function ProjectOverviewSections({
   monitoring: Monitoring;
   impediments: number;
   onOpenEap: () => void;
-  /** Demais cards da Visão Geral: marcos e homologações, histórico executivo, resumo e conformidade de entrega (`null` oculta). */
-  cards: { marcos: React.ReactNode; historico: React.ReactNode; resumo: React.ReactNode; conformidade: React.ReactNode };
+  /** Demais cards da Visão Geral: marcos e homologações, histórico executivo e resumo. */
+  cards: { marcos: React.ReactNode; historico: React.ReactNode; resumo: React.ReactNode };
   /** Dados do painel de Planejamento que não dependem dos dados institucionais. */
   planning: {
     schedule: ScheduleView;
@@ -167,7 +167,6 @@ export function ProjectOverviewSections({
           marcos: cards.marcos,
           historico: cards.historico,
           resumo: cards.resumo,
-          conformidade: cards.conformidade,
           planejamento: (
             <ScheduleSummaryCard
               projectId={projectId}

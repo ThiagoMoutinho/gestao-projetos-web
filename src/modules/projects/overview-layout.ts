@@ -1,6 +1,6 @@
 /** Lógica pura do layout da Visão Geral (sem React), testável isoladamente. */
 
-export type WidgetId = "sobre" | "resultados" | "evolucoes" | "situacao" | "marcos" | "historico" | "resumo" | "planejamento" | "evidencias" | "equipe" | "conformidade";
+export type WidgetId = "sobre" | "resultados" | "evolucoes" | "situacao" | "marcos" | "historico" | "resumo" | "planejamento" | "evidencias" | "equipe";
 export type WidgetState = { id: WidgetId; wide: boolean };
 
 /**
@@ -20,14 +20,13 @@ export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
   planejamento: 100000,
   evidencias: 430,
   equipe: 520,
-  // Conformidade de Entrega acompanha o conteúdo: cada versão abre e fecha o próprio checklist.
-  conformidade: 100000,
 };
 
 /**
  * Layout padrão, na ordem de leitura da gestão institucional, por linhas: Sobre o projeto | Equipe (identidade e responsáveis),
- * Resumo executivo (largura total, painel de acompanhamento), Linha do tempo | Marcos, Evidências, Conformidade de Entrega (largura total)
- * e Prazo e cronograma (planejamento, largura total). Médio ocupa 6 das 12 colunas e Grande ocupa as 12. Vale para projeto sem layout salvo e para "Restaurar padrão".
+ * Resumo executivo (largura total, painel de acompanhamento), Linha do tempo | Marcos, Evidências e Prazo e cronograma
+ * (planejamento, largura total). Médio ocupa 6 das 12 colunas e Grande ocupa as 12. Vale para projeto sem layout salvo e para "Restaurar padrão".
+ * Conformidade de Entrega saiu da Visão Geral (permanece na tela Entregas).
  */
 export const DEFAULT_WIDGETS: WidgetState[] = [
   { id: "sobre", wide: false },
@@ -37,7 +36,6 @@ export const DEFAULT_WIDGETS: WidgetState[] = [
   { id: "historico", wide: false },
   { id: "marcos", wide: false },
   { id: "evidencias", wide: false },
-  { id: "conformidade", wide: true },
   { id: "planejamento", wide: true },
 ];
 
@@ -45,7 +43,7 @@ export const DEFAULT_WIDGETS: WidgetState[] = [
  * Widgets criados depois que as pessoas já tinham layouts salvos. Cada um é oferecido uma única vez: entra no quadro logo
  * abaixo de Marcos e, se a pessoa o remover depois, continua fora (vai para "Informações complementares").
  */
-export const NEW_WIDGETS: WidgetId[] = ["conformidade"];
+export const NEW_WIDGETS: WidgetId[] = [];
 
 /**
  * Inclui no layout os widgets novos que ainda não foram oferecidos (`offered`): logo abaixo de Marcos, depois do par de Marcos

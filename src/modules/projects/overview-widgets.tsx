@@ -23,7 +23,6 @@ const TITLES: Record<WidgetId, string> = {
   planejamento: "Planejamento",
   evidencias: "Evidências e Chamados",
   equipe: "Equipe",
-  conformidade: "Conformidade de Entrega",
 };
 
 /** Widgets novos já oferecidos neste navegador (ver `introduceNewWidgets`): quem remove um deles não o recebe de volta. */
