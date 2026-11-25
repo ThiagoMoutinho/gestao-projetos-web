@@ -107,14 +107,22 @@ const TYPE_ICON: Record<string, typeof Flag> = {
 };
 
 const TONE: Record<Entry["tone"], string> = {
-  warning: "bg-warning/20 text-warning-foreground",
+  warning: "bg-status-attention-soft text-status-attention-ink",
   danger: "bg-status-critical-soft text-status-critical-ink",
   info: "bg-primary/10 text-primary",
-  success: "bg-success/15 text-success-foreground",
+  success: "bg-status-done-soft text-status-done-ink",
   neutral: "bg-muted text-muted-foreground",
 };
 
-/** Linha de marco: ícone do tipo, nome, situação, data e ações. O detalhe (homologação) abre dentro do próprio cartão. */
+const TONE_RING: Record<Entry["tone"], string> = {
+  warning: "ring-status-attention/25",
+  danger: "ring-status-critical/25",
+  info: "ring-primary/25",
+  success: "ring-status-done/25",
+  neutral: "ring-border",
+};
+
+/** Linha de marco: ícone do tipo, nome, situação, data e ações — visual clean enterprise. */
 function EntryRow({
   entry,
   expanded,
@@ -123,6 +131,7 @@ function EntryRow({
   onPrefetch,
   onDetailHeight,
   href,
+  comfortable = false,
   children,
 }: {
   entry: Entry;
@@ -135,6 +144,8 @@ function EntryRow({
   onPrefetch: () => void;
   /** Informa a altura do detalhe aberto (0 ao fechar), para o cartão abrir espaço só para ele. */
   onDetailHeight?: (height: number) => void;
+  /** Lista do sheet: mais respiro e detalhe de homologação expansível. */
+  comfortable?: boolean;
   children: React.ReactNode;
 }) {
   const detail = useRef<HTMLDivElement>(null);
@@ -157,28 +168,33 @@ function EntryRow({
   };
   const TypeIcon = (entry.type ? TYPE_ICON[entry.type] : null) ?? Flag;
   return (
-    <li data-cut-unit className="py-2.5 first:pt-0 last:pb-0">
-      <div className="flex items-start gap-3.5">
+    <li
+      data-cut-unit
+      className={cn(
+        comfortable ? "rounded-xl bg-muted/30 px-3.5 py-3.5 dark:bg-muted/20" : "py-1",
+      )}
+    >
+      <div className={cn("flex items-start", comfortable ? "gap-4" : "gap-3")}>
         <span
           className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-full ring-1 ring-black/5 ring-inset dark:ring-white/10",
+            "flex shrink-0 items-center justify-center rounded-xl ring-1 ring-inset",
+            comfortable ? "size-10" : "size-9",
             TONE[entry.tone],
+            TONE_RING[entry.tone],
           )}
           aria-hidden="true"
         >
-          <TypeIcon className="size-5" />
+          <TypeIcon className={comfortable ? "size-[18px]" : "size-4"} />
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex items-start justify-between gap-2">
+        <div className={cn("flex min-w-0 flex-1 flex-col", comfortable ? "gap-2" : "gap-1.5")}>
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm leading-snug font-semibold break-words">{entry.title}</p>
+              <p className={cn("leading-snug font-semibold break-words text-foreground", comfortable ? "text-[13px]" : "text-sm")}>{entry.title}</p>
               <p
                 title={[entry.dateLabel, ...entry.meta].join(" · ")}
                 className={cn(
-                  "mt-0.5 text-xs leading-relaxed",
-                  entry.overdue
-                    ? "font-semibold text-destructive"
-                    : "text-muted-foreground",
+                  "mt-1 text-xs leading-relaxed",
+                  entry.overdue ? "font-semibold text-status-critical-ink" : "text-muted-foreground",
                 )}
               >
                 {entry.dateLabel}
@@ -186,14 +202,7 @@ function EntryRow({
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[11px] font-medium",
-                  TONE[entry.tone],
-                )}
-              >
-                {entry.statusLabel}
-              </span>
+              <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium", TONE[entry.tone])}>{entry.statusLabel}</span>
               {href ? (
                 <Link
                   href={href}
@@ -220,21 +229,10 @@ function EntryRow({
               )}
             </div>
           </div>
-          {entry.reason ? (
-            <ExpandableText
-              text={entry.reason}
-              className="text-xs text-muted-foreground"
-            />
-          ) : null}
+          {entry.reason ? <ExpandableText text={entry.reason} className="text-xs leading-relaxed text-muted-foreground" /> : null}
           {entry.canDecide ? (
-            <div className="flex">
-              <Button
-                type="button"
-                size="xs"
-                variant="secondary"
-                onClick={onOpen}
-                {...prefetch}
-              >
+            <div className="pt-0.5">
+              <Button type="button" size="xs" onClick={onOpen} {...prefetch}>
                 <ClipboardCheck aria-hidden="true" />
                 Analisar entrega
               </Button>
@@ -243,7 +241,7 @@ function EntryRow({
         </div>
       </div>
       <Presence open={expanded} expansion>
-        <div ref={detail} data-cut-end className="mt-4 rounded-lg border bg-muted/20 p-3 pt-1">
+        <div ref={detail} data-cut-end className="mt-3 rounded-xl bg-background/80 p-3.5 ring-1 ring-border/60 dark:bg-background/40 dark:ring-border">
           <AnimatedHeight>{children}</AnimatedHeight>
         </div>
       </Presence>
@@ -441,13 +439,14 @@ export function MilestonesCard({
       return inDrawer ? <DrawerEmpty>{ready ? empty[key] : ""}</DrawerEmpty> : <CardMessage>{ready ? empty[key] : ""}</CardMessage>;
     }
     return (
-      <ul className={cn("flex flex-col", inDrawer ? "divide-y" : "gap-4 [&>li]:py-0")}>
+      <ul className={cn("flex flex-col", inDrawer ? "gap-3" : "gap-3.5")}>
         {list.map((entry) => {
           const milestone = byId.get(entry.id);
           return (
             <EntryRow
               key={entry.id}
               entry={entry}
+              comfortable={inDrawer}
               expanded={inDrawer && openId === entry.id}
               onToggle={() => (inDrawer ? setOpenId(openId === entry.id ? null : entry.id) : openInDrawer(entry.id))}
               onOpen={() => (inDrawer ? setOpenId(entry.id) : openInDrawer(entry.id))}
@@ -463,6 +462,12 @@ export function MilestonesCard({
       </ul>
     );
   };
+
+  const summary = [
+    { label: "Pendentes", value: lists.pendentes.length, tone: "warning" as const },
+    { label: "Próximos", value: lists.proximos.length, tone: "neutral" as const },
+    { label: "Total", value: lists.todos.length, tone: "info" as const },
+  ];
 
   return (
     <SectionCard
@@ -481,7 +486,7 @@ export function MilestonesCard({
         title: "Marcos e Homologações",
         description: "Entregas pendentes, próximas e já decididas, com o detalhe da homologação.",
         content: (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-5">
             <DrawerNav
               label="Partes do painel"
               active={tab}
@@ -503,20 +508,38 @@ export function MilestonesCard({
       ) : monitoring.status === "error" ? (
         <CardMessage>Não foi possível consultar os marcos do projeto.</CardMessage>
       ) : (
-        <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="min-h-0 flex-1">
-          <TabsList variant="line" className="w-full justify-start">
-            {TAB_LABELS.map(([value, label]) => (
-              <TabsTrigger key={value} value={value} className="flex-none gap-1.5 px-2 text-xs">
-                {label} ({lists[value].length})
-              </TabsTrigger>
+        <div className="flex min-h-0 flex-1 flex-col gap-3.5">
+          {ready ? (
+            <ul aria-label="Resumo de marcos" className="grid grid-cols-3 overflow-hidden rounded-xl bg-muted/35 dark:bg-muted/20">
+              {summary.map((item, index) => (
+                <li
+                  key={item.label}
+                  className={cn("flex flex-col gap-1 px-3 py-2.5", index > 0 && "border-l border-border/50 dark:border-border")}
+                >
+                  <span className={cn("text-lg leading-none font-semibold tabular-nums", item.value > 0 && item.tone === "warning" ? "text-status-attention-ink" : "text-foreground")}>
+                    {item.value}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="min-h-0 flex-1">
+            <TabsList variant="line" className="w-full justify-start">
+              {TAB_LABELS.map(([value, label]) => (
+                <TabsTrigger key={value} value={value} className="flex-none gap-1.5 px-2 text-xs">
+                  {label}
+                  <span className="rounded-full bg-muted px-1.5 py-px text-label font-semibold text-foreground/80">{lists[value].length}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {TAB_LABELS.map(([key]) => (
+              <TabsContent key={key} value={key} className="mt-3.5">
+                {rows(key, false)}
+              </TabsContent>
             ))}
-          </TabsList>
-          {TAB_LABELS.map(([key]) => (
-            <TabsContent key={key} value={key} className="mt-3">
-              {rows(key, false)}
-            </TabsContent>
-          ))}
-        </Tabs>
+          </Tabs>
+        </div>
       )}
     </SectionCard>
   );

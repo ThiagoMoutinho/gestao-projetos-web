@@ -36,7 +36,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { EditDialogBody, EditDialogContent, EditDialogFooter, EditDialogHeader } from "@/components/ui/edit-dialog";
 import { Presence } from "@/components/ui/presence";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -51,7 +50,7 @@ import { cn } from "@/lib/utils";
 
 import { useAction } from "./institutional-shared";
 import { civilDay } from "./eap-deadline";
-import { DrawerCard, DrawerCount, DrawerEmpty, DrawerNav, DrawerSectionHead } from "./overview-detail-drawer";
+import { DrawerCard, DrawerCount, DrawerEmpty, DrawerNav } from "./overview-detail-drawer";
 import { Fact, SectionCard } from "./overview-panel";
 import { nextVisibleCount, TIMELINE_PAGE, visibleCount } from "./progressive-list";
 import { projectStatusLabel } from "./project-status";
@@ -101,13 +100,13 @@ function percent(basisPoints: number | null) {
 }
 
 /** Progresso circular (valor em basis points da API; 10_000 = 100%). */
-function CircularProgress({ basisPoints, label }: { basisPoints: number | null; label: string }) {
+function CircularProgress({ basisPoints, label, className }: { basisPoints: number | null; label: string; className?: string }) {
   const pct = basisPoints === null ? 0 : Math.min(100, Math.max(0, Math.round(basisPoints / 100)));
   const radius = 38;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (pct / 100) * circumference;
   return (
-    <div className="relative size-20 shrink-0" role="img" aria-label={label}>
+    <div className={cn("relative size-20 shrink-0", className)} role="img" aria-label={label}>
       <svg viewBox="0 0 96 96" className="size-full -rotate-90" aria-hidden="true">
         <circle cx="48" cy="48" r={radius} fill="none" stroke="currentColor" strokeWidth="8" className="text-muted" />
         <circle
@@ -123,29 +122,56 @@ function CircularProgress({ basisPoints, label }: { basisPoints: number | null; 
           className="text-primary transition-[stroke-dashoffset] duration-300 ease-out motion-reduce:transition-none"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold tracking-tight tabular-nums text-foreground">
-        {percent(basisPoints)}
+      <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+        <span className="text-lg font-semibold tracking-tight tabular-nums text-foreground">{percent(basisPoints)}</span>
+        <span className="mt-1 text-[10px] font-medium tracking-[0.06em] text-muted-foreground uppercase">concluído</span>
       </span>
     </div>
   );
 }
 
-/** Indicador operacional compacto: valor em destaque, rótulo curto e ícone discreto. */
+/** Tom de cada indicador quando tem valor (tokens de situação); com zero, o bloco fica neutro. */
+const METRIC_TONE = {
+  running: "bg-status-running-soft text-status-running-ink",
+  validation: "bg-status-validation-soft text-status-validation-ink",
+  critical: "bg-status-critical-soft text-status-critical-ink",
+  done: "bg-status-done-soft text-status-done-ink",
+} as const;
+
+/** Indicador operacional em bloco: ícone na cor do assunto, valor em destaque e rótulo; o crítico ganha fundo de alerta. */
 function OpsMetric({
+  icon: Icon,
   label,
   value,
+  tone,
   emphasize = false,
 }: {
   icon: LucideIcon;
   label: string;
   value: number;
+  tone: keyof typeof METRIC_TONE;
   emphasize?: boolean;
 }) {
   const hot = emphasize && value > 0;
   return (
-    <div className="flex min-w-0 flex-col items-start gap-1">
-      <p className={cn("text-2xl leading-none font-semibold tabular-nums", hot ? "text-destructive" : "text-foreground")}>{value}</p>
-      <p className={cn("text-[11px] leading-snug", hot ? "text-destructive" : "text-muted-foreground")}>{label}</p>
+    <div
+      className={cn(
+        "flex h-full min-w-0 items-center gap-3 rounded-xl border px-3 py-2.5",
+        hot ? "border-status-critical-ink/20 bg-status-critical-soft/60" : "border-border/60 bg-muted/25 dark:border-border",
+      )}
+    >
+      <span
+        className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", value > 0 ? METRIC_TONE[tone] : "bg-muted text-muted-foreground")}
+        aria-hidden="true"
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="grid min-w-0 leading-tight">
+        <span className={cn("text-xl font-semibold tabular-nums", hot ? "text-status-critical-ink" : "text-foreground")}>{value}</span>
+        <span className={cn("truncate text-[11px]", hot ? "text-status-critical-ink" : "text-muted-foreground")} title={label}>
+          {label}
+        </span>
+      </span>
     </div>
   );
 }
@@ -165,7 +191,7 @@ function shortSituation(data: Indicators) {
     data.impediments === 0
       ? "nenhum impedimento"
       : `${data.impediments} ${data.impediments === 1 ? "tarefa com impedimento" : "tarefas com impedimento"}`;
-  return `Situação atual: ${status}${delay}. ${overdue} e ${impediment}.`;
+  return `${status}${delay}. ${overdue} e ${impediment}.`;
 }
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
@@ -346,12 +372,25 @@ function SituationDetails({ data }: { data: Indicators }) {
   );
 }
 
+/** Faixa "Situação atual" no tom da situação: fundo suave, ícone e borda da cor correspondente. */
+const SITUATION_CALLOUT: Record<Indicators["situation"]["status"], { box: string; icon: LucideIcon; ink: string }> = {
+  NAO_INICIADO: { box: "border-border/70 bg-muted/40", icon: Info, ink: "text-muted-foreground" },
+  EM_EXECUCAO: { box: "border-primary/20 bg-primary/5", icon: Info, ink: "text-primary" },
+  EM_ATENCAO: { box: "border-status-attention-ink/20 bg-status-attention-soft/70", icon: TriangleAlert, ink: "text-status-attention-ink" },
+  CRITICO: { box: "border-status-critical-ink/20 bg-status-critical-soft/70", icon: OctagonAlert, ink: "text-status-critical-ink" },
+  EM_VALIDACAO: { box: "border-status-validation-ink/20 bg-status-validation-soft/70", icon: Layers, ink: "text-status-validation-ink" },
+  CONCLUIDO: { box: "border-status-done-ink/20 bg-status-done-soft/70", icon: CircleCheck, ink: "text-status-done-ink" },
+  SUSPENSO: { box: "border-border/70 bg-muted/40", icon: Ban, ink: "text-muted-foreground" },
+};
+
 /** Faixa "Situação atual" — sempre no rodapé do cartão (fora da área cortável). */
 function SituationBar({ data }: { data: Indicators }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const callout = SITUATION_CALLOUT[data.situation.status];
+  const CalloutIcon = callout.icon;
   return (
-    <section>
+    <section className={cn("rounded-xl border px-3.5 py-2.5", callout.box)}>
       <button
         type="button"
         aria-expanded={open}
@@ -359,8 +398,11 @@ function SituationBar({ data }: { data: Indicators }) {
         onClick={() => setOpen((value) => !value)}
         className="flex w-full items-start gap-2.5 text-left focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
-        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <p className={cn("min-w-0 flex-1 text-xs leading-relaxed text-foreground/90", !open && "max-sm:line-clamp-1")}>{shortSituation(data)}</p>
+        <CalloutIcon className={cn("mt-0.5 size-4 shrink-0", callout.ink)} aria-hidden="true" />
+        <p className={cn("min-w-0 flex-1 text-xs leading-relaxed text-foreground/90", !open && "line-clamp-2")}>
+          <span className={cn("font-semibold", callout.ink)}>Situação atual · </span>
+          {shortSituation(data)}
+        </p>
         <ChevronDown
           className={cn(
             "mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none",
@@ -399,39 +441,37 @@ function SummaryContent({ data, part = "all" }: { data: Indicators; part?: "all"
     <>
       {core ? (
         part === "core" ? (
-          <div className="@container">
-            {/* Progresso + indicadores operacionais (situação fica no rodapé, sempre visível). */}
-            <div className="flex flex-col gap-4 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:gap-8">
-              <div className="flex min-w-0 items-center gap-4">
+          <div className="@container flex min-h-0 flex-1 flex-col">
+            {/* Progresso à esquerda e indicadores operacionais em blocos 2×2 (a situação fica no rodapé, sempre visível). */}
+            <div className="grid flex-1 gap-4 @min-[520px]:grid-cols-[auto_minmax(0,1fr)] @min-[520px]:items-center @min-[520px]:gap-6">
+              <div className="flex items-center gap-4 @min-[520px]:flex-col @min-[520px]:gap-2.5 @min-[520px]:text-center">
                 <CircularProgress
                   basisPoints={data.progress.basisPoints}
                   label={`Progresso consolidado: ${percent(data.progress.basisPoints)}`}
+                  className="size-24 @min-[520px]:size-28"
                 />
-                <div className="min-w-0">
+                <div className="min-w-0 @min-[520px]:flex @min-[520px]:flex-col @min-[520px]:items-center">
                   <p className="text-sm font-semibold text-foreground">Progresso consolidado</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{phasesLabel}.</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{phasesLabel}</p>
                   {data.situation.delayDays > 0 ? (
-                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-[11px] font-medium text-destructive">
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-status-critical-soft px-2.5 py-1 text-[11px] font-medium text-status-critical-ink">
                       <Clock className="size-3.5" aria-hidden="true" />
                       Maior atraso: {data.situation.delayDays} {data.situation.delayDays === 1 ? "dia" : "dias"}
                     </span>
                   ) : null}
                 </div>
               </div>
-              <ul
-                aria-label="Indicadores operacionais"
-                className="grid min-w-0 flex-1 grid-cols-2 gap-x-3 gap-y-3 @min-[360px]:grid-cols-4"
-              >
+              <ul aria-label="Indicadores operacionais" className="grid min-w-0 grid-cols-1 gap-2.5 @min-[300px]:grid-cols-2">
                 {(
                   [
-                    { icon: RefreshCw, label: "Reprogramações", value: data.reschedules.total },
-                    { icon: Layers, label: "Aguardando homologação", value: data.homologation.awaiting },
-                    { icon: TriangleAlert, label: "Impedimento", value: data.impediments, emphasize: true },
-                    { icon: Flag, label: "Entregas futuras", value: data.nextDeliveries.length },
+                    { icon: RefreshCw, label: "Reprogramações", value: data.reschedules.total, tone: "running" },
+                    { icon: Layers, label: "Aguardando homologação", value: data.homologation.awaiting, tone: "validation" },
+                    { icon: TriangleAlert, label: data.impediments === 1 ? "Impedimento" : "Impedimentos", value: data.impediments, tone: "critical", emphasize: true },
+                    { icon: Flag, label: "Entregas futuras", value: data.nextDeliveries.length, tone: "done" },
                   ] as const
                 ).map((item) => (
-                  <li key={item.label}>
-                    <OpsMetric icon={item.icon} label={item.label} value={item.value} emphasize={"emphasize" in item && item.emphasize} />
+                  <li key={item.tone}>
+                    <OpsMetric icon={item.icon} label={item.label} value={item.value} tone={item.tone} emphasize={"emphasize" in item && item.emphasize} />
                   </li>
                 ))}
               </ul>
@@ -465,19 +505,42 @@ function SummaryContent({ data, part = "all" }: { data: Indicators; part?: "all"
   );
 }
 
-type SummaryTab = "visao" | "entregas" | "movimentacoes";
+type SummaryTab = "visao" | "entregas" | "movimentacoes" | "validacoes";
 
 /**
- * Painel de detalhes do Resumo executivo, no modelo do Sobre o projeto: barra fixa (Visão geral, Entregas, Movimentações) que
- * mostra uma parte por vez, em cartões com ícone. Os dados vêm do resumo já carregado pelo card (sem nova consulta).
+ * Painel de detalhes do Resumo executivo: barra fixa (Visão geral, Entregas, Movimentações, Validações) que mostra uma parte
+ * por vez. O histórico de validações do PMO fica só neste painel; no cartão o botão "Histórico" abre aqui.
  */
-function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observation }: { data: Indicators; ownerName: string; suppliers: string[] | null; updatedAt: string; observation: string | null }) {
-  const [tab, setTab] = useState<SummaryTab>("visao");
+function SummaryDrawerContent({
+  data,
+  ownerName,
+  suppliers,
+  updatedAt,
+  observation,
+  projectId,
+  refreshKey,
+  initialTab = "visao",
+}: {
+  data: Indicators;
+  ownerName: string;
+  suppliers: string[] | null;
+  updatedAt: string;
+  observation: string | null;
+  projectId: string;
+  refreshKey: string;
+  initialTab?: SummaryTab;
+}) {
+  const [tab, setTab] = useState<SummaryTab>(initialTab);
   const nav = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
   function choose(id: string) {
     setTab(id as SummaryTab);
     nav.current?.closest<HTMLElement>("[role=region]")?.scrollTo({ top: 0 });
   }
+  const tabLabel =
+    tab === "visao" ? "Visão geral" : tab === "entregas" ? "Entregas" : tab === "movimentacoes" ? "Movimentações" : "Validações";
   return (
     <div className="flex flex-col gap-4">
       <DrawerNav
@@ -489,59 +552,101 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
           { id: "visao", label: "Visão geral", icon: LayoutDashboard },
           { id: "entregas", label: "Entregas", icon: PackageCheck, count: data.nextDeliveries.length },
           { id: "movimentacoes", label: "Movimentações", icon: HistoryIcon, count: data.movements.length },
+          { id: "validacoes", label: "Validações", icon: ShieldCheck },
         ]}
       />
-      <div key={tab} role="group" aria-label={tab === "visao" ? "Visão geral" : tab === "entregas" ? "Entregas" : "Movimentações"} className="motion-fade flex flex-col gap-4">
+      <div key={tab} role="group" aria-label={tabLabel} className="motion-fade flex flex-col gap-4">
         {tab === "visao" ? (
-          // Uma superfície só, organizada por seções e divisórias (em vez de vários cartões independentes).
-          <div className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-border [&>section+section]:border-t [&>section+section]:border-border/50 dark:[&>section+section]:border-border">
-            <section aria-labelledby="resumo-situacao" className="px-5 py-4">
-              <DrawerSectionHead
-                id="resumo-situacao"
-                icon={Gauge}
-                title="Situação e progresso"
-                caption="Andamento consolidado do projeto."
-                aside={
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-2.5 py-1 text-label font-medium dark:border-border">
-                    <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
-                    {projectStatusLabel(data.situation.status)}
-                  </span>
-                }
-              />
-              <div className="mb-2.5 flex items-end justify-between gap-3">
-                <p className="text-4xl leading-none font-semibold tracking-tight">{percent(data.progress.basisPoints)}</p>
-                <p className="text-xs text-muted-foreground">Progresso consolidado</p>
+          <div className="flex flex-col gap-4">
+            <DrawerCard
+              icon={Gauge}
+              title="Situação e progresso"
+              aside={
+                <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-medium", SITUATION_BADGE[data.situation.status])}>
+                  <span className={cn("size-2 rounded-full", DOT[data.situation.status])} aria-hidden="true" />
+                  {projectStatusLabel(data.situation.status)}
+                </span>
+              }
+            >
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
+                <CircularProgress
+                  basisPoints={data.progress.basisPoints}
+                  label={`Progresso consolidado: ${percent(data.progress.basisPoints)}`}
+                  className="mx-auto size-32 sm:mx-0"
+                />
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Progresso consolidado</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {data.progress.phasesTotal === 1
+                        ? `${data.progress.phasesCalculated} de ${data.progress.phasesTotal} fase calculada.`
+                        : `${data.progress.phasesCalculated} de ${data.progress.phasesTotal} fases calculadas.`}
+                    </p>
+                  </div>
+                  {data.situation.delayDays > 0 ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-status-critical-soft px-2.5 py-1 text-[11px] font-medium text-status-critical-ink">
+                      <Clock className="size-3.5" aria-hidden="true" />
+                      Maior atraso: {data.situation.delayDays} {data.situation.delayDays === 1 ? "dia" : "dias"}
+                    </span>
+                  ) : null}
+                  {(() => {
+                    const callout = SITUATION_CALLOUT[data.situation.status];
+                    const CalloutIcon = callout.icon;
+                    return (
+                      <div className={cn("flex items-start gap-2.5 rounded-xl border px-3.5 py-3", callout.box)}>
+                        <CalloutIcon className={cn("mt-0.5 size-4 shrink-0", callout.ink)} aria-hidden="true" />
+                        <p className="min-w-0 text-[13px] leading-relaxed text-foreground/90">
+                          <span className={cn("font-semibold", callout.ink)}>Situação atual · </span>
+                          {shortSituation(data)}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
-              <Progress value={data.progress.basisPoints === null ? 0 : Math.round(data.progress.basisPoints / 100)} aria-label="Progresso consolidado do projeto" className="**:data-[slot=progress-track]:h-2" />
-            </section>
+            </DrawerCard>
 
-            <section aria-labelledby="resumo-indicadores" className="px-5 py-4">
-              <DrawerSectionHead id="resumo-indicadores" icon={LayoutDashboard} title="Indicadores do projeto" caption="Contagens que pedem atenção." />
-              {/* Cinco indicadores numa faixa com borda ao redor (celular: 3 + 2), separados por divisórias sutis. */}
+            <DrawerCard icon={LayoutDashboard} title="Indicadores do projeto">
               <ul
                 aria-label="Indicadores do projeto"
-                className="grid grid-cols-3 gap-y-4 sm:grid-cols-5"
+                className="grid grid-cols-2 overflow-hidden rounded-xl bg-muted/35 sm:grid-cols-3 dark:bg-muted/20"
               >
                 {(
                   [
                     { icon: RefreshCw, value: data.reschedules.total, label: "Reprogramações" },
                     { icon: Layers, value: data.homologation.awaiting, label: "Aguardando homologação" },
                     { icon: TriangleAlert, value: data.homologation.inCorrections, label: "Em correção" },
-                    { icon: CalendarClock, value: data.overdue.total, label: "Itens em atraso" },
-                    { icon: OctagonAlert, value: data.impediments, label: "Impedimentos" },
+                    { icon: CalendarClock, value: data.overdue.total, label: "Itens em atraso", hot: data.overdue.total > 0 },
+                    { icon: OctagonAlert, value: data.impediments, label: data.impediments === 1 ? "Impedimento" : "Impedimentos", hot: data.impediments > 0 },
+                    { icon: Flag, value: data.nextDeliveries.length, label: "Entregas futuras" },
                   ] as const
-                ).map(({ value, label }) => (
-                  <li key={label} className="flex flex-col items-start gap-1 px-1">
-                    <span className="text-2xl leading-none font-semibold tabular-nums">{value}</span>
-                    <span className="text-[11px] leading-tight text-muted-foreground">{label}</span>
-                  </li>
-                ))}
+                ).map((item, index) => {
+                  const Icon = item.icon;
+                  const hot = "hot" in item && item.hot;
+                  return (
+                    <li
+                      key={item.label}
+                      className={cn(
+                        "flex flex-col items-start gap-1.5 border-border/50 px-3.5 py-3.5 dark:border-border",
+                        index % 2 === 1 && "border-l",
+                        index >= 2 && "border-t",
+                        index % 3 !== 0 && "sm:border-l",
+                        index % 3 === 0 && "sm:border-l-0",
+                        index >= 3 && "sm:border-t",
+                        index < 3 && "sm:border-t-0",
+                      )}
+                    >
+                      <Icon className={cn("size-3.5", hot ? "text-status-critical-ink" : "text-muted-foreground")} aria-hidden="true" />
+                      <span className={cn("text-xl leading-none font-semibold tabular-nums", hot ? "text-status-critical-ink" : "text-foreground")}>{item.value}</span>
+                      <span className="text-[11px] leading-snug text-muted-foreground">{item.label}</span>
+                    </li>
+                  );
+                })}
               </ul>
-            </section>
+            </DrawerCard>
 
-            <section aria-labelledby="resumo-registro" className="px-5 py-4">
-              <DrawerSectionHead id="resumo-registro" icon={UserRound} title="Responsáveis e registro" caption="Quem responde e quando foi atualizado." />
-              <dl className="flex flex-col gap-3">
+            <DrawerCard icon={UserRound} title="Responsáveis e registro">
+              <dl className="flex flex-col gap-3.5">
                 {[
                   { label: "Responsável principal", value: ownerName },
                   { label: "Fornecedor", value: suppliers === null ? "Indisponível" : suppliers.length === 0 ? "Não informado" : suppliers.join(", ") },
@@ -549,17 +654,16 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
                 ].map(({ label, value }) => (
                   <div key={label} className="flex items-baseline justify-between gap-x-6 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
                     <dt className="text-xs text-muted-foreground">{label}</dt>
-                    <dd className="min-w-0 text-sm font-semibold break-words text-foreground">{value}</dd>
+                    <dd className="min-w-0 text-sm font-semibold break-words text-foreground sm:text-right">{value}</dd>
                   </div>
                 ))}
               </dl>
-            </section>
+            </DrawerCard>
 
             {observation ? (
-              <section aria-labelledby="resumo-observacao" className="px-5 py-4">
-                <DrawerSectionHead id="resumo-observacao" icon={ShieldCheck} title="Observação da última validação" />
+              <DrawerCard icon={ShieldCheck} title="Observação da última validação">
                 <p className="text-[13px] leading-relaxed break-words text-foreground/90">{observation}</p>
-              </section>
+              </DrawerCard>
             ) : null}
           </div>
         ) : null}
@@ -571,6 +675,12 @@ function SummaryDrawerContent({ data, ownerName, suppliers, updatedAt, observati
         {tab === "movimentacoes" ? (
           <DrawerCard icon={HistoryIcon} title="Movimentações relevantes" aside={data.movements.length > 0 ? <DrawerCount value={data.movements.length} /> : null}>
             <MovementsList data={data} comfortable />
+          </DrawerCard>
+        ) : null}
+        {tab === "validacoes" ? (
+          <DrawerCard icon={ShieldCheck} title="Histórico de validações">
+            <p className="mb-4 text-xs text-muted-foreground">Registros oficiais do PMO. Cada linha resume a validação; abra para ver o snapshot completo.</p>
+            <History projectId={projectId} open refreshKey={refreshKey} />
           </DrawerCard>
         ) : null}
       </div>
@@ -670,6 +780,9 @@ type HistoryState =
   | { status: "error" }
   | { status: "ready"; items: ValidationItem[] };
 
+/**
+ * Lista do histórico no sheet: só a primeira linha de cada validação; o snapshot e a observação aparecem ao expandir.
+ */
 function History({ projectId, open, refreshKey }: { projectId: string; open: boolean; refreshKey: string }) {
   const [state, setState] = useState<HistoryState>({ status: "idle" });
   const [opened, setOpened] = useState<string | null>(null);
@@ -680,6 +793,7 @@ function History({ projectId, open, refreshKey }: { projectId: string; open: boo
       return;
     }
     let active = true;
+    setState({ status: "loading" });
     listExecutiveSummaryValidations(projectId)
       .then((response) => {
         if (active) {
@@ -730,11 +844,11 @@ function History({ projectId, open, refreshKey }: { projectId: string; open: boo
     return <p className="text-xs text-muted-foreground">Nenhuma validação registrada até o momento.</p>;
   }
   return (
-    <ul className="flex flex-col divide-y">
+    <ul className="flex flex-col divide-y divide-border/60 dark:divide-border">
       {state.items.map((item) => {
         const expanded = opened === item.id;
         return (
-          <li key={item.id} className="py-2 first:pt-0 last:pb-0">
+          <li key={item.id} className="py-3 first:pt-0 last:pb-0">
             <button
               type="button"
               aria-expanded={expanded}
@@ -742,16 +856,14 @@ function History({ projectId, open, refreshKey }: { projectId: string; open: boo
                 setDetail(null);
                 setOpened(expanded ? null : item.id);
               }}
-              className="flex w-full items-start justify-between gap-2 text-left text-xs focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="flex w-full items-center justify-between gap-3 text-left text-xs focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
-              <span className="min-w-0">
-                <span className="block font-medium break-words">{validationText(item)}</span>
-                {item.observation ? <span className="block break-words text-muted-foreground">Observação: {item.observation}</span> : null}
-              </span>
-              <ChevronDown className={cn("mt-0.5 size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none", expanded && "rotate-180")} aria-hidden="true" />
+              <span className="min-w-0 truncate font-medium text-foreground">{validationText(item)}</span>
+              <ChevronDown className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none", expanded && "rotate-180")} aria-hidden="true" />
             </button>
             <Presence open={expanded}>
-              <div className="mt-2 flex flex-col gap-3 rounded-md border border-dashed p-3">
+              <div className="mt-3 flex flex-col gap-3 rounded-xl border border-dashed border-border/70 bg-muted/30 p-3.5 dark:bg-muted/20">
+                {item.observation ? <p className="text-xs leading-relaxed break-words text-muted-foreground">Observação: {item.observation}</p> : null}
                 <p className="text-[11px] font-semibold text-muted-foreground">
                   Registro oficial (somente leitura) · dados de {detail && detail !== "error" && detail.id === item.id ? REFERENCE.format(new Date(detail.data.snapshot.generatedAt)) : "…"}
                 </p>
@@ -776,9 +888,8 @@ function History({ projectId, open, refreshKey }: { projectId: string; open: boo
  * oficial da validação do PMO (ciclo semanal de quinta a quarta, histórico imutável e snapshot em leitura). Só o perfil
  * global PMO valida; os demais consultam.
  *
- * O cartão tem altura limitada como os demais: síntese, indicadores e o estado da validação ficam sempre visíveis (a
- * validação no rodapé) e o restante (próximas entregas, movimentações, responsável e fornecedor) aparece em "Ver mais",
- * que expande o próprio cartão. Abrir o histórico de validações não altera o "Ver mais": o cartão só abre espaço para o histórico.
+ * O histórico de validações fica no sheet (aba Validações): no cartão o botão só abre o painel. Cada item do histórico
+ * mostra uma linha; o snapshot completo aparece ao expandir dentro do sheet.
  */
 export function ExecutiveSummaryCard({
   projectId,
@@ -797,24 +908,9 @@ export function ExecutiveSummaryCard({
   const [state, setState] = useState<State>({ status: "loading" });
   const [version, setVersion] = useState(0);
   const [dialog, setDialog] = useState<Mode | null>(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyHeight, setHistoryHeight] = useState(0);
-  const historyBox = useRef<HTMLDivElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<SummaryTab>("visao");
   const reload = useCallback(() => setVersion((value) => value + 1), []);
-
-  // Altura do histórico aberto: o cartão abre espaço só para ele, sem virar "Ver menos" nem mostrar os blocos extras.
-  useEffect(() => {
-    const element = historyBox.current;
-    if (!historyOpen || !element) {
-      return;
-    }
-    const observer = new ResizeObserver(() => setHistoryHeight(element.offsetHeight + 12));
-    observer.observe(element);
-    return () => {
-      observer.disconnect();
-      setHistoryHeight(0);
-    };
-  }, [historyOpen]);
 
   useEffect(() => {
     let active = true;
@@ -837,13 +933,27 @@ export function ExecutiveSummaryCard({
   const data = state.status === "ready" ? state.data : null;
   const governance = data?.governance ?? null;
 
-  // Conteúdo complementar (antes aparecia em "Ver mais"): vai para o painel lateral de detalhes.
+  function openDrawer(tab: SummaryTab = "visao") {
+    setDrawerTab(tab);
+    setDrawerOpen(true);
+  }
+
+  // Conteúdo complementar e histórico de validações: painel lateral de detalhes.
   const detail = data ? (
-    <SummaryDrawerContent data={data} ownerName={ownerName} suppliers={suppliers} updatedAt={updatedAt} observation={governance?.lastValidation?.observation ?? null} />
+    <SummaryDrawerContent
+      data={data}
+      ownerName={ownerName}
+      suppliers={suppliers}
+      updatedAt={updatedAt}
+      observation={governance?.lastValidation?.observation ?? null}
+      projectId={projectId}
+      refreshKey={`${refreshKey}:${version}`}
+      initialTab={drawerTab}
+    />
   ) : null;
 
   const validation = governance ? (
-    <section aria-label="Validação do PMO" className="flex flex-col gap-3 border-t border-border/60 pt-4 dark:border-border">
+    <section aria-label="Validação do PMO" className="flex flex-col gap-3 rounded-xl border border-border/70 bg-muted/25 p-3.5 dark:border-border">
       <div className="flex items-center justify-between gap-3">
         <h3 className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
           <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
@@ -863,10 +973,10 @@ export function ExecutiveSummaryCard({
 
       <div>
         <div className="flex flex-col gap-3">
-          <dl className="flex flex-col gap-1 text-xs">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-              <dt className="text-muted-foreground">Última validação</dt>
-              <dd className="min-w-0 text-right font-medium text-foreground">
+          <dl className="grid gap-x-6 gap-y-2.5 text-xs sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <dt className="text-[11px] text-muted-foreground">Última validação</dt>
+              <dd className="min-w-0 font-medium text-foreground">
                 {governance.lastValidation ? (
                   <>
                     <span className="tabular-nums">{REFERENCE.format(new Date(governance.lastValidation.validatedAt))}</span>
@@ -881,9 +991,9 @@ export function ExecutiveSummaryCard({
                 )}
               </dd>
             </div>
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-              <dt className="text-muted-foreground">Ciclo atual</dt>
-              <dd className="min-w-0 text-right font-medium text-foreground">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <dt className="text-[11px] text-muted-foreground">Ciclo atual</dt>
+              <dd className="min-w-0 font-medium text-foreground">
                 <span className="tabular-nums">
                   {cycleDay(governance.cycle.start)} a {cycleDay(governance.cycle.end)}
                 </span>
@@ -894,22 +1004,22 @@ export function ExecutiveSummaryCard({
             </div>
           </dl>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3 dark:border-border">
             {governance.canValidate ? (
               !governance.currentCycleRegularValidated ? (
                 <>
-                  <Button type="button" onClick={() => setDialog("regular")}>
+                  <Button type="button" size="sm" onClick={() => setDialog("regular")}>
                     Validar resumo
                   </Button>
                   {governance.unchangedSinceLastValidation ? (
-                    <Button type="button" variant="outline" onClick={() => setDialog("withoutChanges")}>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setDialog("withoutChanges")}>
                       Validar sem alterações
                     </Button>
                   ) : null}
                 </>
               ) : (
-                <Button type="button" onClick={() => setDialog("extraordinary")}>
-                  <Plus className="size-4" aria-hidden="true" />
+                <Button type="button" size="sm" variant="secondary" onClick={() => setDialog("extraordinary")}>
+                  <Plus aria-hidden="true" />
                   Validação extraordinária
                 </Button>
               )
@@ -917,23 +1027,15 @@ export function ExecutiveSummaryCard({
             <Button
               type="button"
               variant="ghost"
-              aria-expanded={historyOpen}
-              onClick={() => {
-                // Abrir o histórico não muda o estado do cartão ("Ver mais"/"Ver menos"): ele só ganha a altura do histórico (extraHeight).
-                setHistoryOpen(!historyOpen);
-              }}
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => openDrawer("validacoes")}
             >
-              <HistoryIcon className="size-4" aria-hidden="true" />
+              <HistoryIcon aria-hidden="true" />
               Histórico de validações
             </Button>
           </div>
         </div>
-
-        <Presence open={historyOpen}>
-          <div ref={historyBox} className="mt-3 border-t border-border/50 pt-3">
-            <History projectId={projectId} open={historyOpen} refreshKey={`${refreshKey}:${version}`} />
-          </div>
-        </Presence>
       </div>
     </section>
   ) : null;
@@ -954,14 +1056,18 @@ export function ExecutiveSummaryCard({
       subtitle="Panorama consolidado do projeto e validação do PMO."
       icon={FileText}
       tone="blue"
-      extraHeight={historyHeight}
       moreLabel="Ver detalhes"
       expandable={data !== null}
+      drawerOpen={drawerOpen}
+      onDrawerOpenChange={(open) => {
+        setDrawerOpen(open);
+        if (!open) setDrawerTab("visao");
+      }}
       drawer={
         data
           ? {
               title: "Resumo executivo",
-              description: "Panorama consolidado do projeto: entregas, movimentações e responsáveis.",
+              description: "Panorama consolidado do projeto: entregas, movimentações, responsáveis e validações do PMO.",
               content: detail,
             }
           : undefined

@@ -81,15 +81,18 @@ export function DrawerSectionHead({
   caption,
   aside,
   id,
+  divided = true,
 }: {
   icon: ComponentType<{ className?: string }>;
   title: string;
   caption?: string;
   aside?: React.ReactNode;
   id?: string;
+  /** Linha sob o cabeçalho; desligar quando a superfície já separa as seções por espaço. */
+  divided?: boolean;
 }) {
   return (
-    <header className="mb-4 flex items-center gap-3 border-b border-border/60 pb-4 dark:border-border">
+    <header className={cn("mb-4 flex items-center gap-3", divided && "border-b border-border/60 pb-4 dark:border-border")}>
       <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15 ring-inset" aria-hidden="true">
         <Icon className="size-[18px]" />
       </span>
