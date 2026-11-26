@@ -117,6 +117,22 @@ export type ProjectListRow = {
   /** Vínculo de quem consulta com o projeto (vem da lista da API), para liberar ações. */
   viewerIsOwner: boolean;
   viewerRoles: string[];
+  /** Instantâneo ISO do arquivamento; null = não arquivado. */
+  archivedAt: string | null;
+  /** Id de quem arquivou; null se não arquivado. */
+  archivedBy: string | null;
+  /**
+   * Usuário de `archived_by` (API). Null se não arquivado ou usuário inexistente —
+   * a UI mostra "Usuário não identificado", sem inferir pela equipe.
+   */
+  archivedByUser: { id: string; name: string; role: string } | null;
+  /**
+   * Motivo/justificativa do último arquivamento. Null no legado (antes da obrigatoriedade) —
+   * a UI não inventa texto; usa "Ver justificativa" para explicar.
+   */
+  archiveReason: string | null;
+  archiveJustification: string | null;
+  archiveOtherDescription: string | null;
   /**
    * Sinais dos indicadores do portfólio. `null` = a consulta correspondente falhou (o indicador não inventa valor).
    * Impedimentos vêm do resumo executivo; contagens de atraso por tipo, do monitoramento de prazos.
@@ -167,8 +183,8 @@ export function canEditProject(globalRole: string, row: Pick<ProjectListRow, "vi
 }
 
 /**
- * Visualizações da lista. O arquivamento é uma condição separada da situação, mas o backend ainda não
- * tem esse dado: a visualização de arquivados fica indisponível e nenhum projeto é tratado como arquivado.
+ * Visualizações da lista. Arquivamento é independente da situação: um projeto arquivado sai de
+ * Ativos/Concluídos e aparece só em Arquivados (e em Todos).
  */
 export type PortfolioView = "active" | "concluded" | "archived" | "all";
 
@@ -178,21 +194,33 @@ export const PORTFOLIO_VIEWS: ReadonlyArray<{ key: PortfolioView; label: string;
   {
     key: "archived",
     label: "Projetos Arquivados",
-    description: "Indisponível: o cadastro de projetos ainda não registra o arquivamento.",
-    available: false,
+    description: "Exibe projetos arquivados (histórico preservado, sem exclusão).",
+    available: true,
   },
   { key: "all", label: "Todos os Projetos", description: "Exibe todos os projetos acessíveis, de qualquer situação.", available: true },
 ];
 
-/** Projeto na visualização: ativos são os não concluídos formalmente (sem situação calculada também entram). */
-export function matchesView(row: Pick<ProjectListRow, "status">, view: PortfolioView) {
+function isArchived(row: Pick<ProjectListRow, "archivedAt">) {
+  return Boolean(row.archivedAt);
+}
+
+/** Projeto na visualização: ativos são os não concluídos formalmente e não arquivados. */
+export function matchesView(row: Pick<ProjectListRow, "status" | "archivedAt">, view: PortfolioView) {
   if (view === "all") {
     return true;
   }
   if (view === "archived") {
+    return isArchived(row);
+  }
+  if (isArchived(row)) {
     return false;
   }
   return view === "concluded" ? row.status === "CONCLUIDO" : row.status !== "CONCLUIDO";
+}
+
+/** Arquivar/desarquivar: mesma regra de edição do cadastro. */
+export function canArchiveProject(globalRole: string, row: Pick<ProjectListRow, "viewerIsOwner" | "viewerRoles">) {
+  return canEditProject(globalRole, row);
 }
 
 export type PortfolioFilters = { query: string; status: ProjectStatus | ""; company: string; owner: string };
@@ -445,7 +473,7 @@ export type ProjectMonitoringSignals = {
 };
 
 /** Quantidade de projetos em cada visualização (abas), sem considerar busca e filtros. */
-export function viewCounts(rows: ReadonlyArray<Pick<ProjectListRow, "status">>): Record<PortfolioView, number> {
+export function viewCounts(rows: ReadonlyArray<Pick<ProjectListRow, "status" | "archivedAt">>): Record<PortfolioView, number> {
   return {
     active: rows.filter((row) => matchesView(row, "active")).length,
     concluded: rows.filter((row) => matchesView(row, "concluded")).length,
@@ -473,8 +501,11 @@ function civilKey(value: string | null | undefined) {
   return value?.slice(0, 10) || null;
 }
 
-/** Projeto ativo (não concluído formalmente) com prazo final vigente já ultrapassado. */
-export function projectDeadlinePast(row: Pick<ProjectListRow, "status" | "plannedEndAt">, today: string = civilToday()) {
+/** Projeto ativo (não concluído formalmente e não arquivado) com prazo final vigente já ultrapassado. */
+export function projectDeadlinePast(
+  row: Pick<ProjectListRow, "status" | "plannedEndAt" | "archivedAt">,
+  today: string = civilToday(),
+) {
   if (!matchesView(row, "active")) {
     return false;
   }
@@ -487,7 +518,10 @@ export function projectDeadlinePast(row: Pick<ProjectListRow, "status" | "planne
  * do projeto ultrapassado). Impedimento sozinho não conta. Concluídos ficam de fora.
  */
 export function isPortfolioDelayed(
-  row: Pick<ProjectListRow, "status" | "situation" | "plannedEndAt" | "overduePhases" | "overdueTasks" | "overdueMilestones">,
+  row: Pick<
+    ProjectListRow,
+    "status" | "situation" | "plannedEndAt" | "overduePhases" | "overdueTasks" | "overdueMilestones" | "archivedAt"
+  >,
   today: string = civilToday(),
 ) {
   if (!matchesView(row, "active")) {
@@ -504,7 +538,7 @@ export function isPortfolioDelayed(
 
 /** Sem atualização no período de acompanhamento (só quando a consulta de movimentação respondeu). */
 export function isPortfolioStale(
-  row: Pick<ProjectListRow, "status" | "lastMovementAt" | "movementAvailable">,
+  row: Pick<ProjectListRow, "status" | "lastMovementAt" | "movementAvailable" | "archivedAt">,
   now: Date = new Date(),
   followUpDays: number = PORTFOLIO_FOLLOW_UP_DAYS,
 ) {
@@ -523,7 +557,14 @@ export function isPortfolioStale(
 export function isPortfolioNeedsAction(
   row: Pick<
     ProjectListRow,
-    "status" | "situation" | "activeImpediments" | "lastMovementAt" | "movementAvailable" | "awaitingValidation" | "nextDelivery"
+    | "status"
+    | "situation"
+    | "activeImpediments"
+    | "lastMovementAt"
+    | "movementAvailable"
+    | "awaitingValidation"
+    | "nextDelivery"
+    | "archivedAt"
   >,
   now: Date = new Date(),
 ) {
@@ -547,7 +588,10 @@ export function isPortfolioNeedsAction(
 
 /** Motivos legíveis do indicador "Em atraso" (para a lista filtrada). */
 export function portfolioDelayedReasons(
-  row: Pick<ProjectListRow, "status" | "situation" | "plannedEndAt" | "overduePhases" | "overdueTasks" | "overdueMilestones">,
+  row: Pick<
+    ProjectListRow,
+    "status" | "situation" | "plannedEndAt" | "overduePhases" | "overdueTasks" | "overdueMilestones" | "archivedAt"
+  >,
   today: string = civilToday(),
 ) {
   if (!isPortfolioDelayed(row, today)) {
@@ -577,7 +621,14 @@ export function portfolioDelayedReasons(
 export function portfolioNeedsActionReasons(
   row: Pick<
     ProjectListRow,
-    "status" | "situation" | "activeImpediments" | "lastMovementAt" | "movementAvailable" | "awaitingValidation" | "nextDelivery"
+    | "status"
+    | "situation"
+    | "activeImpediments"
+    | "lastMovementAt"
+    | "movementAvailable"
+    | "awaitingValidation"
+    | "nextDelivery"
+    | "archivedAt"
   >,
   now: Date = new Date(),
 ) {
@@ -628,6 +679,7 @@ export function portfolioHealth(
       | "movementAvailable"
       | "awaitingValidation"
       | "nextDelivery"
+      | "archivedAt"
     >
   >,
   now: Date = new Date(),
@@ -642,7 +694,7 @@ export function portfolioHealth(
     critical: active.filter((row) => row.status === "CRITICO").length,
     needsAction: active.filter((row) => isPortfolioNeedsAction(row, now)).length,
     delayed: delayedRows.length,
-    concluded: rows.filter((row) => row.status === "CONCLUIDO").length,
+    concluded: rows.filter((row) => matchesView(row, "concluded")).length,
     averageDelay: delayDays.length === 0 ? null : Math.round(delayDays.reduce((sum, days) => sum + days, 0) / delayDays.length),
   };
 }

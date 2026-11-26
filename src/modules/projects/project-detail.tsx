@@ -1,18 +1,11 @@
 "use client";
 
-import { ArrowLeft, FolderKanban } from "lucide-react";
-import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { PageLoadError } from "@/components/page-load-error";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import type { ProjectDetail as ProjectDetailData } from "./load-project-detail";
@@ -130,32 +123,16 @@ export function ProjectDetail({
 
 export function ProjectAccessDenied({ message }: { message: string }) {
   return (
-    <ProjectNotice
-      title="Acesso negado"
-      description={message}
-    />
+    <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-5">
+      <PageLoadError title="Acesso negado" description={message} />
+    </div>
   );
 }
 
 export function ProjectDetailError({ message }: { message: string }) {
-  return <ProjectNotice title="Não foi possível consultar o projeto" description={message} />;
-}
-
-function ProjectNotice({ title, description }: { title: string; description: string }) {
   return (
     <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-5">
-      <Empty className="border bg-card">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <FolderKanban />
-          </EmptyMedia>
-          <EmptyTitle>{title}</EmptyTitle>
-          <EmptyDescription>{description}</EmptyDescription>
-        </EmptyHeader>
-        <Link href="/projetos" className={cn(buttonVariants({ variant: "outline" }))}>
-          Voltar para projetos
-        </Link>
-      </Empty>
+      <PageLoadError title="Não foi possível carregar o projeto" message={message} />
     </div>
   );
 }

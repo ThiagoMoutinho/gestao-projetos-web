@@ -13,6 +13,7 @@ import {
   CircleCheck,
   Download,
   EllipsisVertical,
+  FileText,
   Folder,
   FolderKanban,
   Layers,
@@ -31,6 +32,17 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition, type MouseEvent, type ReactNode } from "react";
 
 import { OptionCombobox } from "@/components/option-combobox";
+import { PageLoadError } from "@/components/page-load-error";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -45,6 +57,8 @@ import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ApiError } from "@/lib/api/fetcher";
+import { notifySuccess, reportFailure } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 
 import { formatCivilDate } from "./eap-date-field";
@@ -53,9 +67,13 @@ import { basisToPercent, formatBasis } from "./eap-progress";
 import { EapStatusBadge } from "./eap-status-badge";
 import { OVERVIEW_CARD } from "./overview-panel";
 import { AVATAR_PALETTE } from "./people-stack";
+import { ArchiveJustificationDialog } from "./archive-justification-dialog";
+import { ArchiveProjectDialog } from "./archive-project-dialog";
 import { ProjectEditDialog } from "./project-edit-dialog";
+import { unarchiveProject } from "./archive-project-api";
 import {
   avatarColorIndex,
+  canArchiveProject,
   canEditProject,
   delayCell,
   filterOptions,
@@ -632,7 +650,7 @@ export function ProjectList({
           </div>
         ) : (
           <div className="relative w-full min-w-0 overflow-x-auto border-t border-border/70">
-            <table className="w-full min-w-[1000px] text-left">
+            <table className={cn("w-full text-left", view === "archived" ? "min-w-[1120px]" : "min-w-[1000px]")}>
               <thead className="bg-card text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
                 <tr className="border-b border-border/70">
                   <SortHeader label="Projeto" sortKey="name" sort={sort} onSort={toggleSort} className="pl-5" />
@@ -641,6 +659,7 @@ export function ProjectList({
                   <th scope="col" className="px-2.5 py-3">Situação</th>
                   <th scope="col" className="px-2.5 py-3">Progresso</th>
                   <SortHeader label="Prazo" sortKey="urgency" sort={sort} onSort={toggleSort} />
+                  {view === "archived" ? <th scope="col" className="px-2.5 py-3">Arquivado em</th> : null}
                   <SortHeader label="Última atualização" sortKey="updated" sort={sort} onSort={toggleSort} />
                   <th scope="col" className="w-11 px-2.5 py-3"><span className="sr-only">Ações</span></th>
                 </tr>
@@ -650,8 +669,10 @@ export function ProjectList({
                   <ProjectRow
                     key={project.id}
                     project={project}
+                    view={view}
                     opening={navigating && openingId === project.id}
-                    canEdit={canEditProject(viewerRole, project)}
+                    canEdit={canEditProject(viewerRole, project) && !project.archivedAt}
+                    canArchive={canArchiveProject(viewerRole, project)}
                     focus={summaryFocus}
                     onOpen={(target) => open(project.id, target)}
                   />
@@ -730,19 +751,51 @@ function detailsText(project: ProjectListRow) {
 
 function ProjectRow({
   project,
+  view,
   opening,
   canEdit,
+  canArchive,
   focus,
   onOpen,
 }: {
   project: ProjectListRow;
+  view: PortfolioView;
   opening: boolean;
   canEdit: boolean;
+  canArchive: boolean;
   /** Quando um cartão do resumo filtra a lista, mostra o motivo da classificação. */
   focus: SummaryFocus | null;
   onOpen: (target?: "eap" | "cronograma") => void;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [unarchiveOpen, setUnarchiveOpen] = useState(false);
+  const [justificationOpen, setJustificationOpen] = useState(false);
+  const [archiveBusy, setArchiveBusy] = useState(false);
+  const archived = Boolean(project.archivedAt);
+  const showArchivedAt = view === "archived";
+
+  async function confirmUnarchive() {
+    if (archiveBusy) {
+      return;
+    }
+    setArchiveBusy(true);
+    try {
+      const response = await unarchiveProject(project.id);
+      if (response.status !== 204) {
+        throw new ApiError(response.status, "HTTP_ERROR", "Não foi possível restaurar o projeto.");
+      }
+      notifySuccess("Projeto restaurado.");
+      setUnarchiveOpen(false);
+      router.refresh();
+    } catch (caught) {
+      reportFailure(caught, "Não foi possível restaurar o projeto.");
+    } finally {
+      setArchiveBusy(false);
+    }
+  }
+
   // A linha inteira abre a Visão Geral; o nome é o link acessível por teclado e o menu tem ações próprias.
   function handleClick(event: MouseEvent<HTMLTableRowElement>) {
     // Cliques no diálogo de edição (renderizado fora da tabela) também chegam aqui pela árvore do React.
@@ -751,17 +804,26 @@ function ProjectRow({
     }
     onOpen();
   }
-  const attention = project.status === "EM_ATENCAO" || project.status === "CRITICO";
+  const attention = !archived && (project.status === "EM_ATENCAO" || project.status === "CRITICO");
   const details = detailsText(project);
   const focusReasons =
-    focus === "needsAction" ? portfolioNeedsActionReasons(project) : focus === "delayed" ? portfolioDelayedReasons(project) : [];
+    archived || !focus
+      ? []
+      : focus === "needsAction"
+        ? portfolioNeedsActionReasons(project)
+        : focus === "delayed"
+          ? portfolioDelayedReasons(project)
+          : [];
 
   return (
     <tr
       onClick={handleClick}
       className={cn(
-        "group/row cursor-pointer border-b border-border/50 align-middle text-body transition-colors duration-200 ease-out last:border-b-0 hover:bg-primary/[0.04] motion-reduce:transition-none",
-        opening && "bg-primary/5",
+        "group/row cursor-pointer border-b align-middle text-body transition-colors duration-200 ease-out last:border-b-0 motion-reduce:transition-none",
+        archived
+          ? "border-border/40 bg-muted/25 hover:bg-muted/40"
+          : "border-border/50 hover:bg-primary/[0.04]",
+        opening && (archived ? "bg-muted/45" : "bg-primary/5"),
       )}
     >
       <td
@@ -771,7 +833,14 @@ function ProjectRow({
         <Tooltip>
           <TooltipTrigger
             render={
-              <Link href={`/projetos/${project.id}`} className={cn("block text-[13.5px] leading-snug font-semibold text-foreground transition-colors hover:text-primary focus-visible:rounded-sm", focusRing)} />
+              <Link
+                href={`/projetos/${project.id}`}
+                className={cn(
+                  "block text-[13.5px] leading-snug font-semibold transition-colors focus-visible:rounded-sm",
+                  archived ? "text-foreground/85 hover:text-foreground" : "text-foreground hover:text-primary",
+                  focusRing,
+                )}
+              />
             }
           >
             {project.name}
@@ -780,9 +849,14 @@ function ProjectRow({
             <span>{details.delivery}</span>
           </TooltipContent>
         </Tooltip>
-        <span className="mt-1 flex items-center gap-1.5 text-label text-muted-foreground">
+        <span className="mt-1 flex flex-wrap items-center gap-1.5 text-label text-muted-foreground">
           {opening ? <Spinner className="size-3" /> : null}
           {project.glpiTicketId ? `GLPI #${project.glpiTicketId}` : `ID ${project.id.slice(0, 8)}`}
+          {archived && view === "all" ? (
+            <span className="rounded-md border border-border/70 bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+              Arquivado
+            </span>
+          ) : null}
           {attention ? <span className="sr-only">Exige atenção.</span> : null}
         </span>
         {focusReasons.length > 0 ? (
@@ -796,10 +870,10 @@ function ProjectRow({
         ) : null}
       </td>
       <td className="w-36 max-w-44 min-w-[8rem] px-2.5 py-4">
-        <CompanyCell project={project} />
+        <CompanyCell project={project} muted={archived} />
       </td>
       <td className="w-32 px-2.5 py-4">
-        <ManagerTeamCell project={project} />
+        <ManagerTeamCell project={project} muted={archived} />
       </td>
       <td className="px-2.5 py-4">
         {project.status === null || project.situation === null ? (
@@ -809,16 +883,26 @@ function ProjectRow({
             <EapStatusBadge
               kind={projectStatusKind(project.status)}
               label={projectStatusLabel(project.status)}
-              title={`Situação calculada pela EAP. Situação registrada no cadastro: ${projectStatusLabel(project.registeredStatus)}.`}
-              className={cn("px-2 py-[3px] text-label whitespace-nowrap", project.status === "SUSPENSO" && "bg-muted text-muted-foreground")}
+              title={
+                archived
+                  ? `Situação histórica no arquivamento. Situação registrada no cadastro: ${projectStatusLabel(project.registeredStatus)}.`
+                  : `Situação calculada pela EAP. Situação registrada no cadastro: ${projectStatusLabel(project.registeredStatus)}.`
+              }
+              className={cn(
+                "px-2 py-[3px] text-label whitespace-nowrap",
+                (archived || project.status === "SUSPENSO") && "border-border/60 bg-muted text-muted-foreground",
+              )}
             />
-            {project.situation.readyForClosure ? (
+            {archived ? (
+              <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">No arquivamento</span>
+            ) : null}
+            {!archived && project.situation.readyForClosure ? (
               <span className="flex items-center gap-1.5 text-label font-medium text-success-foreground" title="Todas as fases concluídas; o encerramento depende de decisão formal">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
                 Apto para encerramento
               </span>
             ) : null}
-            {project.situation.closureRequirementsMissing ? (
+            {!archived && project.situation.closureRequirementsMissing ? (
               <span className="text-label text-muted-foreground" title="Encerramento registrado, mas há fases não concluídas">Encerramento pendente</span>
             ) : null}
           </span>
@@ -836,17 +920,29 @@ function ProjectRow({
             <Progress
               value={basisToPercent(project.progressBasisPoints)}
               aria-label={`Andamento de ${project.name}`}
-              className="w-20 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted"
+              className={cn(
+                "w-20 [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:bg-muted",
+                archived
+                  ? "[&_[data-slot=progress-indicator]]:bg-muted-foreground/55"
+                  : "[&_[data-slot=progress-indicator]]:bg-primary",
+              )}
             />
-            <span className="text-label font-semibold text-foreground tabular-nums">{formatBasis(project.progressBasisPoints)}%</span>
+            <span className={cn("text-label tabular-nums", archived ? "font-medium text-muted-foreground" : "font-semibold text-foreground")}>
+              {formatBasis(project.progressBasisPoints)}%
+            </span>
           </span>
         )}
       </td>
       <td className="px-2.5 py-4 whitespace-nowrap">
-        <DeadlineCell project={project} />
+        <DeadlineCell project={project} historical={archived} />
       </td>
+      {showArchivedAt ? (
+        <td className="px-2.5 py-4 whitespace-nowrap">
+          <ArchivedAtCell value={project.archivedAt} />
+        </td>
+      ) : null}
       <td className="px-2.5 py-4 whitespace-nowrap">
-        <UpdatedCell project={project} />
+        <UpdatedCell project={project} muted={archived} />
       </td>
       <td className="px-2.5 py-2.5">
         <DropdownMenu>
@@ -874,19 +970,77 @@ function ProjectRow({
                 Editar projeto
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuSeparator className="my-1.5" />
-            <DropdownMenuItem
-              disabled
-              className={menuItem}
-              title="O arquivamento depende de alteração no banco (campo de arquivamento), ainda não autorizada."
-            >
-              <Archive aria-hidden="true" />
-              Arquivar
-              <span className="ml-auto text-label text-muted-foreground">Em breve</span>
-            </DropdownMenuItem>
+            {archived ? (
+              <>
+                <DropdownMenuSeparator className="my-1.5" />
+                <DropdownMenuItem className={menuItem} onClick={() => setJustificationOpen(true)}>
+                  <FileText aria-hidden="true" />
+                  Ver justificativa
+                </DropdownMenuItem>
+              </>
+            ) : null}
+            {canArchive ? (
+              <>
+                <DropdownMenuSeparator className="my-1.5" />
+                <DropdownMenuItem
+                  className={menuItem}
+                  onClick={() => (archived ? setUnarchiveOpen(true) : setArchiveOpen(true))}
+                >
+                  <Archive aria-hidden="true" />
+                  {archived ? "Restaurar projeto" : "Arquivar projeto"}
+                </DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
         {canEdit ? <ProjectEditDialog project={project} open={editing} onOpenChange={setEditing} /> : null}
+        {canArchive && !archived ? (
+          <ArchiveProjectDialog project={project} open={archiveOpen} onOpenChange={setArchiveOpen} />
+        ) : null}
+        {archived ? (
+          <ArchiveJustificationDialog
+            project={{
+              name: project.name,
+              archivedAt: project.archivedAt,
+              archivedByName: project.archivedByUser?.name ?? null,
+              archivedByRole: project.archivedByUser?.role ?? null,
+              archiveReason: project.archiveReason,
+              archiveJustification: project.archiveJustification,
+              archiveOtherDescription: project.archiveOtherDescription,
+            }}
+            open={justificationOpen}
+            onOpenChange={setJustificationOpen}
+          />
+        ) : null}
+        {canArchive && archived ? (
+          <AlertDialog
+            open={unarchiveOpen}
+            onOpenChange={(next) => {
+              if (!next && !archiveBusy) {
+                setUnarchiveOpen(false);
+              }
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogMedia className="bg-primary/12 text-primary">
+                  <Archive />
+                </AlertDialogMedia>
+                <AlertDialogTitle>Restaurar o projeto?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O projeto volta às abas Ativos ou Concluídos com a aparência normal, conforme a situação. EAP, datas,
+                  evidências e a justificativa de arquivamento permanecem intactos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={archiveBusy}>Cancelar</AlertDialogCancel>
+                <Button type="button" className="h-10" loading={archiveBusy} onClick={() => void confirmUnarchive()}>
+                  {archiveBusy ? "Restaurando…" : "Restaurar projeto"}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : null}
       </td>
     </tr>
   );
@@ -949,9 +1103,24 @@ function FilterSelect({
 
 /**
  * Prazo numa coluna só: o atraso (ou risco / no prazo) em destaque e, abaixo, a previsão de término ou o aviso de que ela
- * não foi cadastrada. O início previsto fica no título.
+ * não foi cadastrada. O início previsto fica no título. Em arquivados, só o registro histórico — sem cobrança operacional.
  */
-function DeadlineCell({ project }: { project: ProjectListRow }) {
+function DeadlineCell({ project, historical = false }: { project: ProjectListRow; historical?: boolean }) {
+  if (historical) {
+    return (
+      <span
+        className="flex flex-col items-start gap-1"
+        title={project.plannedStartAt ? `Início previsto no arquivamento: ${dateText(project.plannedStartAt)}` : "Início previsto não definido"}
+      >
+        <span className="text-body font-medium text-muted-foreground">Prazo vigente</span>
+        {project.plannedEndAt ? (
+          <span className="text-label text-muted-foreground">{dateText(project.plannedEndAt)}</span>
+        ) : (
+          <span className="text-label text-muted-foreground">Não definido</span>
+        )}
+      </span>
+    );
+  }
   const delay = delayCell(project);
   const headline =
     delay.kind === "delay" ? `${delay.text} de atraso` : delay.kind === "risk" ? "Risco de atraso" : delay.text;
@@ -977,11 +1146,47 @@ function DeadlineCell({ project }: { project: ProjectListRow }) {
   );
 }
 
+/** Data e hora exatas (fuso de Belém, como no restante do sistema), para a informação complementar. */
+const MOMENT = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Belem",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const ARCHIVE_TIME = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Belem",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** Data/hora do arquivamento — distinta da última atualização do acompanhamento. */
+function ArchivedAtCell({ value }: { value: string | null }) {
+  if (!value) {
+    return <span className="text-label text-muted-foreground">—</span>;
+  }
+  const at = new Date(value);
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span className="flex w-fit flex-col items-start gap-1" />}>
+        <span className="text-body font-medium text-muted-foreground">{dateText(value)}</span>
+        <span className="text-label text-muted-foreground">{ARCHIVE_TIME.format(at)}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="start" className="flex-col items-start gap-0.5">
+        <span className="font-semibold">Arquivado em</span>
+        <span>{MOMENT.format(at).replace(", ", " às ")}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 /**
  * Empresa do projeto: o nome institucional da ficha ou, sem ele, os fornecedores participantes. Até duas linhas, com o
  * nome completo e a origem no título.
  */
-function CompanyCell({ project }: { project: ProjectListRow }) {
+function CompanyCell({ project, muted = false }: { project: ProjectListRow; muted?: boolean }) {
   if (project.companies === null) {
     return <Muted value={null} />;
   }
@@ -994,7 +1199,10 @@ function CompanyCell({ project }: { project: ProjectListRow }) {
       ? "Empresa responsável cadastrada na ficha do projeto."
       : "Fornecedor participante do projeto (a ficha ainda não tem a empresa responsável).";
   return (
-    <span className="line-clamp-2 text-body break-words text-foreground" title={`${names}\n${origin}`}>
+    <span
+      className={cn("line-clamp-2 text-body break-words", muted ? "text-muted-foreground" : "text-foreground")}
+      title={`${names}\n${origin}`}
+    >
       {names}
     </span>
   );
@@ -1002,9 +1210,9 @@ function CompanyCell({ project }: { project: ProjectListRow }) {
 
 /**
  * Equipe em avatares sobrepostos, com o gestor primeiro e marcado por um anel na cor da paleta (sem gestor vinculado, o
- * dono do projeto). Até 4 avatares e "+N"; o tooltip lista todos com os papéis.
+ * dono do projeto). Até 4 avatares e "+N"; o tooltip lista todos com os papéis. Em arquivados, avatares neutros.
  */
-function ManagerTeamCell({ project }: { project: ProjectListRow }) {
+function ManagerTeamCell({ project, muted = false }: { project: ProjectListRow; muted?: boolean }) {
   if (project.team === null && project.ownerName === null) {
     return <Muted value={null} />;
   }
@@ -1019,6 +1227,7 @@ function ManagerTeamCell({ project }: { project: ProjectListRow }) {
   const { visible, extra } = teamPreview(team.filter((person) => person.id !== lead.id), 3);
   const people = team.length > 0 ? team : [lead];
   const avatar = "flex size-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ring-2 ring-card";
+  const mutedAvatar = "bg-muted text-muted-foreground";
   return (
     <Tooltip>
       <TooltipTrigger
@@ -1030,9 +1239,20 @@ function ManagerTeamCell({ project }: { project: ProjectListRow }) {
           />
         }
       >
-        <span className={cn(avatar, "relative z-10 ring-primary/60", AVATAR_PALETTE[avatarColorIndex(lead.id, AVATAR_PALETTE.length)])}>{ownerInitials(lead.name)}</span>
+        <span
+          className={cn(
+            avatar,
+            "relative z-10",
+            muted ? cn(mutedAvatar, "ring-border/70") : cn("ring-primary/60", AVATAR_PALETTE[avatarColorIndex(lead.id, AVATAR_PALETTE.length)]),
+          )}
+        >
+          {ownerInitials(lead.name)}
+        </span>
         {visible.map((person) => (
-          <span key={person.id} className={cn(avatar, AVATAR_PALETTE[avatarColorIndex(person.id, AVATAR_PALETTE.length)])}>
+          <span
+            key={person.id}
+            className={cn(avatar, muted ? mutedAvatar : AVATAR_PALETTE[avatarColorIndex(person.id, AVATAR_PALETTE.length)])}
+          >
             {ownerInitials(person.name)}
           </span>
         ))}
@@ -1055,15 +1275,12 @@ function ManagerTeamCell({ project }: { project: ProjectListRow }) {
   );
 }
 
-/** Data e hora exatas (fuso de Belém, como no restante do sistema), para a informação complementar. */
-const MOMENT = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Belem", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-
 /**
  * Última atualização = última movimentação real do acompanhamento (situação, conclusão, impedimento, entrega, homologação,
  * reprogramação, planejamento), nunca acessos ou visualizações. Rótulo relativo em destaque e a data exata abaixo; o tooltip traz
  * data e hora. O texto relativo depende do relógio de quem consulta, por isso pode diferir do servidor perto da virada do dia.
  */
-function UpdatedCell({ project }: { project: ProjectListRow }) {
+function UpdatedCell({ project, muted = false }: { project: ProjectListRow; muted?: boolean }) {
   if (!project.movementAvailable) {
     return <Muted value={null} />;
   }
@@ -1079,11 +1296,17 @@ function UpdatedCell({ project }: { project: ProjectListRow }) {
   if (label.days === null) {
     return <Muted value={null} />;
   }
-  const stale = label.days > PORTFOLIO_FOLLOW_UP_DAYS;
+  const stale = !muted && label.days > PORTFOLIO_FOLLOW_UP_DAYS;
   return (
     <Tooltip>
       <TooltipTrigger render={<span className="flex w-fit flex-col items-start gap-1" />}>
-        <span suppressHydrationWarning className={cn("text-body font-medium", stale ? "text-warning-foreground" : "text-foreground")}>
+        <span
+          suppressHydrationWarning
+          className={cn(
+            "text-body font-medium",
+            muted ? "text-muted-foreground" : stale ? "text-warning-foreground" : "text-foreground",
+          )}
+        >
           {label.text}
         </span>
         <span className="text-label text-muted-foreground">{dateText(at)}</span>
@@ -1108,19 +1331,12 @@ function dateText(value: string) {
   return formatCivilDate(civilDateInput(value));
 }
 
+/** Falha ao carregar o portfólio: cabeçalho preservado + padrão compartilhado de erro de carga. */
 export function ProjectListError({ message }: { message: string }) {
   return (
     <div className={PAGE}>
       <PageHeader />
-      <ProjectEmpty
-        title="Não foi possível consultar os projetos"
-        description={message}
-        action={
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Tentar novamente
-          </Button>
-        }
-      />
+      <PageLoadError title="Não foi possível carregar os projetos" message={message} />
     </div>
   );
 }
@@ -1135,13 +1351,13 @@ function ProjectEmpty({
   action?: ReactNode;
 }) {
   return (
-    <Empty className="border bg-card">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
+    <Empty className={cn(CARD, "border bg-card py-12 shadow-[0_1px_3px_rgba(16,24,40,0.05)]")}>
+      <EmptyHeader className="max-w-md gap-3">
+        <EmptyMedia variant="icon" className="mb-0 size-12 rounded-xl bg-primary/10 text-primary [&_svg]:size-5">
           <FolderKanban />
         </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
+        <EmptyTitle className="text-card-title">{title}</EmptyTitle>
+        <EmptyDescription className="text-body">{description}</EmptyDescription>
       </EmptyHeader>
       {action}
     </Empty>

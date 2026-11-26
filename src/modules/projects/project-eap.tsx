@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronRight, FileSpreadsheet, Flag, Folder, ListTodo, Plus, type LucideIcon } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, FileSpreadsheet, Flag, Folder, Plus, type LucideIcon } from "lucide-react";
 
+import { PageLoadError } from "@/components/page-load-error";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,13 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { EapWorkbench, MilestoneRow, PhaseRow, TaskRow, filterPhases, idleEapFilter, type EapListFilter, type RowActions } from "./eap-board";
 import { EapCreateSheet, type EapCreateRequest } from "./eap-create";
 import { EapDeleteDialog, type EapDeleteRequest } from "./eap-delete-dialog";
@@ -82,9 +76,9 @@ export function ProjectEap({
 
   if (!items) {
     return (
-      <Unavailable
-        title="Não foi possível consultar a EAP"
-        description="A estrutura de fases deste projeto não pôde ser carregada."
+      <PageLoadError
+        title="Não foi possível carregar a EAP"
+        description="A estrutura de fases deste projeto não pôde ser carregada. Sua sessão permanece ativa — tente de novo em instantes."
       />
     );
   }
@@ -786,20 +780,6 @@ function UnsavedNotice({ onDiscard, onKeep }: { onDiscard: () => void; onKeep: (
   );
 }
 
-
-function Unavailable({ title, description }: { title: string; description: string }) {
-  return (
-    <Empty className="border bg-card">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <ListTodo />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
-  );
-}
 
 function patchPhase(phases: ProjectPhaseView[] | null, phase: ProjectPhaseView) {
   if (!phases) {

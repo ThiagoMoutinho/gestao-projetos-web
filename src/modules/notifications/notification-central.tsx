@@ -1,11 +1,11 @@
 "use client";
 
-import { Bell, BellOff, CircleAlert, List, ShieldAlert, type LucideIcon } from "lucide-react";
+import { Bell, BellOff, List, ShieldAlert, type LucideIcon } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import type { ComboOption } from "@/components/option-combobox";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageLoadError } from "@/components/page-load-error";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -185,16 +185,13 @@ export function NotificationCentral({ role, initialTab }: { role: string | null;
             ) : state.status === "loading" ? (
               <FeedSkeleton />
             ) : state.status === "error" ? (
-              <Alert variant="destructive" className="mx-auto max-w-xl">
-                <CircleAlert aria-hidden />
-                <AlertTitle>Não foi possível carregar as notificações</AlertTitle>
-                <AlertDescription>
-                  <p>Verifique a conexão e tente novamente. Nada foi alterado.</p>
-                  <Button type="button" variant="outline" size="sm" onClick={refresh} className="mt-2 w-fit">
-                    Tentar novamente
-                  </Button>
-                </AlertDescription>
-              </Alert>
+              <PageLoadError
+                title="Não foi possível carregar as notificações"
+                description="Verifique a conexão e tente novamente. Nada foi alterado na sua sessão."
+                onRetry={refresh}
+                compact
+                className="mx-auto max-w-xl"
+              />
             ) : state.items.length === 0 ? (
               <FeedEmpty
                 icon={listFiltered ? BellOff : Bell}

@@ -65,6 +65,12 @@ function project(overrides: Partial<ProjectListRow> & Pick<ProjectListRow, "id" 
     nextDeliveryAvailable: true,
     viewerIsOwner: false,
     viewerRoles: [],
+    archivedAt: null,
+    archivedBy: null,
+    archivedByUser: null,
+    archiveReason: null,
+    archiveJustification: null,
+    archiveOtherDescription: null,
     activeImpediments: 0,
     overduePhases: 0,
     overdueTasks: 0,
@@ -142,18 +148,24 @@ describe("Portfólio de projetos", () => {
     assert.equal(nextDeliveryItem([{ entityType: "MILESTONE", title: "Entregue", status: "ENTREGUE", plannedEndAt: "2026-01-10T15:00:00.000Z", overdue: true }]), undefined);
   });
 
-  it("visualizações: ativos excluem concluídos; concluídos só os formais; todos mostra tudo; arquivados indisponível", () => {
+  it("visualizações: ativos excluem concluídos e arquivados; arquivados só com archivedAt", () => {
     const ids = (view: Parameters<typeof matchesView>[1]) => filterPortfolio(rows, idlePortfolioFilters, view).map((row) => row.id);
     assert.deepEqual(ids("active"), ["a1", "c3"]);
     assert.deepEqual(ids("concluded"), ["b2"]);
     assert.deepEqual(ids("all"), ["a1", "b2", "c3"]);
     assert.deepEqual(ids("archived"), []);
-    assert.equal(PORTFOLIO_VIEWS.find((view) => view.key === "archived")?.available, false);
+    assert.equal(PORTFOLIO_VIEWS.find((view) => view.key === "archived")?.available, true);
     // Suspenso e sem situação calculada continuam entre os ativos; filtros combinam com a visualização.
-    assert.equal(matchesView({ status: "SUSPENSO" }, "active"), true);
-    assert.equal(matchesView({ status: null }, "active"), true);
+    assert.equal(matchesView({ status: "SUSPENSO", archivedAt: null }, "active"), true);
+    assert.equal(matchesView({ status: null, archivedAt: null }, "active"), true);
     assert.deepEqual(filterPortfolio(rows, { ...idlePortfolioFilters, status: "CRITICO" }, "active").map((row) => row.id), ["c3"]);
     assert.deepEqual(filterPortfolio(rows, { ...idlePortfolioFilters, status: "CRITICO" }, "concluded"), []);
+
+    const archived = project({ id: "arch", name: "Arquivado", status: "EM_EXECUCAO", archivedAt: "2026-11-01T12:00:00.000Z" });
+    assert.equal(matchesView(archived, "active"), false);
+    assert.equal(matchesView(archived, "archived"), true);
+    assert.equal(matchesView(archived, "all"), true);
+    assert.deepEqual(viewCounts([...rows, archived]).archived, 1);
   });
 
   it("edição do cadastro só para PMO, coordenação, ADMIN, dono ou gestão do projeto", () => {

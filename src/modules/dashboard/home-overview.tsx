@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { PageLoadError } from "@/components/page-load-error";
 import { buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,6 @@ import { basisToPercent, formatBasis } from "@/modules/projects/eap-progress";
 import type { ProjectListRow, ProjectMonitoringSignals } from "@/modules/projects/project-portfolio";
 import { PROJECT_STATUS_COLOR, projectStatusKind, projectStatusLabel } from "@/modules/projects/project-status";
 
-import { DashboardRetry } from "./dashboard-retry";
 import { DashboardSection, SectionEmpty, StatusDot } from "./dashboard-section";
 import {
   attentionProjects,
@@ -473,12 +473,7 @@ export function HomeOverviewError({ name, todayLabel, message }: { name: string;
   return (
     <div className="mx-auto flex w-full max-w-[90rem] min-w-0 flex-col gap-5">
       <HomeHeader name={name} todayLabel={todayLabel} />
-      <DashboardSection title="Portfólio">
-        <div className="flex flex-col items-center gap-4 pb-8">
-          <SectionEmpty icon={<TriangleAlert />} title="Não foi possível montar o painel" description={message} />
-          <DashboardRetry />
-        </div>
-      </DashboardSection>
+      <PageLoadError title="Não foi possível montar o painel" message={message} secondary={null} />
     </div>
   );
 }

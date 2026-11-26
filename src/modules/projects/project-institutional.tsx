@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import type { ComboOption } from "@/components/option-combobox";
-import { Button } from "@/components/ui/button";
+import { PageLoadError } from "@/components/page-load-error";
 import type { GetScheduleMonitoring200 } from "@/lib/api/generated/model/getScheduleMonitoring200";
 import { getProjectOverview } from "@/lib/api/generated/visão-institucional/visão-institucional";
 
@@ -135,20 +135,15 @@ export function ProjectOverviewSections({
               />
             ) : (
             <Panel title="Informações institucionais" subtitle="Sobre o projeto e resultados para o IGEPPS">
-              <div role="alert" className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">Não foi possível carregar as informações institucionais.</p>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setState({ status: "loading" });
-                    reload();
-                  }}
-                >
-                  Tentar novamente
-                </Button>
-              </div>
+              <PageLoadError
+                title="Não foi possível carregar as informações institucionais"
+                description="A consulta da ficha e dos resultados deste projeto falhou neste momento. Tente de novo em instantes."
+                onRetry={() => {
+                  setState({ status: "loading" });
+                  reload();
+                }}
+                compact
+              />
             </Panel>
             ),
           // Resultados agora é a terceira aba de "Sobre o projeto"; o widget antigo só existe em layouts já salvos e fica oculto.

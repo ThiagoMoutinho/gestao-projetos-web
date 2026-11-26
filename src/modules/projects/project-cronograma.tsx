@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { PageLoadError } from "@/components/page-load-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -177,14 +178,12 @@ export function ProjectCronograma({ project, access, onBack, onOpenEap, onSaved 
       />
 
       {monitoring.status === "error" ? (
-        <Card className={CARD}>
-          <div role="alert" className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-muted-foreground">Não foi possível consultar o cronograma do projeto.</p>
-            <Button type="button" size="sm" variant="outline" onClick={retry}>
-              Tentar novamente
-            </Button>
-          </div>
-        </Card>
+        <PageLoadError
+          title="Não foi possível carregar o cronograma"
+          description="A consulta dos prazos e fases deste projeto falhou neste momento. Tente de novo em instantes."
+          onRetry={retry}
+          compact
+        />
       ) : (
         <>
           <SummaryCard

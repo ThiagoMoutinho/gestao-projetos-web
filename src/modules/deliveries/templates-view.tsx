@@ -3,6 +3,7 @@
 import { ChevronDown, Pencil } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { PageLoadError } from "@/components/page-load-error";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,12 +61,12 @@ export function TemplatesView({ viewerRole }: { viewerRole: string }) {
   }
   if (state.status === "error") {
     return (
-      <div role="alert" className="flex flex-col items-start gap-3 py-6">
-        <p className="text-sm text-muted-foreground">Não foi possível carregar os modelos de checklist.</p>
-        <Button type="button" variant="outline" size="sm" onClick={() => void reload()}>
-          Tentar novamente
-        </Button>
-      </div>
+      <PageLoadError
+        title="Não foi possível carregar os modelos"
+        description="A consulta dos modelos de checklist falhou neste momento. Tente de novo em instantes."
+        onRetry={() => void reload()}
+        compact
+      />
     );
   }
 

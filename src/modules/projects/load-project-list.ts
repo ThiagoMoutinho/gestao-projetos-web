@@ -52,8 +52,16 @@ export async function loadPortfolioSnapshot(): Promise<PortfolioSnapshot> {
   return { rows, signals: Object.fromEntries(loaded.map((item) => [item.row.id, item.signals])) };
 }
 
+/** Campos de arquivamento ainda podem faltar no cliente gerado pelo Orval até a regeneração. */
+type ProjectListApiItem = ListProjects200DataItem & {
+  archiveReason?: string | null;
+  archiveJustification?: string | null;
+  archiveOtherDescription?: string | null;
+  archivedByUser?: { id: string; name: string; email?: string; role: string } | null;
+};
+
 async function loadProjectRow(
-  project: ListProjects200DataItem,
+  project: ProjectListApiItem,
 ): Promise<{ row: ProjectListRow; signals: ProjectMonitoringSignals | null }> {
   const [ownerName, people, progress, monitoring, companyProfile, movement] = await Promise.all([
     readOwnerName(project.id),
@@ -94,6 +102,14 @@ async function loadProjectRow(
     nextDeliveryAvailable: monitoring !== null,
     viewerIsOwner: project.isOwner,
     viewerRoles: [...project.roles],
+    archivedAt: project.archivedAt,
+    archivedBy: project.archivedBy ?? null,
+    archivedByUser: project.archivedByUser
+      ? { id: project.archivedByUser.id, name: project.archivedByUser.name, role: project.archivedByUser.role }
+      : null,
+    archiveReason: project.archiveReason ?? null,
+    archiveJustification: project.archiveJustification ?? null,
+    archiveOtherDescription: project.archiveOtherDescription ?? null,
     activeImpediments: movement?.impediments ?? null,
     overduePhases: monitoring?.overdue.phases ?? null,
     overdueTasks: monitoring?.overdue.tasks ?? null,

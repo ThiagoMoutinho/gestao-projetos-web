@@ -39,6 +39,16 @@ export type ListMyProjects200DataItem = {
      * @nullable
      */
   plannedEndAt: string | null;
+  /**
+     * Quando o projeto foi arquivado; null se está na lista ativa.
+     * @nullable
+     */
+  archivedAt: string | null;
+  /**
+     * Usuário que arquivou; null se não arquivado.
+     * @nullable
+     */
+  archivedBy: string | null;
   createdAt: string;
   updatedAt: string;
   isOwner: boolean;
