@@ -121,6 +121,7 @@ export function TeamCard({ projectId, members, canManageFunctions = false }: { p
 
 const KEY_LABEL: Record<KeyRole, string> = {
   GESTOR: "Gestor",
+  PATROCINADOR: "Patrocinador",
   RESPONSAVEL_TECNICO: "Responsável técnico",
   FORNECEDOR: "Fornecedor",
 };
@@ -133,7 +134,7 @@ function newRowId() {
 
 type Person = { name: string; email: string; profile: string | null };
 
-const KEY_ICON: Record<KeyRole, LucideIcon> = { GESTOR: UserCog, RESPONSAVEL_TECNICO: UserRound, FORNECEDOR: Briefcase };
+const KEY_ICON: Record<KeyRole, LucideIcon> = { GESTOR: UserCog, PATROCINADOR: Award, RESPONSAVEL_TECNICO: UserRound, FORNECEDOR: Briefcase };
 
 /** Tons já existentes no sistema para diferenciar as iniciais das pessoas (a cor vem só do ID). */
 const AVATAR_TONES = [
@@ -444,10 +445,6 @@ function TeamEditDialog({
                   />
                 </div>
               ))}
-              <div className="flex min-w-0 flex-col gap-2">
-                <FieldLabel icon={Award}>Patrocinador</FieldLabel>
-                <p className="flex min-h-14 items-center rounded-xl border border-dashed px-4 text-body text-muted-foreground">Papel ainda não existe no sistema</p>
-              </div>
             </div>
             {owners.length > 0 ? (
               <p className="flex items-start gap-2 text-body text-muted-foreground">

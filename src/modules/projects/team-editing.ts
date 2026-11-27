@@ -3,11 +3,11 @@
  * (adicionar, alterar função, remover). Funções puras, sem React; a autorização fica no backend.
  */
 
-export const TEAM_ROLES = ["GESTOR", "RESPONSAVEL_TECNICO", "FORNECEDOR", "PO", "DESENVOLVEDOR", "OBSERVADOR"] as const;
+export const TEAM_ROLES = ["GESTOR", "PATROCINADOR", "RESPONSAVEL_TECNICO", "FORNECEDOR", "PO", "DESENVOLVEDOR", "OBSERVADOR"] as const;
 export type TeamRole = (typeof TEAM_ROLES)[number];
 
 /** Papéis com um responsável principal no cartão (o primeiro participante de cada um). */
-export const KEY_ROLES = ["GESTOR", "RESPONSAVEL_TECNICO", "FORNECEDOR"] as const;
+export const KEY_ROLES = ["GESTOR", "PATROCINADOR", "RESPONSAVEL_TECNICO", "FORNECEDOR"] as const;
 export type KeyRole = (typeof KEY_ROLES)[number];
 
 /** A função de dono do projeto é protegida pela API (muda só por transferência de titularidade). */
@@ -52,6 +52,7 @@ export function draftFromMembers(members: ReadonlyArray<TeamMember>): TeamDraft 
   return {
     key: {
       GESTOR: principal.GESTOR?.userId ?? "",
+      PATROCINADOR: principal.PATROCINADOR?.userId ?? "",
       RESPONSAVEL_TECNICO: principal.RESPONSAVEL_TECNICO?.userId ?? "",
       FORNECEDOR: principal.FORNECEDOR?.userId ?? "",
     },
@@ -85,6 +86,7 @@ export function teamProblems(draft: TeamDraft, names: (userId: string) => string
 /** Rótulos dos papéis fixos do seletor de função. */
 export const ROLE_TEXT: Record<TeamRole, string> = {
   GESTOR: "Gestor",
+  PATROCINADOR: "Patrocinador",
   RESPONSAVEL_TECNICO: "Responsável técnico",
   FORNECEDOR: "Fornecedor",
   PO: "PO",
@@ -179,7 +181,7 @@ export function memberFunctionNameProblem(name: string): string | null {
 }
 
 /** Nomes dos papéis fixos da lista (iguais aos rótulos do seletor): uma função do catálogo não pode repetir nenhum. */
-const RESERVED_ROLE_NAMES = ["Dono do projeto", "Gestor", "PO", "Responsável técnico", "Desenvolvedor", "Fornecedor", "Observador"] as const;
+const RESERVED_ROLE_NAMES = ["Dono do projeto", "Gestor", "Patrocinador", "PO", "Responsável técnico", "Desenvolvedor", "Fornecedor", "Observador"] as const;
 
 /** Conflito do nome com o que já existe: "role" (papel fixo), "function" (função do catálogo) ou null. Ignora caixa, acento e espaços. */
 export function functionNameConflict(name: string, existing: ReadonlyArray<{ name: string }>): "role" | "function" | null {

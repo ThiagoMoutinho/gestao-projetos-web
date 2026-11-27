@@ -12,6 +12,7 @@ export type AddProjectMemberBodyRole = typeof AddProjectMemberBodyRole[keyof typ
 export const AddProjectMemberBodyRole = {
   DONO_PROJETO: 'DONO_PROJETO',
   GESTOR: 'GESTOR',
+  PATROCINADOR: 'PATROCINADOR',
   PO: 'PO',
   DESENVOLVEDOR: 'DESENVOLVEDOR',
   RESPONSAVEL_TECNICO: 'RESPONSAVEL_TECNICO',

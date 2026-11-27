@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, Check, ClipboardList, CodeXml, Copy, Crown, Eye, Mail, Tag, UserCog, Users, Wrench, type LucideIcon } from "lucide-react";
+import { Briefcase, Check, ClipboardList, CodeXml, Copy, Crown, Eye, Landmark, Mail, Tag, UserCog, Users, Wrench, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ type RoleVisual = { icon: LucideIcon; tone: string };
 const ROLE_VISUAL: Record<string, RoleVisual> = {
   DONO_PROJETO: { icon: Crown, tone: "bg-status-validation-soft text-status-validation-ink" },
   GESTOR: { icon: UserCog, tone: "bg-primary/10 text-primary" },
+  PATROCINADOR: { icon: Landmark, tone: "bg-status-validation-soft text-status-validation-ink" },
   RESPONSAVEL_TECNICO: { icon: Wrench, tone: "bg-status-running-soft text-status-running-ink" },
   FORNECEDOR: { icon: Briefcase, tone: "bg-status-done-soft text-status-done-ink" },
   PO: { icon: ClipboardList, tone: "bg-status-attention-soft text-status-attention-ink" },
@@ -23,7 +24,7 @@ const ROLE_VISUAL: Record<string, RoleVisual> = {
   OBSERVADOR: { icon: Eye, tone: "bg-muted text-muted-foreground" },
 };
 const FUNCTION_VISUAL: RoleVisual = { icon: Tag, tone: "bg-muted text-muted-foreground" };
-const ROLE_RANK = ["DONO_PROJETO", "GESTOR", "RESPONSAVEL_TECNICO", "FORNECEDOR", "PO", "DESENVOLVEDOR", "OBSERVADOR"];
+const ROLE_RANK = ["DONO_PROJETO", "GESTOR", "PATROCINADOR", "RESPONSAVEL_TECNICO", "FORNECEDOR", "PO", "DESENVOLVEDOR", "OBSERVADOR"];
 
 type RoleTag = { key: string; label: string; visual: RoleVisual; rank: number };
 type Person = { userId: string; name: string; email: string; roles: RoleTag[] };

@@ -4,22 +4,23 @@ export type WidgetId = "sobre" | "resultados" | "evolucoes" | "situacao" | "marc
 export type WidgetState = { id: WidgetId; wide: boolean };
 
 /**
- * Altura MÁXIMA de cada widget (px). O cartão cresce com o conteúdo, naturalmente, e para neste limite: passando dele o
- * excesso fica oculto (sem rolagem) e o cartão oferece a consulta completa no painel lateral. É configuração por widget,
- * sem relação com a linha do grid, e pode evoluir para tamanhos e personalização por usuário.
+ * Altura MÁXIMA de cada widget (px). Referência padrão: 480 px. O cartão cresce com o conteúdo até esse limite; o excesso
+ * fica oculto (sem rolagem interna) e a consulta completa abre no `OverviewDetailDrawer`. É configuração por widget, sem
+ * relação com a linha do grid. Exceção: Prazo e cronograma (`planejamento`) não tem limite — cada parte controla a própria expansão.
  */
 export const WIDGET_MAX_HEIGHT: Record<WidgetId, number> = {
-  sobre: 720,
+  sobre: 480,
   resultados: 480,
   situacao: 360,
   evolucoes: 340,
-  marcos: 680,
-  resumo: 720,
-  historico: 580,
-  // Planejamento cresce com as seções que o usuário abre; Evidências guarda o próprio limite.
+  marcos: 640,
+  resumo: 620,
+  historico: 480,
+  // Planejamento cresce com as seções que o usuário abre (sem teto de altura do widget).
   planejamento: 100000,
-  evidencias: 430,
-  equipe: 520,
+  evidencias: 640,
+  // Equipe cresce com o conteúdo até caber responsáveis + até 4 participantes na prévia (o restante no drawer).
+  equipe: 680,
 };
 
 /**

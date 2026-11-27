@@ -12,6 +12,7 @@ export type ListMyProjects200DataItemRolesItem = typeof ListMyProjects200DataIte
 export const ListMyProjects200DataItemRolesItem = {
   DONO_PROJETO: 'DONO_PROJETO',
   GESTOR: 'GESTOR',
+  PATROCINADOR: 'PATROCINADOR',
   PO: 'PO',
   DESENVOLVEDOR: 'DESENVOLVEDOR',
   RESPONSAVEL_TECNICO: 'RESPONSAVEL_TECNICO',

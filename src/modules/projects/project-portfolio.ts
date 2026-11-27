@@ -20,6 +20,7 @@ export type TeamMember = { id: string; name: string; roles: string[] };
 export const TEAM_ROLE_LABEL: Record<string, string> = {
   DONO_PROJETO: "Dono do projeto",
   GESTOR: "Gestor",
+  PATROCINADOR: "Patrocinador",
   PO: "PO",
   RESPONSAVEL_TECNICO: "Responsável técnico",
   DESENVOLVEDOR: "Desenvolvedor",

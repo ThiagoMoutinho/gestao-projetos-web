@@ -12,6 +12,7 @@ export type ListProjectMembers200DataItemRole = typeof ListProjectMembers200Data
 export const ListProjectMembers200DataItemRole = {
   DONO_PROJETO: 'DONO_PROJETO',
   GESTOR: 'GESTOR',
+  PATROCINADOR: 'PATROCINADOR',
   PO: 'PO',
   DESENVOLVEDOR: 'DESENVOLVEDOR',
   RESPONSAVEL_TECNICO: 'RESPONSAVEL_TECNICO',

@@ -168,32 +168,28 @@ function EntryRow({
   };
   const TypeIcon = (entry.type ? TYPE_ICON[entry.type] : null) ?? Flag;
   return (
-    <li
-      data-cut-unit
-      className={cn(
-        comfortable ? "rounded-xl bg-muted/30 px-3.5 py-3.5 dark:bg-muted/20" : "py-1",
-      )}
-    >
+    <li data-cut-unit className={cn(comfortable ? "py-5 first:pt-0 last:pb-0" : "py-3")}>
       <div className={cn("flex items-start", comfortable ? "gap-4" : "gap-3")}>
         <span
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-xl ring-1 ring-inset",
-            comfortable ? "size-10" : "size-9",
+            "flex shrink-0 items-center justify-center ring-1 ring-inset",
+            comfortable ? "size-9 rounded-full" : "size-9 rounded-xl",
             TONE[entry.tone],
             TONE_RING[entry.tone],
           )}
           aria-hidden="true"
         >
-          <TypeIcon className={comfortable ? "size-[18px]" : "size-4"} />
+          <TypeIcon className="size-4" />
         </span>
-        <div className={cn("flex min-w-0 flex-1 flex-col", comfortable ? "gap-2" : "gap-1.5")}>
+        <div className={cn("flex min-w-0 flex-1 flex-col", comfortable ? "gap-1.5 pt-0.5" : "gap-1.5")}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className={cn("leading-snug font-semibold break-words text-foreground", comfortable ? "text-[13px]" : "text-sm")}>{entry.title}</p>
+              <p className="text-sm leading-snug font-semibold break-words text-foreground">{entry.title}</p>
               <p
                 title={[entry.dateLabel, ...entry.meta].join(" · ")}
                 className={cn(
-                  "mt-1 text-xs leading-relaxed",
+                  "mt-1 leading-relaxed",
+                  comfortable ? "text-[13px]" : "text-xs line-clamp-2",
                   entry.overdue ? "font-semibold text-status-critical-ink" : "text-muted-foreground",
                 )}
               >
@@ -201,7 +197,7 @@ function EntryRow({
                 {entry.meta.length > 0 ? <span className="font-normal text-muted-foreground"> · {entry.meta.join(" · ")}</span> : null}
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className={cn("flex shrink-0 items-center gap-1.5", comfortable && "flex-col items-end gap-2 pt-0.5 pl-2")}>
               <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium", TONE[entry.tone])}>{entry.statusLabel}</span>
               {href ? (
                 <Link
@@ -241,7 +237,14 @@ function EntryRow({
         </div>
       </div>
       <Presence open={expanded} expansion>
-        <div ref={detail} data-cut-end className="mt-3 rounded-xl bg-background/80 p-3.5 ring-1 ring-border/60 dark:bg-background/40 dark:ring-border">
+        <div
+          ref={detail}
+          data-cut-end
+          className={cn(
+            "mt-3 rounded-xl p-3.5 ring-1 ring-border/60 dark:ring-border",
+            comfortable ? "bg-muted/35 dark:bg-muted/20" : "bg-background/80 dark:bg-background/40",
+          )}
+        >
           <AnimatedHeight>{children}</AnimatedHeight>
         </div>
       </Presence>
@@ -427,6 +430,9 @@ export function MilestonesCard({
       prefetchMilestoneHomologation(project.id, milestone, true);
     }
   };
+  /** Quantos marcos a prévia do cartão lista; o restante abre no painel. */
+  const CARD_PREVIEW = 7;
+
   /** No cartão compacto, abrir o detalhe de um marco abre o painel lateral já nele. */
   const openInDrawer = (id: string) => {
     setOpenId(id);
@@ -439,8 +445,8 @@ export function MilestonesCard({
       return inDrawer ? <DrawerEmpty>{ready ? empty[key] : ""}</DrawerEmpty> : <CardMessage>{ready ? empty[key] : ""}</CardMessage>;
     }
     return (
-      <ul className={cn("flex flex-col", inDrawer ? "gap-3" : "gap-3.5")}>
-        {list.map((entry) => {
+      <ul className="flex flex-col divide-y divide-border/70 dark:divide-border">
+        {(inDrawer ? list : list.slice(0, CARD_PREVIEW)).map((entry) => {
           const milestone = byId.get(entry.id);
           return (
             <EntryRow
@@ -468,6 +474,8 @@ export function MilestonesCard({
     { label: "Próximos", value: lists.proximos.length, tone: "neutral" as const },
     { label: "Total", value: lists.todos.length, tone: "info" as const },
   ];
+  const tabLabel = TAB_LABELS.find(([value]) => value === tab)?.[1] ?? "Marcos";
+  const tabCount = lists[tab].length;
 
   return (
     <SectionCard
@@ -475,7 +483,7 @@ export function MilestonesCard({
       subtitle="Entregas pendentes, próximas e já decididas"
       icon={Flag}
       tone="green"
-      moreLabel={`Ver todos (${lists[tab].length})`}
+      moreLabel={`Ver todos (${tabCount})`}
       expandable={ready && lists.todos.length > 0}
       drawerOpen={drawerOpen}
       onDrawerOpenChange={(next) => {
@@ -496,9 +504,11 @@ export function MilestonesCard({
               }}
               items={TAB_LABELS.map(([value, label]) => ({ id: value, label, icon: Flag, count: lists[value].length }))}
             />
-            <DrawerCard icon={Flag} title={TAB_LABELS.find(([value]) => value === tab)?.[1] ?? "Marcos"} aside={<DrawerCount value={lists[tab].length} />}>
-              {rows(tab, true)}
-            </DrawerCard>
+            <div key={tab} role="group" aria-label={tabLabel} className="motion-fade">
+              <DrawerCard icon={Flag} title={tabLabel} aside={<DrawerCount value={lists[tab].length} />} className="p-6">
+                {rows(tab, true)}
+              </DrawerCard>
+            </div>
           </div>
         ),
       }}

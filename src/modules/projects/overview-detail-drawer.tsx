@@ -10,8 +10,10 @@ import { cn } from "@/lib/utils";
 import { EapPanelHeader, EapSection } from "./eap-ui";
 
 /**
- * Peças visuais compartilhadas pelos painéis de detalhes (mesma linguagem nos quatro): "chip" de contexto e seção em cartão.
- * O painel segue o padrão da EAP (eap-ui.tsx): cabeçalho `EapPanelHeader`, seções `EapSection`, corpo em fundo suave.
+ * Peças visuais compartilhadas pelos Sheets da Visão Geral.
+ * Referência oficial de linguagem: Sheet da Linha do tempo (`project-timeline-card.tsx`) —
+ * `DrawerNav` + `DrawerCard` (p-6), ícone suave, título/descrição, badge e divisores entre registros.
+ * O casco do painel segue a EAP (`EapPanelHeader`, corpo `bg-muted/50`).
  */
 export function DrawerChip({
   icon: Icon,
@@ -39,7 +41,7 @@ export function DrawerChip({
   );
 }
 
-/** Cartão de conteúdo do painel (modelo do Sobre o projeto): cabeçalho com ícone em superfície suave, título e, à direita, um detalhe opcional. */
+/** Cartão de conteúdo do Sheet (padrão Linha do tempo / Visão Geral): cabeçalho com ícone em superfície suave, título e, à direita, um detalhe opcional. */
 export function DrawerCard({
   icon: Icon,
   title,
@@ -173,11 +175,11 @@ export function DrawerSection({ title, subtitle, id, className, children }: { ti
 }
 
 /**
- * Painel lateral de detalhes dos cartões da Visão Geral (Sobre o projeto, Equipe, Resumo executivo e Linha do tempo).
- * Abre pela direita (704 px no desktop, quase a tela toda no celular), com cabeçalho fixo (ícone em superfície suave, título,
- * descrição, fechar e uma faixa de contexto opcional), uma única área central com rolagem independente e rodapé fixo apenas
- * quando `footer` é informado. Usa o `Sheet` existente: a animação de entrada e saída é a dele (desligada com movimento
- * reduzido) e o foco volta ao botão que abriu o painel. O conteúdo só é montado enquanto o painel está aberto.
+ * Painel lateral de detalhes dos cartões da Visão Geral (Sobre o projeto, Equipe, Resumo executivo, Linha do tempo, Marcos e
+ * Evidências). Abre pela direita (~620 px / ~38,75 rem no desktop, quase a tela toda no celular), com cabeçalho fixo (ícone,
+ * título, descrição, fechar e faixa de contexto opcional), uma única área central com rolagem independente e rodapé fixo
+ * apenas quando `footer` é informado. Usa o `Sheet` existente: a animação de entrada e saída é a dele (desligada com
+ * movimento reduzido) e o foco volta ao botão que abriu o painel. O conteúdo só é montado enquanto o painel está aberto.
  */
 export function OverviewDetailDrawer({
   open,

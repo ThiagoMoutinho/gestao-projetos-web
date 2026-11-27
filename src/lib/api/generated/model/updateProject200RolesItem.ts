@@ -12,6 +12,7 @@ export type UpdateProject200RolesItem = typeof UpdateProject200RolesItem[keyof t
 export const UpdateProject200RolesItem = {
   DONO_PROJETO: 'DONO_PROJETO',
   GESTOR: 'GESTOR',
+  PATROCINADOR: 'PATROCINADOR',
   PO: 'PO',
   DESENVOLVEDOR: 'DESENVOLVEDOR',
   RESPONSAVEL_TECNICO: 'RESPONSAVEL_TECNICO',

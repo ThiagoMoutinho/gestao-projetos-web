@@ -48,6 +48,7 @@ export const MILESTONE_TYPE_OPTIONS = Object.entries(MILESTONE_TYPES) as Array<
 const ROLE_LABELS: Record<ListProjectMembers200DataItemRole, string> = {
   DONO_PROJETO: "Dono do projeto",
   GESTOR: "Gestor",
+  PATROCINADOR: "Patrocinador",
   PO: "PO",
   DESENVOLVEDOR: "Desenvolvedor",
   RESPONSAVEL_TECNICO: "Responsável técnico",

@@ -26,7 +26,7 @@ const members: TeamMember[] = [
 describe("team-editing", () => {
   it("monta o rascunho: principal de cada papel e o restante (sem o dono do projeto)", () => {
     const draft = draftFromMembers(members);
-    assert.deepEqual(draft.key, { GESTOR: "u-ana", RESPONSAVEL_TECNICO: "", FORNECEDOR: "u-alfa" });
+    assert.deepEqual(draft.key, { GESTOR: "u-ana", PATROCINADOR: "", RESPONSAVEL_TECNICO: "", FORNECEDOR: "u-alfa" });
     assert.deepEqual(draft.others.map((row) => row.memberId), ["m-dev", "m-gestor2"]);
   });
 
@@ -121,11 +121,12 @@ describe("funções do catálogo na equipe", () => {
     assert.match(memberFunctionNameProblem("!!") ?? "", /letras ou números/);
     assert.equal(functionNameKey("Gestão  de Contrato"), functionNameKey("gestao de contrato"));
     assert.equal(duplicateFunctionName("  stakeholder ", [{ name: "Stakeholder" }]), true);
-    assert.equal(duplicateFunctionName("Patrocinador", [{ name: "Stakeholder" }]), false);
+    assert.equal(duplicateFunctionName("Patrocinador", [{ name: "Stakeholder" }]), true);
+    assert.equal(duplicateFunctionName("Apoiador", [{ name: "Stakeholder" }]), false);
   });
 
   it("nome igual ao de um papel fixo da lista é recusado (Desenvolvedor, Gestor, PO...), ignorando caixa e acento", () => {
-    for (const nome of ["Desenvolvedor", "  desenvolvedor ", "GESTOR", "Responsavel tecnico", "po", "Observador", "Fornecedor", "Dono do Projeto"]) {
+    for (const nome of ["Desenvolvedor", "  desenvolvedor ", "GESTOR", "Patrocinador", "Responsavel tecnico", "po", "Observador", "Fornecedor", "Dono do Projeto"]) {
       assert.equal(functionNameConflict(nome, []), "role", nome);
       assert.equal(duplicateFunctionName(nome, []), true, nome);
     }

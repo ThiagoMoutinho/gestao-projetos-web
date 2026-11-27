@@ -156,14 +156,22 @@ describe("campos obrigatórios e preenchimento", () => {
   const filledContext = { PROBLEM: "Atendimento lento nas filas.", PURPOSE: "Reduzir o tempo de espera.", SCOPE: "Módulo de triagem." };
   const allMembers = [{ role: "GESTOR" }, { role: "RESPONSAVEL_TECNICO" }, { role: "FORNECEDOR" }];
 
-  it("são oito campos e o patrocinador permanece pendente de implementação estrutural", () => {
+  it("são oito campos e o patrocinador conta quando há o papel PATROCINADOR", () => {
     const fields = requiredFields({ context: filledContext, schedule: { milestonesWithDate: 2, hasCurrentEnd: true }, members: allMembers });
     assert.equal(fields.length, 8);
-    assert.equal(fields.find((field) => field.id === "SPONSOR")?.state, "structural");
+    assert.equal(fields.find((field) => field.id === "SPONSOR")?.state, "pending");
     const result = completeness(fields);
     assert.equal(result.filled, 7);
     assert.equal(result.percent, 88);
     assert.deepEqual(result.pending.map((field) => field.id), ["SPONSOR"]);
+
+    const withSponsor = requiredFields({
+      context: filledContext,
+      schedule: { milestonesWithDate: 2, hasCurrentEnd: true },
+      members: [...allMembers, { role: "PATROCINADOR" }],
+    });
+    assert.equal(withSponsor.find((field) => field.id === "SPONSOR")?.state, "filled");
+    assert.equal(completeness(withSponsor).percent, 100);
   });
 
   it("nenhum outro papel substitui o patrocinador", () => {
@@ -172,7 +180,7 @@ describe("campos obrigatórios e preenchimento", () => {
       schedule: { milestonesWithDate: 1, hasCurrentEnd: true },
       members: [...allMembers, { role: "DONO_PROJETO" }, { role: "PO" }, { role: "OBSERVADOR" }],
     });
-    assert.equal(fields.find((field) => field.id === "SPONSOR")?.state, "structural");
+    assert.equal(fields.find((field) => field.id === "SPONSOR")?.state, "pending");
   });
 
   it("critérios objetivos: texto sem conteúdo, prazo sem marco datado e papéis ausentes ficam pendentes", () => {
@@ -188,7 +196,7 @@ describe("campos obrigatórios e preenchimento", () => {
       SCOPE: "pending",
       SCHEDULE: "pending",
       MANAGER: "filled",
-      SPONSOR: "structural",
+      SPONSOR: "pending",
       TECHNICAL_LEAD: "pending",
       SUPPLIER: "pending",
     });
@@ -197,7 +205,7 @@ describe("campos obrigatórios e preenchimento", () => {
 
   it("dados indisponíveis não geram percentual parcial", () => {
     const fields = requiredFields({ context: null, schedule: null, members: null });
-    assert.equal(fields.filter((field) => field.state === "unknown").length, 7);
+    assert.equal(fields.filter((field) => field.state === "unknown").length, 8);
     assert.equal(completeness(fields).percent, null);
   });
 });

@@ -48,9 +48,13 @@ export function useOverflow(element: HTMLElement | null) {
         // Unidades marcadas com `data-cut-unit` (ex.: quadro de um indicador) também não aparecem partidas.
         const units = [...element.querySelectorAll<HTMLElement>("[data-cut-unit]")].map((unit) => unit.getBoundingClientRect());
         const atomic = [...controls, ...units];
-        // Mas nunca aparece partido: se o corte passa pelo meio dele, o corte sobe até o topo do controle.
+        // Nunca aparece partido: se o limite do cartão corta o meio da unidade, o corte sobe ao topo dela.
+        // Só unidades que realmente ultrapassam o limite original (`limit`) entram nessa regra — senão, com itens
+        // colados (ex.: lista com `divide-y`), o corte cascateava item a item e sumia com a lista inteira.
         for (let pass = 0; pass < atomic.length; pass += 1) {
-          const straddling = atomic.find((rect) => rect.height > 0 && rect.top < clip - 0.5 && rect.bottom > clip + 0.5);
+          const straddling = atomic.find(
+            (rect) => rect.height > 0 && rect.top < clip - 0.5 && rect.bottom > clip + 0.5 && rect.bottom > limit + 0.5,
+          );
           if (!straddling) {
             break;
           }

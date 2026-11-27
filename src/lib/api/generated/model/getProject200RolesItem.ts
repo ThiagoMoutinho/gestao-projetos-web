@@ -12,6 +12,7 @@ export type GetProject200RolesItem = typeof GetProject200RolesItem[keyof typeof 
 export const GetProject200RolesItem = {
   DONO_PROJETO: 'DONO_PROJETO',
   GESTOR: 'GESTOR',
+  PATROCINADOR: 'PATROCINADOR',
   PO: 'PO',
   DESENVOLVEDOR: 'DESENVOLVEDOR',
   RESPONSAVEL_TECNICO: 'RESPONSAVEL_TECNICO',

@@ -48,13 +48,15 @@ describe("reativar e nomes reservados", () => {
     assert.equal(reactivateBlockedReason(fn({ name: "Desenvolvedor", isActive: false }))?.includes("papel fixo"), true);
     assert.equal(reactivateBlockedReason(fn({ isActive: false })), null);
     assert.equal(hasReservedName("Responsavel tecnico"), true);
+    assert.equal(hasReservedName("Patrocinador"), true);
     assert.equal(hasReservedName("Desenvolvedor sênior"), false);
   });
 
   it("renomear: conflito com papel fixo ou com outra função, ignorando caixa e acento", () => {
-    const outras = [{ name: "Patrocinador" }];
+    const outras = [{ name: "Apoiador" }];
     assert.match(renameConflict("desenvolvedor", outras) ?? "", /papel na lista/);
-    assert.match(renameConflict("PATROCINADOR", outras) ?? "", /outra função/);
+    assert.match(renameConflict("PATROCINADOR", outras) ?? "", /papel na lista/);
+    assert.match(renameConflict("apoiador", outras) ?? "", /outra função/);
     assert.equal(renameConflict("Parte Interessada", outras), null);
     assert.equal(renameConflict("   ", outras), null, "nome vazio é tratado em outra validação");
   });

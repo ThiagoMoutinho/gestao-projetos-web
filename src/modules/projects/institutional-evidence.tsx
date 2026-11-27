@@ -47,8 +47,8 @@ type OverviewEvidence = Overview["evidences"][number];
 /** Nome legível do item da EAP (fase, tarefa ou marco) por id, montado pela tela com os dados que ela já carregou. */
 export type EvidenceOrigins = Record<string, string>;
 
-/** Quantas evidências aparecem antes do "Ver todas": o cartão não vira tabela nem ganha rolagem interna. */
-const PREVIEW = 5;
+/** Quantas evidências a prévia do cartão lista; o restante abre no painel. */
+const PREVIEW = 6;
 
 function originOf(evidence: OverviewEvidence, origins: EvidenceOrigins) {
   const id = evidence.phaseId ?? evidence.taskId ?? evidence.milestoneId;
@@ -81,7 +81,30 @@ const FILTER_ICON: Record<EvidenceFilter, React.ComponentType<{ className?: stri
 
 function Ticket({ label, ticket }: { label: string; ticket: { ticketId: string; url: string | null } | null }) {
   return (
-    <div className="min-w-0 rounded-xl bg-muted/35 px-3.5 py-3 dark:bg-muted/20">
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Ticket2 className="size-3.5" aria-hidden="true" />
+        {label}
+      </dt>
+      <dd className="truncate text-base leading-snug font-semibold text-foreground">
+        {!ticket ? (
+          <span className="text-sm font-normal text-muted-foreground">Não informado</span>
+        ) : ticket.url ? (
+          <a href={ticket.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline">
+            GLPI #{ticket.ticketId} <ExternalLink className="size-3.5" aria-hidden="true" />
+          </a>
+        ) : (
+          `GLPI #${ticket.ticketId}`
+        )}
+      </dd>
+    </div>
+  );
+}
+
+/** Ticket no cartão compacto (mantém o bloco suave do card; o sheet usa o Fact acima). */
+function TicketCard({ label, ticket }: { label: string; ticket: { ticketId: string; url: string | null } | null }) {
+  return (
+    <div className="min-w-0 rounded-xl bg-muted/35 px-3.5 py-2.5 dark:bg-muted/20">
       <dt className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <Ticket2 className="size-3.5" aria-hidden="true" />
         {label}
@@ -276,13 +299,12 @@ export function EvidencesAndTickets({
   const newestFirst = [...evidences].reverse();
   const visible = newestFirst.filter((evidence) => matchesEvidenceFilter(evidence, filter));
 
-  const tickets = (
+  const ticketsCard = (
     <dl className="grid gap-2.5 sm:grid-cols-2">
-      <Ticket label="Chamado de origem" ticket={data.origin.glpiTicket} />
-      <Ticket label="Chamado do PMO" ticket={data.origin.pmoGlpiTicket} />
+      <TicketCard label="Chamado de origem" ticket={data.origin.glpiTicket} />
+      <TicketCard label="Chamado do PMO" ticket={data.origin.pmoGlpiTicket} />
     </dl>
   );
-
   const summary = [
     { label: "Total", value: evidences.length },
     { label: "Documentos", value: evidences.filter((item) => item.kind === "DOCUMENT").length },
@@ -291,7 +313,7 @@ export function EvidencesAndTickets({
   ];
 
   const list = (items: OverviewEvidence[], comfortable = false) => (
-    <ul className={cn("flex flex-col", comfortable ? "gap-3" : "gap-3.5")}>
+    <ul className="flex flex-col divide-y divide-border/70 dark:divide-border">
       {items.map((evidence) => {
         const origin = originOf(evidence, origins);
         const title = evidenceDisplayTitle(evidence);
@@ -300,30 +322,28 @@ export function EvidencesAndTickets({
           <li
             key={evidence.id}
             data-cut-unit
-            className={cn(
-              "flex items-start gap-3.5",
-              comfortable && "rounded-xl bg-muted/30 px-3.5 py-3.5 dark:bg-muted/20",
-            )}
+            className={cn("flex items-start gap-3", comfortable ? "gap-4 py-5 first:pt-0 last:pb-0" : "py-3")}
           >
             <span
               className={cn(
-                "flex shrink-0 items-center justify-center rounded-xl ring-1 ring-inset",
-                comfortable ? "size-10" : "size-9",
+                "flex shrink-0 items-center justify-center ring-1 ring-inset",
+                comfortable ? "size-9 rounded-full" : "size-9 rounded-xl",
                 KIND_TONE[toneKey],
               )}
               aria-hidden="true"
             >
-              <EvidenceKindIcon kind={evidence.kind} className={comfortable ? "size-[18px]" : "size-4"} />
+              <EvidenceKindIcon kind={evidence.kind} className="size-4" />
             </span>
-            <div className={cn("min-w-0 flex-1", comfortable ? "space-y-1.5" : "space-y-1 pt-0.5")}>
+            <div className={cn("min-w-0 flex-1", comfortable ? "space-y-1.5 pt-0.5" : "space-y-1")}>
               <div className="flex items-start justify-between gap-3">
-                <p className={cn("leading-snug font-semibold break-words text-foreground", comfortable ? "text-[13px]" : "text-sm")}>{title}</p>
-                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <p className="text-sm leading-snug font-semibold break-words text-foreground">{title}</p>
+                <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
                   {evidenceKindLabel(evidence.kind)}
                 </span>
               </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Registrada em {stamp(evidence.createdAt)}
+              <p className={cn("leading-relaxed text-muted-foreground", comfortable ? "text-[13px]" : "text-xs line-clamp-2")}>
+                Enviada em {stamp(evidence.createdAt)}
+                {evidence.ticketNumber ? ` · GLPI #${evidence.ticketNumber}` : ""}
                 {origin ? ` · Vinculado a: ${origin}` : ""}
               </p>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
@@ -386,10 +406,13 @@ export function EvidencesAndTickets({
                     .filter((item) => item.id === "ALL" || item.id === filter || item.count > 0)}
                 />
               ) : null}
-              <DrawerCard icon={Ticket2} title="Chamados">
-                {tickets}
+              <DrawerCard icon={Ticket2} title="Chamados" className="p-6">
+                <dl className="grid gap-x-6 gap-y-4 rounded-xl bg-muted/40 px-5 py-4 dark:bg-muted/25 sm:grid-cols-2">
+                  <Ticket label="Chamado de origem" ticket={data.origin.glpiTicket} />
+                  <Ticket label="Chamado do PMO" ticket={data.origin.pmoGlpiTicket} />
+                </dl>
               </DrawerCard>
-              <DrawerCard icon={FileText} title="Evidências" aside={<DrawerCount value={visible.length} />}>
+              <DrawerCard icon={FileText} title="Evidências" aside={<DrawerCount value={visible.length} />} className="p-6">
                 {visible.length === 0 ? (
                   <DrawerEmpty>{evidences.length === 0 ? "Nenhuma evidência registrada no projeto." : "Nenhuma evidência neste filtro."}</DrawerEmpty>
                 ) : (
@@ -430,7 +453,7 @@ export function EvidencesAndTickets({
             </ul>
           ) : null}
           <div data-cut-unit className="shrink-0">
-            {tickets}
+            {ticketsCard}
           </div>
           {evidences.length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhuma evidência registrada no projeto.</p>

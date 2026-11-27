@@ -106,13 +106,14 @@ export function ProjectTimelineCard({ project, refreshKey }: { project: ProjectD
   }, [project.id, project.updatedAt, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const events = state.status === "ready" ? state.events : [];
+  const remaining = Math.max(0, events.length - CARD_PREVIEW);
   return (
     <SectionCard
       title="Linha do tempo do projeto"
       subtitle="Reprogramações, decisões de marcos, entregas e impedimentos"
       icon={History}
       tone="purple"
-      moreLabel={`Ver histórico completo (${events.length})`}
+      moreLabel={remaining > 0 ? `Mostrar mais ${remaining}` : `Ver histórico completo (${events.length})`}
       expandable={events.length > CARD_PREVIEW}
       drawer={
         state.status === "ready" && events.length > 0
@@ -142,8 +143,11 @@ export function ProjectTimelineCard({ project, refreshKey }: { project: ProjectD
   );
 }
 
-/** Quantos eventos recentes o card mostra; o histórico completo (com filtro e carregamento de 15 em 15) fica no painel lateral. */
-const CARD_PREVIEW = 6;
+/**
+ * Quantos eventos o cartão pode listar na prévia (teto de 15). O limite de altura do widget (480 px) corta o que não couber
+ * sem rolagem; o restante e o histórico completo abrem no painel lateral, com carregamento de 15 em 15.
+ */
+const CARD_PREVIEW = 15;
 
 /**
  * Eventos recentes do card: linha cronológica vertical que termina no último evento (sem trecho solto), ícone por tipo na cor do
@@ -287,10 +291,11 @@ function TimelineMonths({ events, partial }: { events: TimelineEvent[]; partial:
       {shown < total ? (
         <div className="flex flex-col items-start gap-1.5">
           <Button type="button" variant="outline" size="sm" onClick={() => setLoaded(nextVisibleCount(shown, total))}>
-            Mostrar mais {Math.min(TIMELINE_FIRST_PAGE, total - shown)} eventos
+            Mostrar mais {total - shown}
           </Button>
           <p role="status" aria-live="polite" className="text-[11px] text-muted-foreground">
-            Mostrando {shown} de {total} eventos.
+            Mostrando {shown} de {total} eventos
+            {total - shown > TIMELINE_FIRST_PAGE ? ` · próximos ${TIMELINE_FIRST_PAGE}` : ""}.
           </p>
         </div>
       ) : null}

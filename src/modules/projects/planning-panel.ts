@@ -211,8 +211,7 @@ export type CompletenessInput = {
 /**
  * Os oito campos obrigatórios do Planejamento, cada um com critério objetivo de preenchimento:
  * Problema, Finalidade e Escopo: texto publicado com conteúdo; Prazo e marcos: prazo vigente consolidado e ao menos um marco
- * com data; Gestor, Responsável técnico e Fornecedor: ao menos um participante com o papel. Patrocinador depende do papel
- * PATROCINADOR, que ainda não existe: fica pendente de implementação estrutural e nenhum outro papel o substitui.
+ * com data; Gestor, Patrocinador, Responsável técnico e Fornecedor: ao menos um participante com o papel correspondente.
  */
 export function requiredFields(input: CompletenessInput): RequiredField[] {
   const text = (key: "PROBLEM" | "PURPOSE" | "SCOPE"): FieldState =>
@@ -239,8 +238,8 @@ export function requiredFields(input: CompletenessInput): RequiredField[] {
     {
       id: "SPONSOR",
       label: "Patrocinador",
-      criterion: "Depende do papel Patrocinador, ainda não implementado no sistema.",
-      state: "structural",
+      criterion: "Ao menos um participante com o papel Patrocinador.",
+      state: role("PATROCINADOR"),
     },
     {
       id: "TECHNICAL_LEAD",
@@ -254,7 +253,7 @@ export function requiredFields(input: CompletenessInput): RequiredField[] {
 
 /**
  * Percentual sobre os oito campos (preenchidos ÷ 8). Null enquanto algum campo não puder ser avaliado (dados indisponíveis):
- * um percentual parcial seria enganoso. O campo estrutural conta como não preenchido.
+ * um percentual parcial seria enganoso.
  */
 export function completeness(fields: ReadonlyArray<RequiredField>) {
   const filled = fields.filter((field) => field.state === "filled").length;

@@ -12,6 +12,7 @@ export type AddProjectMember201Role = typeof AddProjectMember201Role[keyof typeo
 export const AddProjectMember201Role = {
   DONO_PROJETO: 'DONO_PROJETO',
   GESTOR: 'GESTOR',
+  PATROCINADOR: 'PATROCINADOR',
   PO: 'PO',
   DESENVOLVEDOR: 'DESENVOLVEDOR',
   RESPONSAVEL_TECNICO: 'RESPONSAVEL_TECNICO',

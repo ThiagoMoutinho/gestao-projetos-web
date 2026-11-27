@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, CalendarRange, Check, ChevronDown, Circle, CircleCheck, CircleDot, CircleHelp, Diamond, Landmark, OctagonAlert, PencilLine, RotateCcw, RotateCw, TriangleAlert, UserCog, Wrench, X } from "lucide-react";
+import { Briefcase, CalendarRange, Check, ChevronDown, Circle, CircleCheck, CircleDot, CircleHelp, ClipboardList, CodeXml, Diamond, Eye, Landmark, OctagonAlert, PencilLine, RotateCcw, RotateCw, Tag, TriangleAlert, UserCog, Users, Wrench, X, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -971,9 +971,24 @@ const ROLE_TONE: Record<string, string> = {
   FORNECEDOR: "bg-status-done-soft text-status-done-ink",
 };
 
+/** Ícone do papel na lista de participantes (mesma linguagem visual dos responsáveis). */
+const MEMBER_ROLE_ICON: Record<string, LucideIcon> = {
+  GESTOR: UserCog,
+  PATROCINADOR: Landmark,
+  RESPONSAVEL_TECNICO: Wrench,
+  FORNECEDOR: Briefcase,
+  PO: ClipboardList,
+  DESENVOLVEDOR: CodeXml,
+  OBSERVADOR: Eye,
+  DONO_PROJETO: Users,
+};
+
+/** Quantos participantes (além dos responsáveis) cabem na prévia do cartão Equipe; o restante fica no drawer. */
+const CARD_PARTICIPANTS_PREVIEW = 4;
+
 /**
- * Cartão Equipe: os responsáveis principais numa lista única (avatar na cor do papel, papel e nome) e, abaixo, as pessoas do projeto, que
- * preenchem o espaço restante do card (o que não couber fica no painel). A relação completa, com busca, fica no painel lateral de detalhes (team-drawer.tsx).
+ * Cartão Equipe: os responsáveis principais numa lista única (avatar na cor do papel, papel e nome) e, abaixo, até
+ * 4 pessoas do projeto no mesmo padrão visual (função acima, nome em destaque; avatar menor). A relação completa fica no painel.
  */
 export function Participants({ members }: { members: ProjectDetail["members"] }) {
   if (members === null) {
@@ -987,17 +1002,18 @@ export function Participants({ members }: { members: ProjectDetail["members"] })
   // que já aparecem em Responsáveis). Mesma regra do formulário, para o card e o formulário nunca divergirem.
   const added = new Set(draftFromMembers(members).others.map((row) => row.memberId));
   const people = [...new Map(members.filter((member) => added.has(member.id)).map((member) => [member.userId, member])).values()];
+  const preview = people.slice(0, CARD_PARTICIPANTS_PREVIEW);
   return (
     <section aria-label="Participantes" className="flex min-w-0 flex-col gap-5">
       <div className="flex flex-col gap-3.5">
-        <p data-cut-unit className="text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+        <p className="text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
           Responsáveis
         </p>
         <ul className="flex flex-col gap-4">
           {PARTICIPANT_ROLES.map(({ role, label, icon: Icon }) => {
             const found = [...new Set(members.filter((member) => member.role === role).map((member) => member.name))];
             return (
-              <li key={role} data-cut-unit className="flex min-w-0 items-center gap-3.5">
+              <li key={role} className="flex min-w-0 items-center gap-3.5">
                 {found.length > 0 ? (
                   <PersonAvatar name={found[0]} toneClass={ROLE_TONE[role]} className="size-11 text-sm ring-1 ring-black/5 ring-inset dark:ring-white/10" />
                 ) : (
@@ -1015,45 +1031,39 @@ export function Participants({ members }: { members: ProjectDetail["members"] })
                   </p>
                 </div>
                 {found.length > 1 ? <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground">+{found.length - 1}</span> : null}
-                {found.length === 0 && role === "PATROCINADOR" ? (
-                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-label font-medium text-muted-foreground" title="O papel de patrocinador ainda não existe no sistema.">
-                    Em breve
-                  </span>
-                ) : null}
               </li>
             );
           })}
         </ul>
       </div>
-      {people.length > 0 ? (
-        // Participantes lado a lado, em linhas de duas pessoas (uma coluna no cartão estreito). Cada linha é uma unidade de corte do cartão, e o
-        // rótulo com a linha separadora faz parte da primeira: se o limite do card cortar a lista, não sobra um título solto.
-        <ul aria-label="Participantes do projeto" className="@container flex min-w-0 flex-col gap-3.5 border-t border-border/50 pt-5 dark:border-border">
-          {Array.from({ length: Math.ceil(people.length / 2) }, (_, row) => people.slice(row * 2, row * 2 + 2)).map((pair, row) => (
-            <li key={pair[0].userId} data-cut-unit data-cut-end className="flex min-w-0 flex-col gap-3.5">
-              {row === 0 ? (
-                <p className="flex items-center gap-2 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-                  Participantes
-                  <span className="rounded-full bg-muted px-1.5 py-px font-semibold tracking-normal text-foreground">{people.length}</span>
-                </p>
-              ) : null}
-              <div className="grid grid-cols-1 gap-x-6 gap-y-3.5 @min-[360px]:grid-cols-2">
-                {pair.map((person) => {
-                  const roles = [...new Set(members.filter((member) => member.userId === person.userId && added.has(member.id)).map((member) => member.roleLabel))];
-                  return (
-                    <div key={person.userId} className="flex min-w-0 items-center gap-3">
-                      <PersonAvatar name={person.name} className="size-9 text-xs" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm leading-snug font-medium text-foreground">{person.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">{roles.join(" · ")}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </li>
-          ))}
-        </ul>
+      {preview.length > 0 ? (
+        // Mesmo padrão dos responsáveis (função + ícone acima, nome em destaque); avatar menor (size-9). Até 4 na prévia, em 2 colunas.
+        <div className="@container flex min-w-0 flex-col gap-3.5 border-t border-border/50 pt-5 dark:border-border">
+          <p className="flex items-center gap-2 text-label font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+            Participantes
+            <span className="rounded-full bg-muted px-1.5 py-px font-semibold tracking-normal text-foreground">{people.length}</span>
+          </p>
+          <ul aria-label="Participantes do projeto" className="grid grid-cols-1 gap-4 @min-[360px]:grid-cols-2">
+            {preview.map((person) => {
+              const links = members.filter((member) => member.userId === person.userId && added.has(member.id));
+              const labels = [...new Set(links.map((member) => member.roleLabel))];
+              const Icon = (person.functionId ? Tag : MEMBER_ROLE_ICON[person.role]) ?? Tag;
+              const roleText = labels.join(" · ") || "Participante";
+              return (
+                <li key={person.userId} className="flex min-w-0 items-center gap-3.5">
+                  <PersonAvatar name={person.name} className="size-9 text-xs ring-1 ring-black/5 ring-inset dark:ring-white/10" />
+                  <div className="min-w-0 flex-1">
+                    <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                      <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{roleText}</span>
+                    </p>
+                    <p className="mt-0.5 truncate text-sm leading-snug font-semibold text-foreground">{person.name}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       ) : null}
     </section>
   );

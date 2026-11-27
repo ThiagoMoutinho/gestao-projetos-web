@@ -111,8 +111,9 @@ function SectionCardFrame({
   /** Rodapé sempre visível (fora da área que pode ser cortada pelo limite de altura), por exemplo totais e ações essenciais. */
   footer?: React.ReactNode;
   /**
-   * Detalhes em painel lateral (OverviewDetailDrawer): o cartão fica compacto e o botão de baixo ("Ver detalhes") abre o painel,
-   * em vez de expandir o cartão. O botão só aparece quando o conteúdo passa do limite ou quando `expandable` é verdadeiro.
+   * Detalhes em painel lateral (`OverviewDetailDrawer`): padrão dos cartões da Visão Geral com prévia limitada (referência
+   * 480 px). O cartão permanece compacto; o botão de baixo abre o painel em vez de expandir a altura. Só aparece quando o
+   * conteúdo passa do limite ou quando `expandable` é verdadeiro.
    */
   drawer?: { title: string; description: string; content: React.ReactNode; meta?: React.ReactNode; footer?: React.ReactNode };
   /** Controle externo do painel (por exemplo, para abri-lo já num item escolhido na lista do cartão). */

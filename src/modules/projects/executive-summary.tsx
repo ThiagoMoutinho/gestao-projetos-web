@@ -311,7 +311,7 @@ function MovementsTimeline({ movements }: { movements: ReadonlyArray<Movement> }
       {shown < total ? (
         <div className="mt-5 flex flex-col items-start gap-1.5">
           <Button type="button" variant="outline" size="sm" onClick={() => setLoaded(nextVisibleCount(shown, total))}>
-            Mostrar mais {Math.min(TIMELINE_PAGE, total - shown)} movimentações
+            Mostrar mais {total - shown}
           </Button>
           <p role="status" aria-live="polite" className="text-[11px] text-muted-foreground">
             Mostrando {shown} de {total} movimentações.
@@ -384,11 +384,30 @@ const SITUATION_CALLOUT: Record<Indicators["situation"]["status"], { box: string
 };
 
 /** Faixa "Situação atual" — sempre no rodapé do cartão (fora da área cortável). */
-function SituationBar({ data }: { data: Indicators }) {
+function SituationBar({ data, onExpandHeight }: { data: Indicators; onExpandHeight?: (height: number) => void }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const detail = useRef<HTMLDivElement>(null);
   const callout = SITUATION_CALLOUT[data.situation.status];
   const CalloutIcon = callout.icon;
+
+  // Ao abrir os detalhes, o cartão soma essa altura ao limite (`extraHeight`) para o progresso e os indicadores não sumirem.
+  useEffect(() => {
+    const element = detail.current;
+    if (!open || !element || !onExpandHeight) {
+      onExpandHeight?.(0);
+      return;
+    }
+    const measure = () => onExpandHeight(element.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      onExpandHeight(0);
+    };
+  }, [open, onExpandHeight]);
+
   return (
     <section className={cn("rounded-xl border px-3.5 py-2.5", callout.box)}>
       <button
@@ -412,7 +431,7 @@ function SituationBar({ data }: { data: Indicators }) {
         />
       </button>
       <Presence open={open}>
-        <div id={id} className="pt-1">
+        <div ref={detail} id={id} className="pt-1">
           <SituationDetails data={data} />
         </div>
       </Presence>
@@ -910,6 +929,7 @@ export function ExecutiveSummaryCard({
   const [dialog, setDialog] = useState<Mode | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<SummaryTab>("visao");
+  const [situationExtra, setSituationExtra] = useState(0);
   const reload = useCallback(() => setVersion((value) => value + 1), []);
 
   useEffect(() => {
@@ -1043,7 +1063,7 @@ export function ExecutiveSummaryCard({
   const footer =
     data && data.hasData ? (
       <div className="flex flex-col gap-3">
-        <SituationBar data={data} />
+        <SituationBar data={data} onExpandHeight={setSituationExtra} />
         {validation}
       </div>
     ) : (
@@ -1058,6 +1078,7 @@ export function ExecutiveSummaryCard({
       tone="blue"
       moreLabel="Ver detalhes"
       expandable={data !== null}
+      extraHeight={situationExtra}
       drawerOpen={drawerOpen}
       onDrawerOpenChange={(open) => {
         setDrawerOpen(open);
